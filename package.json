@@ -19,6 +19,7 @@
     "db:down": "podman compose down",
     "db:setup": "pnpm --filter @rampflow/api db:setup",
     "db:migrate": "pnpm --filter @rampflow/api db:migrate",
+    "db:reset": "pnpm --filter @rampflow/api db:reset",
     "db:generate": "pnpm --filter @rampflow/api db:generate",
     "db:regen": "pnpm --filter @rampflow/api db:regen",
     "admin:create": "pnpm --filter @rampflow/api admin:create",

@@ -1,6 +1,8 @@
 // Creates what this checkout needs in the shared Postgres cluster, idempotently:
 //   tsx scripts/db-setup.ts            the rampflow_app role and this checkout's database
 //   tsx scripts/db-setup.ts --migrate  apply apps/api/drizzle as the owner role
+//   tsx scripts/db-setup.ts --reset    drop and recreate this checkout's database, then migrate;
+//                                      needed after db:regen rewrote an applied migration
 // Roles are cluster-wide, so every checkout converges the same role. Databases are per checkout
 // (scripts/checkout-env.mjs), so this never touches another checkout's database.
 import { fileURLToPath } from 'node:url';
@@ -97,10 +99,16 @@ async function main() {
     console.log(`Migrated ${name}`);
     return;
   }
+  const reset = process.argv.includes('--reset');
   await withClient(withDatabase(owner, 'postgres'), async (admin) => {
     await ensureAppRole(admin, app);
+    if (reset) await dropDatabase(admin, name);
     console.log(`Role ${APP_ROLE} ready; database ${name} ${await ensureDatabase(admin, name)}`);
   });
+  if (reset) {
+    await migrateDatabase(owner);
+    console.log(`Migrated ${name}`);
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
