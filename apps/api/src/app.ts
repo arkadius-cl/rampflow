@@ -1,13 +1,58 @@
+import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { logger } from 'hono/logger';
-import { onError, onNotFound } from './errors.ts';
-import { health } from './routes/health.ts';
+import { createMiddleware } from 'hono/factory';
+import { db } from './db/pool.ts';
+import { type Clock, isPinnable, pinnableClock, systemClock } from './kernel/clock.ts';
+import { type AppEnv, env } from './kernel/env.ts';
+import { onError, onNotFound } from './kernel/errors.ts';
+import { requireSameOrigin } from './kernel/origin.ts';
+import { type StaticRoots, staticFiles } from './kernel/static.ts';
+import { testRoutes } from './kernel/test-routes.ts';
+import { modulesApi } from './modules/index.ts';
 
-export const app = new Hono()
-  .use(logger())
-  .basePath('/api')
-  .route('/health', health)
-  .onError(onError)
-  .notFound(onNotFound);
+export interface AppOptions {
+  clock?: Clock;
+  appOrigin?: string;
+  testRoutes?: boolean;
+  /** Serve the built SPAs (production). */
+  static?: StaticRoots;
+}
+
+const health = new Hono<AppEnv>().get('/', async (c) => {
+  try {
+    await db.execute(sql`select 1`);
+    return c.json({ status: 'ok', db: 'ok' } as const, 200);
+  } catch (err) {
+    console.error('health: database check failed', err);
+    return c.json({ status: 'degraded', db: 'error' } as const, 503);
+  }
+});
+
+function buildApi(options: AppOptions) {
+  const base = options.clock ?? systemClock;
+  const pinnable = options.testRoutes ? (isPinnable(base) ? base : pinnableClock(base)) : null;
+  const clock = pinnable ?? base;
+  return new Hono<AppEnv>()
+    .use(
+      createMiddleware<AppEnv>(async (c, next) => {
+        c.set('clock', clock);
+        await next();
+      }),
+    )
+    .use(requireSameOrigin(options.appOrigin ?? env.APP_ORIGIN))
+    .route('/health', health)
+    .route('/test', pinnable ? testRoutes(pinnable) : new Hono<AppEnv>())
+    .route('/', modulesApi);
+}
+
+/** The whole HTTP surface. Tests build their own with a fixed clock. */
+export function createApp(options: AppOptions = {}) {
+  const api = buildApi(options);
+  const app = new Hono<AppEnv>().route('/api', api);
+  if (options.static) app.route('/', staticFiles(options.static));
+  return app.onError(onError).notFound(onNotFound);
+}
+
+export const app = createApp({ testRoutes: env.ENABLE_TEST_ROUTES });
 
 export type AppType = typeof app;

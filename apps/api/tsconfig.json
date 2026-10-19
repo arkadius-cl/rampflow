@@ -6,8 +6,10 @@
     "emitDeclarationOnly": true,
     "outDir": "dist/types",
     "tsBuildInfoFile": "dist/types/tsconfig.tsbuildinfo",
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx",
     "types": ["node"]
   },
-  "include": ["src", "vitest.config.ts"],
-  "references": [{ "path": "../../packages/shared" }]
+  "include": ["src", "test", "scripts", "vitest.config.ts", "drizzle.config.ts"],
+  "references": [{ "path": "../../packages/shared" }, { "path": "../../packages/i18n" }]
 }
