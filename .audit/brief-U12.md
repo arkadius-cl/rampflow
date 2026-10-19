@@ -1,0 +1,24 @@
+You implement unit U12 "Core loop end to end" of rampflow (multi-tenant dock & yard management SaaS MVP) in your own git worktree (your current directory, branched from main). Other units of the same wave run in parallel in their own worktrees; stay strictly inside your unit's file ownership.
+
+Setup: `pnpm install`, then `node scripts/checkout-env.mjs --write` (per-checkout ports and database names; see docs/how-to/run-locally.md "Run several checkouts in parallel"), then `pnpm db:setup && pnpm db:migrate`. Postgres 18 and Mailpit already run via podman compose (5432, SMTP 1025, API/UI 8025); never stop them and never touch another checkout's database.
+
+Read first: /home/arkadius/workspace/rampflow/.audit/context-notes.md (coordinator notes, binding), AGENTS.md, docs/INDEX.md, docs/explanation/delivery-plan.md (sections "Shared files", "Merge procedure" and "U12 "Core loop end to end"" are your contract), docs/explanation/mvp-scope.md (the stories the core loop steps 1 to 8 and the cross-cutting NFRs (axe on every story's main screen, Pixel emulation for drivers, time zones in the UI)), then docs/explanation/mvp-scope.md#core-loop, docs/reference/booking-lifecycle.md (KPI section), every e2e/support/*.ts helper and a few existing specs per module to reuse their helpers and selectors, apps/api/src/kernel/test-routes.ts. Look at the existing kernel code before writing new helpers; reuse it.
+
+Do exactly U12 "Core loop end to end": its Owns, Provides, Tests and Verify as written in the delivery plan. The U12 section of the delivery plan is precise (Pro package, pinned site settings, pinned API and browser clocks, exact KPI row, cancelled booking's driver link). Implement it literally, through the real UI for every step a human does (API shortcuts only for clock control and Mailpit reads).
+- You may fix integration bugs in any file, each fix in its own commit with a test that fails before it; list them in your report. Do not weaken or delete existing tests to get green.
+- The machine is shared and was heavily loaded earlier; specs must be robust (web-first assertions, no fixed sleeps, timeouts sized for a loaded CI box) but must not hide real slowness: if a step is slow because of an N+1 or missing index, fix the cause.
+- Also run an axe sweep over each story's main screen as the plan says (reuse `expectAccessible`).
+- Integration item: wire U3's tenant logo (`logoUrl`) into U7's public link page (/r/$slug), the carrier invitation page and the carrier/booking emails and the driver PWA header if not already done (scope TN-05: logo on carrier booking pages, emails and the driver PWA); add an assertion to an existing TN-05 or core-loop step.
+- Finish by running the WHOLE e2e suite twice in a row (`pnpm test:e2e`) and report both results; both must be green.
+
+Rules:
+- UI: original shadcn components first (apps/web/src/components/ui, style base-nova on Base UI, the Field pattern for forms with react-hook-form + zod). Reuse the UX prototype components in apps/web/src/components (shells, plan-board, slot-picker, status-badge, site-time, settings-field, entitlement-gate) and match the look of the screens under apps/web/src/routes/design/. Custom components only when nothing in shadcn fits.
+- All user-facing strings through i18next catalogs (de, en, pl for staff/carrier UI; 12 locales for driver) in your unit's namespace parts.
+- Times: UTC in the DB, site-local display with zone label via the shared time module.
+- Every API route you add gets route cases (foreign tenant, foreign site, missing permission, entitlement off) in the kernel's route-case harness; behavioral tests against real Postgres, no DB mocks.
+- If the contract (manifests, references, ADRs) is wrong or missing something, do the smallest sound thing, and list the deviation with its reason in your report. Do not edit packages/shared manifests, registry, packages.ts or index.ts (coordinator-owned); report needed changes instead.
+- Update only your module's sections in docs/reference/*; add a how-to doc for your module's main admin/operator task if it helps users (Diátaxis frontmatter per docs/CONVENTIONS.md); run `pnpm docs:index`.
+- Before finishing: rebase onto main (`git fetch` is not needed, main is local: `git rebase main`), follow the Merge procedure in the delivery plan (db:regen, routes:gen, docs:index), and make the unit's Verify command green. Prove at least one key test can fail (plant a defect, see red with the expected message, revert).
+- Commit in logical commits; each message ends with "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>".
+
+Final message (max 400 words): branch name, what you built (stories covered), deviations from the contract with reasons, needed coordinator changes (manifests etc.), verification output tails, planted-defect evidence, and what later units must know.

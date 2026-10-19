@@ -1,0 +1,11 @@
+You root-cause and fix one UI race in rampflow. Work in your own git worktree (your current directory, branched from main). Setup: `pnpm install`, `node scripts/checkout-env.mjs --write`, `pnpm db:setup && pnpm db:migrate`. Read AGENTS.md ("Shared machine": never `pkill -f` patterns, never bare `git stash`, never `git rebase --skip`).
+
+Symptom (reproduced by the coordinator): `pnpm test:e2e --project core-loop --no-deps` fails in step 3 of e2e/core-loop/core-loop.spec.ts: after "Open booking" and waiting for the carrier booking page URL (/c/<org>/bookings/<id>), the spec fills "Email to driver" and clicks Send, but the page shows the email field empty with "Enter a valid email address." The typed value was lost, so the driver link card (apps/web/src/modules/portal/driver-link.tsx, `DriverLinkCard` -> `LinkActions` with local useState) was unmounted and mounted again after the fill. It passes inside the full suite (different timing). Candidates to check, not conclusions: `canBook` from `useAccess()` flipping while access loads/refetches, `booking.linkActive` or `booking.driverLink.active` changing between the loader data and a refetch, the link query (`portalDriverLinkQuery`) toggling between data and skeleton, a route loader/pending component re-rendering the page, or keys changing.
+
+Do:
+1. Reproduce (the command above; use Playwright trace or a temporary render counter/console marker) and name the exact cause with evidence (which value changed, when, why).
+2. Fix the cause in the app (a human typing fast on a slow connection would lose input the same way), not by adding waits to the spec. If the right fix is to keep form state above the flipping boundary or to stop the flip, say why.
+3. Add a regression check that fails before your fix (e.g. a component/integration test or a Playwright assertion that types immediately when the field appears and expects the value to survive until Send).
+4. Prove: `pnpm test:e2e --project core-loop --no-deps` green twice; full `pnpm test:e2e` green once; `pnpm verify` green.
+
+Rebase onto main before finishing (regenerate generated files on conflict). Commit with messages ending "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>". Final message (max 250 words): branch, cause with evidence, fix, red->green proof.
