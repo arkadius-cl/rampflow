@@ -444,12 +444,14 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
 
 ## Add a module
 
+The step-by-step checklist with commands is [Add a module or an entitlement](../how-to/add-a-module-or-entitlement.md).
+
 1. **Contract (coordinator, on main before the wave).**
    1. Write `packages/shared/src/modules/<id>/manifest.ts` with `defineModule`.
    2. Add it to `catalog` in `registry.ts` after every module in its `dependsOn`.
    3. Add its implemented keys to the packages in `packages.ts` where the pricing places them.
    4. Run `pnpm --filter @rampflow/shared test` and `pnpm docs:index`.
-   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and create the i18n part files `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
+   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
 2. **Implementation (unit).**
    1. Tables in `schema*.ts` with policies from `apps/api/src/db/rls.ts`; then `pnpm db:generate --name <unit-id>`.
    2. Routes with `requirePermission`, `requireEntitlement` where finer than the module, and zod validation.
