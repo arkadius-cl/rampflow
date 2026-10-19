@@ -757,3 +757,13 @@ The retention job (PL-05) applies these rules per tenant with the resolved `priv
 | `outbox_message` | the worker empties `payload` when it sends; delete sent or failed rows after 7 days | fixed |
 
 TN-06 erase calls the same pseudonymization function for the matched bookings, and sets `restricted_at` on matched acknowledgements that are still under retention.
+
+As built (U11), in `apps/api/src/modules/privacy/retention/rules.ts` and `privacy/jobs/retention.ts`:
+
+- A booking's end is its final-state time: `coalesce(departed_at, turned_away_at, cancelled_at, no_show_at)` while its status is `departed`, `cancelled`, `no_show` or `turned_away`. The phone and identity rules count from that end. An active booking keeps its avis until the visit rule removes it.
+- Pseudonymization sets `driver_name`, `driver_phone`, `plate`, `trailer_plate` and `plate_seen` to NULL. It stamps `pseudonymized_at`, and it stamps `phone_erased_at` when a phone was still there. The identity rule therefore also covers a phone whose own limit is longer.
+- The visit rule deletes bookings whose `starts_at` lies more than `visit_days` in the past, in any status. The children go by cascade, and `safety_acknowledgement.booking_id` becomes NULL.
+- An acknowledgement's retention ends at `coalesce(expires_at, completed_at) + safety_after_expiry_days`. Pseudonymization replaces `driver_name` with an empty string, because the column is `not null`.
+- Expired unused `auth_token` rows go 24 hours after `expires_at`, like used ones.
+- A carrier user is "without sign-in" when every membership is a carrier membership and `coalesce(last_seen_at, created_at)` is older than the limit. The notice is `privacy.inactive-notice` with `dedupe_key = inactive-notice:<user id>:<deadline>`, so a sign-in makes a new notice due. Deletion runs as the platform party. A user that a foreign key still references (for example `booking.created_by`) cannot be deleted. That user loses the memberships, `disabled_at` is set, and the email, name, locale and password are overwritten instead. A carrier org without members is deleted unless bookings or tenant links still reference it.
+- `pnpm retention:run` runs one tick and prints the counts. The `job_run` row holds the same counts.

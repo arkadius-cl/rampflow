@@ -331,6 +331,14 @@ Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule(
 | GET | `/api/t/:orgId/reports/visits` | `report.view` | | RP-02 | paginated visit list with all timestamps |
 | GET | `/api/t/:orgId/reports/visits.csv` | `report.view` | `report.export` | RP-02 | |
 
+As built (U11):
+
+- Request and response shapes live in `packages/shared/src/modules/report/api.ts` (`ReportFilter`, `VisitQuery`, `KPIS`, `KpiReport`, `VisitItem`). A period runs from `from` to `to`, both site-local days included, at most 366 days; a reversed or longer period answers 422 with path `["to"]`.
+- `GET /kpis` answers `{ site, from, to, standgeldMinutes, kpis }`. `kpis` has one entry per row of `KPIS` (`bookingsDue`, `noShowRate`, `lateCancellationRate`, `onTimeRate`, `earlyRate`, `lateRate`, `waitMinutes`, `dockDwellMinutes`, `turnaroundMinutes`, `dockUtilisation`, `portalAdoption`, `standgeldVisits`): rates in percent and means in minutes, rounded to one decimal half away from zero, `null` for an empty denominator.
+- A `siteId` the caller cannot see, or a `resourceId` of another site, answers 404.
+- `GET /visits` answers `{ site, items, nextCursor }`, ordered by `starts_at`, with every lifecycle timestamp and the visit's wait, dock dwell and turnaround in minutes. `limit` and `cursor` travel in the query string.
+- The CSV routes take the filter of `GET /kpis`. The language is the user's `locale`, else the tenant's `i18n.default_locale`. Decimals use `,` for de and pl and `.` for en. The KPI CSV has one row per KPI with the columns site, from, to, KPI, value and unit. The visit CSV holds at most 50,000 rows and no personal data.
+
 ## Privacy
 
 Unit U11. `privacy/requests/routes.tenant.ts`, mounted at `/privacy`.
@@ -340,6 +348,15 @@ Unit U11. `privacy/requests/routes.tenant.ts`, mounted at `/privacy`.
 | POST | `/api/t/:orgId/privacy/search` | `privacy.manage_requests` | TN-06 | `{ name?, phone?, plate? }`; matching bookings and acknowledgements |
 | POST | `/api/t/:orgId/privacy/export` | `privacy.manage_requests` | TN-06 | same body; JSON download |
 | POST | `/api/t/:orgId/privacy/erase` | `privacy.manage_requests` | TN-06 | same body plus `{ confirm: true }`; pseudonymizes bookings, restricts acknowledgements under retention |
+
+As built (U11):
+
+- Shapes live in `packages/shared/src/modules/privacy/api.ts` (`SubjectQuery`, `EraseRequest`, `SubjectMatches`, `EraseResult`). At least one identifier is required, else 422 with path `["name"]`. Blank fields count as absent.
+- Matching is exact, and any one identifier is enough. The name matches whole and case-insensitively against `avis.driver_name` and `safety_acknowledgement.driver_name`. The phone and the plate are normalized like the avis (E.164; uppercase without separators). The plate matches `plate`, `trailer_plate` and `plate_seen`. Acknowledgements linked to a matched booking match too. Pseudonymized rows no longer match. Restricted acknowledgements still match.
+- `search` answers `{ bookings, acknowledgements }`, at most 500 of each. Each acknowledgement carries `restrictedAt` and `retentionEnded`.
+- `export` answers the same body plus `exportedAt`, with `Content-Disposition: attachment`.
+- `erase` answers `{ pseudonymizedBookings, restrictedAcknowledgements, pseudonymizedAcknowledgements }`. Acknowledgements past `privacy.retention.safety_after_expiry_days` are pseudonymized, and the others are restricted.
+- `export` and `erase` write one `privacy_request_log` row with the counts. `search` writes none.
 
 ## Test routes
 

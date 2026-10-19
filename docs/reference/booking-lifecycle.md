@@ -120,6 +120,11 @@ Skipped states keep a NULL timestamp (YD-08). Idempotent retries of a command wh
 - A walk-in turned away without an avis keeps an avis row with only `plate_seen` (no counterparty, no load units).
 - `packages/shared/src/modules/booking/lifecycle.ts` holds the table (`COMMANDS`, `COMMAND_INPUTS`, `sourceStates`, `availableCommands`); `events.ts` holds the event union. A test (`lifecycle/single-writer.test.ts`) fails on any `update(booking)` outside `transition.ts`, standing in for the Biome rule of ADR-0005.
 
+### As built (U11)
+
+- `mark_no_show` emails `booking.no-show` to the booking contact, with the deadline in site time. The `no_show` job (`booking/jobs/no-show.ts`, every 60 seconds) runs it for every `confirmed` booking past its deadline, each in its own savepoint. A tenant without the `yard` module is skipped.
+- The `reminders` job (`notify/jobs/reminders.ts`, every 5 minutes) emails `booking.reminder` to the booking contact once `now >= starts_at - notify.reminder_hours_before` and before the start. A booking whose `created_at` lies after that instant gets no reminder. The dedupe key is `reminder:<booking id>:<starts_at>:<recipient hash>`, so a reschedule makes a new reminder due, and every carrier admin of a staff booking gets one. A sha256 prefix of the address stands for the recipient, so the key holds no personal data. The job needs `notify.reminders` and `notify.email`.
+
 ## Events
 
 `booking_event.data` is a zod discriminated union on `type`, defined next to the command table. Event payloads never contain personal data; the avis holds that.
@@ -208,3 +213,5 @@ U11's RP-01 test seeds exactly these 10 bookings and asserts these values. Site 
 | Dock utilisation | 13.8 % | 265 / (2 × 960) |
 | Portal adoption | 70.0 % | 7 carrier bookings of 10 |
 | Standgeld visits | 1 | V3 (135 minutes) |
+
+As built (U11): `report/kpi/kpis.ts` computes the table with one aggregate over the period's bookings. `kpis.test.ts` seeds this fixture and asserts every value. The API calls Standgeld visits `standgeldVisits`, and the English UI says "Detention visits".
