@@ -1,0 +1,10 @@
+ALTER TABLE "carrier_registration" ADD COLUMN "locale" text;--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD COLUMN "token_hash" "bytea";--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD COLUMN "expires_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD CONSTRAINT "carrier_registration_token_hash_unique" UNIQUE("token_hash");--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD CONSTRAINT "carrier_registration_token_check" CHECK ("carrier_registration"."status" <> 'pending_email' or ("carrier_registration"."token_hash" is not null and "carrier_registration"."expires_at" is not null));--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD CONSTRAINT "carrier_registration_locale_check" CHECK ("carrier_registration"."locale" in ('de', 'en', 'pl'));--> statement-breakpoint
+CREATE POLICY "token_select" ON "carrier_registration" AS PERMISSIVE FOR SELECT TO public USING (((select app.party()) = 'token') and ("carrier_registration"."token_hash" = (select app.token_hash())));--> statement-breakpoint
+CREATE POLICY "token_update" ON "carrier_registration" AS PERMISSIVE FOR UPDATE TO public USING (((select app.party()) = 'token') and ("carrier_registration"."token_hash" = (select app.token_hash()))) WITH CHECK (((select app.party()) = 'token') and ("carrier_registration"."token_hash" = (select app.token_hash())));--> statement-breakpoint
+ALTER POLICY "tenant_select" ON "org" TO public USING (((select app.party()) = 'tenant') and ("org"."id" = (select app.tenant_id()) or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = "org"."id")));--> statement-breakpoint
+ALTER POLICY "carrier_select" ON "org" TO public USING (((select app.party()) = 'carrier') and ("org"."id" = (select app.carrier_id()) or app.linked_tenant("org"."id") or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = "org"."id")));

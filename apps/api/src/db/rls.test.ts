@@ -37,6 +37,7 @@ interface Ctx {
 interface Relations {
   links: { tenant_id: string; carrier_id: string }[];
   memberships: { user_id: string; org_id: string; org_kind: string }[];
+  registrations: { tenant_id: string; carrier_id: string | null }[];
   versionStatus: Map<string, string>;
 }
 
@@ -86,8 +87,12 @@ const ORACLE: Record<string, Rule> = {
     is(c, 'platform', 'system') ||
     (is(c, 'user') && rel.memberships.some((m) => m.user_id === c.user && m.org_id === r.id)) ||
     (is(c, 'tenant', 'driver', 'public') && r.id === c.tenant) ||
+    (is(c, 'tenant') && rel.links.some((l) => l.tenant_id === c.tenant && l.carrier_id === r.id)) ||
     (is(c, 'carrier_at_tenant') && (r.id === c.tenant || r.id === c.carrier)) ||
-    (is(c, 'carrier') && (r.id === c.carrier || linked(c, rel, r.id))),
+    (is(c, 'carrier') &&
+      (r.id === c.carrier ||
+        linked(c, rel, r.id) ||
+        rel.registrations.some((g) => g.carrier_id === c.carrier && g.tenant_id === r.id))),
   app_user: (c, r, rel) =>
     is(c, 'platform') ||
     (is(c, 'user', 'token') && r.id === c.user) ||
@@ -136,7 +141,9 @@ const ORACLE: Record<string, Rule> = {
   carrier_invitation: (c, r) =>
     tenantPrivate(c, r, never) || (is(c, 'token') && r.token_hash === c.token),
   carrier_registration: (c, r) =>
-    tenantPrivate(c, r, never) || (is(c, 'carrier') && r.carrier_id === c.carrier),
+    tenantPrivate(c, r, never) ||
+    (is(c, 'carrier') && r.carrier_id === c.carrier) ||
+    (is(c, 'token') && r.token_hash === c.token),
   safety_instruction: tenantRef(['driver']),
   safety_instruction_site: tenantRef(['driver']),
   safety_version: (c, r) =>
@@ -154,7 +161,12 @@ const ORACLE: Record<string, Rule> = {
   tenant_logo: tenantRef(['carrier', 'carrier_at_tenant', 'driver', 'public']),
   privacy_request_log: tenantPrivate,
 };
-const never: Relations = { links: [], memberships: [], versionStatus: new Map() };
+const never: Relations = {
+  links: [],
+  memberships: [],
+  registrations: [],
+  versionStatus: new Map(),
+};
 
 /** Tables that hold no tenant data and no RLS (ADR-0002, "Tables without RLS"). */
 const WITHOUT_RLS = ['auth_token', 'job_run', 'public_link', 'rate_limit_event', 'session'];
@@ -216,10 +228,12 @@ beforeAll(async () => {
   ({ invitationA: invitationToken, removePlatformRows } = await seedModel(ownerDb(), w));
   const memberships = (await ownerRows('membership')) as Relations['memberships'];
   const links = (await ownerRows('tenant_carrier_link')) as Relations['links'];
+  const registrations = (await ownerRows('carrier_registration')) as Relations['registrations'];
   const versions = await ownerRows('safety_version');
   rel = {
     links,
     memberships,
+    registrations,
     versionStatus: new Map(versions.map((v) => [String(v.id), String(v.status)])),
   };
 });

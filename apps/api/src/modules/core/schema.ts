@@ -77,11 +77,21 @@ export const org = pgTable(
       'select',
       sql`exists (select 1 from membership m where m.org_id = ${t.id} and m.user_id = (select app.user_id()))`,
     ),
-    allow('tenant', 'select', tenantIs(t.id)),
+    // A tenant reads its own org and the carriers linked to it (TN-03).
+    allow(
+      'tenant',
+      'select',
+      sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id})`,
+    ),
     allow('carrier_at_tenant', 'select', sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`),
     allow('driver', 'select', tenantIs(t.id)),
     allow('public', 'select', tenantIs(t.id)),
-    allow('carrier', 'select', sql`${carrierIs(t.id)} or ${linkedTenant(t.id)}`),
+    // A carrier reads its own org, linked tenants, and tenants it registered at (CR-02).
+    allow(
+      'carrier',
+      'select',
+      sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
+    ),
     allow('system', 'select', always),
     // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02).
     allow('user', 'insert', sql`${t.kind} = 'carrier'`),
