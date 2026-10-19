@@ -66,4 +66,4 @@ Select **Activate** to lift it. Approving a registration of the same carrier, or
 
 ## Demo data
 
-`pnpm db:seed` links Trans-Pol and Baltic Freight UAB to Acme Logistics. When the Acme site "Hamburg" exists, it also creates and switches on the public link `/r/acmehambrg`.
+`pnpm db:seed` links Trans-Pol and Baltic Freight UAB to Acme Logistics. It also creates and switches on the public link `/r/acmehambrg` for the Acme site Hamburg DC.
