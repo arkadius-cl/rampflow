@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { hashToken, wrapJson } from '../src/db/ids.ts';
 import {
   carrierInvitation,
@@ -34,6 +35,8 @@ import type { World, WorldSide } from './world.ts';
 export interface ModelTokens {
   /** Raw token of side A's tenant staff invitation. */
   invitationA: string;
+  /** Deletes the platform-level rows `seedModel` inserted. */
+  removePlatformRows: () => Promise<void>;
 }
 
 async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<string> {
@@ -243,23 +246,36 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
   return token;
 }
 
-/** Fills every table for both sides of `w`, plus platform-level rows. */
+/**
+ * Fills every table for both sides of `w`, plus platform-level rows. Platform rows are shared by
+ * every later test in the worker database, so callers must run `removePlatformRows` afterwards.
+ */
 export async function seedModel(o: OwnerDb, w: World): Promise<ModelTokens> {
-  await o
+  const settings = await o
     .insert(settingValue)
     .values({
       key: 'privacy.notice_url',
       value: wrapJson('https://example.test/privacy'),
       updatedBy: w.platformAdmin.id,
     })
-    .onConflictDoNothing();
-  await o.insert(outboxMessage).values({
-    template: 'core.magic-link',
-    toEmail: `someone-${randomUUID()}@model.test`,
-    locale: 'en',
-    payload: { authTokenId: randomUUID() },
-  });
+    .onConflictDoNothing()
+    .returning({ id: settingValue.id });
+  const outbox = await o
+    .insert(outboxMessage)
+    .values({
+      template: 'core.magic-link',
+      toEmail: `someone-${randomUUID()}@model.test`,
+      locale: 'en',
+      payload: { authTokenId: randomUUID() },
+    })
+    .returning({ id: outboxMessage.id });
   const invitationA = await side(o, w, w.A, 'A');
   await side(o, w, w.B, 'B');
-  return { invitationA };
+  return {
+    invitationA,
+    removePlatformRows: async () => {
+      for (const { id } of settings) await o.delete(settingValue).where(eq(settingValue.id, id));
+      for (const { id } of outbox) await o.delete(outboxMessage).where(eq(outboxMessage.id, id));
+    },
+  };
 }

@@ -1,6 +1,6 @@
 import { getTableColumns, getTableName, sql } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb, unscoped } from '../../test/db.ts';
 import { seedModel } from '../../test/model.ts';
 import { type World, world } from '../../test/world.ts';
@@ -209,10 +209,11 @@ async function ownerRows(table: string): Promise<Row[]> {
 let w: World;
 let invitationToken: string;
 let rel: Relations;
+let removePlatformRows: () => Promise<void>;
 
 beforeAll(async () => {
   w = await world();
-  ({ invitationA: invitationToken } = await seedModel(ownerDb(), w));
+  ({ invitationA: invitationToken, removePlatformRows } = await seedModel(ownerDb(), w));
   const memberships = (await ownerRows('membership')) as Relations['memberships'];
   const links = (await ownerRows('tenant_carrier_link')) as Relations['links'];
   const versions = await ownerRows('safety_version');
@@ -222,6 +223,8 @@ beforeAll(async () => {
     versionStatus: new Map(versions.map((v) => [String(v.id), String(v.status)])),
   };
 });
+
+afterAll(() => removePlatformRows());
 
 describe('row-level security catalog', () => {
   it('enables RLS on every table except the documented auth and routing tables', async () => {
