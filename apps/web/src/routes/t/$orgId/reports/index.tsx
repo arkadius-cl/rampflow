@@ -1,7 +1,7 @@
 import { MAX_PERIOD_DAYS, ReportFilter, type VisitItem } from '@rampflow/shared/modules/report/api';
 import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
@@ -357,6 +357,7 @@ function Report({ orgId, filter }: { orgId: string; filter: ReportFilter }) {
 }
 
 function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }) {
+  const { orgId } = Route.useParams();
   const { t } = useTranslation(['report', 'booking']);
   const siteTime = useSiteTime();
   const format = useFormatKpi();
@@ -374,7 +375,15 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         <span className="mr-1 text-muted-foreground tabular-nums">{date}</span>
         <SiteTime {...siteTime(v.startsAt, timeZone)} />
       </TableCell>
-      <TableCell className="font-mono text-xs">{v.code}</TableCell>
+      <TableCell className="font-mono text-xs">
+        <Link
+          to="/t/$orgId/bookings/$bookingId"
+          params={{ orgId, bookingId: v.id }}
+          className="underline-offset-4 hover:underline"
+        >
+          {v.code}
+        </Link>
+      </TableCell>
       <TableCell>{v.carrierName}</TableCell>
       <TableCell>{v.resourceName}</TableCell>
       <TableCell>

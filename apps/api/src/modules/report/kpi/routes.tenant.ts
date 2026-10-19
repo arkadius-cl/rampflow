@@ -34,12 +34,10 @@ async function csvLocale(c: Context<AppEnv>): Promise<StaffLocale> {
   return (await c.var.access.setting('i18n.default_locale', null)).value;
 }
 
-function csv(c: Context<AppEnv>, body: string, name: string) {
-  return c.body(body, 200, {
-    'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': `attachment; filename="${name}"`,
-  });
-}
+const csvHeaders = (name: string) => ({
+  'Content-Type': 'text/csv; charset=utf-8',
+  'Content-Disposition': `attachment; filename="${name}"`,
+});
 
 /** RP-01 and RP-02. Mounted at `/api/t/:orgId/reports` with `withModule('report')`. */
 export const tenant = new Hono<AppEnv>()
@@ -51,7 +49,11 @@ export const tenant = new Hono<AppEnv>()
     const report = await kpiReport(reportContext(c), filter);
     const locale = await csvLocale(c);
     const { t } = await createServerI18n(locale);
-    return csv(c, kpiCsv(report, locale, t), `kpis-${filter.from}-${filter.to}.csv`);
+    return c.body(
+      kpiCsv(report, locale, t),
+      200,
+      csvHeaders(`kpis-${filter.from}-${filter.to}.csv`),
+    );
   })
   .get('/visits', view, zValidator('query', VisitQuery, onInvalid), async (c) => {
     return c.json(await visitPage(reportContext(c), c.req.valid('query')), 200);
@@ -61,9 +63,9 @@ export const tenant = new Hono<AppEnv>()
     const { site, items } = await allVisits(reportContext(c), filter);
     const locale = await csvLocale(c);
     const { t } = await createServerI18n(locale);
-    return csv(
-      c,
+    return c.body(
       visitsCsv(items, site.timeZone, locale, t),
-      `visits-${filter.from}-${filter.to}.csv`,
+      200,
+      csvHeaders(`visits-${filter.from}-${filter.to}.csv`),
     );
   });
