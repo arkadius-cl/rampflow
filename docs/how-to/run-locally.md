@@ -1,6 +1,6 @@
 ---
 title: Run rampflow locally
-description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps and the tests, bootstrap a platform admin, and run several checkouts in parallel.
+description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps and the tests, check that tests do not depend on the real date, bootstrap a platform admin, and run several checkouts in parallel.
 type: how-to
 audience: [developer, agent]
 tags: [setup, dev, testing, database, mail, worktrees]
@@ -131,6 +131,27 @@ If Chromium runs on your host, you can run Playwright directly:
 pnpm exec playwright install chromium
 pnpm test:e2e:host
 ```
+
+## Check that tests do not depend on today's date
+
+Tests pin their clocks to fixed dates, so a fixture or an assertion that reads the real date can pass today and fail next month. To find such a test, run the package and API suites as if the real date were shifted:
+
+```sh
+scripts/test-at-date.sh +40d             # 40 days ahead
+scripts/test-at-date.sh +400d src/kernel # extra arguments go to Vitest
+```
+
+The offset uses the libfaketime format: `+10d`, `+400d`, `-3d`, `+0d`. The script shifts the clocks of both Node and Postgres with libfaketime:
+
+- It starts a throwaway Postgres 18 container on a free port and removes it afterwards. The shared Postgres keeps its real clock.
+- It runs Vitest in a Node 24 container. The repository is mounted at its host path, so the run uses this checkout's database names.
+- Mail still goes to the shared Mailpit.
+
+The first run builds the images `localhost/rampflow-faketime-postgres:18` and `localhost/rampflow-faketime-node:24`. `+0d` gives the same result as `pnpm test`.
+
+The script does not cover the Playwright suite. Chromium under libfaketime runs scripts but never fires the page `load` event, and a browser at the real date next to shifted servers produces failures that cannot happen in reality.
+
+When a test needs "now", use a test clock instead of the system clock. The world fixture's sessions are valid at every test clock. `WORLD_NOW` in `apps/api/test/world.ts` is a fixed instant before the world bookings, while their driver links are valid.
 
 ## Run several checkouts in parallel
 
