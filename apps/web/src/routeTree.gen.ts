@@ -31,6 +31,8 @@ import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
+import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
+import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
 import { Route as TOrgIdSafetyAcknowledgementsRouteImport } from './routes/t/$orgId/safety/acknowledgements'
 import { Route as TOrgIdSitesIndexRouteImport } from './routes/t/$orgId/sites/index'
 import { Route as TOrgIdSitesSiteIdRouteRouteImport } from './routes/t/$orgId/sites/$siteId/route'
@@ -150,6 +152,16 @@ const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const TOrgIdDocksIndexRoute = TOrgIdDocksIndexRouteImport.update({
+  id: '/docks/',
+  path: '/docks/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdGateIndexRoute = TOrgIdGateIndexRouteImport.update({
+  id: '/gate/',
+  path: '/gate/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdSafetyAcknowledgementsRoute =
   TOrgIdSafetyAcknowledgementsRouteImport.update({
     id: '/safety/acknowledgements',
@@ -220,6 +232,8 @@ export interface FileRoutesByFullPath {
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
+  '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -247,6 +261,8 @@ export interface FileRoutesByTo {
   '/c/$orgId': typeof COrgIdIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
+  '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
   '/t/$orgId/sites': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -280,6 +296,8 @@ export interface FileRoutesById {
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
+  '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -314,6 +332,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/docks/'
+    | '/t/$orgId/gate/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -341,6 +361,8 @@ export interface FileRouteTypes {
     | '/c/$orgId'
     | '/t/$orgId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/docks'
+    | '/t/$orgId/gate'
     | '/t/$orgId/sites'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -373,6 +395,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/docks/'
+    | '/t/$orgId/gate/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -549,6 +573,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/docks/': {
+      id: '/t/$orgId/docks/'
+      path: '/docks'
+      fullPath: '/t/$orgId/docks/'
+      preLoaderRoute: typeof TOrgIdDocksIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/gate/': {
+      id: '/t/$orgId/gate/'
+      path: '/gate'
+      fullPath: '/t/$orgId/gate/'
+      preLoaderRoute: typeof TOrgIdGateIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/safety/acknowledgements': {
       id: '/t/$orgId/safety/acknowledgements'
       path: '/safety/acknowledgements'
@@ -684,6 +722,8 @@ interface TOrgIdRouteRouteChildren {
   TOrgIdIndexRoute: typeof TOrgIdIndexRoute
   TOrgIdSitesSiteIdRouteRoute: typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   TOrgIdSafetyAcknowledgementsRoute: typeof TOrgIdSafetyAcknowledgementsRoute
+  TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
+  TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
   TOrgIdSitesIndexRoute: typeof TOrgIdSitesIndexRoute
   TOrgIdSafetyBriefingsInstructionIdRoute: typeof TOrgIdSafetyBriefingsInstructionIdRoute
   TOrgIdSafetyBriefingsIndexRoute: typeof TOrgIdSafetyBriefingsIndexRoute
@@ -693,6 +733,8 @@ const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdIndexRoute: TOrgIdIndexRoute,
   TOrgIdSitesSiteIdRouteRoute: TOrgIdSitesSiteIdRouteRouteWithChildren,
   TOrgIdSafetyAcknowledgementsRoute: TOrgIdSafetyAcknowledgementsRoute,
+  TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
+  TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
   TOrgIdSitesIndexRoute: TOrgIdSitesIndexRoute,
   TOrgIdSafetyBriefingsInstructionIdRoute:
     TOrgIdSafetyBriefingsInstructionIdRoute,
