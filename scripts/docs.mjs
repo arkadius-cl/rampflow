@@ -150,14 +150,24 @@ if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
 }
+// Reference tables rendered from code. Node strips the TypeScript types on import.
+const { CATALOG_DOC, withCatalogTables } = await import('../packages/shared/src/catalog-doc.ts');
+const catalogPath = join(root, CATALOG_DOC);
+const catalogDoc = existsSync(catalogPath) ? readFileSync(catalogPath, 'utf8') : null;
+
 if (mode === 'index') {
   writeFileSync(indexPath, index);
-  console.log(`wrote docs/INDEX.md with ${entries.length} docs`);
+  if (catalogDoc !== null) writeFileSync(catalogPath, withCatalogTables(catalogDoc));
+  console.log(`wrote docs/INDEX.md with ${entries.length} docs and the catalog tables`);
 } else {
   const current = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : '';
   if (current !== index) {
     console.error('docs/INDEX.md is stale. Run `pnpm docs:index`.');
     process.exit(1);
   }
-  console.log(`docs ok: ${entries.length} docs, index current`);
+  if (catalogDoc !== null && catalogDoc !== withCatalogTables(catalogDoc)) {
+    console.error(`${CATALOG_DOC} has stale catalog tables. Run \`pnpm docs:index\`.`);
+    process.exit(1);
+  }
+  console.log(`docs ok: ${entries.length} docs, index and catalog tables current`);
 }
