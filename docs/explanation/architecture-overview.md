@@ -1,9 +1,9 @@
 ---
 title: Architecture overview
-description: How the parts of rampflow fit together. The three apps and two packages, the scoped transaction and RLS behind every request, module manifests as the source of entitlements, permissions, settings and navigation, the booking engine as the single writer of status, and the outbox and job runner. Links every ADR and reference.
+description: How the parts of rampflow fit together. The three apps and two packages, the scoped transaction and RLS behind every request, module manifests as the source of entitlements, permissions, settings and navigation, the booking engine as the single writer of status, and the outbox and job runner. Lists the known security follow-ups and links every ADR and reference.
 type: explanation
 audience: [developer, agent]
-tags: [architecture, tenancy, rls, modules, entitlements, booking, outbox, jobs, frontend, driver]
+tags: [architecture, tenancy, rls, modules, entitlements, booking, outbox, jobs, frontend, driver, security]
 status: stable
 updated: 2026-10-19
 related: [docs/reference/module-contract.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/reference/booking-lifecycle.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
@@ -94,6 +94,19 @@ A business transaction never talks to SMTP. It calls `enqueueEmail`, which inser
 The job runner in `apps/api/src/kernel/jobs.ts` finds every `apps/api/src/modules/*/jobs/*.ts` and runs each job on its interval. Each tick takes a `pg_try_advisory_xact_lock` on the job name, so two API instances never run the same tick. The `outbox` job delivers with retries every 5 seconds. `no_show` marks missed slots every minute, and `reminders` sends the carrier a reminder `notify.reminder_hours_before` the slot. `holiday_import` keeps public holidays current. The `retention` job deletes and pseudonymizes personal data. It runs from cron through `pnpm retention:run`, not in process.
 
 There is no queue library and no Redis. Postgres already holds the transaction that decides whether an email exists, and `for update skip locked` is enough for the volume of a warehouse booking system.
+
+## Known security follow-ups
+
+The security review of 2026-10-19 found these low-severity gaps. They are open on purpose: none is reachable without a misconfiguration or a large number of requests, and each needs a decision before it is fixed.
+
+- **Timing of link requests.** `POST /api/auth/magic-link` and `POST /api/auth/password-reset` do two inserts for a known address before the uniform 202, about 2 ms more than for an unknown one. The answer is the same, but the timing can tell whether an account exists. Fix: issue the token and the email in a detached task, or pad the answer to a fixed time.
+- **Test routes have no authentication.** `/api/test/*` seeds as the owner role, pins the clock and runs jobs. Startup refuses `ENABLE_TEST_ROUTES=1` in production and when `NODE_ENV` is unset, but a staging host with `NODE_ENV=development` exposes them. Fix: require a shared secret header, or accept test routes only from loopback.
+- **SMTP without authentication or required TLS.** `smtpMailer` sends to `SMTP_HOST:SMTP_PORT` with no credentials and only opportunistic STARTTLS. Fix: add `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_REQUIRE_TLS` to `kernel/env.ts`.
+- **The seed checks only `NODE_ENV`.** `pnpm db:seed` refuses unless `NODE_ENV` is `development` or `test`. It does not check whether the database already holds a platform admin that is not a demo account.
+- **Shared rate-limit keys behind a proxy.** With `TRUST_PROXY=0` behind a reverse proxy, every client has the proxy's address, so `driver_exchange`, `registration_ip` and `login_ip` act as global limits. Fix: warn at startup when `TRUST_PROXY=0` and `APP_ORIGIN` is not localhost.
+- **Carrier invitation preview.** The invitation page shows the company name the tenant typed. A carrier admin who accepts links the company they administer, and the tenant sees that company's real name in its carrier list only afterwards. Public-link registrations already show both names before approval.
+- **Token and session housekeeping.** Rows in `auth_token` and `session` are never purged. Expiry is checked on every use, so this is storage, not access. A new reset request does not void the older ones. A completed reset voids every unused reset and magic link of the user.
+- **Build-time advisory.** `pnpm audit` reports `braces` (GHSA-vfj7-8cjw-p6xm) through the `shadcn` CLI in `apps/web` devDependencies. Nothing ships it.
 
 ## Where to read next
 
