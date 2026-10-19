@@ -1,0 +1,44 @@
+{
+  "name": {
+    "bookingsDue": "Należne rezerwacje",
+    "noShowRate": "Wskaźnik niestawień",
+    "lateCancellationRate": "Późne anulowania",
+    "onTimeRate": "Punktualnie",
+    "earlyRate": "Za wcześnie",
+    "lateRate": "Spóźnione",
+    "waitMinutes": "Oczekiwanie",
+    "dockDwellMinutes": "Czas przy rampie",
+    "turnaroundMinutes": "Czas obsługi",
+    "dockUtilisation": "Wykorzystanie ramp",
+    "portalAdoption": "Korzystanie z portalu",
+    "standgeldVisits": "Wizyty z postojowym"
+  },
+  "unit": {
+    "count": "liczba",
+    "percent": "%",
+    "minutes": "min"
+  },
+  "csv": {
+    "site": "Lokalizacja",
+    "from": "Od",
+    "to": "Do",
+    "kpi": "Wskaźnik",
+    "value": "Wartość",
+    "unit": "Jednostka"
+  },
+  "hint": {
+    "bookingsDue": "Rozpoczęte rezerwacje bez wjazdów bez awizacji i terminowych anulowań",
+    "noShowRate": "Brak odprawy do terminu niestawienia się",
+    "lateCancellationRate": "Anulowane po terminie",
+    "onTimeRate": "Spośród przybyłych rezerwacji",
+    "earlyRate": "Spośród przybyłych rezerwacji",
+    "lateRate": "Spośród przybyłych rezerwacji",
+    "waitMinutes": "Od odprawy lub początku okna do rampy",
+    "dockDwellMinutes": "Od rampy do zakończenia",
+    "turnaroundMinutes": "Od odprawy do wyjazdu",
+    "dockUtilisation": "Czas aktywnych ramp w godzinach otwarcia",
+    "portalAdoption": "Rezerwacje dokonane przez przewoźników",
+    "standgeldVisits": "Czas obsługi powyżej {{minutes}} min"
+  },
+  "early_late": "Za wcześnie {{early}} · spóźnione {{late}}"
+}

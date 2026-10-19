@@ -1,0 +1,51 @@
+{
+  "title": "Raporty",
+  "description": "Punktualność, czasy oczekiwania i obsługi jednej lokalizacji według dni lokalnych.",
+  "filters": {
+    "site": "Lokalizacja",
+    "from": "Od",
+    "to": "Do",
+    "resource": "Zasób",
+    "all_resources": "Wszystkie zasoby",
+    "carrier": "Przewoźnik",
+    "all_carriers": "Wszyscy przewoźnicy",
+    "presets": {
+      "yesterday": "Wczoraj",
+      "last7": "Ostatnie 7 dni",
+      "last30": "Ostatnie 30 dni"
+    }
+  },
+  "export_kpis": "Wskaźniki jako CSV",
+  "export_visits": "Wizyty jako CSV",
+  "invalid_period": "Wybierz okres do {{days}} dni, który nie kończy się przed swoim początkiem.",
+  "kpis_label": "Wskaźniki dla {{site}}, od {{from}} do {{to}}",
+  "empty_value": "brak danych",
+  "visits": {
+    "title": "Wizyty",
+    "more": "Wczytaj więcej",
+    "empty": {
+      "title": "Brak wizyt",
+      "description": "W tym okresie z tymi filtrami nie zaczyna się żadna rezerwacja."
+    },
+    "columns": {
+      "code": "Kod",
+      "start": "Okno",
+      "carrier": "Przewoźnik",
+      "resource": "Zasób",
+      "status": "Status",
+      "punctuality": "Punktualność",
+      "checked_in": "Odprawa",
+      "at_dock": "Przy rampie",
+      "done": "Zakończono",
+      "departed": "Wyjazd",
+      "wait": "Oczekiwanie",
+      "dwell": "Przy rampie",
+      "turnaround": "Obsługa"
+    },
+    "minutes": "{{value}} min"
+  },
+  "no_sites": {
+    "title": "Brak lokalizacji",
+    "description": "Raporty pojawią się, gdy lokalizacja będzie mieć rezerwacje."
+  }
+}

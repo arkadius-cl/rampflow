@@ -1,0 +1,39 @@
+{
+  "csv": {
+    "code": "Buchungscode",
+    "status": "Status",
+    "carrier": "Carrier",
+    "resource": "Ressource",
+    "dock": "Tor",
+    "direction": "Richtung",
+    "createdParty": "Gebucht von",
+    "walkIn": "Walk-in",
+    "startsAt": "Beginn",
+    "endsAt": "Ende",
+    "punctuality": "Pünktlichkeit",
+    "punctualityMinutes": "Pünktlichkeit (min)",
+    "checkedInAt": "Eingecheckt",
+    "calledAt": "Gerufen",
+    "atDockAt": "Am Tor",
+    "loadingAt": "Ladebeginn",
+    "doneAt": "Fertig",
+    "departedAt": "Abgefahren",
+    "cancelledAt": "Storniert",
+    "cancelledLate": "Spät storniert",
+    "noShowAt": "Nicht erschienen",
+    "turnedAwayAt": "Abgewiesen",
+    "waitMinutes": "Wartezeit (min)",
+    "dockDwellMinutes": "Standzeit am Tor (min)",
+    "turnaroundMinutes": "Durchlaufzeit (min)",
+    "yes": "ja",
+    "no": "nein"
+  },
+  "direction": {
+    "inbound": "Anlieferung",
+    "outbound": "Abholung"
+  },
+  "party": {
+    "carrier": "Carrier-Portal",
+    "staff": "Personal"
+  }
+}

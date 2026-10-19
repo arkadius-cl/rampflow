@@ -1,0 +1,44 @@
+{
+  "name": {
+    "bookingsDue": "Bookings due",
+    "noShowRate": "No-show rate",
+    "lateCancellationRate": "Late cancellations",
+    "onTimeRate": "On time",
+    "earlyRate": "Early",
+    "lateRate": "Late",
+    "waitMinutes": "Wait",
+    "dockDwellMinutes": "Dock dwell",
+    "turnaroundMinutes": "Turnaround",
+    "dockUtilisation": "Dock utilisation",
+    "portalAdoption": "Portal adoption",
+    "standgeldVisits": "Detention visits"
+  },
+  "unit": {
+    "count": "count",
+    "percent": "%",
+    "minutes": "min"
+  },
+  "csv": {
+    "site": "Site",
+    "from": "From",
+    "to": "To",
+    "kpi": "KPI",
+    "value": "Value",
+    "unit": "Unit"
+  },
+  "hint": {
+    "bookingsDue": "Started bookings, without walk-ins and timely cancellations",
+    "noShowRate": "No check-in by the no-show deadline",
+    "lateCancellationRate": "Cancelled after the cutoff",
+    "onTimeRate": "Of the arrived bookings",
+    "earlyRate": "Of the arrived bookings",
+    "lateRate": "Of the arrived bookings",
+    "waitMinutes": "Check-in or slot start to dock",
+    "dockDwellMinutes": "At dock to done",
+    "turnaroundMinutes": "Check-in to departure",
+    "dockUtilisation": "Dock time of active docks during opening hours",
+    "portalAdoption": "Bookings made by carriers",
+    "standgeldVisits": "Turnaround above {{minutes}} min"
+  },
+  "early_late": "Early {{early}} · late {{late}}"
+}

@@ -1,0 +1,39 @@
+{
+  "csv": {
+    "code": "Booking code",
+    "status": "Status",
+    "carrier": "Carrier",
+    "resource": "Resource",
+    "dock": "Dock",
+    "direction": "Direction",
+    "createdParty": "Booked by",
+    "walkIn": "Walk-in",
+    "startsAt": "Start",
+    "endsAt": "End",
+    "punctuality": "Punctuality",
+    "punctualityMinutes": "Punctuality (min)",
+    "checkedInAt": "Checked in",
+    "calledAt": "Called",
+    "atDockAt": "At dock",
+    "loadingAt": "Loading",
+    "doneAt": "Done",
+    "departedAt": "Departed",
+    "cancelledAt": "Cancelled",
+    "cancelledLate": "Cancelled late",
+    "noShowAt": "No-show",
+    "turnedAwayAt": "Turned away",
+    "waitMinutes": "Wait (min)",
+    "dockDwellMinutes": "Dock dwell (min)",
+    "turnaroundMinutes": "Turnaround (min)",
+    "yes": "yes",
+    "no": "no"
+  },
+  "direction": {
+    "inbound": "Inbound",
+    "outbound": "Outbound"
+  },
+  "party": {
+    "carrier": "Carrier portal",
+    "staff": "Staff"
+  }
+}

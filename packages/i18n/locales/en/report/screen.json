@@ -1,0 +1,51 @@
+{
+  "title": "Reports",
+  "description": "Punctuality, waiting and dock times of one site, by site-local days.",
+  "filters": {
+    "site": "Site",
+    "from": "From",
+    "to": "To",
+    "resource": "Resource",
+    "all_resources": "All resources",
+    "carrier": "Carrier",
+    "all_carriers": "All carriers",
+    "presets": {
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days"
+    }
+  },
+  "export_kpis": "KPIs as CSV",
+  "export_visits": "Visits as CSV",
+  "invalid_period": "Choose a period of up to {{days}} days that ends on or after its start.",
+  "kpis_label": "KPIs for {{site}}, {{from}} to {{to}}",
+  "empty_value": "no data",
+  "visits": {
+    "title": "Visits",
+    "more": "Load more",
+    "empty": {
+      "title": "No visits",
+      "description": "No booking starts in this period with these filters."
+    },
+    "columns": {
+      "code": "Code",
+      "start": "Slot",
+      "carrier": "Carrier",
+      "resource": "Resource",
+      "status": "Status",
+      "punctuality": "Punctuality",
+      "checked_in": "Check-in",
+      "at_dock": "At dock",
+      "done": "Done",
+      "departed": "Departed",
+      "wait": "Wait",
+      "dwell": "Dwell",
+      "turnaround": "Turnaround"
+    },
+    "minutes": "{{value}} min"
+  },
+  "no_sites": {
+    "title": "No sites yet",
+    "description": "Reports start once a site has bookings."
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "title": "Auswertungen",
+  "description": "Pünktlichkeit, Warte- und Torzeiten eines Standorts nach Ortstagen.",
+  "filters": {
+    "site": "Standort",
+    "from": "Von",
+    "to": "Bis",
+    "resource": "Ressource",
+    "all_resources": "Alle Ressourcen",
+    "carrier": "Carrier",
+    "all_carriers": "Alle Carrier",
+    "presets": {
+      "yesterday": "Gestern",
+      "last7": "Letzte 7 Tage",
+      "last30": "Letzte 30 Tage"
+    }
+  },
+  "export_kpis": "Kennzahlen als CSV",
+  "export_visits": "Besuche als CSV",
+  "invalid_period": "Wählen Sie einen Zeitraum von höchstens {{days}} Tagen, der nicht vor seinem Beginn endet.",
+  "kpis_label": "Kennzahlen für {{site}}, {{from}} bis {{to}}",
+  "empty_value": "keine Daten",
+  "visits": {
+    "title": "Besuche",
+    "more": "Mehr laden",
+    "empty": {
+      "title": "Keine Besuche",
+      "description": "In diesem Zeitraum beginnt mit diesen Filtern keine Buchung."
+    },
+    "columns": {
+      "code": "Code",
+      "start": "Slot",
+      "carrier": "Carrier",
+      "resource": "Ressource",
+      "status": "Status",
+      "punctuality": "Pünktlichkeit",
+      "checked_in": "Check-in",
+      "at_dock": "Am Tor",
+      "done": "Fertig",
+      "departed": "Abfahrt",
+      "wait": "Warten",
+      "dwell": "Standzeit",
+      "turnaround": "Durchlauf"
+    },
+    "minutes": "{{value}} min"
+  },
+  "no_sites": {
+    "title": "Noch keine Standorte",
+    "description": "Auswertungen beginnen, sobald ein Standort Buchungen hat."
+  }
+}

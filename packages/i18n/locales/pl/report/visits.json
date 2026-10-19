@@ -1,0 +1,39 @@
+{
+  "csv": {
+    "code": "Kod rezerwacji",
+    "status": "Status",
+    "carrier": "Przewoźnik",
+    "resource": "Zasób",
+    "dock": "Rampa",
+    "direction": "Kierunek",
+    "createdParty": "Zarezerwował",
+    "walkIn": "Bez awizacji",
+    "startsAt": "Początek",
+    "endsAt": "Koniec",
+    "punctuality": "Punktualność",
+    "punctualityMinutes": "Punktualność (min)",
+    "checkedInAt": "Odprawa",
+    "calledAt": "Wezwany",
+    "atDockAt": "Przy rampie",
+    "loadingAt": "Załadunek",
+    "doneAt": "Zakończono",
+    "departedAt": "Wyjazd",
+    "cancelledAt": "Anulowano",
+    "cancelledLate": "Anulowano późno",
+    "noShowAt": "Niestawienie się",
+    "turnedAwayAt": "Odesłano",
+    "waitMinutes": "Oczekiwanie (min)",
+    "dockDwellMinutes": "Czas przy rampie (min)",
+    "turnaroundMinutes": "Czas obsługi (min)",
+    "yes": "tak",
+    "no": "nie"
+  },
+  "direction": {
+    "inbound": "Dostawa",
+    "outbound": "Odbiór"
+  },
+  "party": {
+    "carrier": "Portal przewoźnika",
+    "staff": "Personel"
+  }
+}

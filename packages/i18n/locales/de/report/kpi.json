@@ -1,0 +1,44 @@
+{
+  "name": {
+    "bookingsDue": "Fällige Buchungen",
+    "noShowRate": "No-Show-Quote",
+    "lateCancellationRate": "Späte Stornierungen",
+    "onTimeRate": "Pünktlich",
+    "earlyRate": "Zu früh",
+    "lateRate": "Verspätet",
+    "waitMinutes": "Wartezeit",
+    "dockDwellMinutes": "Standzeit am Tor",
+    "turnaroundMinutes": "Durchlaufzeit",
+    "dockUtilisation": "Torauslastung",
+    "portalAdoption": "Portalnutzung",
+    "standgeldVisits": "Standgeld-Besuche"
+  },
+  "unit": {
+    "count": "Anzahl",
+    "percent": "%",
+    "minutes": "min"
+  },
+  "csv": {
+    "site": "Standort",
+    "from": "Von",
+    "to": "Bis",
+    "kpi": "Kennzahl",
+    "value": "Wert",
+    "unit": "Einheit"
+  },
+  "hint": {
+    "bookingsDue": "Begonnene Buchungen ohne Walk-ins und rechtzeitige Stornierungen",
+    "noShowRate": "Kein Check-in bis zur No-Show-Frist",
+    "lateCancellationRate": "Nach der Stornofrist storniert",
+    "onTimeRate": "Von den angekommenen Buchungen",
+    "earlyRate": "Von den angekommenen Buchungen",
+    "lateRate": "Von den angekommenen Buchungen",
+    "waitMinutes": "Check-in oder Slotbeginn bis Tor",
+    "dockDwellMinutes": "Am Tor bis fertig",
+    "turnaroundMinutes": "Check-in bis Abfahrt",
+    "dockUtilisation": "Torzeit aktiver Tore in den Öffnungszeiten",
+    "portalAdoption": "Von Carriern gebuchte Buchungen",
+    "standgeldVisits": "Durchlaufzeit über {{minutes}} min"
+  },
+  "early_late": "Zu früh {{early}} · verspätet {{late}}"
+}
