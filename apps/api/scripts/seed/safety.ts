@@ -1,30 +1,50 @@
-import type { Entitlements } from '@rampflow/shared';
-import type { TenantId, UserId } from '../../src/db/ids.ts';
-import type { Tx } from '../../src/db/scope.ts';
+import type { TenantId, VersionId } from '../../src/db/ids.ts';
+import { loadEntitlements } from '../../src/kernel/access.ts';
 import {
   createInstruction,
+  getVersion,
   listInstructions,
   publishVersion,
+  putContent,
 } from '../../src/modules/safety/authoring/instructions.ts';
+import { findOrg, type SeedContext } from './context.ts';
+import { ACME } from './core.ts';
+
+export const DEMO_BRIEFING = 'Site safety rules';
+
+export async function seed(ctx: SeedContext): Promise<void> {
+  const tenantId = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
+  if (!tenantId) throw new Error(`${ACME} is missing; the core seed runs first`);
+  if (await seedBriefing(ctx.db, tenantId)) ctx.log(`published ${DEMO_BRIEFING} for ${ACME}`);
+}
 
 /**
- * Demo data of the safety module: one all-sites briefing from the platform template, published.
- * Runs in the tenant's scope; a tenant that already has a briefing is left as it is.
+ * The demo briefing: one all-sites instruction from the platform template, Polish marked as
+ * reviewed, published. A tenant that already has a briefing is left as it is.
  */
-export async function seedSafety(
-  tx: Tx,
-  ctx: { tenantId: TenantId; entitlements: Entitlements; userId: UserId | null; now: Date },
-): Promise<void> {
-  if (!ctx.entitlements.modules.safety) return;
-  if ((await listInstructions(tx, ctx.tenantId)).length > 0) return;
-  const instruction = await createInstruction(tx, {
-    ...ctx,
-    body: { name: 'Site safety rules', allSites: true, siteIds: [] },
+export async function seedBriefing(db: SeedContext['db'], tenantId: TenantId): Promise<boolean> {
+  const now = new Date();
+  const entitlements = await loadEntitlements(db, tenantId, now);
+  if (!entitlements.modules.safety) return false;
+  if ((await listInstructions(db, tenantId)).length > 0) return false;
+  const actor = { tenantId, entitlements };
+  const instruction = await createInstruction(db, {
+    ...actor,
+    body: { name: DEMO_BRIEFING, allSites: true, siteIds: [] },
   });
-  if (!instruction.draft) throw new Error('new instruction without a draft');
-  await publishVersion(tx, {
-    ...ctx,
-    versionId: instruction.draft.id as never,
-    materialChange: false,
-  });
+  const versionId = instruction.draft?.id as VersionId | undefined;
+  if (!versionId) throw new Error('new instruction without a draft');
+  const version = await getVersion(db, tenantId, versionId);
+  const pl = version.content.find((c) => c.locale === 'pl');
+  if (pl) {
+    const { locale: _locale, contentHash: _hash, ...body } = pl;
+    await putContent(db, {
+      ...actor,
+      versionId,
+      locale: 'pl',
+      body: { ...body, translation: 'reviewed' },
+    });
+  }
+  await publishVersion(db, { ...actor, versionId, materialChange: false, userId: null, now });
+  return true;
 }

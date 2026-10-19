@@ -48,3 +48,18 @@ export const RegisterPage = z.object({
   nextCursor: z.string().nullable(),
 });
 export type RegisterPage = z.infer<typeof RegisterPage>;
+
+/** The choices of the register's instruction, version and carrier filters (SF-03). */
+export const RegisterFilterOptions = z.object({
+  /** Every instruction with its non-draft versions, newest first; archived ones too. */
+  instructions: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      versions: z.array(z.object({ id: z.uuid(), version: z.int() })),
+    }),
+  ),
+  /** Carriers of the bookings that have acknowledgements in the register. */
+  carriers: z.array(z.object({ id: z.uuid(), name: z.string() })),
+});
+export type RegisterFilterOptions = z.infer<typeof RegisterFilterOptions>;

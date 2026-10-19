@@ -17,6 +17,12 @@ const base = {
 } as const satisfies Partial<RouteCase>;
 
 export const cases = defineRouteCases([
+  {
+    ...base,
+    method: 'GET',
+    path: '/api/t/:orgId/safety/acknowledgements/filters',
+    body: undefined,
+  },
   { ...base, method: 'POST', path: '/api/t/:orgId/safety/acknowledgements/search' },
   { ...base, method: 'POST', path: '/api/t/:orgId/safety/acknowledgements.csv' },
 ]);

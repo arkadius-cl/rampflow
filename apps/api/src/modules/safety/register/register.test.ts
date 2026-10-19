@@ -1,6 +1,9 @@
 import type { StaffLocale } from '@rampflow/shared';
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
-import type { RegisterPage } from '@rampflow/shared/modules/safety/api.register';
+import type {
+  RegisterFilterOptions,
+  RegisterPage,
+} from '@rampflow/shared/modules/safety/api.register';
 import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -111,6 +114,24 @@ describe('SF-03 acknowledgement register', () => {
     expect(await ids({ status: 'visit_only' })).toEqual(sorted(acks.perVisit));
     expect(await ids({ status: 'valid' })).toEqual(
       sorted(acks.kowalski, acks.rival, acks.otherSite),
+    );
+  });
+
+  it('offers the non-draft versions and the carriers of the register as filter choices', async () => {
+    const admin = as(app, side.users.tenant_admin);
+    const draft = await admin.post(`${base()}/instructions/${rules.id}/versions`);
+    expect(draft.status).toBe(201);
+    const res = await as(app, side.users.dispatcher).get(`${base()}/acknowledgements/filters`);
+    expect(res.status).toBe(200);
+    const options = (await res.json()) as RegisterFilterOptions;
+    expect(options.instructions).toEqual([
+      { id: rules.id, name: 'Site rules', versions: [{ id: acks.kowalski.versionId, version: 1 }] },
+    ]);
+    expect(options.carriers.map((c) => c.id).sort()).toEqual(
+      [side.carrierId, side.rivalCarrierId].sort(),
+    );
+    expect(options.carriers.find((c) => c.id === side.carrierId)?.name).toBe(
+      `Carrier ${side.carrierId.slice(0, 4)}`,
     );
   });
 

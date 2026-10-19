@@ -8,7 +8,7 @@ import type { AppEnv } from '../../../kernel/env.ts';
 import { userDisplay } from '../../../kernel/users.ts';
 import { onInvalid } from '../../../kernel/validate.ts';
 import { tenantActor } from '../authoring/actor.ts';
-import { exportRegister, searchRegister } from './acknowledgements.ts';
+import { exportRegister, registerFilterOptions, searchRegister } from './acknowledgements.ts';
 import { registerCsv } from './csv.ts';
 
 const view = requirePermission('safety.view_register');
@@ -21,6 +21,9 @@ const isStaffLocale = (l: string | null | undefined): l is StaffLocale =>
  * bodies because the driver name is a personal search term (API conventions, "Requests").
  */
 export const tenant = new Hono<AppEnv>()
+  .get('/acknowledgements/filters', view, async (c) => {
+    return c.json(await registerFilterOptions(c.var.db, tenantActor(c).tenantId), 200);
+  })
   .post(
     '/acknowledgements/search',
     view,

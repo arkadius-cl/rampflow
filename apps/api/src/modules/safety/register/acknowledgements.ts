@@ -1,11 +1,25 @@
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   RegisterFilter,
+  RegisterFilterOptions,
   RegisterItem,
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
 import { acknowledgementStatus, expiresAtFor } from '@rampflow/shared/modules/safety/validity';
-import { and, desc, eq, gt, ilike, isNull, lte, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -222,4 +236,52 @@ export const CSV_MAX_ROWS = 50_000;
 
 export function exportRegister(tx: Tx, q: Omit<Query, 'limit' | 'cursor'>) {
   return queryRegister(tx, { ...q, limit: CSV_MAX_ROWS });
+}
+
+/** SF-03: what the register's filters offer. */
+export async function registerFilterOptions(
+  tx: Tx,
+  tenantId: TenantId,
+): Promise<RegisterFilterOptions> {
+  const versions = await tx
+    .select({
+      instructionId: safetyInstruction.id,
+      name: safetyInstruction.name,
+      versionId: safetyVersion.id,
+      version: safetyVersion.version,
+    })
+    .from(safetyInstruction)
+    .leftJoin(
+      safetyVersion,
+      and(
+        eq(safetyVersion.instructionId, safetyInstruction.id),
+        eq(safetyVersion.tenantId, tenantId),
+        ne(safetyVersion.status, 'draft'),
+      ),
+    )
+    .where(eq(safetyInstruction.tenantId, tenantId))
+    .orderBy(asc(safetyInstruction.name), asc(safetyInstruction.id), desc(safetyVersion.version));
+  const instructions = new Map<string, RegisterFilterOptions['instructions'][number]>();
+  for (const row of versions) {
+    const entry = instructions.get(row.instructionId) ?? {
+      id: row.instructionId,
+      name: row.name,
+      versions: [],
+    };
+    if (row.versionId !== null && row.version !== null) {
+      entry.versions.push({ id: row.versionId, version: row.version });
+    }
+    instructions.set(row.instructionId, entry);
+  }
+  const carriers = await tx
+    .select({ id: a.carrierId, name: sql<string>`max(${booking.carrierName})` })
+    .from(a)
+    .innerJoin(booking, and(eq(booking.id, a.bookingId), eq(booking.tenantId, tenantId)))
+    .where(and(eq(a.tenantId, tenantId), isNull(a.restrictedAt), isNotNull(a.carrierId)))
+    .groupBy(a.carrierId)
+    .orderBy(sql`max(${booking.carrierName})`);
+  return {
+    instructions: [...instructions.values()],
+    carriers: carriers.flatMap((c) => (c.id ? [{ id: c.id, name: c.name }] : [])),
+  };
 }

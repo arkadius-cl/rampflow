@@ -10,7 +10,7 @@ import { requireUrl } from './db-setup.ts';
 import type { SeedContext } from './seed/context.ts';
 
 /** Add one line per module, after the modules whose data it uses. */
-const SEEDS = ['core', 'booking'] as const;
+const SEEDS = ['core', 'booking', 'safety'] as const;
 
 const pool = new pg.Pool({ connectionString: requireUrl('MIGRATION_DATABASE_URL').toString() });
 try {
