@@ -102,9 +102,6 @@ export const CarrierInvitationAcceptBody = z.object({
 });
 export type CarrierInvitationAcceptBody = z.infer<typeof CarrierInvitationAcceptBody>;
 
-export const RegistrationVerifyBody = z.object({ token: EmailToken, locale: Locale.optional() });
-export type RegistrationVerifyBody = z.infer<typeof RegistrationVerifyBody>;
-
 export interface CarrierLinkView {
   carrierId: string;
   name: string;

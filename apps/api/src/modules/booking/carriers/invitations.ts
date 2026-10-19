@@ -78,6 +78,8 @@ export async function inviteCarrier(
       tokenHash: tokenHashFor('carrier_invitation', id),
       invitedBy,
       expiresAt: new Date(now.getTime() + CARRIER_INVITATION_MS),
+      // On the request clock, like deactivated_at, which acceptance compares it with.
+      createdAt: now,
     })
     .returning();
   if (!row) throw new Error('carrier invitation insert returned no row');

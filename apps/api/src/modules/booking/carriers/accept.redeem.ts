@@ -55,7 +55,8 @@ const missing = (path: 'name' | 'password') => ({
  * carrier admin of a new company named by the invitation (or `companyName`). A user signed in
  * with the invited email links their existing carrier org instead; an email with an account
  * and no such session answers 401 `sign_in_required`. The link is active at once, also when the
- * tenant had deactivated it: inviting is the tenant's decision. Single use, 7 days.
+ * tenant had deactivated it before sending this invitation; a later deactivation stays.
+ * Single use, 7 days.
  */
 export async function acceptCarrierInvitation(
   tx: Tx,
@@ -88,14 +89,14 @@ export async function acceptCarrierInvitation(
     .update(carrierInvitation)
     .set({ acceptedAt: now, acceptedCarrierId: carrierId })
     .where(pendingWhere(input.token, now))
-    .returning({ tenantId: carrierInvitation.tenantId });
+    .returning({ tenantId: carrierInvitation.tenantId, sentAt: carrierInvitation.createdAt });
   if (!claimed) throw invalid();
 
   await linkAsTenant(tx, 'carrier_invitation', {
     tenantId: claimed.tenantId,
     carrierId,
     source: 'invitation',
-    reactivate: true,
+    reactivateDeactivatedBefore: claimed.sentAt,
   });
   return { userId, carrierId };
 }

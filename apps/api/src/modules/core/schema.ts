@@ -173,6 +173,8 @@ export const RATE_LIMIT_BUCKETS = [
   'magic_link_request',
   'reset_request',
   'driver_exchange',
+  'registration_request',
+  'registration_ip',
 ] as const;
 export type RateLimitBucket = (typeof RATE_LIMIT_BUCKETS)[number];
 

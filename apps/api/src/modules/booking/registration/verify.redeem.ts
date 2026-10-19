@@ -70,7 +70,7 @@ export async function verifyRegistration(
       tenantId: reg.tenantId,
       carrierId,
       source: 'public_link',
-      reactivate: false,
+      reactivateDeactivatedBefore: null,
     });
   }
   return { userId, carrierId, status };

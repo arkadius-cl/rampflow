@@ -7,7 +7,13 @@ import { createApp } from '../../../app.ts';
 import { type CarrierId, type SiteId, type TenantId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { deriveToken } from '../../../kernel/tokens.ts';
-import { appUser, entitlementOverride, org, tenantCarrierLink } from '../../core/schema.ts';
+import {
+  appUser,
+  entitlementOverride,
+  membership,
+  org,
+  tenantCarrierLink,
+} from '../../core/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { openLinkFor, setSiteSetting, unique } from '../carriers/fixtures.ts';
 import { carrierRegistration } from '../schema.carriers.ts';
@@ -99,6 +105,7 @@ describe('TN-04 the public link', () => {
       siteId: w.B.sites[0].id,
       by: w.B.users.tenant_admin.id,
     });
+    expect((await anon.get(`/api/public/links/${slug}`)).status).toBe(200);
     await ownerDb()
       .insert(entitlementOverride)
       .values({
@@ -234,8 +241,17 @@ describe('CR-02 register through a public link', () => {
     const res = await anon.post(`/api/public/links/${slug}/registrations`, {
       body: form(known.email),
     });
+    const fresh = await anon.post(`/api/public/links/${slug}/registrations`, {
+      body: form(unique('unknown')),
+    });
+    const answer = async (r: Response) => ({
+      status: r.status,
+      body: await r.text(),
+      type: r.headers.get('content-type'),
+      cookie: r.headers.get('set-cookie'),
+    });
+    expect(await answer(res)).toEqual(await answer(fresh));
     expect(res.status).toBe(202);
-    expect(await res.text()).toBe('');
     const [mail] = await mailsTo(known.email);
     expect(mail?.payload).toMatchObject({ knownAccount: true });
 
@@ -292,6 +308,49 @@ describe('CR-02 register through a public link', () => {
   });
 });
 
+describe('CR-02 registration limits', () => {
+  it('a sixth registration of one email within an hour answers 202 and writes nothing', async () => {
+    const slug = await open('approval_required');
+    const email = unique('flood');
+    for (let i = 0; i < 6; i++) {
+      const res = await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
+      expect(res.status).toBe(202);
+    }
+    const rows = await ownerDb()
+      .select({ id: carrierRegistration.id })
+      .from(carrierRegistration)
+      .where(eq(carrierRegistration.email, email));
+    expect(rows).toHaveLength(5);
+    expect(await mailsTo(email)).toHaveLength(5);
+  });
+});
+
+describe('CR-02 concurrent verification', () => {
+  it('two verifications of one link: exactly one succeeds and one carrier org exists', async () => {
+    const slug = await open('approval_required');
+    const email = unique('race');
+    await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
+    const { token } = await registered(email);
+    const both = await Promise.all([
+      anon.post('/api/public/registrations/verify', { body: { token } }),
+      anon.post('/api/public/registrations/verify', { body: { token } }),
+    ]);
+    expect(both.map((r) => r.status).sort()).toEqual([200, 401]);
+    const { row } = await registered(email);
+    const companies = await ownerDb()
+      .select({ id: org.id })
+      .from(org)
+      .where(eq(org.name, 'Baltic Freight UAB'));
+    expect(companies.map((c) => c.id)).toContain(row.carrierId);
+    const [user] = await ownerDb().select().from(appUser).where(eq(appUser.email, email));
+    const memberships = await ownerDb()
+      .select({ orgId: membership.orgId })
+      .from(membership)
+      .where(eq(membership.userId, user?.id as never));
+    expect(memberships).toEqual([{ orgId: row.carrierId }]);
+  });
+});
+
 describe('TN-04 decide a registration', () => {
   async function pendingRegistration() {
     const slug = await open('approval_required');
@@ -331,6 +390,17 @@ describe('TN-04 decide a registration', () => {
     });
   });
 
+  it('approve racing reject: exactly one decision wins', async () => {
+    const reg = await pendingRegistration();
+    const [approved, rejected] = await Promise.all([
+      as(app, w.A.users.dispatcher).post(url(reg.id, 'approve')),
+      as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), { body: { reason: 'Late.' } }),
+    ]);
+    expect([approved.status, rejected.status].sort()).toEqual([200, 409]);
+    const linked = await linkOf(w.A.tenantId, reg.carrierId);
+    expect(linked !== null).toBe(approved.status === 200);
+  });
+
   it('rejecting emails the reason and links nothing', async () => {
     const reg = await pendingRegistration();
     const res = await as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), {
@@ -342,5 +412,43 @@ describe('TN-04 decide a registration', () => {
       (m) => m.template === 'booking.registration-rejected',
     );
     expect(rejected?.payload).toMatchObject({ reason: 'We only work with ADR carriers.' });
+  });
+});
+
+describe('registration emails are account emails', () => {
+  it('verify, approved and rejected emails go out while notify.email is off', async () => {
+    const quiet = await world();
+    const admin = quiet.A.users.tenant_admin;
+    await ownerDb()
+      .insert(entitlementOverride)
+      .values({
+        tenantId: quiet.A.tenantId,
+        key: 'notify.email',
+        value: wrapJson(false),
+        updatedBy: quiet.platformAdmin.id,
+      });
+    const slug = await openLinkFor(ownerDb(), {
+      tenantId: quiet.A.tenantId,
+      siteId: quiet.A.sites[0].id,
+      by: admin.id,
+    });
+    const decided: string[] = [];
+    for (const action of ['approve', 'reject'] as const) {
+      const email = unique(`quiet-${action}`);
+      expect((await registerAndVerify(slug, email)).status).toBe(200);
+      const { row } = await registered(email);
+      const res = await as(app, quiet.A.users.dispatcher).post(
+        `/api/t/${quiet.A.tenantId}/carriers/registrations/${row.id}/${action}`,
+        action === 'reject' ? { body: { reason: 'Full.' } } : {},
+      );
+      expect(res.status).toBe(200);
+      decided.push(...(await mailsTo(email)).map((m) => m.template));
+    }
+    expect(decided.sort()).toEqual([
+      'booking.registration-approved',
+      'booking.registration-rejected',
+      'booking.registration-verify',
+      'booking.registration-verify',
+    ]);
   });
 });

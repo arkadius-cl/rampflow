@@ -1,17 +1,16 @@
 import { zValidator } from '@hono/zod-validator';
-import {
-  RegistrationBody,
-  RegistrationVerifyBody,
-} from '@rampflow/shared/modules/booking/api.carriers';
+import { RegistrationBody } from '@rampflow/shared/modules/booking/api.carriers';
+import { TokenBody } from '@rampflow/shared/modules/core/api.auth';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { withScope } from '../../../db/scope.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
+import { clientIp } from '../../../kernel/rate-limit.ts';
 import { sessionUser, tokenScope } from '../../../kernel/scopes.ts';
 import { onInvalid } from '../../../kernel/validate.ts';
 import { startSession } from '../../core/auth/sessions.ts';
 import { openPublicLink, publicScope, resolveSlug } from './public-links.ts';
-import { submitRegistration } from './registrations.ts';
+import { registrationAllowed, submitRegistration } from './registrations.ts';
 import { verifyRegistration } from './verify.redeem.ts';
 
 // Mounted at /api/public (CR-02, TN-04). `/links/:slug` runs under the public scope of the
@@ -33,32 +32,28 @@ export const publicApi = new Hono<AppEnv>()
     zValidator('json', RegistrationBody, onInvalid),
     async (c) => {
       const link = await resolveSlug(c.req.valid('param').slug);
+      const body = c.req.valid('json');
       const now = c.var.clock.now();
-      await withScope(publicScope(link), async (tx) => {
-        const { info, access } = await openPublicLink(tx, link, c.var.clock);
-        await submitRegistration(tx, {
-          link,
-          info,
-          body: c.req.valid('json'),
-          entitlements: access.entitlements,
-          now,
-        });
+      const { info, entitlements } = await withScope(publicScope(link), async (tx) => {
+        const opened = await openPublicLink(tx, link, c.var.clock);
+        return { info: opened.info, entitlements: opened.access.entitlements };
       });
+      if (await registrationAllowed(body.email, clientIp(c), now)) {
+        await withScope(publicScope(link), (tx) =>
+          submitRegistration(tx, { link, info, body, entitlements, now }),
+        );
+      }
       return c.body(null, 202);
     },
   )
-  .post(
-    '/registrations/verify',
-    zValidator('json', RegistrationVerifyBody, onInvalid),
-    async (c) => {
-      const { token } = c.req.valid('json');
-      const signedIn = await sessionUser(c);
-      const now = c.var.clock.now();
-      const verified = await withScope(tokenScope(token, signedIn), async (tx) => {
-        const result = await verifyRegistration(tx, { token, signedIn }, c.var.clock);
-        if (result.userId !== signedIn) await startSession(c, tx, result.userId, now);
-        return result;
-      });
-      return c.json({ carrierId: verified.carrierId, status: verified.status }, 200);
-    },
-  );
+  .post('/registrations/verify', zValidator('json', TokenBody, onInvalid), async (c) => {
+    const { token } = c.req.valid('json');
+    const signedIn = await sessionUser(c);
+    const now = c.var.clock.now();
+    const verified = await withScope(tokenScope(token, signedIn), async (tx) => {
+      const result = await verifyRegistration(tx, { token, signedIn }, c.var.clock);
+      if (result.userId !== signedIn) await startSession(c, tx, result.userId, now);
+      return result;
+    });
+    return c.json({ carrierId: verified.carrierId, status: verified.status }, 200);
+  });

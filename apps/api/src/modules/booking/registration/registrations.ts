@@ -24,10 +24,13 @@ import type { PublicLinkTarget } from './public-links.ts';
 type RegistrationRow = typeof carrierRegistration.$inferSelect;
 type RegistrationId = RegistrationRow['id'];
 
-/** Same budget as sign-in magic links: 5 emails per hour per address (ADR-0003). */
-async function emailAllowed(email: string, now: Date): Promise<boolean> {
+async function withinLimit(
+  bucket: 'registration_request' | 'registration_ip',
+  key: string,
+  now: Date,
+): Promise<boolean> {
   try {
-    await consumeRateLimit('magic_link_request', email.toLowerCase(), now);
+    await consumeRateLimit(bucket, key, now);
     return true;
   } catch (e) {
     if (e instanceof ApiError && e.code === 'rate_limited') return false;
@@ -36,10 +39,22 @@ async function emailAllowed(email: string, now: Date): Promise<boolean> {
 }
 
 /**
+ * 5 registrations per hour per email and 100 per client address. Over a limit the route still
+ * answers 202 and writes nothing. Commits on its own connection, so call it outside any
+ * transaction: holding one connection while waiting for another can exhaust the pool.
+ */
+export async function registrationAllowed(email: string, ip: string, now: Date) {
+  return (
+    (await withinLimit('registration_ip', ip, now)) &&
+    (await withinLimit('registration_request', email.toLowerCase(), now))
+  );
+}
+
+/**
  * Records the registration and emails its link, under the public scope of the slug. A known
  * email gets a sign-in prompt instead of the verification text; both carry the same single-use
  * link, which attaches the request to the existing org after sign-in. The caller always answers
- * 202, so the response never reveals an account. Over the email limit nothing is written.
+ * 202, so the response never reveals an account.
  */
 export async function submitRegistration(
   tx: Tx,
@@ -52,7 +67,6 @@ export async function submitRegistration(
   },
 ): Promise<void> {
   const { link, body, now } = o;
-  if (!(await emailAllowed(body.email, now))) return;
   const id = randomUUID() as RegistrationId;
   // The public party may insert but not read registrations, so the id is generated here.
   await tx.insert(carrierRegistration).values({
@@ -156,7 +170,12 @@ export async function decideRegistration(
   }
   const carrierId = row.carrierId as CarrierId;
   if (decision.status === 'approved') {
-    await linkCarrier(tx, { tenantId, carrierId, source: 'public_link', reactivate: true });
+    await linkCarrier(tx, {
+      tenantId,
+      carrierId,
+      source: 'public_link',
+      reactivateDeactivatedBefore: now,
+    });
   }
 
   const [tenant] = await tx.select({ name: org.name }).from(org).where(eq(org.id, tenantId));

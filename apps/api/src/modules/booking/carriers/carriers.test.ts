@@ -7,6 +7,7 @@ import { createApp } from '../../../app.ts';
 import { type CarrierId, type UserId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
+import { deriveToken } from '../../../kernel/tokens.ts';
 import { account } from '../../core/auth/fixtures.ts';
 import {
   appUser,
@@ -265,6 +266,62 @@ describe('CR-01 accept a carrier invitation', () => {
     // The invitee has no account yet, so this creates it and signs that browser in as the invitee.
     expect(res.status).toBe(200);
     expect(sessionOf(res)).not.toBe(session);
+  });
+});
+
+describe('CR-01 concurrent acceptance', () => {
+  it('two acceptances of one invitation: exactly one succeeds and one carrier org exists', async () => {
+    const inv = await carrierInvitationFor(ownerDb(), {
+      tenantId: w.A.tenantId,
+      invitedBy: w.A.users.dispatcher.id,
+    });
+    const body = { token: inv.token, name: 'Racing Rita', password: 'carrier password 2026' };
+    const both = await Promise.all([
+      anon.post('/api/public/carrier-invitations/accept', { body }),
+      anon.post('/api/public/carrier-invitations/accept', { body }),
+    ]);
+    expect(both.map((r) => r.status).sort()).toEqual([200, 401]);
+    const companies = await ownerDb()
+      .select({ id: org.id })
+      .from(org)
+      .innerJoin(membership, eq(membership.orgId, org.id))
+      .innerJoin(appUser, eq(appUser.id, membership.userId))
+      .where(eq(appUser.email, inv.email));
+    expect(companies).toHaveLength(1);
+  });
+});
+
+describe('TN-03 a stale invitation', () => {
+  it('does not undo a later deactivation; an invitation sent afterwards does', async () => {
+    const start = clock.now().getTime();
+    const rival = w.A.users.rival_admin;
+    const invite = async () => {
+      const res = await as(app, w.A.users.dispatcher).post(
+        `/api/t/${w.A.tenantId}/carriers/invitations`,
+        { body: { companyName: 'Rival', email: rival.email } },
+      );
+      const { id } = (await res.json()) as { id: string };
+      return deriveToken('carrier_invitation', id);
+    };
+    const accept = (token: string) =>
+      as(app, rival).post('/api/public/carrier-invitations/accept', { body: { token } });
+    try {
+      const early = await invite();
+      clock.set(new Date(start + 60_000));
+      await as(app, w.A.users.dispatcher).patch(
+        `/api/t/${w.A.tenantId}/carriers/${w.A.rivalCarrierId}`,
+        { body: { status: 'deactivated' } },
+      );
+      clock.set(new Date(start + 120_000));
+      expect((await accept(early)).status).toBe(200);
+      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({ status: 'deactivated' });
+
+      const later = await invite();
+      expect((await accept(later)).status).toBe(200);
+      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({ status: 'active' });
+    } finally {
+      clock.set(new Date());
+    }
   });
 });
 

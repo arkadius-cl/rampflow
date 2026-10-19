@@ -15,6 +15,9 @@ export const RATE_LIMITS = {
   magic_link_request: { limit: 5, windowSeconds: 60 * 60 },
   reset_request: { limit: 5, windowSeconds: 60 * 60 },
   driver_exchange: { limit: 10, windowSeconds: 60 },
+  // Public-link registrations (CR-02): per email, and per client address against mass sign-ups.
+  registration_request: { limit: 5, windowSeconds: 60 * 60 },
+  registration_ip: { limit: 100, windowSeconds: 60 * 60 },
 } as const satisfies Record<RateLimitBucket, { limit: number; windowSeconds: number }>;
 
 export type RateLimitState = { limited: false } | { limited: true; retryAfterSeconds: number };

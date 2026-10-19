@@ -1,5 +1,5 @@
 {
-  "id": "a401d6b8-088b-419a-9baa-022246ccd7f5",
+  "id": "fd67c808-7736-412c-94b6-2ab21f40a892",
   "prevId": "e7a3be3f-6d63-417a-b4b6-d83b89b0dc34",
   "version": "7",
   "dialect": "postgresql",
@@ -4448,7 +4448,7 @@
       "checkConstraints": {
         "rate_limit_event_bucket_check": {
           "name": "rate_limit_event_bucket_check",
-          "value": "\"rate_limit_event\".\"bucket\" in ('login_failed', 'magic_link_request', 'reset_request', 'driver_exchange')"
+          "value": "\"rate_limit_event\".\"bucket\" in ('login_failed', 'magic_link_request', 'reset_request', 'driver_exchange', 'registration_request', 'registration_ip')"
         }
       },
       "isRLSEnabled": false

@@ -3,7 +3,7 @@ import type {
   CarrierLinkStatus,
   CarrierLinkView,
 } from '@rampflow/shared/modules/booking/api.carriers';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, lt } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -33,21 +33,28 @@ export async function assertActiveLink(
 }
 
 /**
- * Links a carrier to a tenant. A tenant's own decision (an accepted invitation, an approval)
- * reactivates a deactivated link; an automatic approval leaves it deactivated, so a carrier the
- * tenant switched off cannot switch itself back on through the public link.
+ * Links a carrier to a tenant. A tenant decision reactivates a link deactivated before it was
+ * made: an approval now, an invitation when it was sent. So a stale invitation cannot undo a
+ * later deactivation, and an automatic approval (`reactivateDeactivatedBefore: null`) never does:
+ * a carrier the tenant switched off cannot switch itself back on through the public link.
  */
 export async function linkCarrier(
   tx: Tx,
-  o: { tenantId: TenantId; carrierId: CarrierId; source: CarrierLinkSource; reactivate: boolean },
+  o: {
+    tenantId: TenantId;
+    carrierId: CarrierId;
+    source: CarrierLinkSource;
+    reactivateDeactivatedBefore: Date | null;
+  },
 ): Promise<void> {
   const insert = tx
     .insert(tenantCarrierLink)
     .values({ tenantId: o.tenantId, carrierId: o.carrierId, status: 'active', source: o.source });
-  await (o.reactivate
+  await (o.reactivateDeactivatedBefore
     ? insert.onConflictDoUpdate({
         target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
         set: { status: 'active', deactivatedAt: null },
+        setWhere: lt(tenantCarrierLink.deactivatedAt, o.reactivateDeactivatedBefore),
       })
     : insert.onConflictDoNothing());
 }
