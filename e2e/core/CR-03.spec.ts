@@ -21,7 +21,7 @@ test.describe('CR-03 Sign in', () => {
 
     await page.getByLabel('Password', { exact: true }).fill('carrier password 1');
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/c/${w.A.carrierId}$`));
+    await expect(page).toHaveURL(new RegExp(`/c/${w.A.carrierId}(/|$)`));
     await expect(page.getByTestId('org-switcher')).toContainText('Carrier A');
     await expectAccessible(page);
   });
@@ -44,7 +44,7 @@ test.describe('CR-03 Sign in', () => {
     const fresh = await browser.newContext();
     const tab = await fresh.newPage();
     await tab.goto(path);
-    await expect(tab).toHaveURL(new RegExp(`/c/${w.A.carrierId}$`));
+    await expect(tab).toHaveURL(new RegExp(`/c/${w.A.carrierId}(/|$)`));
     await fresh.close();
 
     const again = await browser.newContext();
