@@ -145,11 +145,10 @@ function CreateTenantDialog({ open, onClose }: { open: boolean; onClose: () => v
   const create = useMutation({
     mutationFn: (json: CreateTenant) => call<TenantDetail>(api.platform.tenants.$post({ json })),
     onSuccess: async (tenant) => {
-      void queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
       queryClient.setQueryData(platformKeys.tenant(tenant.id), tenant);
       toast.success(t(($) => $.platform.tenants.created, { name: tenant.name }));
-      onClose();
       await navigate({ to: '/platform/tenants/$tenantId', params: { tenantId: tenant.id } });
+      void queryClient.invalidateQueries({ queryKey: platformKeys.tenants(), exact: true });
     },
     onError: (e) => applyServerIssues(e, form.setError),
   });
