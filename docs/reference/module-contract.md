@@ -374,9 +374,13 @@ export function useAccess(): {
 // apps/web/src/routes/t/$orgId/gate/index.tsx (U9)
 export const Route = createFileRoute('/t/$orgId/gate/')({
   beforeLoad: guard({ permission: 'yard.gate' }),
+  staticData: { shell: 'station' },               // tablet layout without the sidebar (ADR-0011)
+  validateSearch: GateSearch,                     // { site?: uuid, tab?, checkin?: uuid, walkin?: 1 }
   component: GatePage,
 });
 ```
+
+- Every screen's path, search params and entry point are in the route map of [ADR-0011](../decisions/ADR-0011-frontend-routes-and-org-context.md#route-map). A screen without a nav item names the screen that links to it.
 
 - The sidebar renders `navFor(catalog, ...)` with labels from `<module>:nav.<id>`.
 - Buttons for booking actions read the lifecycle table ([Booking lifecycle](booking-lifecycle.md)) and `can()`, so a dock operator never sees "Check out".

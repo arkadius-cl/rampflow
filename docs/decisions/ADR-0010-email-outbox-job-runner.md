@@ -72,6 +72,6 @@ Status: accepted, 2026-10-19.
 
 ## Consequences
 
-- A rolled-back booking sends nothing, by construction, and the U6 test proves it by forcing a rollback after enqueue.
+- A rolled-back booking sends nothing, by construction, and the U6a test proves it by forcing a rollback after enqueue.
 - Email latency is at most one tick (5 s) plus SMTP time when the server is healthy.
 - Adding a job or a template is adding one file in the owning module.

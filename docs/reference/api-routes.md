@@ -209,7 +209,7 @@ Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.
 
 ## Bookings (staff)
 
-Unit U6. `booking/staff/routes.tenant.ts`, mounted at `/bookings`.
+Unit U6a. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creates, reschedules and duration-changing avis edits take the site capacity lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)).
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -219,8 +219,8 @@ Unit U6. `booking/staff/routes.tenant.ts`, mounted at `/bookings`.
 | GET | `/api/t/:orgId/bookings/:bookingId` | `booking.view` | | BK-01, BK-03 | booking, avis, safety status |
 | GET | `/api/t/:orgId/bookings/:bookingId/events` | `booking.view` | | YD-08 | actors only with `booking.view_actors` |
 | POST | `/api/t/:orgId/bookings` | `booking.staff_book`; `booking.force` when `force` | | BK-02, AV-01 | `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } \| { name }, avis, force?, forceReason? }` |
-| PATCH | `/api/t/:orgId/bookings/:bookingId` | `booking.staff_book`; `booking.force` when `force` | | BK-03 | reschedule `{ startsAt, resourceId?, version, force?, forceReason? }` |
-| PUT | `/api/t/:orgId/bookings/:bookingId/avis` | `booking.staff_book` | `avis.basic` | AV-02 | `{ avis, version }` |
+| PATCH | `/api/t/:orgId/bookings/:bookingId` | `booking.staff_book`; `booking.force` when `force` | | BK-03 | reschedule `{ startsAt, resourceId?, version, force?, forceReason? }`; moves the driver link expiry to the new start plus 7 days |
+| PUT | `/api/t/:orgId/bookings/:bookingId/avis` | `booking.staff_book` | `avis.basic` | AV-02 | `{ avis, version }`; from `checked_in` on, no capacity check |
 | POST | `/api/t/:orgId/bookings/:bookingId/cancel` | `booking.staff_book` | | BK-03 | `{ reason? }` |
 | GET | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | `{ url }` |
 | POST | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | regenerate |
@@ -240,11 +240,11 @@ Unit U7.
 | POST | `/api/t/:orgId/carriers/registrations/:registrationId/approve` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; links the carrier, emails it |
 | POST | `/api/t/:orgId/carriers/registrations/:registrationId/reject` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ reason }`, emails it |
 | GET | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; slug per site |
-| POST | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ siteId }`, idempotent |
-| DELETE | `/api/t/:orgId/carriers/public-links/:siteId` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; revokes the slug |
+| POST | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ siteId }`; returns the site's slug, creating it once |
+| POST | `/api/t/:orgId/carriers/public-links/:siteId/regenerate` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; revokes the slug and issues a new one, for a link that leaked |
 | GET | `/api/c/:orgId/tenants` | carrier | member | | CR-02, CR-05 | `booking/carriers/routes.carrier.ts`; linked tenants with link and registration status |
-| GET | `/api/public/links/:slug` | public | none | `booking.public_link` and the site's `booking.public_link_enabled` | CR-02, TN-04 | `booking/registration/routes.public.ts`; 404 when disabled |
-| POST | `/api/public/links/:slug/registrations` | public | none | same | CR-02 | same; `{ companyName, country, contactName, email }`; 202; a known email gets `{ signIn: true }` |
+| GET | `/api/public/links/:slug` | public | none | `booking.public_link` and the site's `booking.public_link_enabled` | CR-02, TN-04 | `booking/registration/routes.public.ts`; 404 when disabled. The setting is the only on and off switch; the slug only names the link |
+| POST | `/api/public/links/:slug/registrations` | public | none | same | CR-02 | same; `{ companyName, country, contactName, email }`; always 202 with an empty body. A known email gets a sign-in prompt by email instead of the verification link, so the response never reveals an account |
 | POST | `/api/public/registrations/verify` | token | token | | CR-02 | same; `{ token }`; verifies the email, signs in, applies `booking.public_registration_mode` |
 | POST | `/api/public/carrier-invitations/inspect` | token | token | | TN-03, CR-01 | `booking/carriers/routes.public.ts` |
 | POST | `/api/public/carrier-invitations/accept` | token, then user | token | | TN-03, CR-01 | same; an existing carrier user's email links that org instead of creating one |
@@ -271,7 +271,7 @@ Unit U8. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/b
 
 ## Yard
 
-Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`).
+Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`). Commands follow [Booking lifecycle](booking-lifecycle.md).
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -279,14 +279,15 @@ Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (
 | POST | `/api/t/:orgId/yard/search` | `yard.gate` | | YD-01 | `{ siteId, q }`; booking code (scanner input), plate, reference or carrier |
 | GET | `/api/t/:orgId/yard/on-site` | `yard.gate` | | YD-04 | state, time since gate-in, wait, Standgeld flag |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | `yard.gate` | | YD-02 | `{ plateSeen }` |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/turn-away` | `yard.gate` | | YD-02 | `{ reason, note? }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/turn-away` | `yard.gate` | | YD-02 | `{ reason, note? }`; from `confirmed`, `no_show` or `checked_in` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/depart` | `yard.gate` | | YD-05 | `{ reason? }` |
-| POST | `/api/t/:orgId/yard/walk-ins` | `yard.gate` and `booking.walk_in` | | YD-03 | staff create at the current grid slot plus check-in |
+| POST | `/api/t/:orgId/yard/walk-ins` | `yard.gate` and `booking.walk_in` | | YD-03 | `{ clientRequestId, siteId, resourceId?, loadTypeId, carrier: { id } \| { name }, plateSeen, outcome: 'check_in' \| 'turn_away', avis?, reason?, note? }`; `avis` is required for `check_in`, `reason` for `turn_away`. Starts at the grid slot containing now; never 409 for hours or capacity. 201 with the booking in `checked_in`, `turned_away`, or `confirmed` plus `safety: 'missing'` when enforcement blocks the check-in |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgement-candidates` | `yard.gate` | module `safety` | YD-02 | `{ name }`; valid acknowledgements of the tenant |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgements` | `yard.gate` | module `safety` | YD-02 | `{ acknowledgementId }` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/briefing-session` | `yard.gate` | module `safety` | YD-02 | issues a 30-minute `staff` driver access; returns `{ url }` |
 | GET | `/api/t/:orgId/yard/docks` | `yard.call` | `yard.call_to_dock` | YD-06 | docks by hall with current truck and state; queue of checked-in trucks by slot start |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/call` | `yard.call` | `yard.call_to_dock` | YD-07 | `{ dockId }`; 409 `dock_occupied`; `outsideResource` warning in the response |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/uncall` | `yard.call` | `yard.call_to_dock` | YD-07 | back to `checked_in`; frees the dock |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/dock` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/loading` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/complete` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ actualLoadUnits, discrepancyNote? }` |
@@ -299,8 +300,8 @@ Unit U10.
 |---|---|---|---|---|---|
 | POST | `/api/public/driver-session` | token | | DR-01 | `driver/session/routes.public.ts`; `{ token }`; sets `rf_driver` with `Path=/api/driver`; 10 per minute per IP |
 | DELETE | `/api/driver/session` | driver | | DR-01 | `driver/session/routes.driver.ts`; clears the cookie |
-| GET | `/api/driver/booking` | driver | | DR-01, DR-03, SF-04 | `driver/view/routes.driver.ts`; redeems safety passes |
-| GET | `/api/driver/briefings` | driver | module `safety` | SF-04 | `safety/driver/routes.driver.ts` at `/briefings`; applicable instructions with status and locales |
+| GET | `/api/driver/booking` | driver | | DR-01, DR-03, SF-04 | `driver/view/routes.driver.ts`; polled every 15 s; read-only, safety status from `booking_acknowledgement` |
+| GET | `/api/driver/briefings` | driver | module `safety` | SF-04 | `safety/driver/routes.driver.ts` at `/briefings`; first redeems this phone's valid safety passes for the booking (idempotent upsert, [ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)), then lists applicable instructions with status and locales |
 | GET | `/api/driver/briefings/:instructionId` | driver | module `safety` | SF-04, DR-02 | `?locale=`; content and questions without answers |
 | POST | `/api/driver/briefings/:instructionId/attempts` | driver | `safety.quiz` | SF-04, SF-02 | `{ locale, answers }`; score, pass, attempt count |
 | POST | `/api/driver/briefings/:instructionId/acknowledgement` | driver | module `safety` | SF-04 | `{ locale, name, confirmed: true }`; needs a passed quiz when one exists; sets the safety pass unless the session channel is `staff` |
