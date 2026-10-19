@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -11,13 +11,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootLayout() {
+  // Design prototype screens are screenshotted; keep the devtools overlays out of them.
+  const isDesign = useRouterState({ select: (s) => s.location.pathname.startsWith('/design') });
   return (
     <TooltipProvider>
       <Outlet />
       <Toaster />
-      <Suspense>
-        <Devtools />
-      </Suspense>
+      {isDesign ? null : (
+        <Suspense>
+          <Devtools />
+        </Suspense>
+      )}
     </TooltipProvider>
   );
 }

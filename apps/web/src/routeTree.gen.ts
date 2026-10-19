@@ -10,33 +10,168 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DesignRouteRouteImport } from './routes/design/route'
+import { Route as DesignIndexRouteImport } from './routes/design/index'
+import { Route as DesignBookingWizardRouteImport } from './routes/design/booking-wizard'
+import { Route as DesignCarrierBookingsRouteImport } from './routes/design/carrier-bookings'
+import { Route as DesignDockRouteImport } from './routes/design/dock'
+import { Route as DesignDriverRouteImport } from './routes/design/driver'
+import { Route as DesignGateRouteImport } from './routes/design/gate'
+import { Route as DesignMasterDataRouteImport } from './routes/design/master-data'
+import { Route as DesignPlanBoardRouteImport } from './routes/design/plan-board'
+import { Route as DesignPlatformAdminRouteImport } from './routes/design/platform-admin'
+import { Route as DesignSettingsRouteImport } from './routes/design/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DesignRouteRoute = DesignRouteRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignIndexRoute = DesignIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignBookingWizardRoute = DesignBookingWizardRouteImport.update({
+  id: '/booking-wizard',
+  path: '/booking-wizard',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignCarrierBookingsRoute = DesignCarrierBookingsRouteImport.update({
+  id: '/carrier-bookings',
+  path: '/carrier-bookings',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignDockRoute = DesignDockRouteImport.update({
+  id: '/dock',
+  path: '/dock',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignDriverRoute = DesignDriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignGateRoute = DesignGateRouteImport.update({
+  id: '/gate',
+  path: '/gate',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignMasterDataRoute = DesignMasterDataRouteImport.update({
+  id: '/master-data',
+  path: '/master-data',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignPlanBoardRoute = DesignPlanBoardRouteImport.update({
+  id: '/plan-board',
+  path: '/plan-board',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignPlatformAdminRoute = DesignPlatformAdminRouteImport.update({
+  id: '/platform-admin',
+  path: '/platform-admin',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
+const DesignSettingsRoute = DesignSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DesignRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/design': typeof DesignRouteRouteWithChildren
+  '/design/booking-wizard': typeof DesignBookingWizardRoute
+  '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
+  '/design/dock': typeof DesignDockRoute
+  '/design/driver': typeof DesignDriverRoute
+  '/design/gate': typeof DesignGateRoute
+  '/design/master-data': typeof DesignMasterDataRoute
+  '/design/plan-board': typeof DesignPlanBoardRoute
+  '/design/platform-admin': typeof DesignPlatformAdminRoute
+  '/design/settings': typeof DesignSettingsRoute
+  '/design/': typeof DesignIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/design/booking-wizard': typeof DesignBookingWizardRoute
+  '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
+  '/design/dock': typeof DesignDockRoute
+  '/design/driver': typeof DesignDriverRoute
+  '/design/gate': typeof DesignGateRoute
+  '/design/master-data': typeof DesignMasterDataRoute
+  '/design/plan-board': typeof DesignPlanBoardRoute
+  '/design/platform-admin': typeof DesignPlatformAdminRoute
+  '/design/settings': typeof DesignSettingsRoute
+  '/design': typeof DesignIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/design': typeof DesignRouteRouteWithChildren
+  '/design/booking-wizard': typeof DesignBookingWizardRoute
+  '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
+  '/design/dock': typeof DesignDockRoute
+  '/design/driver': typeof DesignDriverRoute
+  '/design/gate': typeof DesignGateRoute
+  '/design/master-data': typeof DesignMasterDataRoute
+  '/design/plan-board': typeof DesignPlanBoardRoute
+  '/design/platform-admin': typeof DesignPlatformAdminRoute
+  '/design/settings': typeof DesignSettingsRoute
+  '/design/': typeof DesignIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/design'
+    | '/design/booking-wizard'
+    | '/design/carrier-bookings'
+    | '/design/dock'
+    | '/design/driver'
+    | '/design/gate'
+    | '/design/master-data'
+    | '/design/plan-board'
+    | '/design/platform-admin'
+    | '/design/settings'
+    | '/design/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/design/booking-wizard'
+    | '/design/carrier-bookings'
+    | '/design/dock'
+    | '/design/driver'
+    | '/design/gate'
+    | '/design/master-data'
+    | '/design/plan-board'
+    | '/design/platform-admin'
+    | '/design/settings'
+    | '/design'
+  id:
+    | '__root__'
+    | '/'
+    | '/design'
+    | '/design/booking-wizard'
+    | '/design/carrier-bookings'
+    | '/design/dock'
+    | '/design/driver'
+    | '/design/gate'
+    | '/design/master-data'
+    | '/design/plan-board'
+    | '/design/platform-admin'
+    | '/design/settings'
+    | '/design/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DesignRouteRoute: typeof DesignRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +183,119 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design/': {
+      id: '/design/'
+      path: '/'
+      fullPath: '/design/'
+      preLoaderRoute: typeof DesignIndexRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/booking-wizard': {
+      id: '/design/booking-wizard'
+      path: '/booking-wizard'
+      fullPath: '/design/booking-wizard'
+      preLoaderRoute: typeof DesignBookingWizardRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/carrier-bookings': {
+      id: '/design/carrier-bookings'
+      path: '/carrier-bookings'
+      fullPath: '/design/carrier-bookings'
+      preLoaderRoute: typeof DesignCarrierBookingsRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/dock': {
+      id: '/design/dock'
+      path: '/dock'
+      fullPath: '/design/dock'
+      preLoaderRoute: typeof DesignDockRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/driver': {
+      id: '/design/driver'
+      path: '/driver'
+      fullPath: '/design/driver'
+      preLoaderRoute: typeof DesignDriverRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/gate': {
+      id: '/design/gate'
+      path: '/gate'
+      fullPath: '/design/gate'
+      preLoaderRoute: typeof DesignGateRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/master-data': {
+      id: '/design/master-data'
+      path: '/master-data'
+      fullPath: '/design/master-data'
+      preLoaderRoute: typeof DesignMasterDataRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/plan-board': {
+      id: '/design/plan-board'
+      path: '/plan-board'
+      fullPath: '/design/plan-board'
+      preLoaderRoute: typeof DesignPlanBoardRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/platform-admin': {
+      id: '/design/platform-admin'
+      path: '/platform-admin'
+      fullPath: '/design/platform-admin'
+      preLoaderRoute: typeof DesignPlatformAdminRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
+    '/design/settings': {
+      id: '/design/settings'
+      path: '/settings'
+      fullPath: '/design/settings'
+      preLoaderRoute: typeof DesignSettingsRouteImport
+      parentRoute: typeof DesignRouteRoute
+    }
   }
 }
 
+interface DesignRouteRouteChildren {
+  DesignBookingWizardRoute: typeof DesignBookingWizardRoute
+  DesignCarrierBookingsRoute: typeof DesignCarrierBookingsRoute
+  DesignDockRoute: typeof DesignDockRoute
+  DesignDriverRoute: typeof DesignDriverRoute
+  DesignGateRoute: typeof DesignGateRoute
+  DesignMasterDataRoute: typeof DesignMasterDataRoute
+  DesignPlanBoardRoute: typeof DesignPlanBoardRoute
+  DesignPlatformAdminRoute: typeof DesignPlatformAdminRoute
+  DesignSettingsRoute: typeof DesignSettingsRoute
+  DesignIndexRoute: typeof DesignIndexRoute
+}
+
+const DesignRouteRouteChildren: DesignRouteRouteChildren = {
+  DesignBookingWizardRoute: DesignBookingWizardRoute,
+  DesignCarrierBookingsRoute: DesignCarrierBookingsRoute,
+  DesignDockRoute: DesignDockRoute,
+  DesignDriverRoute: DesignDriverRoute,
+  DesignGateRoute: DesignGateRoute,
+  DesignMasterDataRoute: DesignMasterDataRoute,
+  DesignPlanBoardRoute: DesignPlanBoardRoute,
+  DesignPlatformAdminRoute: DesignPlatformAdminRoute,
+  DesignSettingsRoute: DesignSettingsRoute,
+  DesignIndexRoute: DesignIndexRoute,
+}
+
+const DesignRouteRouteWithChildren = DesignRouteRoute._addFileChildren(
+  DesignRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DesignRouteRoute: DesignRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
