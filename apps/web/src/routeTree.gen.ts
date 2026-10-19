@@ -43,6 +43,7 @@ import { Route as COrgIdBookingsIndexRouteImport } from './routes/c/$orgId/booki
 import { Route as COrgIdBookingsBookingIdRouteImport } from './routes/c/$orgId/bookings/$bookingId'
 import { Route as COrgIdTenantsIndexRouteImport } from './routes/c/$orgId/tenants/index'
 import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
+import { Route as TOrgIdBrandIndexRouteImport } from './routes/t/$orgId/brand/index'
 import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
 import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
 import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
@@ -50,8 +51,10 @@ import { Route as TOrgIdPlanIndexRouteImport } from './routes/t/$orgId/plan/inde
 import { Route as TOrgIdPrivacyIndexRouteImport } from './routes/t/$orgId/privacy/index'
 import { Route as TOrgIdReportsIndexRouteImport } from './routes/t/$orgId/reports/index'
 import { Route as TOrgIdSafetyAcknowledgementsRouteImport } from './routes/t/$orgId/safety/acknowledgements'
+import { Route as TOrgIdSettingsIndexRouteImport } from './routes/t/$orgId/settings/index'
 import { Route as TOrgIdSitesIndexRouteImport } from './routes/t/$orgId/sites/index'
 import { Route as TOrgIdSitesSiteIdRouteRouteImport } from './routes/t/$orgId/sites/$siteId/route'
+import { Route as TOrgIdStaffIndexRouteImport } from './routes/t/$orgId/staff/index'
 import { Route as TOrgIdSafetyBriefingsIndexRouteImport } from './routes/t/$orgId/safety/briefings/index'
 import { Route as TOrgIdSafetyBriefingsInstructionIdRouteImport } from './routes/t/$orgId/safety/briefings/$instructionId'
 import { Route as TOrgIdSitesSiteIdIndexRouteImport } from './routes/t/$orgId/sites/$siteId/index'
@@ -228,6 +231,11 @@ const TOrgIdBookingsBookingIdRoute = TOrgIdBookingsBookingIdRouteImport.update({
   path: '/bookings/$bookingId',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const TOrgIdBrandIndexRoute = TOrgIdBrandIndexRouteImport.update({
+  id: '/brand/',
+  path: '/brand/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdCarriersIndexRoute = TOrgIdCarriersIndexRouteImport.update({
   id: '/carriers/',
   path: '/carriers/',
@@ -264,6 +272,11 @@ const TOrgIdSafetyAcknowledgementsRoute =
     path: '/safety/acknowledgements',
     getParentRoute: () => TOrgIdRouteRoute,
   } as any)
+const TOrgIdSettingsIndexRoute = TOrgIdSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdSitesIndexRoute = TOrgIdSitesIndexRouteImport.update({
   id: '/sites/',
   path: '/sites/',
@@ -272,6 +285,11 @@ const TOrgIdSitesIndexRoute = TOrgIdSitesIndexRouteImport.update({
 const TOrgIdSitesSiteIdRouteRoute = TOrgIdSitesSiteIdRouteRouteImport.update({
   id: '/sites/$siteId',
   path: '/sites/$siteId',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdStaffIndexRoute = TOrgIdStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
 const TOrgIdSafetyBriefingsIndexRoute =
@@ -340,13 +358,16 @@ export interface FileRoutesByFullPath {
   '/c/$orgId/book/': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
+  '/t/$orgId/settings/': typeof TOrgIdSettingsIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
+  '/t/$orgId/staff/': typeof TOrgIdStaffIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
   '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
@@ -385,13 +406,16 @@ export interface FileRoutesByTo {
   '/c/$orgId/book': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/brand': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports': typeof TOrgIdReportsIndexRoute
+  '/t/$orgId/settings': typeof TOrgIdSettingsIndexRoute
   '/t/$orgId/sites': typeof TOrgIdSitesIndexRoute
+  '/t/$orgId/staff': typeof TOrgIdStaffIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
   '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
@@ -436,13 +460,16 @@ export interface FileRoutesById {
   '/c/$orgId/book/': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
+  '/t/$orgId/settings/': typeof TOrgIdSettingsIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
+  '/t/$orgId/staff/': typeof TOrgIdStaffIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
   '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
@@ -488,13 +515,16 @@ export interface FileRouteTypes {
     | '/c/$orgId/book/'
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
+    | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
     | '/t/$orgId/privacy/'
     | '/t/$orgId/reports/'
+    | '/t/$orgId/settings/'
     | '/t/$orgId/sites/'
+    | '/t/$orgId/staff/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
     | '/t/$orgId/sites/$siteId/load-types'
@@ -533,13 +563,16 @@ export interface FileRouteTypes {
     | '/c/$orgId/book'
     | '/c/$orgId/bookings'
     | '/c/$orgId/tenants'
+    | '/t/$orgId/brand'
     | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
     | '/t/$orgId/gate'
     | '/t/$orgId/plan'
     | '/t/$orgId/privacy'
     | '/t/$orgId/reports'
+    | '/t/$orgId/settings'
     | '/t/$orgId/sites'
+    | '/t/$orgId/staff'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
     | '/t/$orgId/sites/$siteId/load-types'
@@ -583,13 +616,16 @@ export interface FileRouteTypes {
     | '/c/$orgId/book/'
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
+    | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
     | '/t/$orgId/privacy/'
     | '/t/$orgId/reports/'
+    | '/t/$orgId/settings/'
     | '/t/$orgId/sites/'
+    | '/t/$orgId/staff/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
     | '/t/$orgId/sites/$siteId/load-types'
@@ -852,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdBookingsBookingIdRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/brand/': {
+      id: '/t/$orgId/brand/'
+      path: '/brand'
+      fullPath: '/t/$orgId/brand/'
+      preLoaderRoute: typeof TOrgIdBrandIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/carriers/': {
       id: '/t/$orgId/carriers/'
       path: '/carriers'
@@ -901,6 +944,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdSafetyAcknowledgementsRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/settings/': {
+      id: '/t/$orgId/settings/'
+      path: '/settings'
+      fullPath: '/t/$orgId/settings/'
+      preLoaderRoute: typeof TOrgIdSettingsIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/sites/': {
       id: '/t/$orgId/sites/'
       path: '/sites'
@@ -913,6 +963,13 @@ declare module '@tanstack/react-router' {
       path: '/sites/$siteId'
       fullPath: '/t/$orgId/sites/$siteId'
       preLoaderRoute: typeof TOrgIdSitesSiteIdRouteRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/staff/': {
+      id: '/t/$orgId/staff/'
+      path: '/staff'
+      fullPath: '/t/$orgId/staff/'
+      preLoaderRoute: typeof TOrgIdStaffIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
     '/t/$orgId/safety/briefings/': {
@@ -1046,13 +1103,16 @@ interface TOrgIdRouteRouteChildren {
   TOrgIdSitesSiteIdRouteRoute: typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   TOrgIdBookingsBookingIdRoute: typeof TOrgIdBookingsBookingIdRoute
   TOrgIdSafetyAcknowledgementsRoute: typeof TOrgIdSafetyAcknowledgementsRoute
+  TOrgIdBrandIndexRoute: typeof TOrgIdBrandIndexRoute
   TOrgIdCarriersIndexRoute: typeof TOrgIdCarriersIndexRoute
   TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
   TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
   TOrgIdPlanIndexRoute: typeof TOrgIdPlanIndexRoute
   TOrgIdPrivacyIndexRoute: typeof TOrgIdPrivacyIndexRoute
   TOrgIdReportsIndexRoute: typeof TOrgIdReportsIndexRoute
+  TOrgIdSettingsIndexRoute: typeof TOrgIdSettingsIndexRoute
   TOrgIdSitesIndexRoute: typeof TOrgIdSitesIndexRoute
+  TOrgIdStaffIndexRoute: typeof TOrgIdStaffIndexRoute
   TOrgIdSafetyBriefingsInstructionIdRoute: typeof TOrgIdSafetyBriefingsInstructionIdRoute
   TOrgIdSafetyBriefingsIndexRoute: typeof TOrgIdSafetyBriefingsIndexRoute
 }
@@ -1062,13 +1122,16 @@ const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdSitesSiteIdRouteRoute: TOrgIdSitesSiteIdRouteRouteWithChildren,
   TOrgIdBookingsBookingIdRoute: TOrgIdBookingsBookingIdRoute,
   TOrgIdSafetyAcknowledgementsRoute: TOrgIdSafetyAcknowledgementsRoute,
+  TOrgIdBrandIndexRoute: TOrgIdBrandIndexRoute,
   TOrgIdCarriersIndexRoute: TOrgIdCarriersIndexRoute,
   TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
   TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
   TOrgIdPlanIndexRoute: TOrgIdPlanIndexRoute,
   TOrgIdPrivacyIndexRoute: TOrgIdPrivacyIndexRoute,
   TOrgIdReportsIndexRoute: TOrgIdReportsIndexRoute,
+  TOrgIdSettingsIndexRoute: TOrgIdSettingsIndexRoute,
   TOrgIdSitesIndexRoute: TOrgIdSitesIndexRoute,
+  TOrgIdStaffIndexRoute: TOrgIdStaffIndexRoute,
   TOrgIdSafetyBriefingsInstructionIdRoute:
     TOrgIdSafetyBriefingsInstructionIdRoute,
   TOrgIdSafetyBriefingsIndexRoute: TOrgIdSafetyBriefingsIndexRoute,
