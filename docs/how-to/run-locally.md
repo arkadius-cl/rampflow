@@ -118,7 +118,8 @@ curl http://localhost:5173/api/health
 
 How the address is chosen:
 
-- `DEV_HOST` is the first non-internal IPv4 address in a private range (`10/8`, `172.16/12`, `192.168/16`), else the first non-internal IPv4 address, else `localhost`.
+- `DEV_HOST` is the source address of the default route (the address other devices in the LAN reach; a container or VM bridge never wins). Without a default route it is the first non-internal IPv4 address in a private range, else the first non-internal IPv4 address, else `localhost`.
+- `node scripts/checkout-env.mjs --write` replaces the published example `TOKEN_SECRET` with a random one, because the dev servers are reachable from the LAN.
 - `APP_ORIGIN` is `http://<DEV_HOST>:<WEB_PORT>`. Emailed links (driver links, invitations, sign-in links) and logo URLs use it, so a phone in the LAN can open them.
 - `APP_EXTRA_ORIGINS` lists `localhost`, `127.0.0.1` and every other address of the machine. The API accepts writes from these origins too, so `http://localhost:5173` keeps working on the machine itself.
 - The script computes these values on every run and never writes them to `.env`, so a new DHCP address needs no change.

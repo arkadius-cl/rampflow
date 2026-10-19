@@ -15,7 +15,8 @@
 // DEV_HOST is the machine's LAN address unless set, and APP_EXTRA_ORIGINS lists its other
 // addresses. Both are computed on every run, never written, so a new DHCP lease needs no rewrite.
 import { execFileSync, spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { createSocket } from 'node:dgram';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { basename, dirname, join } from 'node:path';
@@ -131,11 +132,36 @@ function lanAddresses() {
     .map((a) => a.address);
 }
 
+/**
+ * The source address of the default route, the one other devices in the LAN reach. A container
+ * or VM bridge can also hold a private address, so the first private address is only a fallback.
+ */
+function defaultRouteAddress() {
+  return new Promise((resolve) => {
+    const socket = createSocket('udp4');
+    socket.on('error', () => {
+      socket.close();
+      resolve(undefined);
+    });
+    // connect() on UDP sends nothing; it only asks the routing table for a source address.
+    socket.connect(9, '192.0.2.1', () => {
+      const { address } = socket.address();
+      socket.close();
+      resolve(address);
+    });
+  });
+}
+
 /** The app's origin on the LAN, and every other address of this machine the browser may use. */
 function lanOrigins(env) {
   const addresses = lanAddresses();
+  const routed = addresses.includes(ROUTE_ADDRESS) ? ROUTE_ADDRESS : undefined;
   const host =
-    env.DEV_HOST || addresses.find((a) => PRIVATE_IPV4.test(a)) || addresses[0] || 'localhost';
+    env.DEV_HOST ||
+    routed ||
+    addresses.find((a) => PRIVATE_IPV4.test(a)) ||
+    addresses[0] ||
+    'localhost';
   const at = (h) => `http://${h}:${env.WEB_PORT}`;
   const origin = process.env.APP_ORIGIN || at(host);
   const extras = new Set(['localhost', '127.0.0.1', ...addresses].map(at));
@@ -193,6 +219,11 @@ function write() {
   const merged = { ...readEnvFile(join(root, '.env.example')), ...file, ...envFor(root, block) };
   // An APP_ORIGIN from an older write would pin the browser origin to localhost.
   const { APP_ORIGIN: _, APP_EXTRA_ORIGINS: __, ...kept } = merged;
+  // The dev servers listen on the LAN, so the published example secret would let any device
+  // there forge links and sign-in tokens.
+  if (!kept.TOKEN_SECRET || kept.TOKEN_SECRET.startsWith('dev-only')) {
+    kept.TOKEN_SECRET = randomBytes(32).toString('hex');
+  }
   const body = Object.entries(kept)
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
@@ -214,6 +245,7 @@ function run(env, argv) {
 const argv = process.argv.slice(2);
 const e2e = argv[0] === '--e2e';
 const [mode, ...rest] = e2e ? argv.slice(1) : argv;
+const ROUTE_ADDRESS = await defaultRouteAddress();
 const env = () => (e2e ? e2eEnv(resolvedEnv()) : resolvedEnv());
 if (mode === 'run') run(env(), rest[0] === '--' ? rest.slice(1) : rest);
 else if (mode === '--write' && !e2e) write();
