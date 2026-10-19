@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { AnyOrgId } from '../../src/db/ids.ts';
 import { type OrgKind, org } from '../../src/modules/core/schema.ts';
@@ -21,6 +21,7 @@ export async function findOrg(
     .select({ id: org.id })
     .from(org)
     .where(and(eq(org.kind, kind), eq(org.name, name)))
+    .orderBy(asc(org.createdAt))
     .limit(1);
   return row?.id ?? null;
 }

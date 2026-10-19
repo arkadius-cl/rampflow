@@ -41,12 +41,14 @@ const invite = (side: World['A'], email = inviteeEmail('staff')) =>
 describe('PL-01 create a tenant', () => {
   it('gives the package, invites the admin, and acceptance makes them tenant_admin of it only', async () => {
     const adminEmail = inviteeEmail('acme-admin');
+    // Unique: the seed tests count the demo tenant by its name in the same worker database.
+    const name = `Acme Logistics ${adminEmail}`;
     const res = await platform().post('/api/platform/tenants', {
-      body: { name: 'Acme Logistics', package: 'start', adminEmail },
+      body: { name, package: 'start', adminEmail },
     });
     expect(res.status).toBe(201);
     const created = (await res.json()) as TenantDetail;
-    expect(created).toMatchObject({ name: 'Acme Logistics', package: 'start' });
+    expect(created).toMatchObject({ name, package: 'start' });
     const portal = created.entitlements.find((e) => e.key === 'booking.carrier_portal');
     expect(portal).toMatchObject({ value: true, source: 'package' });
     expect(created.entitlements.find((e) => e.key === 'safety.quiz')).toMatchObject({
@@ -59,7 +61,7 @@ describe('PL-01 create a tenant', () => {
     expect(sent.row).toMatchObject({ orgId: created.id, role: 'tenant_admin', orgKind: 'tenant' });
     expect(sent.mail?.payload).toEqual({
       invitationId: sent.row.id,
-      orgName: 'Acme Logistics',
+      orgName: name,
       role: 'tenant_admin',
       inviterName: null,
     });
