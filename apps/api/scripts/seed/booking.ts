@@ -3,7 +3,7 @@ import { AvisInput } from '@rampflow/shared/modules/avis/avis';
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
 import { and, eq } from 'drizzle-orm';
-import type { CarrierId, DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
+import type { BookingId, CarrierId, DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
 import type { Scope, TenantRole, Tx } from '../../src/db/scope.ts';
 import { loadAccess } from '../../src/kernel/access.ts';
 import { testClock } from '../../src/kernel/clock.ts';
@@ -23,6 +23,11 @@ import {
   resourceDock,
 } from '../../src/modules/booking/schema.resources.ts';
 import { appUser, dock, hall, site } from '../../src/modules/core/schema.ts';
+import { applicableInstructions } from '../../src/modules/safety/authoring/published.ts';
+import {
+  recordAcknowledgement,
+  validityDays,
+} from '../../src/modules/safety/register/acknowledgements.ts';
 import { findOrg, type SeedContext } from './context.ts';
 import { ACME, TRANS_POL } from './core.ts';
 
@@ -161,6 +166,41 @@ function visits(): Visit[] {
     },
     { start: 150, carrier: 'transpol', units: 24, plate: 'PO 9TT31', steps: [] },
   ];
+}
+
+const DRIVERS = ['Tomasz Wiśniewski', 'Jörg Albers', 'Marek Nowak', 'Hauke Jensen', 'Ion Popescu'];
+
+/**
+ * The driver completes every briefing of the site before a check-in, as on the driver link, so
+ * safety enforcement lets the demo trucks in once the safety seed has published a briefing.
+ */
+async function briefDriver(
+  ctx: BookingContext,
+  booking: { id: string; siteId: string; carrierId: string | null },
+  driverName: string,
+): Promise<void> {
+  const siteId = booking.siteId as SiteId;
+  const instructions = await applicableInstructions(ctx.tx, { tenantId: ctx.tenantId, siteId });
+  for (const { instructionId } of instructions) {
+    const ack = await recordAcknowledgement(ctx.tx, {
+      tenantId: ctx.tenantId,
+      bookingId: booking.id as BookingId,
+      carrierId: booking.carrierId as CarrierId | null,
+      instructionId,
+      locale: 'de',
+      driverName,
+      channel: 'link',
+      score: 100,
+      attempts: 1,
+      completedAt: new Date(ctx.now.getTime() - 5 * MINUTE),
+      validityDays: await validityDays(ctx.access, siteId),
+    });
+    await transitionBooking(ctx, booking.id as BookingId, {
+      type: 'link_acknowledgement',
+      acknowledgementId: ack.id,
+      via: 'completed',
+    });
+  }
 }
 
 /** A UUID derived from a name, so a second run on the same day finds the same requests. */
@@ -330,6 +370,10 @@ export async function seed(ctx: SeedContext): Promise<void> {
     if (!result.created) continue;
     created++;
     for (const step of v.steps) {
+      if (step.command.type === 'check_in') {
+        const driver = DRIVERS[i % DRIVERS.length] as string;
+        await briefDriver(await context(step.as, at(step.at)), result.booking, driver);
+      }
       const command =
         'dockId' in step.command && typeof step.command.dockId === 'string'
           ? { ...step.command, dockId: dockId(step.command.dockId) }
