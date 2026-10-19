@@ -279,26 +279,28 @@ Unit U8. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/b
 
 ## Yard
 
-Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`). Commands follow [Booking lifecycle](booking-lifecycle.md).
+Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`). Request schemas and response shapes live in `packages/shared/src/modules/yard/api.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Lists and commands answer `YardTruck`: carrier, plate (seen at the gate, else announced), driver phone, load type, load units, resource, slot, safety status, punctuality, dock with code and hall, the visit timestamps, `since` (when the current status began) and `version`. Every route is site-scoped: an operator of another site gets 404.
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/yard/expected` | `yard.gate` | | YD-01 | `?siteId&date`; carrier, plate, load type, load units, safety status, punctuality |
-| POST | `/api/t/:orgId/yard/search` | `yard.gate` | | YD-01 | `{ siteId, q }`; booking code (scanner input), plate, reference or carrier |
-| GET | `/api/t/:orgId/yard/on-site` | `yard.gate` | | YD-04 | state, time since gate-in, wait, Standgeld flag |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | `yard.gate` | | YD-02 | `{ plateSeen }` |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/turn-away` | `yard.gate` | | YD-02 | `{ reason, note? }`; from `confirmed`, `no_show` or `checked_in` |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/depart` | `yard.gate` | | YD-05 | `{ reason? }` |
-| POST | `/api/t/:orgId/yard/walk-ins` | `yard.gate` and `booking.walk_in` | | YD-03 | `{ clientRequestId, siteId, resourceId?, loadTypeId, carrier: { id } \| { name }, plateSeen, outcome: 'check_in' \| 'turn_away', avis?, reason?, note? }`; `avis` is required for `check_in`, `reason` for `turn_away`. Starts at the grid slot containing now; never 409 for hours or capacity. 201 with the booking in `checked_in`, `turned_away`, or `confirmed` plus `safety: 'missing'` when enforcement blocks the check-in |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgement-candidates` | `yard.gate` | module `safety` | YD-02 | `{ name }`; valid acknowledgements of the tenant |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgements` | `yard.gate` | module `safety` | YD-02 | `{ acknowledgementId }` |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/briefing-session` | `yard.gate` | module `safety` | YD-02 | issues a 30-minute `staff` driver access; returns `{ url }` |
-| GET | `/api/t/:orgId/yard/docks` | `yard.call` | `yard.call_to_dock` | YD-06 | docks by hall with current truck and state; queue of checked-in trucks by slot start |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/call` | `yard.call` | `yard.call_to_dock` | YD-07 | `{ dockId }`; 409 `dock_occupied`; `outsideResource` warning in the response |
+| GET | `/api/t/:orgId/yard/expected` | `yard.gate` | | YD-01 | `?siteId&date?` (`date` defaults to today at the site); `{ siteId, date, timeZone, items }` by start: the day's bookings except cancelled ones, plus no-shows whose `no_show_at` falls on that day. Before check-in, `punctuality` is what a check-in now would record |
+| POST | `/api/t/:orgId/yard/search` | `yard.gate` | | YD-01 | `{ siteId, q }` (2 to 120 characters); exact booking code (case and surrounding whitespace ignored, so scanner input works), plate announced or seen (normalized), exact reference, or part of the carrier name; active visits and today's no-shows, nearest start first, at most 20 |
+| GET | `/api/t/:orgId/yard/on-site` | `yard.gate` | | YD-04 | `?siteId`; trucks in `checked_in` to `done`, whatever day they were booked for, by gate-in; each with `onSiteMinutes`, `waitMinutes` (from `max(checked_in_at, starts_at)` to the first dock timestamp, or to now) and `standgeld` (`onSiteMinutes` above `yard.standgeld_flag_minutes`) |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | `yard.gate` | | YD-02 | `{ plateSeen? }`; 409 `safety_missing` under enforcement; the truck shows `safety.status = 'missing'` as a warning otherwise |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/turn-away` | `yard.gate` | | YD-02 | `{ reason }` from the turn-away list; from `confirmed`, `no_show` or `checked_in` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/depart` | `yard.gate` | | YD-05 | `{ reason? }`; 422 without a reason before `done` |
+| POST | `/api/t/:orgId/yard/walk-ins` | `yard.gate` and `booking.walk_in` | | YD-03 | `{ clientRequestId, siteId, resourceId?, loadTypeId, carrier: { id } \| { name }, plateSeen, outcome: 'check_in', avis }` or `{ ..., outcome: 'turn_away', avis?, reason }`. Starts at the grid slot containing now; never 409 for hours or capacity. 201 with `{ truck, safety }`: the truck in `checked_in` or `turned_away`, or in `confirmed` with `safety: 'missing'` when enforcement blocks the check-in; 200 with the first booking for a repeated `clientRequestId`. 422 on `loadTypeId` when no active resource takes the load type |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgement-candidates` | `yard.gate` | module `safety` | YD-02 | `{ name }` (part of the driver name, at least 2 characters); `{ items }` of the tenant's acknowledgements of instructions that apply to the site and would be valid for this visit, newest first, at most 20; 409 `invalid_transition` once the visit cannot take a briefing |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgements` | `yard.gate` | module `safety` | YD-02 | `{ acknowledgementId }`; `link_acknowledgement` with `via: 'gate_lookup'`; 409 `acknowledgement_invalid` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/briefing-session` | `yard.gate` | module `safety` | YD-02 | no body; issues a 30-minute `staff` driver access and returns `{ url, expiresAt }` |
+| GET | `/api/t/:orgId/yard/docks` | `yard.call` | `yard.call_to_dock` | YD-06 | `?siteId`; `{ halls: [{ id, name, docks: [{ id, code, status, temperatureZone, adrAllowed, resourceId, occupant }] }], queue }`; inactive docks left out, maintenance docks kept; the queue holds `checked_in` trucks by slot start, with waits |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/call` | `yard.call` | `yard.call_to_dock` | YD-07 | `{ dockId }`; `{ truck, outsideResource }`; 409 `dock_occupied`, 409 `dock_inactive`; from `called` a reassignment |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/uncall` | `yard.call` | `yard.call_to_dock` | YD-07 | back to `checked_in`; frees the dock |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/dock` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
-| POST | `/api/t/:orgId/yard/bookings/:bookingId/loading` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/dock` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }`; 422 without a dock when none is assigned |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/loading` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }`, as `dock` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/complete` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ actualLoadUnits, discrepancyNote? }` |
+
+The driver view reads the called dock from `booking.dock_id`, which `call` sets and `uncall` clears; its code and hall name come from `dock` and `hall` (DR-03). The event log of a visit is `GET /api/t/:orgId/bookings/:bookingId/events` (YD-08).
 
 ## Driver
 
