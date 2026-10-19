@@ -33,6 +33,10 @@ import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as RSlugRouteImport } from './routes/r/$slug'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
+import { Route as PlatformPackagesIndexRouteImport } from './routes/platform/packages/index'
+import { Route as PlatformSettingsIndexRouteImport } from './routes/platform/settings/index'
+import { Route as PlatformTenantsIndexRouteImport } from './routes/platform/tenants/index'
+import { Route as PlatformTenantsTenantIdRouteImport } from './routes/platform/tenants/$tenantId'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
 import { Route as COrgIdBookIndexRouteImport } from './routes/c/$orgId/book/index'
 import { Route as COrgIdBookingsIndexRouteImport } from './routes/c/$orgId/bookings/index'
@@ -174,6 +178,26 @@ const COrgIdIndexRoute = COrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => COrgIdRouteRoute,
 } as any)
+const PlatformPackagesIndexRoute = PlatformPackagesIndexRouteImport.update({
+  id: '/packages/',
+  path: '/packages/',
+  getParentRoute: () => PlatformRouteRoute,
+} as any)
+const PlatformSettingsIndexRoute = PlatformSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => PlatformRouteRoute,
+} as any)
+const PlatformTenantsIndexRoute = PlatformTenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => PlatformRouteRoute,
+} as any)
+const PlatformTenantsTenantIdRoute = PlatformTenantsTenantIdRouteImport.update({
+  id: '/tenants/$tenantId',
+  path: '/tenants/$tenantId',
+  getParentRoute: () => PlatformRouteRoute,
+} as any)
 const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -303,7 +327,11 @@ export interface FileRoutesByFullPath {
   '/r/$slug': typeof RSlugRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
+  '/platform/packages/': typeof PlatformPackagesIndexRoute
+  '/platform/settings/': typeof PlatformSettingsIndexRoute
+  '/platform/tenants/': typeof PlatformTenantsIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
@@ -345,7 +373,11 @@ export interface FileRoutesByTo {
   '/r/$slug': typeof RSlugRoute
   '/design': typeof DesignIndexRoute
   '/platform': typeof PlatformIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId': typeof COrgIdIndexRoute
+  '/platform/packages': typeof PlatformPackagesIndexRoute
+  '/platform/settings': typeof PlatformSettingsIndexRoute
+  '/platform/tenants': typeof PlatformTenantsIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
@@ -391,7 +423,11 @@ export interface FileRoutesById {
   '/r/$slug': typeof RSlugRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
+  '/platform/packages/': typeof PlatformPackagesIndexRoute
+  '/platform/settings/': typeof PlatformSettingsIndexRoute
+  '/platform/tenants/': typeof PlatformTenantsIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
@@ -439,7 +475,11 @@ export interface FileRouteTypes {
     | '/r/$slug'
     | '/design/'
     | '/platform/'
+    | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
+    | '/platform/packages/'
+    | '/platform/settings/'
+    | '/platform/tenants/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/c/$orgId/bookings/$bookingId'
@@ -481,7 +521,11 @@ export interface FileRouteTypes {
     | '/r/$slug'
     | '/design'
     | '/platform'
+    | '/platform/tenants/$tenantId'
     | '/c/$orgId'
+    | '/platform/packages'
+    | '/platform/settings'
+    | '/platform/tenants'
     | '/t/$orgId'
     | '/c/$orgId/bookings/$bookingId'
     | '/t/$orgId/bookings/$bookingId'
@@ -526,7 +570,11 @@ export interface FileRouteTypes {
     | '/r/$slug'
     | '/design/'
     | '/platform/'
+    | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
+    | '/platform/packages/'
+    | '/platform/settings/'
+    | '/platform/tenants/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/c/$orgId/bookings/$bookingId'
@@ -734,6 +782,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof COrgIdIndexRouteImport
       parentRoute: typeof COrgIdRouteRoute
     }
+    '/platform/packages/': {
+      id: '/platform/packages/'
+      path: '/packages'
+      fullPath: '/platform/packages/'
+      preLoaderRoute: typeof PlatformPackagesIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/platform/settings/': {
+      id: '/platform/settings/'
+      path: '/settings'
+      fullPath: '/platform/settings/'
+      preLoaderRoute: typeof PlatformSettingsIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/platform/tenants/': {
+      id: '/platform/tenants/'
+      path: '/tenants'
+      fullPath: '/platform/tenants/'
+      preLoaderRoute: typeof PlatformTenantsIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/platform/tenants/$tenantId': {
+      id: '/platform/tenants/$tenantId'
+      path: '/tenants/$tenantId'
+      fullPath: '/platform/tenants/$tenantId'
+      preLoaderRoute: typeof PlatformTenantsTenantIdRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
     '/t/$orgId/': {
       id: '/t/$orgId/'
       path: '/'
@@ -909,10 +985,18 @@ const DesignRouteRouteWithChildren = DesignRouteRoute._addFileChildren(
 
 interface PlatformRouteRouteChildren {
   PlatformIndexRoute: typeof PlatformIndexRoute
+  PlatformTenantsTenantIdRoute: typeof PlatformTenantsTenantIdRoute
+  PlatformPackagesIndexRoute: typeof PlatformPackagesIndexRoute
+  PlatformSettingsIndexRoute: typeof PlatformSettingsIndexRoute
+  PlatformTenantsIndexRoute: typeof PlatformTenantsIndexRoute
 }
 
 const PlatformRouteRouteChildren: PlatformRouteRouteChildren = {
   PlatformIndexRoute: PlatformIndexRoute,
+  PlatformTenantsTenantIdRoute: PlatformTenantsTenantIdRoute,
+  PlatformPackagesIndexRoute: PlatformPackagesIndexRoute,
+  PlatformSettingsIndexRoute: PlatformSettingsIndexRoute,
+  PlatformTenantsIndexRoute: PlatformTenantsIndexRoute,
 }
 
 const PlatformRouteRouteWithChildren = PlatformRouteRoute._addFileChildren(
