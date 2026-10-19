@@ -20,8 +20,12 @@ if (!values.name || !/^u\d+[a-z0-9_]*$/.test(values.name)) {
 
 const apiDir = fileURLToPath(new URL('..', import.meta.url));
 const drizzleDir = join(apiDir, 'drizzle');
-const git = (...args: string[]) => execFileSync('git', args, { cwd: apiDir, encoding: 'utf8' });
-const repoPath = (file: string) => relative(git('rev-parse', '--show-toplevel').trim(), file);
+const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+  cwd: apiDir,
+  encoding: 'utf8',
+}).trim();
+const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+const repoPath = (file: string) => relative(root, file);
 
 const base = values.base ?? git('merge-base', 'HEAD', 'main').trim();
 const onBase = new Set(
