@@ -28,6 +28,9 @@ async function registerAndConfirm(page: Page, slug: string, email: string) {
 }
 
 test.describe('TN-04 Public booking link', () => {
+  // Each test waits for one or more outbox ticks (every 5 seconds) on a shared machine.
+  test.describe.configure({ timeout: 90_000 });
+
   test('a link answers only while its site setting is on; replacing it retires the old slug', async ({
     browser,
     page,
@@ -70,8 +73,6 @@ test.describe('TN-04 Public booking link', () => {
     context,
     request,
   }) => {
-    // Two registrations each wait for an outbox tick before the decisions start.
-    test.slow();
     const w = await seedWorld(request);
     await signInAs(context, w.A.users.dispatcher);
     const slug = await createLink(page, w);

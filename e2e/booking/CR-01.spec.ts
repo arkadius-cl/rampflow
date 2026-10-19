@@ -18,6 +18,9 @@ async function invite(page: Page, tenantId: string, company: string, email: stri
 }
 
 test.describe('CR-01 Accept a carrier invitation', () => {
+  // Each test waits for one or more outbox ticks (every 5 seconds) on a shared machine.
+  test.describe.configure({ timeout: 90_000 });
+
   test('a new user creates the company account once; the token never reaches a request URL', async ({
     browser,
     page,

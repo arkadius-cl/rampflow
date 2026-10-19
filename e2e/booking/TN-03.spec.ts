@@ -5,6 +5,9 @@ import { latestEmailTo, linkIn } from '../support/mailpit.ts';
 import { linkStatus, switchOff } from '../support/u7.ts';
 
 test.describe('TN-03 Invite carriers', () => {
+  // Each test waits for one or more outbox ticks (every 5 seconds) on a shared machine.
+  test.describe.configure({ timeout: 90_000 });
+
   test('the dispatcher invites a carrier by company name and email; the email arrives with notify.email off', async ({
     page,
     context,

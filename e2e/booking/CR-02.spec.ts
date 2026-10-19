@@ -27,6 +27,9 @@ async function openLink(
 }
 
 test.describe('CR-02 Register through a public link', () => {
+  // Each test waits for one or more outbox ticks (every 5 seconds) on a shared machine.
+  test.describe.configure({ timeout: 90_000 });
+
   test('approval_required: the email link signs the carrier in and the warehouse shows pending', async ({
     page,
     request,
