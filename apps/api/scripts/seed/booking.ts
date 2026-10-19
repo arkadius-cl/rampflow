@@ -144,7 +144,8 @@ function visits(): Visit[] {
       units: 6,
       plate: 'HH-UK 12',
       walkIn: true,
-      steps: [],
+      // Gate enforcement keeps the walk-in confirmed until the driver's briefing is linked.
+      steps: [gate(-5, { type: 'check_in' })],
     },
     {
       start: 30,
