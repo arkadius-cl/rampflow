@@ -94,6 +94,16 @@ pnpm exec playwright install chromium
 pnpm test:e2e:host
 ```
 
+## Capture the design prototype screens
+
+The design prototype lives under <http://localhost:5173/design> in dev builds. With the web app running, this writes one PNG per screen at its target viewport into `.audit/ux-screens/` (or `UX_SCREENS_OUT`) using the Playwright container:
+
+```sh
+pnpm ux:screens
+```
+
+The script fails when a screen logs a console error. The concept behind the screens is in `docs/explanation/ux-concept.md`.
+
 ## Read sent email
 
 Mailpit catches every message sent to `localhost:1025` and delivers none of them. `SMTP_HOST` and `SMTP_PORT` in `.env` point there. The scaffold does not send mail yet. When it does, open <http://localhost:8025> to read each message.

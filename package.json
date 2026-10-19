@@ -19,7 +19,8 @@
     "db:down": "podman compose down",
     "docs:index": "node scripts/docs.mjs index",
     "docs:check": "node scripts/docs.mjs check",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
+    "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
