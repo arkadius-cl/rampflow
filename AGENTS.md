@@ -65,6 +65,16 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 - Test behavior through the public interface: HTTP routes, service functions, the UI. Assert the effect a story names, including absence (no email sent, no row written).
 - Vitest runs against real Postgres; each test creates its own tenants through the world fixture. Race conditions use two real connections.
 - Playwright: one `describe` per story ID, in `e2e/<module>/<story-id>.spec.ts`. Read emails through the Mailpit API. Run axe on each story's main screen.
+- Tests never depend on today's date. Use the injected clock and `WORLD_NOW` from `apps/api/test/world.ts`. `scripts/test-at-date.sh +40d` runs the suites with the Node and Postgres clocks shifted; run it when you touch time-dependent tests.
+- A test that writes platform-level rows relies on the cleanup in `apps/api/test/setup.ts`; any other global state it creates, it removes itself.
+
+## Shared machine
+
+Several checkouts run in parallel on one machine (`node scripts/checkout-env.mjs --write` gives each its own ports and databases).
+
+- Stop only processes you started, by PID or session. Never `pkill -f` or `killall` with a pattern: the other checkouts run identical command lines.
+- Never use bare `git stash`; the stash stack is shared by all worktrees. Use a WIP commit.
+- On a rebase conflict in a generated file (`apps/web/src/routeTree.gen.ts`, `apps/web/src/lib/i18n-resources.gen.ts`, `docs/INDEX.md`), take either side and regenerate it. Never `git rebase --skip`: it drops the whole commit.
 
 ## Docs
 
@@ -73,7 +83,7 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 
 ## Commits
 
-- Small, single-purpose commits with `pnpm verify` green. Leave `.audit/` and `todo.md` out of commits.
+- Small, single-purpose commits with `pnpm verify` green. Leave `todo.md` out of commits. `.audit/` holds the coordinator's decision trail; units do not edit it.
 - End every commit message with:
 
   ```
