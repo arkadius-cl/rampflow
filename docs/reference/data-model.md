@@ -165,7 +165,7 @@ RLS: none.
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | `id` | bigint | no | identity |
-| `bucket` | text | no | `login_failed`, `magic_link_request`, `reset_request`, `driver_exchange` |
+| `bucket` | text | no | `login_failed`, `magic_link_request`, `reset_request`, `driver_exchange`, `registration_request`, `registration_ip` (U7) |
 | `key_hash` | bytea | no | hash of email and IP, or IP |
 | `at` | timestamptz | no | |
 

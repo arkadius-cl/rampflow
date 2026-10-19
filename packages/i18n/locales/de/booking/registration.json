@@ -24,7 +24,8 @@
     "sign_in_and_confirm": "Anmelden und bestätigen",
     "no_password": "Kein Passwort? Fordern Sie einen Anmeldelink an, melden Sie sich an und öffnen Sie dann die Registrierungs-E-Mail erneut.",
     "magic": "Anmeldelink per E-Mail senden",
-    "wrong": "E-Mail oder Passwort falsch."
+    "wrong": "E-Mail oder Passwort falsch.",
+    "continue": "Ich habe mich über den Link angemeldet, weiter"
   },
   "email": {
     "expiry": "Der Link funktioniert einmal und 24 Stunden lang.",

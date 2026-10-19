@@ -24,7 +24,8 @@
     "sign_in_and_confirm": "Sign in and confirm",
     "no_password": "No password? Request a sign-in link, sign in, then open the registration email again.",
     "magic": "Email me a sign-in link",
-    "wrong": "Wrong email or password."
+    "wrong": "Wrong email or password.",
+    "continue": "I signed in with the link, continue"
   },
   "email": {
     "expiry": "The link works once and for 24 hours.",

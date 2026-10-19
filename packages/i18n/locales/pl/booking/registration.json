@@ -24,7 +24,8 @@
     "sign_in_and_confirm": "Zaloguj się i potwierdź",
     "no_password": "Nie masz hasła? Poproś o link do logowania, zaloguj się i otwórz wiadomość rejestracyjną ponownie.",
     "magic": "Wyślij mi link do logowania",
-    "wrong": "Nieprawidłowy e-mail lub hasło."
+    "wrong": "Nieprawidłowy e-mail lub hasło.",
+    "continue": "Zalogowałem się przez link, kontynuuj"
   },
   "email": {
     "expiry": "Link działa raz i przez 24 godziny.",

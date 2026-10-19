@@ -62,7 +62,7 @@ Registrations whose email is not confirmed yet show **Email not confirmed**. You
 
 The carrier can no longer book new slots or move bookings at your warehouse; the booking API answers 403 with reason `link_inactive`. Existing bookings stay visible to you and to the carrier, and the carrier can still cancel them. The carrier's **Warehouses** screen shows "Paused by the warehouse".
 
-Select **Activate** to lift it. Approving a new registration or accepting a new invitation of the same carrier also reactivates the link. An automatically approved registration does not.
+Select **Activate** to lift it. Approving a registration of the same carrier, or an invitation you send after the deactivation, also reactivates the link once accepted. An older invitation and an automatically approved registration do not.
 
 ## Demo data
 

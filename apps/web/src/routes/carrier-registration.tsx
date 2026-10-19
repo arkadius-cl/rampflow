@@ -6,11 +6,10 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/app-shell/auth-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useExchangeOnce, useFragmentToken } from '@/hooks/use-fragment-token';
 import { api, call, isFailure } from '@/lib/api';
-import { useLocale } from '@/lib/i18n';
 import { TokenSignIn } from '@/modules/carriers/sign-in-form';
 
 // CR-02: /carrier-registration#<token> confirms the email of a public-link registration and signs
@@ -24,12 +23,11 @@ export const Route = createFileRoute('/carrier-registration')({
 function VerifyRegistrationPage() {
   const { t } = useTranslation('booking');
   const token = useFragmentToken();
-  const locale = useLocale();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const verify = () =>
     call<RegistrationVerified>(
-      api.public.registrations.verify.$post({ json: { token: token ?? '', locale } }),
+      api.public.registrations.verify.$post({ json: { token: token ?? '' } }),
     );
   const first = useExchangeOnce(token && `registration:${token}`, verify);
   const retry = useMutation({ mutationFn: verify, meta: { silent: true } });
@@ -98,6 +96,9 @@ function SignInToConfirm({ email, onSignedIn }: { email: string; onSignedIn: () 
       >
         {t(($) => $.registration.verify.magic)}
       </Link>
+      <Button type="button" variant="outline" onClick={onSignedIn}>
+        {t(($) => $.registration.verify.continue)}
+      </Button>
     </TokenSignIn>
   );
 }
