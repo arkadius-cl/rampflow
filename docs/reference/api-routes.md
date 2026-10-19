@@ -97,7 +97,7 @@ Every route in the tables below under `/api/t`, `/api/c`, `/api/platform` and `/
 3. **Missing permission**: 403 `forbidden`.
 4. **Entitlement off**: 403 `entitlement_required`.
 
-Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has an account case (`defineAccountCases` in the same `route-cases.ts`, exported as `accountCases`) with its credential: `session`, `token` or `none`. The harness checks that a session route answers 401 without a session and with a driver cookie, and shows the same role in world B nothing of world A; that a token route answers 401 for an unknown token and for a driver token, even with a session; and that every control answer shows nothing of world B. `route-coverage.test.ts` fails for a route under these prefixes without an account case.
+Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has an account case (`defineAccountCases` in the same `route-cases.ts`, exported as `accountCases`) with its credential: `session`, `token` or `none`. The harness checks that a session route answers 401 without a session and with a driver cookie, and shows the same role in world B nothing of world A; that a token route answers 401 for an unknown token, a driver token and a token of another purpose, even with a session, and for a single-use token the second time; and that every control answer shows nothing of world B. `route-coverage.test.ts` fails for a route under these prefixes without an account case.
 
 ## Auth, me and invitations
 

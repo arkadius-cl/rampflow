@@ -351,7 +351,9 @@ export interface AccountRouteCase {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   credential: 'session' | 'token' | 'none';       // rf_session, a `token` in the body, or open
-  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown }>; // the control call
+  singleUse?: boolean;                            // token routes; default true: a second call answers 401
+  // The control call; token cases also return a valid token of another purpose, which must fail.
+  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown; otherToken?: string }>;
 }
 export function defineAccountCases(cases: readonly AccountRouteCase[]): readonly AccountRouteCase[];
 ```
