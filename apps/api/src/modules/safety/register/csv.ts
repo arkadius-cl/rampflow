@@ -1,0 +1,63 @@
+import { TZDate } from '@date-fns/tz';
+import type { StaffLocale } from '@rampflow/shared';
+import type { RegisterItem } from '@rampflow/shared/modules/safety/api.register';
+import { formatISO } from 'date-fns';
+import type { TFunction } from 'i18next';
+
+// CSV of the register (SF-03, API conventions "Time and formats"): UTF-8 with BOM, the user's
+// delimiter, header from the user's locale, instants with the site's offset.
+
+export const CSV_DELIMITER: Record<StaffLocale, string> = { de: ';', en: ',', pl: ';' };
+
+const COLUMNS = [
+  'completedAt',
+  'expiresAt',
+  'status',
+  'driverName',
+  'carrier',
+  'booking',
+  'site',
+  'instruction',
+  'version',
+  'locale',
+  'score',
+  'attempts',
+  'channel',
+] as const;
+
+/** Quotes when needed, and defuses cells a spreadsheet would run as a formula. */
+function cell(value: string, delimiter: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return safe.includes(delimiter) || /["\r\n]/.test(safe)
+    ? `"${safe.replaceAll('"', '""')}"`
+    : safe;
+}
+
+const siteTime = (iso: string | null, timeZone: string) =>
+  iso ? formatISO(new TZDate(new Date(iso), timeZone)) : '';
+
+export function registerCsv(items: readonly RegisterItem[], locale: StaffLocale, t: TFunction) {
+  const delimiter = CSV_DELIMITER[locale];
+  const line = (values: readonly string[]) => values.map((v) => cell(v, delimiter)).join(delimiter);
+  const rows = items.map((item) => {
+    const zone = item.site?.timeZone ?? 'UTC';
+    const values: Record<(typeof COLUMNS)[number], string> = {
+      completedAt: siteTime(item.completedAt, zone),
+      expiresAt: siteTime(item.expiresAt, zone),
+      status: t(`safety:register.status.${item.status}`),
+      driverName: item.driverName,
+      carrier: item.booking?.carrierName ?? '',
+      booking: item.booking?.code ?? '',
+      site: item.site?.name ?? '',
+      instruction: item.instruction.name,
+      version: String(item.version.version),
+      locale: item.locale,
+      score: item.score === null ? '' : String(item.score),
+      attempts: String(item.attempts),
+      channel: t(`safety:register.channel.${item.channel}`),
+    };
+    return line(COLUMNS.map((c) => values[c]));
+  });
+  const header = line(COLUMNS.map((c) => t(`safety:register.csv.${c}`)));
+  return `﻿${[header, ...rows].join('\r\n')}\r\n`;
+}

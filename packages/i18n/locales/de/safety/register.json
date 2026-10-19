@@ -1,0 +1,27 @@
+{
+  "csv": {
+    "completedAt": "Abgeschlossen am",
+    "expiresAt": "Gültig bis",
+    "status": "Status",
+    "driverName": "Fahrer",
+    "carrier": "Spediteur",
+    "booking": "Buchung",
+    "site": "Standort",
+    "instruction": "Unterweisung",
+    "version": "Version",
+    "locale": "Sprache",
+    "score": "Quiz-Ergebnis (%)",
+    "attempts": "Versuche",
+    "channel": "Kanal"
+  },
+  "status": {
+    "valid": "Gültig",
+    "visit_only": "Nur dieser Besuch",
+    "expired": "Abgelaufen",
+    "outdated": "Veraltet"
+  },
+  "channel": {
+    "link": "Fahrerlink",
+    "staff": "Gerät am Tor"
+  }
+}

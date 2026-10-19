@@ -194,20 +194,22 @@ Request schemas and response shapes live in `packages/shared/src/modules/core/ap
 
 ## Safety authoring and register
 
-Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule('safety')`.
+Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule('safety')`. Schemas in `packages/shared/src/modules/safety/api.authoring.ts` and `api.register.ts`.
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | | SF-01 | |
-| POST | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | limit `safety.max_briefing_templates` | SF-01 | `{ name, allSites, siteIds }`; version 1 draft from the 12-language platform template, non-de/en flagged `machine` |
-| PATCH | `/api/t/:orgId/safety/instructions/:instructionId` | `safety.manage_briefings` | | SF-01 | name, sites, archive |
-| GET | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | |
-| POST | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | new draft copied from the latest version |
-| GET | `/api/t/:orgId/safety/versions/:versionId` | `safety.manage_briefings` | | SF-01 | all locales |
-| PUT | `/api/t/:orgId/safety/versions/:versionId/content/:locale` | `safety.manage_briefings` | `safety.quiz` when questions are sent | SF-01, SF-02 | draft only, else 409 `invalid_transition` |
-| POST | `/api/t/:orgId/safety/versions/:versionId/publish` | `safety.manage_briefings` | | SF-01, SF-02 | `{ materialChange }`; with `safety.quiz`, 3 to 5 questions per published locale |
-| GET | `/api/t/:orgId/safety/acknowledgements` | `safety.view_register` | | SF-03 | paginated; filters site, carrier, driver name, version, expiry |
-| GET | `/api/t/:orgId/safety/acknowledgements.csv` | `safety.view_register` | | SF-03 | same filters |
+| GET | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | | SF-01 | `{ items }` with sites, archive time, published and draft version |
+| POST | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | limit `safety.max_briefing_templates` | SF-01 | `{ name, allSites, siteIds }`; version 1 draft from the 12-language platform template, de and en flagged `source`, the others `machine`; template questions only with `safety.quiz`; a site of another tenant answers 404 |
+| PATCH | `/api/t/:orgId/safety/instructions/:instructionId` | `safety.manage_briefings` | | SF-01 | `{ name?, allSites?, siteIds?, archived? }`; `allSites` and `siteIds` change together; `archived: false` counts against the limit again |
+| GET | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | `{ items }`, newest first, with locales, translation flags and question counts |
+| POST | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | new draft copied from the latest version (201); the open draft if one exists (200); without `safety.quiz` the copy drops its questions |
+| GET | `/api/t/:orgId/safety/versions/:versionId` | `safety.manage_briefings` | | SF-01 | all locales with questions, answers and content hash |
+| PUT | `/api/t/:orgId/safety/versions/:versionId/content/:locale` | `safety.manage_briefings` | `safety.quiz` when questions are sent | SF-01, SF-02 | `{ title, blocks, questions, statement, translation }`; draft only, else 409 `invalid_transition` with `status`; at most 5 questions, 2 to 4 options each |
+| POST | `/api/t/:orgId/safety/versions/:versionId/publish` | `safety.manage_briefings` | | SF-01, SF-02 | `{ materialChange }`; retires the previous version; with `safety.quiz`, 409 `conflict` reason `quiz_incomplete` with `locales`, `min`, `max` unless every locale has 3 to 5 questions; without it, 403 `entitlement_required` while any locale has questions; repeating it answers 200 |
+| POST | `/api/t/:orgId/safety/acknowledgements/search` | `safety.view_register` | | SF-03 | `{ siteId?, carrierId?, driverName?, instructionId?, versionId?, status?, limit?, cursor? }`; newest first, paginated; `status` is `valid`, `visit_only`, `expired` or `outdated` from `acknowledgementStatus`; restricted rows (TN-06) are left out |
+| POST | `/api/t/:orgId/safety/acknowledgements.csv` | `safety.view_register` | | SF-03 | same filters without paging, up to 50,000 rows; CSV format of [Time and formats](#time-and-formats) |
+
+The register routes take their filters in a POST body, not a query string, because the driver name is a personal search term ([Requests](#requests)).
 
 ## Bookings (staff)
 

@@ -1,0 +1,27 @@
+{
+  "csv": {
+    "completedAt": "Completed at",
+    "expiresAt": "Valid until",
+    "status": "Status",
+    "driverName": "Driver",
+    "carrier": "Carrier",
+    "booking": "Booking",
+    "site": "Site",
+    "instruction": "Briefing",
+    "version": "Version",
+    "locale": "Language",
+    "score": "Quiz score (%)",
+    "attempts": "Attempts",
+    "channel": "Channel"
+  },
+  "status": {
+    "valid": "Valid",
+    "visit_only": "This visit only",
+    "expired": "Expired",
+    "outdated": "Outdated"
+  },
+  "channel": {
+    "link": "Driver link",
+    "staff": "Gate device"
+  }
+}

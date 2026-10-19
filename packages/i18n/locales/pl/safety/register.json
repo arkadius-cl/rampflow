@@ -1,0 +1,27 @@
+{
+  "csv": {
+    "completedAt": "Ukończono",
+    "expiresAt": "Ważne do",
+    "status": "Status",
+    "driverName": "Kierowca",
+    "carrier": "Przewoźnik",
+    "booking": "Rezerwacja",
+    "site": "Lokalizacja",
+    "instruction": "Instruktaż",
+    "version": "Wersja",
+    "locale": "Język",
+    "score": "Wynik quizu (%)",
+    "attempts": "Próby",
+    "channel": "Kanał"
+  },
+  "status": {
+    "valid": "Ważne",
+    "visit_only": "Tylko ta wizyta",
+    "expired": "Wygasło",
+    "outdated": "Nieaktualne"
+  },
+  "channel": {
+    "link": "Link kierowcy",
+    "staff": "Urządzenie przy bramie"
+  }
+}
