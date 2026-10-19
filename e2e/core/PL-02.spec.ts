@@ -22,6 +22,8 @@ test.describe('PL-02 Packages and overrides', () => {
     request,
     browser,
   }) => {
+    // Two browsers, five round trips to the platform and a reload of the tenant shell.
+    test.slow();
     const w = await seedWorld(request);
     await signInAs(context, w.platformAdmin);
     const admin = await browser.newContext();

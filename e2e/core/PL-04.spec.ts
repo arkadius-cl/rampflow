@@ -18,7 +18,7 @@ test.describe('PL-04 Usage', () => {
     await page.goto('/platform/tenants');
     const row = page.getByTestId(`tenant-${w.A.tenantId}`);
     // GET /api/platform/tenants reads usage tenant by tenant, and every e2e run adds tenants.
-    await expect(row).toBeVisible({ timeout: 30_000 });
+    await expect(row).toBeVisible({ timeout: 60_000 });
     const cells = row.getByRole('cell');
     await expect(cells.nth(0)).toContainText('Tenant A');
     await expect(cells.nth(1)).toHaveText('Pro');

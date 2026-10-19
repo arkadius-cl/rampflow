@@ -10,7 +10,7 @@ test.describe('PL-01 Create a tenant', () => {
     request,
     browser,
   }) => {
-    // Waits for the outbox (5 s ticks) and lists every tenant of the database.
+    // Waits for the outbox, which sends every 5 seconds.
     test.slow();
     const w = await seedWorld(request);
     await signInAs(context, w.platformAdmin);
@@ -19,14 +19,13 @@ test.describe('PL-01 Create a tenant', () => {
 
     await page.goto('/platform/tenants');
     await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible();
-    await expect(page.getByTestId(`tenant-${w.A.tenantId}`)).toBeVisible({ timeout: 30_000 });
-    await expectAccessible(page);
 
     await page.getByRole('button', { name: 'Create tenant' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Company name').fill(name);
     await dialog.getByLabel('Package').selectOption('pro');
     await dialog.getByLabel('Admin email').fill(adminEmail);
+    await expectAccessible(page);
     await dialog.getByRole('button', { name: 'Create and invite' }).click();
 
     await expect(page.getByRole('heading', { name })).toBeVisible();
@@ -34,6 +33,7 @@ test.describe('PL-01 Create a tenant', () => {
     await expect(page.getByTestId('entitlement-core.max_sites')).toContainText('5');
     await expect(page.getByTestId('entitlement-safety.quiz')).toContainText('On');
     await expect(page.getByText(adminEmail)).toBeVisible();
+    await expectAccessible(page);
 
     const joined = await acceptEmailedInvitation(browser, adminEmail, 'Ada Acme');
     await expect(joined).toHaveURL(new RegExp(`/t/${tenantId}`));

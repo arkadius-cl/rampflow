@@ -70,7 +70,8 @@ test.describe('TN-02 Settings', () => {
     await expect(plate.getByRole('switch')).toBeChecked();
 
     const references = page.getByTestId('setting-avis.required_reference_types');
-    await references.getByRole('checkbox', { name: 'Delivery note' }).check();
+    // The keyboard, because the toast of the previous save can cover the checkbox.
+    await references.getByRole('checkbox', { name: 'Delivery note' }).press('Space');
     await references.getByRole('button', { name: 'Save' }).click();
     await expect(references).toContainText('Set here (Tenant)');
     await expect(references.getByRole('checkbox', { name: 'Delivery note' })).toBeChecked();

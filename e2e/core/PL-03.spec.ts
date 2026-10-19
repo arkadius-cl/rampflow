@@ -13,6 +13,8 @@ test.describe('PL-03 Platform defaults', () => {
     request,
     browser,
   }) => {
+    // Two browsers editing one setting at two levels.
+    test.slow();
     const w = await seedWorld(request);
     await resetPlatformSetting(request, w, KEY);
     const admin = await browser.newContext();
