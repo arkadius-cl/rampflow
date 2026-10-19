@@ -21,7 +21,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
 import { api } from '@/lib/api';
 import { useLocale } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 
 // SF-04 on the phone or the gate's device: read every rule, answer the quiz when there is one,
 // type the name and tick the statement, once per instruction still missing. A failed quiz goes
@@ -337,9 +336,7 @@ function Quiz(p: {
               <label
                 key={option}
                 htmlFor={`${q.id}-${j}`}
-                className={cn(
-                  'flex min-h-12 items-center gap-3 rounded-lg border px-3 text-base has-data-checked:border-primary has-data-checked:bg-accent',
-                )}
+                className="flex min-h-12 items-center gap-3 rounded-lg border px-3 text-base has-data-checked:border-primary has-data-checked:bg-accent"
               >
                 <RadioGroupItem id={`${q.id}-${j}`} value={String(j)} className="size-6" />
                 <span className="flex-1">{option}</span>
