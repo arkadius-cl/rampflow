@@ -11,7 +11,7 @@ related: [docs/explanation/mvp-scope.md, docs/explanation/research/domain-standa
 
 # ADR-0008: Driver links, token exchange and the driver PWA as a separate app
 
-Status: accepted, 2026-10-19.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: the booking poll is read-only, pass redemption moved to the briefings endpoint, and reschedules move the link expiry.
 
 ## Context
 
@@ -44,7 +44,7 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 - `token = base64url(HMAC-SHA256(DRIVER_LINK_SECRET, id))`, 256 bits. `token_hash = sha256(token)`, unique.
 - One active `link` row per booking. Booking creation issues it; "Regenerate" (CR-06) revokes the current row and issues a new one.
 - `GET .../bookings/:id/driver-link` recomputes the URL for users who may see the booking. The token never appears in a request line, only in responses to authorized users.
-- Expiry: at creation `starts_at + 7 days`. Departure sets it to `min(departed_at + privacy.retention.driver_link_hours, starts_at + 7 days)`. `turned_away` does the same from the transition time. Cancellation revokes at once (BK-05).
+- Expiry: at creation `starts_at + 7 days`. A reschedule moves the active `link` row's `expires_at` to the new `starts_at + 7 days` in the same transaction, so a booking moved further out keeps a working link. Departure sets it to `min(departed_at + privacy.retention.driver_link_hours, starts_at + 7 days)`. `turned_away` does the same from the transition time. Cancellation revokes at once (BK-05).
 - Rotating `DRIVER_LINK_SECRET` invalidates every link; that is the emergency revocation path.
 
 ### Exchange and session
@@ -58,18 +58,19 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 
 ### What the driver sees
 
-`GET /api/driver/booking` returns a view model with no driver name, phone or plate (DR-01): tenant name and logo, site name, address and map link, slot instants with the site zone, booking code (the PWA draws the QR from the code, never from the token), status, dock and hall when called, safety status, and the privacy notice URL or `null` for the platform template. Polling runs every 15 seconds while `document.visibilityState` is `visible`, and immediately when the page becomes visible.
+`GET /api/driver/booking` returns a view model with no driver name, phone or plate (DR-01): tenant name and logo, site name, address and map link, slot instants with the site zone, booking code (the PWA draws the QR from the code, never from the token), status, dock and hall when called, safety status, and the privacy notice URL or `null` for the platform template. Polling runs every 15 seconds while `document.visibilityState` is `visible`, and immediately when the page becomes visible. The poll is read-only: it writes nothing, not even a safety link, so 2,000 open PWAs add reads only. Its safety status comes from `booking_acknowledgement`.
 
 ### Safety pass
 
 - After an acknowledgement through channel `link`, the API sets `rf_device` (32 random bytes, `HttpOnly; Secure; SameSite=Strict; Path=/api/driver`, one year) if absent, and upserts `safety_pass (device_hash, tenant_id, instruction_id, acknowledgement_id, expires_at)`.
-- When this phone opens another booking at the same tenant, `GET /api/driver/booking` redeems valid passes: it links each still-valid acknowledgement to the new booking and shows "valid until". Redemption reads acknowledgements beyond the current booking, so it runs as a tenant scope with actor `system:safety_pass` in `safety_pass.redeem.ts`.
+- When this phone opens another booking at the same tenant, `GET /api/driver/briefings` redeems valid passes: it links each still-valid acknowledgement to the new booking, and the briefing list and the booking view then show "valid until". The PWA calls it once per page load, right after the exchange and before the first booking poll, and again only when it opens the briefing screen. Redemption is an upsert on `(booking_id, instruction_id)`, so a repeated call changes nothing.
+- Redemption reads acknowledgements beyond the current booking. It runs in `safety_pass.redeem.ts` inside the request transaction through `asScope` with a tenant scope and actor `system:safety_pass` ([ADR-0002](ADR-0002-tenancy-isolation-rls.md)), never as a second transaction.
 - **Gate device.** "Start briefing on this device" (YD-02) issues a `driver_access` row with channel `staff`, 30 minutes, and opens `/d#<token>` in a new window. Acknowledgements get channel `staff`, and the API never sets `rf_device` or a pass for a `staff` session, so the next driver at the same tablet starts fresh.
 
 ### The app
 
 - `apps/driver`: Vite 8, React 19, `base: '/d/'`, no router library (one screen state machine: invalid, booking, briefing, quiz), no TanStack Query (one polling hook), regular zod, i18next with the `driver` namespace in 12 locales. shadcn components are added with `shadcn add -c apps/driver`.
-- `vite-plugin-pwa` with `generateSW`: precache the shell, fonts and pictograms; `NetworkFirst` with a 3-second timeout for `GET /api/driver/booking`. Offline, the PWA shows the last state with "as of HH:mm" (DR-03). Check-in and acknowledgements need the network. The PWA never prompts for installation.
+- `vite-plugin-pwa` with `generateSW`: precache the shell, fonts and pictograms; `NetworkFirst` with a 3-second timeout for `GET /api/driver/booking`. Offline, the PWA shows the last state with "as of HH:mm" (DR-03). The cached view always belongs to the booking of the current cookie, because both change only on a successful exchange. Opening a new link offline fails the exchange, and the PWA then says it is offline instead of showing the cached view of the previous booking. Check-in and acknowledgements need the network. The PWA never prompts for installation.
 - Budget: `pnpm --filter @rampflow/driver size` builds and fails when initial JavaScript exceeds 150 KB gzip. The briefing and quiz screens load as a lazy chunk.
 - Serving: in development `apps/web`'s Vite proxy forwards `/d` to the driver dev server on port 5174, so Playwright and the PWA use one origin. In production the API serves `apps/web/dist` at `/` and `apps/driver/dist` at `/d/` with `serveStatic`, and adds `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'self'; img-src 'self' data:; connect-src 'self'` to every `/d` response.
 
