@@ -89,10 +89,11 @@ function inPeriod(ctx: ReportContext, f: ReportFilter, range: Interval): SQL {
 
 const minutes = (later: SQLWrapper, earlier: SQLWrapper) =>
   sql`extract(epoch from (${later} - ${earlier})) / 60`;
-const waitMinutes = minutes(
+/** A truck docked before its slot started waited 0 minutes, not a negative time. */
+const waitMinutes = sql`greatest(0, ${minutes(
   sql`${booking.atDockAt}`,
   sql`greatest(${booking.checkedInAt}, ${booking.startsAt})`,
-);
+)})`;
 const dwellMinutes = minutes(sql`${booking.doneAt}`, sql`${booking.atDockAt}`);
 const turnaroundMinutes = minutes(sql`${booking.departedAt}`, sql`${booking.checkedInAt}`);
 
@@ -311,7 +312,12 @@ async function queryVisits(
     turnedAwayAt: iso(b.turnedAwayAt),
     waitMinutes:
       b.atDockAt && b.checkedInAt
-        ? span(b.atDockAt, b.checkedInAt > b.startsAt ? b.checkedInAt : b.startsAt)
+        ? round1(
+            Math.max(
+              0,
+              b.atDockAt.getTime() - Math.max(b.checkedInAt.getTime(), b.startsAt.getTime()),
+            ) / 60_000,
+          )
         : null,
     dockDwellMinutes: span(b.doneAt, b.atDockAt),
     turnaroundMinutes: span(b.departedAt, b.checkedInAt),

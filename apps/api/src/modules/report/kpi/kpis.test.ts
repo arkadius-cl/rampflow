@@ -249,6 +249,40 @@ describe('RP-01 KPI dashboard', () => {
     }
   });
 
+  it('counts a truck docked before its slot as zero wait, not negative', async () => {
+    const early = await seedVisit(w.A, {
+      startsAt: new Date('2026-11-14T10:00:00Z'),
+      createdParty: 'carrier',
+      status: 'done',
+      set: {
+        checkedInAt: new Date('2026-11-14T07:30:00Z'),
+        atDockAt: new Date('2026-11-14T08:00:00Z'),
+        doneAt: new Date('2026-11-14T08:40:00Z'),
+      },
+    });
+    await seedVisit(w.A, {
+      startsAt: new Date('2026-11-14T12:00:00Z'),
+      createdParty: 'carrier',
+      status: 'done',
+      set: {
+        checkedInAt: new Date('2026-11-14T11:50:00Z'),
+        atDockAt: new Date('2026-11-14T12:20:00Z'),
+        doneAt: new Date('2026-11-14T12:50:00Z'),
+      },
+    });
+    clock.set(new Date('2026-11-15T07:00:00Z'));
+    try {
+      expect((await kpisOf(day('2026-11-14'))).kpis.waitMinutes).toBe(10);
+      const res = await as(app, w.A.users.dispatcher).get(
+        `/api/t/${w.A.tenantId}/reports/visits?${new URLSearchParams(day('2026-11-14'))}`,
+      );
+      const page = (await res.json()) as VisitPage;
+      expect(page.items.find((v) => v.code === early.code)?.waitMinutes).toBe(0);
+    } finally {
+      clock.set(new Date('2026-11-11T07:00:00Z'));
+    }
+  });
+
   it('counts a booking not yet started as not due', async () => {
     clock.set(cet('12:30'));
     try {

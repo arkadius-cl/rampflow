@@ -173,7 +173,7 @@ RP-01 reads only booking columns, so the 90-day query stays one indexed scan, an
 | No-show rate | due with `no_show_at is not null` / due |
 | Late-cancellation rate | due with `cancelled_late = true` / due |
 | On-time rate | `punctuality = 'on_time'` / arrived, where arrived is `checked_in_at is not null and walk_in = false`; early and late reported apart the same way |
-| Wait | mean of `at_dock_at - max(checked_in_at, starts_at)` over visits with both timestamps |
+| Wait | mean of `max(0, at_dock_at - max(checked_in_at, starts_at))` over visits with both timestamps. A truck docked before its slot started waited 0 minutes. The visit list (RP-02) shows the same per-visit value |
 | Dock dwell | mean of `done_at - at_dock_at` over visits with both |
 | Turnaround | mean of `departed_at - checked_in_at` over visits with both |
 | Dock utilisation | sum of `done_at - at_dock_at` / (active docks × open minutes). Active docks: the site's docks with status `active` (with a resource filter, its member docks). Open minutes: the site's weekly hours over the period's local days, minus site closures, holiday closures only while `booking.close_on_public_holidays` is on |
@@ -214,4 +214,4 @@ U11's RP-01 test seeds exactly these 10 bookings and asserts these values. Site 
 | Portal adoption | 70.0 % | 7 carrier bookings of 10 |
 | Standgeld visits | 1 | V3 (135 minutes) |
 
-As built (U11): `report/kpi/kpis.ts` computes the table with one aggregate over the period's bookings. `kpis.test.ts` seeds this fixture and asserts every value. The API calls Standgeld visits `standgeldVisits`, and the English UI says "Detention visits".
+As built (U11): `report/kpi/kpis.ts` computes the table with one aggregate over the period's bookings. `kpis.test.ts` seeds this fixture and asserts every value. A separate case on another day proves the wait clamp: a truck at the dock two hours before its slot counts 0 minutes, not -120. The API calls Standgeld visits `standgeldVisits`, and the English UI says "Detention visits".
