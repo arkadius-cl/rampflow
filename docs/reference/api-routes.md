@@ -36,7 +36,7 @@ Hono 4 on `/api`. The web app calls it through the `hc` client typed by `AppType
 ### Requests
 
 - JSON bodies with `Content-Type: application/json`. Exceptions: `PUT /brand/logo` takes the raw image body, and `*.csv` routes return `text/csv`.
-- Mutating requests need `Origin` equal to `APP_ORIGIN`, else 403 `forbidden` ([ADR-0003](../decisions/ADR-0003-authentication-self-built-sessions.md)).
+- Mutating requests need `Origin` equal to `APP_ORIGIN` or one of `APP_EXTRA_ORIGINS`, else 403 `forbidden` ([ADR-0003](../decisions/ADR-0003-authentication-self-built-sessions.md)).
 - Personal search terms (driver name, phone, plate) travel in POST bodies, never in query strings, so they stay out of logs.
 - Path ids are UUIDs. A malformed id answers 404, like an unknown one.
 

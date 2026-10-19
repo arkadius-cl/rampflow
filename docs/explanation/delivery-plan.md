@@ -76,7 +76,7 @@ These files are touched by more than one unit. The rule column is binding.
 
 ## Merge procedure
 
-**Per-checkout environment.** Units of one wave run in parallel worktrees on one machine. After creating a worktree, run `node scripts/checkout-env.mjs --write` once, then `pnpm db:setup`. The script gives each worktree its own database names (`rampflow_<slug>`) and its own port block (API `3000 + 10n`, web `5173 + 10n`, driver `5174 + 10n`, `APP_ORIGIN` to match) in `.env`; the main checkout keeps `rampflow`, 3000, 5173 and 5174. Every `pnpm` script that touches the database or a port runs through it, so two units never share a database, a dev server or a Playwright run.
+**Per-checkout environment.** Units of one wave run in parallel worktrees on one machine. After creating a worktree, run `node scripts/checkout-env.mjs --write` once, then `pnpm db:setup`. The script gives each worktree its own database names (`rampflow_<slug>`) and its own port block (API `3000 + 10n`, web `5173 + 10n`, driver `5174 + 10n`) in `.env`. The main checkout keeps `rampflow`, 3000, 5173 and 5174. `APP_ORIGIN` is not written: the script derives it on every run from the LAN address and the web port. Every `pnpm` script that touches the database or a port runs through it, so two units never share a database, a dev server or a Playwright run.
 
 For each unit of a wave, one at a time, in unit order:
 

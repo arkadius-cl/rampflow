@@ -20,7 +20,7 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 |---|---|
 | `pnpm db:up` | Start Postgres and Mailpit (podman). Tests need it. |
 | `pnpm db:seed` | Load the demo data. Accounts are in `docs/how-to/run-locally.md`. |
-| `pnpm dev` | Run the API, the web app and the driver app. |
+| `pnpm dev` | Run the API, the web app and the driver app, reachable from the LAN at the printed `APP_ORIGIN`. |
 | `pnpm verify` | Lint, typecheck, unit and integration tests, docs check, i18n check. Green before every commit. |
 | `pnpm test:e2e` | Playwright inside the pinned container, on a fresh `<checkout db>_e2e` and ports +5, never the dev database or `pnpm dev`. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
 | `pnpm format` | Biome fixes. |

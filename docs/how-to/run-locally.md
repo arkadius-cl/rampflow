@@ -1,9 +1,9 @@
 ---
 title: Run rampflow locally
-description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps and the tests, check that tests do not depend on the real date, bootstrap a platform admin, and run several checkouts in parallel.
+description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps, open them from another device in the LAN, run the tests, check that tests do not depend on the real date, bootstrap a platform admin, and run several checkouts in parallel.
 type: how-to
 audience: [developer, agent]
-tags: [setup, dev, testing, database, mail, worktrees]
+tags: [setup, dev, testing, database, mail, worktrees, lan]
 status: stable
 updated: 2026-10-19
 related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
@@ -93,13 +93,45 @@ pnpm dev
 
 - The API listens on `API_PORT` (3000 in the main checkout). `tsx watch` restarts it on change. Jobs run in process unless `ENABLE_JOBS=0`.
 - The web app runs on `WEB_PORT` (5173). Vite forwards `/api` to the API and `/d` to the driver app on `DRIVER_PORT` (5174).
+- Both Vite servers listen on every network interface, so other devices in the LAN can open the app.
 
-Every mutating request needs `Origin` equal to `APP_ORIGIN`, which `.env` sets to the web app's address, so call the API through the Vite proxy:
+Every mutating request needs `Origin` equal to `APP_ORIGIN` or to one of `APP_EXTRA_ORIGINS`. In dev these are the web app's addresses on this machine, so call the API through the Vite proxy:
 
 ```sh
 curl http://localhost:5173/api/health
 # {"status":"ok","db":"ok"}
 ```
+
+## Open the app from another device in the LAN
+
+`pnpm dev` serves the app on the machine's LAN address, so a phone or a gate PC in the same network can use it.
+
+1. Find the address. `node scripts/checkout-env.mjs` prints it as `APP_ORIGIN`, and Vite prints it as `Network:` at start-up.
+
+   ```sh
+   node scripts/checkout-env.mjs | grep ORIGIN
+   # APP_ORIGIN=http://192.168.0.10:5173
+   # APP_EXTRA_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://100.74.97.126:5173
+   ```
+
+2. Open `APP_ORIGIN` on the other device. The driver app is at `/d` on the same address.
+
+How the address is chosen:
+
+- `DEV_HOST` is the first non-internal IPv4 address in a private range (`10/8`, `172.16/12`, `192.168/16`), else the first non-internal IPv4 address, else `localhost`.
+- `APP_ORIGIN` is `http://<DEV_HOST>:<WEB_PORT>`. Emailed links (driver links, invitations, sign-in links) and logo URLs use it, so a phone in the LAN can open them.
+- `APP_EXTRA_ORIGINS` lists `localhost`, `127.0.0.1` and every other address of the machine. The API accepts writes from these origins too, so `http://localhost:5173` keeps working on the machine itself.
+- The script computes these values on every run and never writes them to `.env`, so a new DHCP address needs no change.
+
+To use a different address or a hostname, set `DEV_HOST` in `.env` or in the shell, for example `DEV_HOST=dock-pc.local`. Vite then accepts that hostname as well. An `APP_ORIGIN` in the shell overrides the derived origin.
+
+Over plain `http` on a LAN address the browser does not give the page a secure context. Only `localhost` counts as secure without HTTPS. This has three effects on the other device:
+
+- The driver PWA works in the browser, but it cannot install its service worker. There is no "Add to home screen" install and no offline view.
+- Copy to clipboard is not available.
+- The Web Share sheet is not available.
+
+Test these three features on `localhost` or behind HTTPS.
 
 ## Run the checks
 
@@ -186,7 +218,9 @@ Units of one wave run in separate git worktrees on one machine. Each worktree ne
    # API_PORT=3730
    # WEB_PORT=5903
    # DRIVER_PORT=5904
-   # APP_ORIGIN=http://localhost:5903
+   # DEV_HOST=192.168.0.10
+   # APP_ORIGIN=http://192.168.0.10:5903
+   # APP_EXTRA_ORIGINS=http://localhost:5903,http://127.0.0.1:5903
    # DATABASE_URL=postgres://rampflow_app:rampflow_app@localhost:5432/rampflow_rampflow_u4
    # MIGRATION_DATABASE_URL=postgres://rampflow:rampflow@localhost:5432/rampflow_rampflow_u4
    ```
