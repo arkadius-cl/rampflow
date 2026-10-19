@@ -209,13 +209,23 @@ describe('CR-02 register through a public link', () => {
     });
   });
 
-  it('works once: a second verification answers 401', async () => {
+  it('works once: a second verification answers 401, also when signed in', async () => {
     const slug = await open('approval_required');
     const email = unique('once');
-    expect((await registerAndVerify(slug, email)).status).toBe(200);
-    const { token } = await registered(email);
-    const res = await anon.post('/api/public/registrations/verify', { body: { token } });
+    const first = await registerAndVerify(slug, email);
+    expect(first.status).toBe(200);
+    const { token, row } = await registered(email);
+    const verifiedUser = {
+      id: row.userId as never,
+      email,
+      role: 'carrier_admin' as const,
+      sessionToken: sessionOf(first) as string,
+    };
+    const res = await as(app, verifiedUser).post('/api/public/registrations/verify', {
+      body: { token },
+    });
     expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ error: { message: 'Invalid or expired link' } });
   });
 
   it('a known email gets the same 202, a sign-in prompt, and attaches to its org', async () => {
