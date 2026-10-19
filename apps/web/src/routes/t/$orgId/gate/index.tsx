@@ -88,8 +88,10 @@ function Gate({ siteId }: { siteId: string }) {
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
   const found = useQuery(searchQuery(orgId, siteId, q));
-  const [checkOut, setCheckOut] = useState<YardTruck>();
-  const [calling, setCalling] = useState<YardTruck>();
+  const [checkOutId, setCheckOut] = useState<string>();
+  const [callingId, setCalling] = useState<string>();
+  // A scanned booking may lie outside today's lists (an early truck); the dialog still needs it.
+  const [scanned, setScanned] = useState<YardTruck>();
   const tab = search.tab ?? 'expected';
   const canCall = access.can('yard.call') && access.has('yard.call_to_dock');
 
@@ -99,8 +101,16 @@ function Gate({ siteId }: { siteId: string }) {
     onsite: onSite.data?.items ?? [],
     departed: day.filter((b) => DEPARTED.has(b.status)),
   };
-  const all = [...day, ...lists.onsite, ...(found.data?.items ?? [])];
-  const dialogTruck = all.find((b) => b.id === search.checkin);
+  const all = [
+    ...lists.onsite,
+    ...day,
+    ...(found.data?.items ?? []),
+    ...(scanned ? [scanned] : []),
+  ];
+  const byId = (id: string | undefined) => (id ? all.find((b) => b.id === id) : undefined);
+  const dialogTruck = byId(search.checkin);
+  const checkOut = byId(checkOutId);
+  const calling = byId(callingId);
 
   const setSearch = (next: Partial<GateSearch>) =>
     void navigate({ search: (prev) => ({ ...prev, ...next }) });
@@ -111,6 +121,7 @@ function Gate({ siteId }: { siteId: string }) {
     if (!items || q === '') return;
     const exact = items.find((b) => b.code === q.trim().toUpperCase());
     if (exact) {
+      setScanned(exact);
       setInput('');
       setQ('');
       void navigate({ search: (prev) => ({ ...prev, checkin: exact.id }) });
@@ -226,8 +237,8 @@ function Gate({ siteId }: { siteId: string }) {
                 online={online}
                 canCall={canCall}
                 onOpen={() => setSearch({ checkin: b.id })}
-                onCheckOut={() => setCheckOut(b)}
-                onCall={() => setCalling(b)}
+                onCheckOut={() => setCheckOut(b.id)}
+                onCall={() => setCalling(b.id)}
               />
             ))}
           </ul>

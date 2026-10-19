@@ -2,6 +2,7 @@ import type { OnSiteTruck, YardDock, YardTruck } from '@rampflow/shared/modules/
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
+  ArrowLeftRightIcon,
   BellRingIcon,
   CircleCheckIcon,
   DoorOpenIcon,
@@ -64,9 +65,12 @@ function Docks({ siteId }: { siteId: string }) {
   const navigate = useNavigate({ from: Route.fullPath });
   const online = useOnline();
   const view = useQuery(docksQuery(orgId, siteId)).data;
-  const [completing, setCompleting] = useState<YardTruck>();
+  const [completingId, setCompleting] = useState<string>();
   const queue = view?.queue ?? [];
-  const calling = queue.find((b) => b.id === search.call);
+  const occupants =
+    view?.halls.flatMap((h) => h.docks.flatMap((d) => (d.occupant ? [d.occupant] : []))) ?? [];
+  const calling = [...queue, ...occupants].find((b) => b.id === search.call);
+  const completing = occupants.find((b) => b.id === completingId);
   const setCall = (call: string | undefined) =>
     void navigate({ search: (prev) => ({ ...prev, call }) });
 
@@ -94,7 +98,13 @@ function Docks({ siteId }: { siteId: string }) {
             </h2>
             <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
               {hall.docks.map((d) => (
-                <DockCard key={d.id} dock={d} online={online} onComplete={setCompleting} />
+                <DockCard
+                  key={d.id}
+                  dock={d}
+                  online={online}
+                  onComplete={(truck) => setCompleting(truck.id)}
+                  onReassign={(truck) => setCall(truck.id)}
+                />
               ))}
             </ul>
           </section>
@@ -196,10 +206,12 @@ function DockCard({
   dock,
   online,
   onComplete,
+  onReassign,
 }: {
   dock: YardDock;
   online: boolean;
   onComplete: (truck: YardTruck) => void;
+  onReassign: (truck: YardTruck) => void;
 }) {
   const { t } = useTranslation('yard');
   const { orgId } = Route.useParams();
@@ -295,6 +307,17 @@ function DockCard({
                 onClick={() => progress.mutate('uncall')}
               >
                 <UndoIcon /> {t(($) => $.docks.progress.uncall)}
+              </Button>
+            ) : null}
+            {truck.status === 'called' && access.can('yard.call') ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11"
+                disabled={disabled}
+                onClick={() => onReassign(truck)}
+              >
+                <ArrowLeftRightIcon /> {t(($) => $.docks.progress.reassign)}
               </Button>
             ) : null}
             {truck.driverPhone ? (

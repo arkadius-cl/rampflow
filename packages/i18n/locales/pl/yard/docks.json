@@ -22,7 +22,8 @@
     "at_dock": "Przy rampie",
     "loading": "Załadunek",
     "done": "Gotowe",
-    "uncall": "Cofnij wezwanie"
+    "uncall": "Cofnij wezwanie",
+    "reassign": "Inna rampa"
   },
   "call": {
     "title": "Wezwij {{carrier}} do rampy",

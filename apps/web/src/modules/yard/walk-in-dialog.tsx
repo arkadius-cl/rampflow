@@ -60,9 +60,9 @@ const WalkInForm = z
 type WalkInFormInput = z.input<typeof WalkInForm>;
 type WalkInFormOutput = z.output<typeof WalkInForm>;
 
-function bodyOf(f: WalkInFormOutput, siteId: string): WalkInBody {
+function bodyOf(f: WalkInFormOutput, siteId: string, clientRequestId: string): WalkInBody {
   const base = {
-    clientRequestId: crypto.randomUUID(),
+    clientRequestId,
     siteId,
     loadTypeId: f.loadTypeId,
     carrier: { name: f.carrierName },
@@ -122,6 +122,8 @@ export function WalkInDialog({
     (l) => l.active,
   );
   const [safetyMissing, setSafetyMissing] = useState(false);
+  // One id per dialog: a retry after a lost answer returns the first walk-in, not a second.
+  const [requestId] = useState(() => crypto.randomUUID());
   const form = useForm<WalkInFormInput, unknown, WalkInFormOutput>({
     resolver: zodResolver(WalkInForm),
     defaultValues: {
@@ -157,7 +159,7 @@ export function WalkInDialog({
   });
   const submit = (outcome: 'check_in' | 'turn_away') => {
     form.setValue('outcome', outcome);
-    void form.handleSubmit((f) => walkIn.mutate(bodyOf(f, siteId)))();
+    void form.handleSubmit((f) => walkIn.mutate(bodyOf(f, siteId, requestId)))();
   };
 
   const text = (

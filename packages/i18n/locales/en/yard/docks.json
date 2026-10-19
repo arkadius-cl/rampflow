@@ -22,7 +22,8 @@
     "at_dock": "At dock",
     "loading": "Loading",
     "done": "Done",
-    "uncall": "Cancel call"
+    "uncall": "Cancel call",
+    "reassign": "Other dock"
   },
   "call": {
     "title": "Call {{carrier}} to a dock",

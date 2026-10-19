@@ -22,7 +22,8 @@
     "at_dock": "An der Rampe",
     "loading": "Ladung läuft",
     "done": "Fertig",
-    "uncall": "Aufruf zurücknehmen"
+    "uncall": "Aufruf zurücknehmen",
+    "reassign": "Andere Rampe"
   },
   "call": {
     "title": "{{carrier}} an eine Rampe rufen",

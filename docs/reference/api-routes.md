@@ -283,7 +283,7 @@ Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('ya
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/yard/expected` | `yard.gate` | | YD-01 | `?siteId&date?` (`date` defaults to today at the site); `{ siteId, date, timeZone, items }` by start: the day's bookings except cancelled ones, plus no-shows whose `no_show_at` falls on that day. Before check-in, `punctuality` is what a check-in now would record |
+| GET | `/api/t/:orgId/yard/expected` | `yard.gate` | | YD-01 | `?siteId&date?` (`date` defaults to today at the site); `{ siteId, date, timeZone, items }` by start: the day's bookings except cancelled and requested ones, plus no-shows whose `no_show_at` falls on that day. Before check-in, `punctuality` is what a check-in now would record |
 | POST | `/api/t/:orgId/yard/search` | `yard.gate` | | YD-01 | `{ siteId, q }` (2 to 120 characters); exact booking code (case and surrounding whitespace ignored, so scanner input works), plate announced or seen (normalized), exact reference, or part of the carrier name; active visits and today's no-shows, nearest start first, at most 20 |
 | GET | `/api/t/:orgId/yard/on-site` | `yard.gate` | | YD-04 | `?siteId`; trucks in `checked_in` to `done`, whatever day they were booked for, by gate-in; each with `onSiteMinutes`, `waitMinutes` (from `max(checked_in_at, starts_at)` to the first dock timestamp, or to now) and `standgeld` (`onSiteMinutes` above `yard.standgeld_flag_minutes`) |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | `yard.gate` | | YD-02 | `{ plateSeen? }`; 409 `safety_missing` under enforcement; the truck shows `safety.status = 'missing'` as a warning otherwise |

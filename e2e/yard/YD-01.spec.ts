@@ -15,6 +15,7 @@ test.describe('YD-01 Expected trucks', () => {
       start: -40,
     });
     await seedVisit(w, { carrier: 'Romtrans SRL', plate: 'B44RTR', start: 60 });
+    const tomorrow = await seedVisit(w, { carrier: 'Frühstarter KG', plate: 'HHFS1', start: 1500 });
     await signInAs(context, w.A.users.gate_operator);
     await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}`);
 
@@ -45,6 +46,11 @@ test.describe('YD-01 Expected trucks', () => {
     await scan.fill('nobody');
     await scan.press('Enter');
     await expect(page.getByText('No booking found for “nobody”.')).toBeVisible();
+
+    // A truck a day early is not on today's list; its scanned code still opens the check-in.
+    await scan.fill(tomorrow.code);
+    await scan.press('Enter');
+    await expect(page.getByRole('dialog', { name: 'Check in Frühstarter KG' })).toBeVisible();
   });
 
   test('?site= survives a reload; without it the device opens its last site', async ({
