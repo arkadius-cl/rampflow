@@ -70,6 +70,15 @@ export interface SiteView {
   active: boolean;
 }
 
+/**
+ * What `GET /sites` counts against `core.max_sites` and `core.max_docks`: active sites, and
+ * active and maintenance docks, of the sites the caller can see.
+ */
+export interface SiteUsage {
+  sites: number;
+  docks: number;
+}
+
 export const CreateHall = z.object({ name: text(80), sort: z.int().min(0).optional() });
 export const UpdateHall = CreateHall.partial();
 export type CreateHall = z.infer<typeof CreateHall>;

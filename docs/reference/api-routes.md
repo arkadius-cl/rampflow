@@ -166,7 +166,7 @@ Unit U4.
 
 | Method | Path | Permission | Entitlement | Story | Router |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/sites` | member | | MD-01 | `core/sites/routes.tenant.ts`; a site-limited operator sees only its sites |
+| GET | `/api/t/:orgId/sites` | member | | MD-01 | `core/sites/routes.tenant.ts`; a site-limited operator sees only its sites; `{ items, usage: { sites, docks } }` counts active sites and active and maintenance docks against `core.max_sites` and `core.max_docks` |
 | POST | `/api/t/:orgId/sites` | `core.manage_sites` | limit `core.max_sites` | MD-01, MD-05 | same; seeds the three load types, imports holidays |
 | GET | `/api/t/:orgId/sites/:siteId` | member | | MD-01 | same |
 | PATCH | `/api/t/:orgId/sites/:siteId` | `core.manage_sites` | limit `core.max_sites` when activating | MD-01 | same; unknown zone answers 422 |
@@ -180,6 +180,7 @@ Unit U4.
 | POST | `/api/t/:orgId/capacity/resources` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }` |
 | PATCH | `/api/t/:orgId/capacity/resources/:resourceId` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; never cancels bookings |
 | PUT | `/api/t/:orgId/capacity/resources/:resourceId/docks` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; `{ dockIds }`; 409 `dock_in_resource` with `dockIds` |
+| PUT | `/api/t/:orgId/capacity/docks/:dockId/booking` | `booking.manage_resources` | `booking.pools` when a pool is left or joined | MD-03 | same; `{ as: 'none' } \| { as: 'single', directions } \| { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }` (null for `none`); a single resource whose dock leaves is deactivated and reused when the dock is booked as single again; idempotent |
 | GET | `/api/t/:orgId/capacity/hours` | `booking.view` | | MD-04 | same; `?siteId=` |
 | PUT | `/api/t/:orgId/capacity/hours` | `booking.manage_resources` | | MD-04 | same; `{ siteId, resourceId: uuid \| null, rows: [{ weekday, opens, closes }] }` |
 | GET | `/api/t/:orgId/capacity/closures` | `booking.view` | | MD-04 | same; `?siteId=&from=&to=` |

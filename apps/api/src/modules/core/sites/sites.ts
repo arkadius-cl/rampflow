@@ -44,7 +44,7 @@ export function listSites(tx: Tx, tenantId: TenantId): Promise<SiteRow[]> {
   return tx.select().from(site).where(eq(site.tenantId, tenantId)).orderBy(asc(site.name));
 }
 
-const countActiveSites = (tenantId: TenantId) => async (tx: Tx) => {
+export const countActiveSites = (tenantId: TenantId) => async (tx: Tx) => {
   const [row] = await tx
     .select({ n: count() })
     .from(site)

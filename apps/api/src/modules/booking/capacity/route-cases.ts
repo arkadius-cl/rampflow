@@ -111,6 +111,17 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
+    method: 'PUT',
+    path: '/api/t/:orgId/capacity/docks/:dockId/booking',
+    as: 'tenant_admin',
+    permission: 'booking.manage_resources',
+    entitlement: 'booking.pools',
+    params: (w) => ({ orgId: w.A.tenantId, dockId: w.A.sites[0].dockIds[0] }),
+    body: (w) => ({ as: 'pool', resourceId: w.A.sites[0].resourceId }),
+    foreign: 'not_found',
+    siteScoped: true,
+  },
+  {
     method: 'GET',
     path: '/api/t/:orgId/capacity/hours',
     as: 'gate_operator',

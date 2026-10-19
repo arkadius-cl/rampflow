@@ -117,16 +117,22 @@ const isCounted = (status: DockRow['status']) =>
   (COUNTED_DOCK_STATUSES as readonly string[]).includes(status);
 
 /** MD-02: `core.max_docks` counts active and maintenance docks of the whole tenant. */
+export const countCountedDocks = (tenantId: TenantId) => async (tx: Tx) => {
+  const [row] = await tx
+    .select({ n: count() })
+    .from(dock)
+    .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...COUNTED_DOCK_STATUSES])));
+  return row?.n ?? 0;
+};
+
 function withinDockLimit(tx: Tx, req: TenantRequest): Promise<void> {
-  return withinLimit(tx, req.tenantId, req.entitlements, 'core.max_docks', async (inner) => {
-    const [row] = await inner
-      .select({ n: count() })
-      .from(dock)
-      .where(
-        and(eq(dock.tenantId, req.tenantId), inArray(dock.status, [...COUNTED_DOCK_STATUSES])),
-      );
-    return row?.n ?? 0;
-  });
+  return withinLimit(
+    tx,
+    req.tenantId,
+    req.entitlements,
+    'core.max_docks',
+    countCountedDocks(req.tenantId),
+  );
 }
 
 async function requireHallOnSite(tx: Tx, tenantId: TenantId, siteId: SiteId, hallId: string) {

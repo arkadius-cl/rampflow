@@ -5,7 +5,7 @@ import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
 import { type World, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
-import { wrapJson } from '../../../db/ids.ts';
+import { type DockId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { entitlementOverride } from '../../core/schema.ts';
 import { booking } from '../schema.ts';
@@ -191,6 +191,63 @@ describe('MD-03 bookable resources', () => {
     });
     expect(closure.status).toBe(201);
     expect((await flags())[later]).toBe(true);
+  });
+});
+
+describe('MD-03 booking a dock as a single resource or a pool member', () => {
+  const book = (dockId: string, body: unknown) =>
+    admin(w.A).put(`${capacity(w.A)}/docks/${dockId}/booking`, { body });
+  const holders = async (siteId: string) => {
+    const res = await admin(w.A).get(`${capacity(w.A)}/resources?siteId=${siteId}`);
+    const { items } = (await res.json()) as {
+      items: { id: string; active: boolean; dockIds: string[] }[];
+    };
+    return Object.fromEntries(items.map((r) => [r.id, { active: r.active, dockIds: r.dockIds }]));
+  };
+  const resourceOf = async (res: Response) =>
+    ((await res.json()) as { resource: { id: string } | null }).resource;
+
+  it('keeps each dock in exactly one pool or one single resource while it moves', async () => {
+    const s = await capacitySite(w.A.tenantId, { docks: 2, hours: [[1, '06:00', '08:00']] });
+    const [d1, d2] = s.dockIds as [DockId, DockId];
+
+    const toSingle = await book(d1, { as: 'single', directions: ['outbound'] });
+    expect(toSingle.status).toBe(200);
+    const single = (await resourceOf(toSingle))?.id as string;
+    expect(await holders(s.siteId)).toEqual({
+      [s.resourceId]: { active: true, dockIds: [d2] },
+      [single]: { active: true, dockIds: [d1] },
+    });
+
+    expect((await book(d1, { as: 'pool', resourceId: s.resourceId })).status).toBe(200);
+    expect(await holders(s.siteId)).toEqual({
+      [s.resourceId]: { active: true, dockIds: [d1, d2].sort() },
+      [single]: { active: false, dockIds: [] },
+    });
+
+    const again = await resourceOf(await book(d1, { as: 'single', directions: ['inbound'] }));
+    expect(again?.id).toBe(single);
+
+    const none = await book(d1, { as: 'none' });
+    expect(await resourceOf(none)).toBeNull();
+    expect(await holders(s.siteId)).toEqual({
+      [s.resourceId]: { active: true, dockIds: [d2] },
+      [single]: { active: false, dockIds: [] },
+    });
+  });
+
+  it('answers 422 for a pool of another site or a single resource named as the pool', async () => {
+    const s = await capacitySite(w.A.tenantId, { docks: 2, hours: [] });
+    const other = await capacitySite(w.A.tenantId, { docks: 2, hours: [] });
+    const [d1, d2] = s.dockIds as [DockId, DockId];
+    const single = await resourceOf(await book(d2, { as: 'single', directions: ['inbound'] }));
+    for (const resourceId of [other.resourceId, single?.id]) {
+      const res = await book(d1, { as: 'pool', resourceId });
+      expect(res.status).toBe(422);
+      expect((await error(res)).details?.issues).toEqual([
+        expect.objectContaining({ path: ['resourceId'] }),
+      ]);
+    }
   });
 });
 

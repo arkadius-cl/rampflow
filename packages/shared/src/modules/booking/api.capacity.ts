@@ -91,6 +91,17 @@ export type UpdateResource = z.infer<typeof UpdateResource>;
 
 export const PutResourceDocks = z.object({ dockIds: ids.min(1) });
 
+/**
+ * How one dock is booked (MD-03): not at all, on its own as a single resource, or as a member of
+ * one pool. `PUT /capacity/docks/:dockId/booking` moves the dock in one transaction.
+ */
+export const DockBooking = z.discriminatedUnion('as', [
+  z.object({ as: z.literal('none') }),
+  z.object({ as: z.literal('single'), directions }),
+  z.object({ as: z.literal('pool'), resourceId: z.uuid() }),
+]);
+export type DockBooking = z.infer<typeof DockBooking>;
+
 export interface ResourceView {
   id: string;
   siteId: string;

@@ -185,6 +185,12 @@ describe('MD-02 halls and docks', () => {
       (await admin(w.A).patch(`${url}/${inactive?.id}`, { body: { status: 'maintenance' } }))
         .status,
     ).toBe(200);
+    const list = (await (await admin(w.A).get(sitesOf(w.A))).json()) as {
+      items: { active: boolean }[];
+      usage: unknown;
+    };
+    const activeSites = list.items.filter((s) => s.active).length;
+    expect(list.usage).toEqual({ sites: activeSites, docks: 10 });
   });
 
   it('creates and renames halls', async () => {

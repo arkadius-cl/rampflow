@@ -1,9 +1,10 @@
 import type {
   CreateResource,
+  DockBooking,
   ResourceView,
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DockId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -193,4 +194,110 @@ export async function putResourceDocks(
   }
   await setDocks(tx, current, dockIds);
   return view(current, [...dockIds]);
+}
+
+/**
+ * MD-03: books a dock as nothing, as a single resource, or as a member of a pool, in one
+ * transaction. A single resource is its dock: the dock leaving deactivates it, and booking the
+ * dock as single again reactivates a dockless single of the same name before creating one.
+ */
+export async function bookDock(
+  tx: Tx,
+  req: TenantRequest,
+  dockId: DockId,
+  input: DockBooking,
+): Promise<ResourceView | null> {
+  const [target] = await tx
+    .select({ id: dock.id, siteId: dock.siteId, code: dock.code })
+    .from(dock)
+    .where(and(eq(dock.tenantId, req.tenantId), eq(dock.id, dockId)));
+  if (!target) throw new ApiError('not_found');
+  const [held] = await tx
+    .select()
+    .from(resourceDock)
+    .innerJoin(bookableResource, eq(bookableResource.id, resourceDock.resourceId))
+    .where(and(eq(resourceDock.tenantId, req.tenantId), eq(resourceDock.dockId, dockId)));
+  const current = held?.bookable_resource;
+  const pool =
+    input.as === 'pool'
+      ? await requireResource(tx, req.tenantId, input.resourceId as ResourceId)
+      : null;
+  if (pool && (pool.kind !== 'pool' || pool.siteId !== target.siteId)) {
+    throw invalid(['resourceId'], 'No such pool on this site');
+  }
+  if (current) requirePools(req, current.kind);
+  if (pool) requirePools(req, pool.kind);
+
+  if (input.as === 'single' && current?.kind === 'single') {
+    return updateResource(tx, req, current.id, { directions: input.directions, active: true });
+  }
+  if (pool && current?.id === pool.id) return view(pool, await dockIdsOfOne(tx, pool));
+  if (input.as === 'none' && !current) return null;
+
+  if (current) {
+    await tx
+      .delete(resourceDock)
+      .where(and(eq(resourceDock.tenantId, req.tenantId), eq(resourceDock.dockId, dockId)));
+    if (current.kind === 'single') {
+      await tx
+        .update(bookableResource)
+        .set({ active: false })
+        .where(
+          and(eq(bookableResource.tenantId, req.tenantId), eq(bookableResource.id, current.id)),
+        );
+    }
+  }
+  if (input.as === 'none') return null;
+  const resource =
+    input.as === 'single'
+      ? await singleFor(tx, req, { ...target, directions: input.directions })
+      : (pool as ResourceRow);
+  const dockIds = [...(await dockIdsOfOne(tx, resource)), dockId];
+  await setDocks(tx, resource, dockIds);
+  return view(resource, dockIds);
+}
+
+async function dockIdsOfOne(tx: Tx, resource: ResourceRow): Promise<string[]> {
+  return (await dockIdsOf(tx, resource.tenantId, [resource.id])).get(resource.id) ?? [];
+}
+
+/** A dockless single of the dock's site named like the dock, reactivated, or a new one. */
+async function singleFor(
+  tx: Tx,
+  req: TenantRequest,
+  d: { siteId: SiteId; code: string; directions: ResourceRow['directions'] },
+): Promise<ResourceRow> {
+  const [reusable] = await tx
+    .select({ id: bookableResource.id })
+    .from(bookableResource)
+    .leftJoin(resourceDock, eq(resourceDock.resourceId, bookableResource.id))
+    .where(
+      and(
+        eq(bookableResource.tenantId, req.tenantId),
+        eq(bookableResource.siteId, d.siteId),
+        eq(bookableResource.kind, 'single'),
+        eq(bookableResource.name, d.code),
+        isNull(resourceDock.dockId),
+      ),
+    )
+    .limit(1);
+  const values = { directions: d.directions, active: true };
+  const [row] = reusable
+    ? await tx
+        .update(bookableResource)
+        .set(values)
+        .where(eq(bookableResource.id, reusable.id))
+        .returning()
+    : await tx
+        .insert(bookableResource)
+        .values({
+          ...values,
+          tenantId: req.tenantId,
+          siteId: d.siteId,
+          kind: 'single',
+          name: d.code,
+        })
+        .returning();
+  if (!row) throw new Error('single resource write returned nothing');
+  return row;
 }

@@ -3,6 +3,7 @@ import {
   CreateDock,
   CreateHall,
   CreateSite,
+  type SiteUsage,
   UpdateDock,
   UpdateHall,
   UpdateSite,
@@ -13,8 +14,23 @@ import { idSchema } from '../../../db/ids.ts';
 import { requirePermission } from '../../../kernel/access.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { onInvalid } from '../../../kernel/validate.ts';
-import { createDock, createHall, listDocks, listHalls, updateDock, updateHall } from './docks.ts';
-import { createSite, listSites, requireSite, siteView, updateSite } from './sites.ts';
+import {
+  countCountedDocks,
+  createDock,
+  createHall,
+  listDocks,
+  listHalls,
+  updateDock,
+  updateHall,
+} from './docks.ts';
+import {
+  countActiveSites,
+  createSite,
+  listSites,
+  requireSite,
+  siteView,
+  updateSite,
+} from './sites.ts';
 import { tenantRequest } from './tenant.ts';
 
 const SiteParam = z.object({ siteId: idSchema<'site'>() });
@@ -25,7 +41,12 @@ const DockParam = SiteParam.extend({ dockId: idSchema<'dock'>() });
 export const tenant = new Hono<AppEnv>()
   .get('/', async (c) => {
     const { tenantId } = tenantRequest(c);
-    return c.json({ items: (await listSites(c.var.db, tenantId)).map(siteView) }, 200);
+    const items = (await listSites(c.var.db, tenantId)).map(siteView);
+    const usage: SiteUsage = {
+      sites: await countActiveSites(tenantId)(c.var.db),
+      docks: await countCountedDocks(tenantId)(c.var.db),
+    };
+    return c.json({ items, usage }, 200);
   })
   .post(
     '/',

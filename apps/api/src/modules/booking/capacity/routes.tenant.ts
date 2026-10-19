@@ -5,6 +5,7 @@ import {
   CreateClosure,
   CreateLoadType,
   CreateResource,
+  DockBooking,
   PutHours,
   PutLoadTypeResources,
   PutResourceDocks,
@@ -30,9 +31,16 @@ import {
   updateLoadType,
 } from './load-types.ts';
 import { offersFor } from './offers.ts';
-import { createResource, listResources, putResourceDocks, updateResource } from './resources.ts';
+import {
+  bookDock,
+  createResource,
+  listResources,
+  putResourceDocks,
+  updateResource,
+} from './resources.ts';
 
 const ResourceParam = z.object({ resourceId: idSchema<'resource'>() });
+const DockParam = z.object({ dockId: idSchema<'dock'>() });
 const ClosureParam = z.object({ closureId: idSchema<'closure'>() });
 const LoadTypeParam = z.object({ loadTypeId: idSchema<'load_type'>() });
 const ResourceListQuery = z.object({ siteId: z.uuid().optional() });
@@ -74,6 +82,17 @@ export const tenant = new Hono<AppEnv>()
       const id = c.req.valid('param').resourceId;
       const { dockIds } = c.req.valid('json');
       return c.json(await putResourceDocks(c.var.db, tenantRequest(c), id, dockIds), 200);
+    },
+  )
+  .put(
+    '/docks/:dockId/booking',
+    requirePermission('booking.manage_resources'),
+    zValidator('param', DockParam, onInvalid),
+    zValidator('json', DockBooking, onInvalid),
+    async (c) => {
+      const { dockId } = c.req.valid('param');
+      const resource = await bookDock(c.var.db, tenantRequest(c), dockId, c.req.valid('json'));
+      return c.json({ resource }, 200);
     },
   )
   .get(
