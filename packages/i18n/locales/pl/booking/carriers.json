@@ -1,4 +1,142 @@
 {
+  "title": "Przewoźnicy",
+  "description": "Zapraszaj przewoźników, zarządzaj ich powiązaniami i udostępniaj publiczny link do rezerwacji dla każdego oddziału.",
+  "tabs": {
+    "linked": "Powiązani przewoźnicy",
+    "registrations": "Rejestracje",
+    "links": "Publiczne linki"
+  },
+  "invite": {
+    "action": "Zaproś przewoźnika",
+    "title": "Zaproś przewoźnika",
+    "description": "Przewoźnik dostanie e-mail z linkiem ważnym 7 dni. Rezerwacja jest bezpłatna dla przewoźników.",
+    "company": "Nazwa firmy",
+    "email": "E-mail",
+    "language": "Język wiadomości",
+    "submit": "Wyślij zaproszenie",
+    "sent": "Zaproszenie wysłane na {{email}}",
+    "cancel": "Anuluj"
+  },
+  "linked": {
+    "empty_title": "Brak przewoźników",
+    "empty": "Zaproś przewoźnika e-mailem lub włącz publiczny link, aby przewoźnicy mogli się rejestrować.",
+    "carrier": "Przewoźnik",
+    "country": "Kraj",
+    "source": "Dołączył przez",
+    "since": "Powiązany od",
+    "status": "Status",
+    "actions": "Akcje",
+    "deactivate": "Dezaktywuj",
+    "activate": "Aktywuj",
+    "deactivate_title": "Dezaktywować {{name}}?",
+    "deactivate_description": "{{name}} nie może już rezerwować nowych okien czasowych. Istniejące rezerwacje pozostają widoczne dla obu stron.",
+    "deactivated": "{{name}} nie może już rezerwować nowych okien czasowych.",
+    "activated": "{{name}} może znowu rezerwować.",
+    "cancel": "Anuluj"
+  },
+  "source": {
+    "invitation": "Zaproszenie",
+    "public_link": "Publiczny link"
+  },
+  "status": {
+    "active": "Aktywny",
+    "deactivated": "Dezaktywowany"
+  },
+  "invitations": {
+    "title": "Oczekujące zaproszenia",
+    "company": "Firma",
+    "email": "E-mail",
+    "expires": "Link ważny do",
+    "expired": "Wygasło",
+    "revoke": "Cofnij",
+    "revoked": "Zaproszenie dla {{email}} cofnięte",
+    "resend": "Wyślij ponownie",
+    "resent": "Nowe zaproszenie wysłane na {{email}}"
+  },
+  "registrations": {
+    "empty_title": "Brak rejestracji",
+    "empty": "Tu pojawią się przewoźnicy, którzy rejestrują się przez publiczny link.",
+    "company": "Firma",
+    "contact": "Kontakt",
+    "site": "Oddział",
+    "submitted": "Zgłoszono",
+    "status": "Status",
+    "actions": "Akcje",
+    "approve": "Zatwierdź",
+    "reject": "Odrzuć",
+    "approved": "{{company}} może już rezerwować.",
+    "rejected": "{{company}} otrzymał powód e-mailem.",
+    "reject_title": "Odrzucić {{company}}?",
+    "reject_description": "Przewoźnik otrzyma ten powód e-mailem.",
+    "reason": "Powód",
+    "reject_submit": "Odrzuć rejestrację",
+    "cancel": "Anuluj"
+  },
+  "registration_status": {
+    "pending_email": "E-mail niepotwierdzony",
+    "pending_approval": "Czeka na zatwierdzenie",
+    "approved": "Zatwierdzona",
+    "rejected": "Odrzucona"
+  },
+  "links": {
+    "site": "Oddział",
+    "link": "Link",
+    "state": "Stan",
+    "mode": "Nowi przewoźnicy",
+    "on": "Włączony",
+    "off": "Wyłączony",
+    "none": "Brak linku",
+    "create": "Utwórz link",
+    "regenerate": "Zastąp link",
+    "regenerate_title": "Zastąpić link oddziału {{site}}?",
+    "regenerate_description": "Obecny link przestanie działać od razu. Udostępnij nowy swoim przewoźnikom.",
+    "copy": "Kopiuj link oddziału {{site}}",
+    "copied": "Link skopiowany",
+    "cancel": "Anuluj",
+    "settings": "Otwórz ustawienia",
+    "hint": "Link działa tylko wtedy, gdy jest włączony dla swojego oddziału. Włącz linki i wybierz automatyczne lub ręczne zatwierdzanie w Ustawieniach.",
+    "empty_title": "Brak oddziałów",
+    "empty": "Najpierw utwórz oddział. Każdy oddział ma własny publiczny link.",
+    "modes": {
+      "auto_approve": "Zatwierdzani automatycznie",
+      "approval_required": "Zatwierdzani przez Ciebie"
+    }
+  },
+  "tenants": {
+    "title": "Magazyny",
+    "description": "Magazyny, w których Twoja firma rezerwuje okna czasowe.",
+    "empty_title": "Brak magazynów",
+    "empty": "Magazyn zaprasza Cię e-mailem lub udostępnia publiczny link do rezerwacji.",
+    "name": "Magazyn",
+    "booking": "Rezerwacja",
+    "registration": "Rejestracja",
+    "since": "Od",
+    "book": "Zarezerwuj okno",
+    "can_book": "Może rezerwować",
+    "paused": "Wstrzymane przez magazyn",
+    "not_linked": "Jeszcze nie",
+    "pending_title": "Rejestracja oczekuje",
+    "pending": "{{name}} sprawdza Twoją rejestrację. Możesz tam rezerwować po jej zatwierdzeniu.",
+    "rejected_reason": "Powód: {{reason}}",
+    "free": "Rezerwacja jest bezpłatna dla przewoźników."
+  },
+  "accept": {
+    "title": "Dołącz jako przewoźnik",
+    "summary": "{{tenant}} zaprasza {{company}} do rezerwacji okien czasowych w rampflow.",
+    "loading": "Sprawdzanie zaproszenia…",
+    "invalid_title": "Zaproszenie nieważne",
+    "invalid": "Ten link jest nieprawidłowy, wygasł lub został już użyty. Poproś magazyn o nowe zaproszenie.",
+    "new_account": "Utwórz konto. Zostaniesz administratorem swojej firmy i później zaprosisz współpracowników.",
+    "name": "Twoje imię i nazwisko",
+    "company": "Nazwa firmy",
+    "submit": "Utwórz konto i przyjmij",
+    "sign_in_first": "Ten adres e-mail ma już konto. Zaloguj się, aby przyjąć zaproszenie. Magazyn zostanie powiązany z Twoją firmą.",
+    "sign_in_and_accept": "Zaloguj się i przyjmij",
+    "accept": "Przyjmij zaproszenie",
+    "free": "Rezerwacja jest bezpłatna dla przewoźników.",
+    "wrong": "Nieprawidłowy e-mail lub hasło.",
+    "back": "Wróć do logowania"
+  },
   "email": {
     "footer": "rampflow · zarządzanie rampami i placem · bezpłatnie dla przewoźników",
     "invitation": {

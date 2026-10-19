@@ -1,4 +1,31 @@
 {
+  "page": {
+    "title": "Registrieren und Zeitfenster buchen",
+    "description": "Registrieren Sie Ihr Unternehmen, um an diesem Standort Lade- und Entladezeitfenster zu buchen. Die Buchung ist für Spediteure kostenlos.",
+    "loading": "Buchungslink wird geöffnet…",
+    "company": "Firmenname",
+    "country": "Land",
+    "contact": "Ihr Name",
+    "email": "E-Mail",
+    "email_hint": "Wir senden einen Link zur Bestätigung dieser Adresse.",
+    "submit": "Registrieren",
+    "sent_title": "Prüfen Sie Ihr Postfach",
+    "sent": "Wenn die Adresse stimmt, ist ein Link an {{email}} unterwegs. Öffnen Sie ihn innerhalb von 24 Stunden, um abzuschließen. Wenn Sie bereits ein Konto haben, bittet die E-Mail Sie stattdessen um die Anmeldung.",
+    "unavailable_title": "Link nicht verfügbar",
+    "unavailable": "Dieser Buchungslink ist ausgeschaltet oder nicht mehr gültig. Bitten Sie das Lager um einen aktuellen Link."
+  },
+  "verify": {
+    "title": "Registrierung bestätigen",
+    "verifying": "Ihre Registrierung wird bestätigt…",
+    "invalid_title": "Link ungültig",
+    "invalid": "Dieser Link ist ungültig, abgelaufen oder bereits verwendet. Registrieren Sie sich erneut über den Buchungslink des Lagers.",
+    "sign_in_first": "Für diese E-Mail-Adresse gibt es bereits ein Konto. Melden Sie sich an, dann gilt die Registrierung für Ihr Unternehmen.",
+    "password": "Passwort",
+    "sign_in_and_confirm": "Anmelden und bestätigen",
+    "no_password": "Kein Passwort? Fordern Sie einen Anmeldelink an, melden Sie sich an und öffnen Sie dann die Registrierungs-E-Mail erneut.",
+    "magic": "Anmeldelink per E-Mail senden",
+    "wrong": "E-Mail oder Passwort falsch."
+  },
   "email": {
     "expiry": "Der Link funktioniert einmal und 24 Stunden lang.",
     "ignore": "Wenn Sie sich nicht registriert haben, ignorieren Sie diese E-Mail.",

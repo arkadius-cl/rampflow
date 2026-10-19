@@ -1,4 +1,142 @@
 {
+  "title": "Spediteure",
+  "description": "Laden Sie Spediteure ein, verwalten Sie deren Verknüpfungen und teilen Sie pro Standort einen öffentlichen Buchungslink.",
+  "tabs": {
+    "linked": "Verknüpfte Spediteure",
+    "registrations": "Registrierungen",
+    "links": "Öffentliche Links"
+  },
+  "invite": {
+    "action": "Spediteur einladen",
+    "title": "Spediteur einladen",
+    "description": "Der Spediteur erhält eine E-Mail mit einem Link, der 7 Tage gültig ist. Die Buchung ist für Spediteure kostenlos.",
+    "company": "Firmenname",
+    "email": "E-Mail",
+    "language": "Sprache der E-Mail",
+    "submit": "Einladung senden",
+    "sent": "Einladung an {{email}} gesendet",
+    "cancel": "Abbrechen"
+  },
+  "linked": {
+    "empty_title": "Noch keine Spediteure",
+    "empty": "Laden Sie einen Spediteur per E-Mail ein oder schalten Sie einen öffentlichen Link ein, damit sich Spediteure registrieren können.",
+    "carrier": "Spediteur",
+    "country": "Land",
+    "source": "Beigetreten über",
+    "since": "Verknüpft seit",
+    "status": "Status",
+    "actions": "Aktionen",
+    "deactivate": "Deaktivieren",
+    "activate": "Aktivieren",
+    "deactivate_title": "{{name}} deaktivieren?",
+    "deactivate_description": "{{name}} kann keine neuen Zeitfenster mehr buchen. Bestehende Buchungen bleiben für beide Seiten sichtbar.",
+    "deactivated": "{{name}} kann keine neuen Zeitfenster mehr buchen.",
+    "activated": "{{name}} kann wieder buchen.",
+    "cancel": "Abbrechen"
+  },
+  "source": {
+    "invitation": "Einladung",
+    "public_link": "Öffentlicher Link"
+  },
+  "status": {
+    "active": "Aktiv",
+    "deactivated": "Deaktiviert"
+  },
+  "invitations": {
+    "title": "Offene Einladungen",
+    "company": "Unternehmen",
+    "email": "E-Mail",
+    "expires": "Link gültig bis",
+    "expired": "Abgelaufen",
+    "revoke": "Widerrufen",
+    "revoked": "Einladung an {{email}} widerrufen",
+    "resend": "Erneut senden",
+    "resent": "Neue Einladung an {{email}} gesendet"
+  },
+  "registrations": {
+    "empty_title": "Keine Registrierungen",
+    "empty": "Spediteure, die sich über einen öffentlichen Link registrieren, erscheinen hier.",
+    "company": "Unternehmen",
+    "contact": "Kontakt",
+    "site": "Standort",
+    "submitted": "Eingereicht",
+    "status": "Status",
+    "actions": "Aktionen",
+    "approve": "Freigeben",
+    "reject": "Ablehnen",
+    "approved": "{{company}} kann jetzt buchen.",
+    "rejected": "{{company}} hat die Begründung per E-Mail erhalten.",
+    "reject_title": "{{company}} ablehnen?",
+    "reject_description": "Der Spediteur erhält diese Begründung per E-Mail.",
+    "reason": "Begründung",
+    "reject_submit": "Registrierung ablehnen",
+    "cancel": "Abbrechen"
+  },
+  "registration_status": {
+    "pending_email": "E-Mail nicht bestätigt",
+    "pending_approval": "Wartet auf Freigabe",
+    "approved": "Freigegeben",
+    "rejected": "Abgelehnt"
+  },
+  "links": {
+    "site": "Standort",
+    "link": "Link",
+    "state": "Status",
+    "mode": "Neue Spediteure",
+    "on": "An",
+    "off": "Aus",
+    "none": "Noch kein Link",
+    "create": "Link erstellen",
+    "regenerate": "Link ersetzen",
+    "regenerate_title": "Link von {{site}} ersetzen?",
+    "regenerate_description": "Der aktuelle Link funktioniert sofort nicht mehr. Teilen Sie den neuen mit Ihren Spediteuren.",
+    "copy": "Link von {{site}} kopieren",
+    "copied": "Link kopiert",
+    "cancel": "Abbrechen",
+    "settings": "Einstellungen öffnen",
+    "hint": "Ein Link antwortet nur, solange er für seinen Standort eingeschaltet ist. Schalten Sie Links in den Einstellungen ein und wählen Sie dort automatische oder manuelle Freigabe.",
+    "empty_title": "Noch keine Standorte",
+    "empty": "Legen Sie zuerst einen Standort an. Jeder Standort erhält einen eigenen öffentlichen Link.",
+    "modes": {
+      "auto_approve": "Automatisch freigegeben",
+      "approval_required": "Von Ihnen freigegeben"
+    }
+  },
+  "tenants": {
+    "title": "Lager",
+    "description": "Die Lager, bei denen Ihr Unternehmen Zeitfenster bucht.",
+    "empty_title": "Noch keine Lager",
+    "empty": "Ein Lager lädt Sie per E-Mail ein oder teilt seinen öffentlichen Buchungslink.",
+    "name": "Lager",
+    "booking": "Buchung",
+    "registration": "Registrierung",
+    "since": "Seit",
+    "book": "Zeitfenster buchen",
+    "can_book": "Buchung möglich",
+    "paused": "Vom Lager pausiert",
+    "not_linked": "Noch nicht",
+    "pending_title": "Registrierung ausstehend",
+    "pending": "{{name}} prüft Ihre Registrierung. Sie können dort buchen, sobald sie freigegeben ist.",
+    "rejected_reason": "Begründung: {{reason}}",
+    "free": "Die Buchung ist für Spediteure kostenlos."
+  },
+  "accept": {
+    "title": "Als Spediteur beitreten",
+    "summary": "{{tenant}} lädt {{company}} ein, Zeitfenster bei rampflow zu buchen.",
+    "loading": "Einladung wird geprüft…",
+    "invalid_title": "Einladung ungültig",
+    "invalid": "Dieser Einladungslink ist ungültig, abgelaufen oder bereits verwendet. Bitten Sie das Lager um eine neue Einladung.",
+    "new_account": "Erstellen Sie Ihr Konto. Sie werden Administrator Ihres Unternehmens und können später Kollegen einladen.",
+    "name": "Ihr Name",
+    "company": "Firmenname",
+    "submit": "Konto erstellen und annehmen",
+    "sign_in_first": "Für diese E-Mail-Adresse gibt es bereits ein Konto. Melden Sie sich an, um anzunehmen. Das Lager wird mit Ihrem Unternehmen verknüpft.",
+    "sign_in_and_accept": "Anmelden und annehmen",
+    "accept": "Einladung annehmen",
+    "free": "Die Buchung ist für Spediteure kostenlos.",
+    "wrong": "E-Mail oder Passwort falsch.",
+    "back": "Zurück zur Anmeldung"
+  },
   "email": {
     "footer": "rampflow · Rampen- und Hofmanagement · kostenlos für Spediteure",
     "invitation": {

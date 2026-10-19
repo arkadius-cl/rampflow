@@ -1,4 +1,31 @@
 {
+  "page": {
+    "title": "Zarejestruj się, aby rezerwować okna",
+    "description": "Zarejestruj swoją firmę, aby rezerwować okna załadunku i rozładunku w tym oddziale. Rezerwacja jest bezpłatna dla przewoźników.",
+    "loading": "Otwieranie linku do rezerwacji…",
+    "company": "Nazwa firmy",
+    "country": "Kraj",
+    "contact": "Twoje imię i nazwisko",
+    "email": "E-mail",
+    "email_hint": "Wyślemy link potwierdzający ten adres.",
+    "submit": "Zarejestruj się",
+    "sent_title": "Sprawdź skrzynkę",
+    "sent": "Jeśli adres jest poprawny, link jest w drodze na {{email}}. Otwórz go w ciągu 24 godzin, aby zakończyć. Jeśli masz już konto, wiadomość poprosi Cię o zalogowanie.",
+    "unavailable_title": "Link niedostępny",
+    "unavailable": "Ten link do rezerwacji jest wyłączony lub nieaktualny. Poproś magazyn o aktualny link."
+  },
+  "verify": {
+    "title": "Potwierdź rejestrację",
+    "verifying": "Potwierdzanie rejestracji…",
+    "invalid_title": "Link nieważny",
+    "invalid": "Ten link jest nieprawidłowy, wygasł lub został już użyty. Zarejestruj się ponownie przez link do rezerwacji magazynu.",
+    "sign_in_first": "Ten adres e-mail ma już konto. Zaloguj się, a rejestracja zostanie przypisana do Twojej firmy.",
+    "password": "Hasło",
+    "sign_in_and_confirm": "Zaloguj się i potwierdź",
+    "no_password": "Nie masz hasła? Poproś o link do logowania, zaloguj się i otwórz wiadomość rejestracyjną ponownie.",
+    "magic": "Wyślij mi link do logowania",
+    "wrong": "Nieprawidłowy e-mail lub hasło."
+  },
   "email": {
     "expiry": "Link działa raz i przez 24 godziny.",
     "ignore": "Jeśli to nie Ty się rejestrowałeś, zignoruj tę wiadomość.",

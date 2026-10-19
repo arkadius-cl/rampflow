@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CarrierInviteRouteImport } from './routes/carrier-invite'
+import { Route as CarrierRegistrationRouteImport } from './routes/carrier-registration'
 import { Route as DesignRouteRouteImport } from './routes/design/route'
 import { Route as InviteRouteImport } from './routes/invite'
 import { Route as LoginRouteImport } from './routes/login'
@@ -28,10 +30,13 @@ import { Route as DesignPlanBoardRouteImport } from './routes/design/plan-board'
 import { Route as DesignPlatformAdminRouteImport } from './routes/design/platform-admin'
 import { Route as DesignSettingsRouteImport } from './routes/design/settings'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
+import { Route as RSlugRouteImport } from './routes/r/$slug'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
+import { Route as COrgIdTenantsIndexRouteImport } from './routes/c/$orgId/tenants/index'
 import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
+import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
 import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
 import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
 import { Route as TOrgIdPlanIndexRouteImport } from './routes/t/$orgId/plan/index'
@@ -47,6 +52,16 @@ import { Route as TOrgIdSitesSiteIdLoadTypesRouteImport } from './routes/t/$orgI
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarrierInviteRoute = CarrierInviteRouteImport.update({
+  id: '/carrier-invite',
+  path: '/carrier-invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarrierRegistrationRoute = CarrierRegistrationRouteImport.update({
+  id: '/carrier-registration',
+  path: '/carrier-registration',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesignRouteRoute = DesignRouteRouteImport.update({
@@ -139,6 +154,11 @@ const PlatformIndexRoute = PlatformIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PlatformRouteRoute,
 } as any)
+const RSlugRoute = RSlugRouteImport.update({
+  id: '/r/$slug',
+  path: '/r/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TOrgIdRouteRoute = TOrgIdRouteRouteImport.update({
   id: '/t/$orgId',
   path: '/t/$orgId',
@@ -154,9 +174,19 @@ const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const COrgIdTenantsIndexRoute = COrgIdTenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
 const TOrgIdBookingsBookingIdRoute = TOrgIdBookingsBookingIdRouteImport.update({
   id: '/bookings/$bookingId',
   path: '/bookings/$bookingId',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdCarriersIndexRoute = TOrgIdCarriersIndexRouteImport.update({
+  id: '/carriers/',
+  path: '/carriers/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
 const TOrgIdDocksIndexRoute = TOrgIdDocksIndexRouteImport.update({
@@ -223,6 +253,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/design': typeof DesignRouteRouteWithChildren
   '/platform': typeof PlatformRouteRouteWithChildren
+  '/carrier-invite': typeof CarrierInviteRoute
+  '/carrier-registration': typeof CarrierRegistrationRoute
   '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/c/$orgId': typeof COrgIdRouteRouteWithChildren
@@ -238,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/design/plan-board': typeof DesignPlanBoardRoute
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
+  '/r/$slug': typeof RSlugRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
@@ -245,6 +278,8 @@ export interface FileRoutesByFullPath {
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
@@ -257,6 +292,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/carrier-invite': typeof CarrierInviteRoute
+  '/carrier-registration': typeof CarrierRegistrationRoute
   '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/auth/magic': typeof AuthMagicRoute
@@ -270,12 +307,15 @@ export interface FileRoutesByTo {
   '/design/plan-board': typeof DesignPlanBoardRoute
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
+  '/r/$slug': typeof RSlugRoute
   '/design': typeof DesignIndexRoute
   '/platform': typeof PlatformIndexRoute
   '/c/$orgId': typeof COrgIdIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/tenants': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan': typeof TOrgIdPlanIndexRoute
@@ -291,6 +331,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/design': typeof DesignRouteRouteWithChildren
   '/platform': typeof PlatformRouteRouteWithChildren
+  '/carrier-invite': typeof CarrierInviteRoute
+  '/carrier-registration': typeof CarrierRegistrationRoute
   '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/c/$orgId': typeof COrgIdRouteRouteWithChildren
@@ -306,6 +348,7 @@ export interface FileRoutesById {
   '/design/plan-board': typeof DesignPlanBoardRoute
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
+  '/r/$slug': typeof RSlugRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
@@ -313,6 +356,8 @@ export interface FileRoutesById {
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
@@ -329,6 +374,8 @@ export interface FileRouteTypes {
     | '/'
     | '/design'
     | '/platform'
+    | '/carrier-invite'
+    | '/carrier-registration'
     | '/invite'
     | '/login'
     | '/c/$orgId'
@@ -344,6 +391,7 @@ export interface FileRouteTypes {
     | '/design/plan-board'
     | '/design/platform-admin'
     | '/design/settings'
+    | '/r/$slug'
     | '/design/'
     | '/platform/'
     | '/c/$orgId/'
@@ -351,6 +399,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/tenants/'
+    | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
@@ -363,6 +413,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/carrier-invite'
+    | '/carrier-registration'
     | '/invite'
     | '/login'
     | '/auth/magic'
@@ -376,12 +428,15 @@ export interface FileRouteTypes {
     | '/design/plan-board'
     | '/design/platform-admin'
     | '/design/settings'
+    | '/r/$slug'
     | '/design'
     | '/platform'
     | '/c/$orgId'
     | '/t/$orgId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/tenants'
+    | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
     | '/t/$orgId/gate'
     | '/t/$orgId/plan'
@@ -396,6 +451,8 @@ export interface FileRouteTypes {
     | '/'
     | '/design'
     | '/platform'
+    | '/carrier-invite'
+    | '/carrier-registration'
     | '/invite'
     | '/login'
     | '/c/$orgId'
@@ -411,6 +468,7 @@ export interface FileRouteTypes {
     | '/design/plan-board'
     | '/design/platform-admin'
     | '/design/settings'
+    | '/r/$slug'
     | '/design/'
     | '/platform/'
     | '/c/$orgId/'
@@ -418,6 +476,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/tenants/'
+    | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
@@ -433,12 +493,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DesignRouteRoute: typeof DesignRouteRouteWithChildren
   PlatformRouteRoute: typeof PlatformRouteRouteWithChildren
+  CarrierInviteRoute: typeof CarrierInviteRoute
+  CarrierRegistrationRoute: typeof CarrierRegistrationRoute
   InviteRoute: typeof InviteRoute
   LoginRoute: typeof LoginRoute
   COrgIdRouteRoute: typeof COrgIdRouteRouteWithChildren
   TOrgIdRouteRoute: typeof TOrgIdRouteRouteWithChildren
   AuthMagicRoute: typeof AuthMagicRoute
   AuthResetRoute: typeof AuthResetRoute
+  RSlugRoute: typeof RSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -448,6 +511,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carrier-invite': {
+      id: '/carrier-invite'
+      path: '/carrier-invite'
+      fullPath: '/carrier-invite'
+      preLoaderRoute: typeof CarrierInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carrier-registration': {
+      id: '/carrier-registration'
+      path: '/carrier-registration'
+      fullPath: '/carrier-registration'
+      preLoaderRoute: typeof CarrierRegistrationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/design': {
@@ -576,6 +653,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformIndexRouteImport
       parentRoute: typeof PlatformRouteRoute
     }
+    '/r/$slug': {
+      id: '/r/$slug'
+      path: '/r/$slug'
+      fullPath: '/r/$slug'
+      preLoaderRoute: typeof RSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/t/$orgId': {
       id: '/t/$orgId'
       path: '/t/$orgId'
@@ -597,11 +681,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/c/$orgId/tenants/': {
+      id: '/c/$orgId/tenants/'
+      path: '/tenants'
+      fullPath: '/c/$orgId/tenants/'
+      preLoaderRoute: typeof COrgIdTenantsIndexRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
     '/t/$orgId/bookings/$bookingId': {
       id: '/t/$orgId/bookings/$bookingId'
       path: '/bookings/$bookingId'
       fullPath: '/t/$orgId/bookings/$bookingId'
       preLoaderRoute: typeof TOrgIdBookingsBookingIdRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/carriers/': {
+      id: '/t/$orgId/carriers/'
+      path: '/carriers'
+      fullPath: '/t/$orgId/carriers/'
+      preLoaderRoute: typeof TOrgIdCarriersIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
     '/t/$orgId/docks/': {
@@ -728,10 +826,12 @@ const PlatformRouteRouteWithChildren = PlatformRouteRoute._addFileChildren(
 
 interface COrgIdRouteRouteChildren {
   COrgIdIndexRoute: typeof COrgIdIndexRoute
+  COrgIdTenantsIndexRoute: typeof COrgIdTenantsIndexRoute
 }
 
 const COrgIdRouteRouteChildren: COrgIdRouteRouteChildren = {
   COrgIdIndexRoute: COrgIdIndexRoute,
+  COrgIdTenantsIndexRoute: COrgIdTenantsIndexRoute,
 }
 
 const COrgIdRouteRouteWithChildren = COrgIdRouteRoute._addFileChildren(
@@ -761,6 +861,7 @@ interface TOrgIdRouteRouteChildren {
   TOrgIdSitesSiteIdRouteRoute: typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   TOrgIdBookingsBookingIdRoute: typeof TOrgIdBookingsBookingIdRoute
   TOrgIdSafetyAcknowledgementsRoute: typeof TOrgIdSafetyAcknowledgementsRoute
+  TOrgIdCarriersIndexRoute: typeof TOrgIdCarriersIndexRoute
   TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
   TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
   TOrgIdPlanIndexRoute: typeof TOrgIdPlanIndexRoute
@@ -774,6 +875,7 @@ const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdSitesSiteIdRouteRoute: TOrgIdSitesSiteIdRouteRouteWithChildren,
   TOrgIdBookingsBookingIdRoute: TOrgIdBookingsBookingIdRoute,
   TOrgIdSafetyAcknowledgementsRoute: TOrgIdSafetyAcknowledgementsRoute,
+  TOrgIdCarriersIndexRoute: TOrgIdCarriersIndexRoute,
   TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
   TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
   TOrgIdPlanIndexRoute: TOrgIdPlanIndexRoute,
@@ -791,12 +893,15 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRouteRoute: DesignRouteRouteWithChildren,
   PlatformRouteRoute: PlatformRouteRouteWithChildren,
+  CarrierInviteRoute: CarrierInviteRoute,
+  CarrierRegistrationRoute: CarrierRegistrationRoute,
   InviteRoute: InviteRoute,
   LoginRoute: LoginRoute,
   COrgIdRouteRoute: COrgIdRouteRouteWithChildren,
   TOrgIdRouteRoute: TOrgIdRouteRouteWithChildren,
   AuthMagicRoute: AuthMagicRoute,
   AuthResetRoute: AuthResetRoute,
+  RSlugRoute: RSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

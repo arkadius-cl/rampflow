@@ -1,4 +1,142 @@
 {
+  "title": "Carriers",
+  "description": "Invite carriers, manage their links and share a public booking link per site.",
+  "tabs": {
+    "linked": "Linked carriers",
+    "registrations": "Registrations",
+    "links": "Public links"
+  },
+  "invite": {
+    "action": "Invite carrier",
+    "title": "Invite a carrier",
+    "description": "The carrier gets an email with a link that works for 7 days. Booking is free for carriers.",
+    "company": "Company name",
+    "email": "Email",
+    "language": "Email language",
+    "submit": "Send invitation",
+    "sent": "Invitation sent to {{email}}",
+    "cancel": "Cancel"
+  },
+  "linked": {
+    "empty_title": "No carriers yet",
+    "empty": "Invite a carrier by email, or switch on a public link so carriers can register.",
+    "carrier": "Carrier",
+    "country": "Country",
+    "source": "Joined by",
+    "since": "Linked since",
+    "status": "Status",
+    "actions": "Actions",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivate_title": "Deactivate {{name}}?",
+    "deactivate_description": "{{name}} can no longer book new slots. Existing bookings stay visible to both sides.",
+    "deactivated": "{{name}} can no longer book new slots.",
+    "activated": "{{name}} can book again.",
+    "cancel": "Cancel"
+  },
+  "source": {
+    "invitation": "Invitation",
+    "public_link": "Public link"
+  },
+  "status": {
+    "active": "Active",
+    "deactivated": "Deactivated"
+  },
+  "invitations": {
+    "title": "Pending invitations",
+    "company": "Company",
+    "email": "Email",
+    "expires": "Link valid until",
+    "expired": "Expired",
+    "revoke": "Revoke",
+    "revoked": "Invitation to {{email}} revoked",
+    "resend": "Send again",
+    "resent": "New invitation sent to {{email}}"
+  },
+  "registrations": {
+    "empty_title": "No registrations",
+    "empty": "Carriers who register through a public link appear here.",
+    "company": "Company",
+    "contact": "Contact",
+    "site": "Site",
+    "submitted": "Submitted",
+    "status": "Status",
+    "actions": "Actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "{{company}} can book now.",
+    "rejected": "{{company}} received the reason by email.",
+    "reject_title": "Reject {{company}}?",
+    "reject_description": "The carrier receives this reason by email.",
+    "reason": "Reason",
+    "reject_submit": "Reject registration",
+    "cancel": "Cancel"
+  },
+  "registration_status": {
+    "pending_email": "Email not confirmed",
+    "pending_approval": "Waiting for approval",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "links": {
+    "site": "Site",
+    "link": "Link",
+    "state": "State",
+    "mode": "New carriers",
+    "on": "On",
+    "off": "Off",
+    "none": "No link yet",
+    "create": "Create link",
+    "regenerate": "Replace link",
+    "regenerate_title": "Replace the link of {{site}}?",
+    "regenerate_description": "The current link stops working at once. Share the new one with your carriers.",
+    "copy": "Copy link of {{site}}",
+    "copied": "Link copied",
+    "cancel": "Cancel",
+    "settings": "Open settings",
+    "hint": "A link answers only while it is switched on for its site. Switch links on and choose automatic or manual approval in Settings.",
+    "empty_title": "No sites yet",
+    "empty": "Create a site first. Each site gets its own public link.",
+    "modes": {
+      "auto_approve": "Approved automatically",
+      "approval_required": "Approved by you"
+    }
+  },
+  "tenants": {
+    "title": "Warehouses",
+    "description": "The warehouses where your company books slots.",
+    "empty_title": "No warehouses yet",
+    "empty": "A warehouse invites you by email or shares its public booking link.",
+    "name": "Warehouse",
+    "booking": "Booking",
+    "registration": "Registration",
+    "since": "Since",
+    "book": "Book a slot",
+    "can_book": "Can book",
+    "paused": "Paused by the warehouse",
+    "not_linked": "Not yet",
+    "pending_title": "Registration pending",
+    "pending": "{{name}} reviews your registration. You can book there once it is approved.",
+    "rejected_reason": "Reason: {{reason}}",
+    "free": "Booking is free for carriers."
+  },
+  "accept": {
+    "title": "Join as a carrier",
+    "summary": "{{tenant}} invites {{company}} to book slots on rampflow.",
+    "loading": "Checking the invitation…",
+    "invalid_title": "Invitation not valid",
+    "invalid": "This invitation link is invalid, expired or already used. Ask the warehouse for a new invitation.",
+    "new_account": "Create your account. You become the administrator of your company and can invite colleagues later.",
+    "name": "Your name",
+    "company": "Company name",
+    "submit": "Create account and accept",
+    "sign_in_first": "This email already has an account. Sign in to accept. The warehouse is linked to your company.",
+    "sign_in_and_accept": "Sign in and accept",
+    "accept": "Accept invitation",
+    "free": "Booking is free for carriers.",
+    "wrong": "Wrong email or password.",
+    "back": "Back to sign-in"
+  },
   "email": {
     "footer": "rampflow · dock and yard management · free for carriers",
     "invitation": {

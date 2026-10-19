@@ -1,4 +1,31 @@
 {
+  "page": {
+    "title": "Register to book slots",
+    "description": "Register your company to book loading and unloading slots at this site. Booking is free for carriers.",
+    "loading": "Opening the booking link…",
+    "company": "Company name",
+    "country": "Country",
+    "contact": "Your name",
+    "email": "Email",
+    "email_hint": "We send a link to confirm this address.",
+    "submit": "Register",
+    "sent_title": "Check your email",
+    "sent": "If the address is right, a link is on its way to {{email}}. Open it within 24 hours to finish. If you already have an account, the email asks you to sign in instead.",
+    "unavailable_title": "Link not available",
+    "unavailable": "This booking link is switched off or no longer valid. Ask the warehouse for a current link."
+  },
+  "verify": {
+    "title": "Confirm your registration",
+    "verifying": "Confirming your registration…",
+    "invalid_title": "Link not valid",
+    "invalid": "This link is invalid, expired or already used. Register again through the warehouse's booking link.",
+    "sign_in_first": "This email already has an account. Sign in, and the registration joins your company.",
+    "password": "Password",
+    "sign_in_and_confirm": "Sign in and confirm",
+    "no_password": "No password? Request a sign-in link, sign in, then open the registration email again.",
+    "magic": "Email me a sign-in link",
+    "wrong": "Wrong email or password."
+  },
   "email": {
     "expiry": "The link works once and for 24 hours.",
     "ignore": "If you did not register, ignore this email.",
