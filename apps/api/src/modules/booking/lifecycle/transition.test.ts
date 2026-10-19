@@ -266,6 +266,30 @@ describe('yard commands', () => {
     }
   });
 
+  it('counts a check-in 30 min 20 s early as early with a 30-minute tolerance', async () => {
+    const startsAt = new Date('2026-11-06T10:00:00Z');
+    const b = await seedBooking(w.A, { startsAt });
+    const at = new Date(startsAt.getTime() - (30 * 60 + 20) * 1000);
+    const r = await gate(at, (ctx) => transitionBooking(ctx, b.id, { type: 'check_in' }));
+    expect(r.booking).toMatchObject({ punctuality: 'early', punctualityMinutes: -30 });
+  });
+
+  it('answers 409, not a no-op, for a repeat-looking command on a final booking', async () => {
+    const startsAt = new Date('2026-11-06T11:00:00Z');
+    const b = await seedBooking(w.A, { startsAt, status: 'cancelled' });
+    expect(
+      await outcome(
+        asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
+          transitionBooking(ctx, b.id, {
+            type: 'reschedule',
+            startsAt: startsAt.toISOString(),
+            version: 1,
+          }),
+        ),
+      ),
+    ).toEqual({ code: 'conflict', reason: 'invalid_transition', status: 'cancelled' });
+  });
+
   it('turns a truck away after check-in and shortens its driver link', async () => {
     const startsAt = new Date('2026-11-07T08:00:00Z');
     const b = await seedBooking(w.A, { startsAt, status: 'checked_in' });

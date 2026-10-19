@@ -1,3 +1,4 @@
+import { blockingFeature, catalog } from '@rampflow/shared';
 import { totalLoadUnits } from '@rampflow/shared/modules/avis/avis';
 import type { BookingEventData } from '@rampflow/shared/modules/booking/events';
 import {
@@ -180,7 +181,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       const to = { resourceId: fit.resourceId, ...windowOf(cmd.startsAt, block) };
       const previous = { startsAt: b.startsAt.toISOString(), endsAt: b.endsAt.toISOString() };
       return {
-        patch: to,
+        patch: { ...to, forced: force },
         event: {
           type: 'rescheduled',
           from: { resourceId: b.resourceId, ...previous },
@@ -216,6 +217,12 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       const units = totalLoadUnits(cmd.avis);
       let window = { startsAt: b.startsAt, endsAt: b.endsAt, blocksUntil: b.blocksUntil };
       let durationChanged = false;
+      // The site lock also serializes avis.unique_references between two edits or a create.
+      let locked = false;
+      const lock = async () => {
+        if (!locked) await lockSiteCapacity(ctx.tx, b.siteId);
+        locked = true;
+      };
       if (units !== b.loadUnits) {
         const lt = await loadTypeAt(ctx.tx, b.tenantId, b.siteId, b.loadTypeId);
         if (!lt) throw new Error(`booking ${b.id} without load type`);
@@ -226,7 +233,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
           window = windowOf(b.startsAt, block);
           // From check-in on the truck carries what it carries: no capacity check (AV-02).
           if (b.status === 'confirmed') {
-            await lockSiteCapacity(ctx.tx, b.siteId);
+            await lock();
             const fit = await findFit(ctx.tx, ctx.access, {
               tenantId: b.tenantId,
               siteId: b.siteId,
@@ -237,10 +244,11 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
               excludeBookingId: b.id,
               force: false,
             });
-            if (!fit.ok) throw conflict(fit.reason);
+            if (!fit.ok) throw conflict('capacity_full');
           }
         }
       }
+      if ((await setting(ctx, 'avis.unique_references', b)) === true) await lock();
       await checkAvis(ctx.tx, ctx.access, b, cmd.avis);
       const before = await readAvis(ctx.tx, b.id);
       const fields = before ? changedFields(before, cmd.avis) : Object.keys(cmd.avis);
@@ -250,7 +258,10 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
         event: { type: 'avis_updated', fields, durationChanged },
         after: async () => {
           if (ctx.actor.party === 'staff' && b.status === 'confirmed') {
-            await emailContacts(ctx, b, 'booking.changed', { change: 'avis', previous: null });
+            await emailContacts(ctx, { ...b, ...window }, 'booking.changed', {
+              change: 'avis',
+              previous: null,
+            });
           }
         },
       };
@@ -326,10 +337,12 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
   mark_no_show: {
     done: (_ctx, b) => b.status === 'no_show',
     async apply(ctx, b) {
-      if (!ctx.access.entitlements?.modules.yard) {
-        throw new ApiError('entitlement_required', 'Module yard is off', {
-          key: 'yard.checkin_qr',
-        });
+      const entitlements = ctx.access.entitlements;
+      if (!entitlements?.modules.yard) {
+        const key = entitlements
+          ? blockingFeature(catalog, entitlements, 'yard')
+          : 'yard.checkin_qr';
+        throw new ApiError('entitlement_required', 'Module yard is off', { key });
       }
       const dueAt = noShowDueAt(b.startsAt, await setting(ctx, 'yard.no_show_after_minutes', b));
       if (ctx.now < dueAt) throw conflict('not_due', { dueAt: dueAt.toISOString() });
@@ -360,11 +373,12 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       let punctuality = null;
       let punctualityMinutes = null;
       if (!b.walkIn) {
-        punctualityMinutes = minutesFromStart(ctx.now, b.startsAt);
+        const exact = minutesFromStart(ctx.now, b.startsAt);
+        punctualityMinutes = Math.round(exact);
         punctuality = fromNoShow
           ? ('late' as const)
           : punctualityOf(
-              punctualityMinutes,
+              exact,
               await setting(ctx, 'yard.early_tolerance_minutes', b),
               await setting(ctx, 'yard.grace_minutes', b),
             );
@@ -642,8 +656,12 @@ export async function transitionBooking(
   }
 
   const handler = HANDLERS[cmd.type] as Handler<CommandName>;
-  if (await handler.done(ctx, b, cmd as never)) return { booking: b, changed: false };
-  if (!sourceStates(cmd.type, ctx.actor.party).includes(b.status)) {
+  // A repeat is idempotent only from a source state or from the command's own target state.
+  const reachable = sourceStates(cmd.type, ctx.actor.party).includes(b.status);
+  if ((reachable || b.status === def.to) && (await handler.done(ctx, b, cmd as never))) {
+    return { booking: b, changed: false };
+  }
+  if (!reachable) {
     throw conflict('invalid_transition', { status: b.status });
   }
   await carrierGuards(ctx, b, actor);

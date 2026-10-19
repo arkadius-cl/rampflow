@@ -29,6 +29,6 @@ export function visitEndLinkExpiry(at: Date, startsAt: Date, retentionHours: num
   return new Date(Math.min(byRetention, linkExpiryFor(startsAt).getTime()));
 }
 
-/** Signed minutes of a check-in against the slot start. */
+/** Signed minutes, fractional, of a check-in against the slot start. */
 export const minutesFromStart = (at: Date, startsAt: Date) =>
-  Math.round((at.getTime() - startsAt.getTime()) / MINUTE);
+  (at.getTime() - startsAt.getTime()) / MINUTE;
