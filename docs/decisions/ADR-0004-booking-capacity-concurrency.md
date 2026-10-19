@@ -116,7 +116,7 @@ export function lockSiteCapacity(tx: Tx, siteId: SiteId): Promise<void>;
 
 ### Hard limits
 
-`withinLimit(tx, key, count)` locks the tenant's `org` row `FOR UPDATE`, counts, and throws 409 `limit_reached` with `{ key, limit }` when `count + 1 > limit` (`null` never blocks). It is typed to hard limits only (`HardLimitKey`). `booking.max_bookings_per_month` is soft: no write checks it, and PL-04 flags usage above 100%. Booking writes take no limit lock. A transaction that needs both takes the org row before the site capacity lock.
+`withinLimit(tx, key, count)` takes a transaction-scoped advisory lock per tenant and limit key (as built in U1; it needs no UPDATE policy on `org`), counts, and throws 409 `limit_reached` with `{ key, limit }` when `count + 1 > limit` (`null` never blocks). It is typed to hard limits only (`HardLimitKey`). `booking.max_bookings_per_month` is soft: no write checks it, and PL-04 flags usage above 100%. Booking writes take no limit lock. A transaction that needs both takes the limit lock before the site capacity lock.
 
 ### Capacity reductions
 

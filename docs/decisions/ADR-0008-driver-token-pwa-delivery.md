@@ -27,7 +27,7 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 |---|---|
 | Random token, hash stored, link shown once | Satisfies hashing, fails CR-06: a carrier who closed the page must regenerate to copy, which revokes the link the driver already has. |
 | Random token stored encrypted | The database holds recoverable tokens; a leaked key plus a dump reveals every link. Violates "hashes only". |
-| **Token derived as HMAC-SHA256(`DRIVER_LINK_SECRET`, `driver_access.id`)** | The database stores `sha256(token)` only. The server recomputes the token for an authorized carrier or staff user on demand. A database dump alone reveals no link; regenerating creates a new row and revokes the old one. |
+| **Token derived as HMAC-SHA256(`TOKEN_SECRET`, `driver_access.id`)** | The database stores `sha256(token)` only. The server recomputes the token for an authorized carrier or staff user on demand. A database dump alone reveals no link; regenerating creates a new row and revokes the old one. |
 
 **Delivery.**
 
@@ -41,11 +41,11 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 ### Tokens
 
 - `driver_access (id, tenant_id, booking_id, carrier_id, token_hash, channel, created_at, created_by, expires_at, revoked_at, last_used_at)`. `channel` is `link` (carrier or staff shares it) or `staff` (gate device, below).
-- `token = base64url(HMAC-SHA256(DRIVER_LINK_SECRET, id))`, 256 bits. `token_hash = sha256(token)`, unique.
+- `token = base64url(HMAC-SHA256(TOKEN_SECRET, id))`, 256 bits. `token_hash = sha256(token)`, unique.
 - One active `link` row per booking. Booking creation issues it; "Regenerate" (CR-06) revokes the current row and issues a new one.
 - `GET .../bookings/:id/driver-link` recomputes the URL for users who may see the booking. The token never appears in a request line, only in responses to authorized users.
 - Expiry: at creation `starts_at + 7 days`. A reschedule moves the active `link` row's `expires_at` to the new `starts_at + 7 days` in the same transaction, so a booking moved further out keeps a working link. Departure sets it to `min(departed_at + privacy.retention.driver_link_hours, starts_at + 7 days)`. `turned_away` does the same from the transition time. Cancellation revokes at once (BK-05).
-- Rotating `DRIVER_LINK_SECRET` invalidates every link; that is the emergency revocation path.
+- Rotating `TOKEN_SECRET` invalidates every link; that is the emergency revocation path.
 
 ### Exchange and session
 
@@ -76,6 +76,6 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 
 ## Consequences
 
-- A leaked database dump exposes no usable driver link. A leaked `DRIVER_LINK_SECRET` without the database exposes none either, because ids are unknown.
+- A leaked database dump exposes no usable driver link. A leaked `TOKEN_SECRET` without the database exposes none either, because ids are unknown.
 - Carriers can copy, email and share the link any number of times without invalidating it (CR-06).
 - The driver app and the back office deploy as one origin but build and evolve separately. U10 owns `apps/driver` alone.
