@@ -71,6 +71,10 @@ TN-03's "a deactivated link blocks new bookings (403)" uses 403 `forbidden` with
 
 `zValidator(target, schema, onInvalid)` validates `param`, `query` and `json`. `onInvalid` maps `param` failures to 404 and `query` and `json` failures to 422 with zod paths. Business rules that need data (capacity, cutoff, limits) answer 409.
 
+### Security headers
+
+Every answer of the API, and of the SPAs it serves in production, carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` and `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'` (`kernel/security-headers.ts`). A response that sets its own policy keeps it: `/d` keeps the driver CSP and `no-referrer` ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)). With `NODE_ENV=production` every answer also carries `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+
 ### Pagination
 
 Lists that grow without bound (bookings, visits, acknowledgements, events) are cursor-paginated: `?limit=50&cursor=<opaque>` returns `{ items, nextCursor: string | null }`. `limit` is 1 to 200, default 50. The cursor encodes the sort key and the id. Master-data lists (sites, docks, resources, load types, staff) return `{ items }` without paging.

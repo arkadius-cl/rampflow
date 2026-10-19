@@ -6,6 +6,7 @@ import { type Clock, isPinnable, pinnableClock, systemClock } from './kernel/clo
 import { type AppEnv, env } from './kernel/env.ts';
 import { describeForLog, onError, onNotFound } from './kernel/errors.ts';
 import { requireSameOrigin } from './kernel/origin.ts';
+import { securityHeaders } from './kernel/security-headers.ts';
 import { type StaticRoots, staticFiles } from './kernel/static.ts';
 import { testRoutes } from './kernel/test-routes.ts';
 import { modulesApi } from './modules/index.ts';
@@ -16,6 +17,8 @@ export interface AppOptions {
   testRoutes?: boolean;
   /** Serve the built SPAs (production). */
   static?: StaticRoots;
+  /** Production adds HSTS; defaults to `NODE_ENV=production`. */
+  production?: boolean;
 }
 
 const health = new Hono<AppEnv>().get('/', async (c) => {
@@ -48,7 +51,9 @@ function buildApi(options: AppOptions) {
 /** The whole HTTP surface. Tests build their own with a fixed clock. */
 export function createApp(options: AppOptions = {}) {
   const api = buildApi(options);
-  const app = new Hono<AppEnv>().route('/api', api);
+  const app = new Hono<AppEnv>()
+    .use(securityHeaders({ hsts: options.production ?? env.NODE_ENV === 'production' }))
+    .route('/api', api);
   if (options.static) app.route('/', staticFiles(options.static));
   return app.onError(onError).notFound(onNotFound);
 }
