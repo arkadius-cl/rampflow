@@ -3,6 +3,7 @@ import type avis_avis from '@rampflow/i18n/locales/en/avis/avis.json';
 import type avis_entitlements from '@rampflow/i18n/locales/en/avis/entitlements.json';
 import type avis_settings from '@rampflow/i18n/locales/en/avis/settings.json';
 import type booking_booking from '@rampflow/i18n/locales/en/booking/booking.json';
+import type booking_capacity from '@rampflow/i18n/locales/en/booking/capacity.json';
 import type booking_entitlements from '@rampflow/i18n/locales/en/booking/entitlements.json';
 import type booking_lifecycle from '@rampflow/i18n/locales/en/booking/lifecycle.json';
 import type booking_nav from '@rampflow/i18n/locales/en/booking/nav.json';
@@ -14,6 +15,7 @@ import type core_entitlements from '@rampflow/i18n/locales/en/core/entitlements.
 import type core_errors from '@rampflow/i18n/locales/en/core/errors.json';
 import type core_nav from '@rampflow/i18n/locales/en/core/nav.json';
 import type core_shell from '@rampflow/i18n/locales/en/core/shell.json';
+import type core_sites from '@rampflow/i18n/locales/en/core/sites.json';
 import type driver_link_email from '@rampflow/i18n/locales/en/driver/link-email.json';
 import type i18n_settings from '@rampflow/i18n/locales/en/i18n/settings.json';
 import type notify_entitlements from '@rampflow/i18n/locales/en/notify/entitlements.json';
@@ -40,6 +42,7 @@ export interface Resources {
   };
   booking: {
     booking: typeof booking_booking;
+    capacity: typeof booking_capacity;
     entitlements: typeof booking_entitlements;
     lifecycle: typeof booking_lifecycle;
     nav: typeof booking_nav;
@@ -55,6 +58,7 @@ export interface Resources {
     errors: typeof core_errors;
     nav: typeof core_nav;
     shell: typeof core_shell;
+    sites: typeof core_sites;
   };
   driver: {
     'link-email': typeof driver_link_email;

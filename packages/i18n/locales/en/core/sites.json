@@ -1,0 +1,128 @@
+{
+  "title": "Sites and docks",
+  "description": "Sites hold halls, halls hold docks. Carriers book pools or single docks, never a pooled dock directly.",
+  "nav_label": "Sites",
+  "new_site": "New site",
+  "edit_site": "Edit site",
+  "form_description": "The time zone sets the site's clock for slots, hours and closures. The region sets its public holidays.",
+  "create": "Create site",
+  "save": "Save",
+  "cancel": "Cancel",
+  "saved": "Saved",
+  "empty": {
+    "title": "No sites yet",
+    "description": "Create your first site, then add its halls and docks."
+  },
+  "columns": {
+    "name": "Name",
+    "address": "Address",
+    "time_zone": "Time zone",
+    "status": "Status"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "usage": {
+    "sites": "Sites",
+    "docks": "Docks",
+    "of": "{{used}} of {{limit}}",
+    "unlimited": "{{used}}, no limit",
+    "docks_hint": "Active and maintenance docks count against your package."
+  },
+  "fields": {
+    "name": "Name",
+    "address_line1": "Street and number",
+    "address_line2": "Address line 2",
+    "postal_code": "Postal code",
+    "city": "City",
+    "country": "Country",
+    "country_hint": "Two letters, for example DE.",
+    "subdivision": "Region",
+    "subdivision_hint": "For public holidays, for example DE-BY.",
+    "time_zone": "Time zone",
+    "time_zone_hint": "Slots, hours and closures use this zone's clock.",
+    "default_locale": "Default language",
+    "phone": "Phone",
+    "phone_hint": "International format, for example +4940123456.",
+    "active": "Active"
+  },
+  "locales": {
+    "de": "Deutsch",
+    "en": "English",
+    "pl": "Polski"
+  },
+  "tabs": {
+    "label": "Site sections",
+    "docks": "Halls, docks and pools",
+    "hours": "Hours and closures",
+    "load_types": "Load types"
+  },
+  "halls": {
+    "new": "New hall",
+    "rename": "Rename hall",
+    "rename_named": "Rename {{name}}",
+    "name": "Hall name",
+    "description": "Halls group the docks of a site.",
+    "count": "Docks: {{n}}",
+    "empty_title": "No halls yet",
+    "empty": "Add a hall, then its docks."
+  },
+  "docks": {
+    "new": "Dock",
+    "new_title": "New dock",
+    "edit": "Edit dock {{code}}",
+    "description": "The code is unique at this site and is what drivers see when they are called.",
+    "empty": "No docks in this hall yet.",
+    "adr_yes": "Yes",
+    "adr_no": "No",
+    "status_hint": "Docks in maintenance add no capacity but count against your package. Inactive docks count for nothing.",
+    "columns": {
+      "code": "Code",
+      "door": "Door",
+      "zone": "Zone",
+      "adr": "ADR",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "code": "Code",
+      "hall": "Hall",
+      "door": "Door type",
+      "zone": "Temperature zone",
+      "status": "Status",
+      "adr": "Dangerous goods (ADR) allowed"
+    }
+  },
+  "door_types": {
+    "dock_leveler": "Dock leveler",
+    "ground_level": "Ground level",
+    "side_loading": "Side loading",
+    "yard_open": "Open yard"
+  },
+  "zones": {
+    "ambient": "Ambient",
+    "chilled": "Chilled",
+    "frozen": "Frozen"
+  },
+  "statuses": {
+    "active": "Active",
+    "maintenance": "Maintenance",
+    "inactive": "Inactive"
+  },
+  "validation": {
+    "required": "Fill this in.",
+    "too_long": "This is too long.",
+    "too_small": "Enter a larger value.",
+    "too_big": "Enter a smaller value.",
+    "format": "Check the format.",
+    "multiple_of_5": "Use steps of 5 minutes.",
+    "invalid": "Check this value.",
+    "time_zone": "Unknown time zone.",
+    "subdivision_country": "The region must belong to the country.",
+    "window_order": "Opening comes before closing.",
+    "overlap": "Overlaps another window of the day.",
+    "range_order": "The start comes before the end.",
+    "tiers": "Upper limits ascend, and only the last tier is open."
+  }
+}

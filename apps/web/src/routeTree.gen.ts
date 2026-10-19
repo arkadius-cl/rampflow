@@ -32,8 +32,13 @@ import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
 import { Route as TOrgIdSafetyAcknowledgementsRouteImport } from './routes/t/$orgId/safety/acknowledgements'
+import { Route as TOrgIdSitesIndexRouteImport } from './routes/t/$orgId/sites/index'
+import { Route as TOrgIdSitesSiteIdRouteRouteImport } from './routes/t/$orgId/sites/$siteId/route'
 import { Route as TOrgIdSafetyBriefingsIndexRouteImport } from './routes/t/$orgId/safety/briefings/index'
 import { Route as TOrgIdSafetyBriefingsInstructionIdRouteImport } from './routes/t/$orgId/safety/briefings/$instructionId'
+import { Route as TOrgIdSitesSiteIdIndexRouteImport } from './routes/t/$orgId/sites/$siteId/index'
+import { Route as TOrgIdSitesSiteIdHoursRouteImport } from './routes/t/$orgId/sites/$siteId/hours'
+import { Route as TOrgIdSitesSiteIdLoadTypesRouteImport } from './routes/t/$orgId/sites/$siteId/load-types'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -151,6 +156,16 @@ const TOrgIdSafetyAcknowledgementsRoute =
     path: '/safety/acknowledgements',
     getParentRoute: () => TOrgIdRouteRoute,
   } as any)
+const TOrgIdSitesIndexRoute = TOrgIdSitesIndexRouteImport.update({
+  id: '/sites/',
+  path: '/sites/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdSitesSiteIdRouteRoute = TOrgIdSitesSiteIdRouteRouteImport.update({
+  id: '/sites/$siteId',
+  path: '/sites/$siteId',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdSafetyBriefingsIndexRoute =
   TOrgIdSafetyBriefingsIndexRouteImport.update({
     id: '/safety/briefings/',
@@ -162,6 +177,22 @@ const TOrgIdSafetyBriefingsInstructionIdRoute =
     id: '/safety/briefings/$instructionId',
     path: '/safety/briefings/$instructionId',
     getParentRoute: () => TOrgIdRouteRoute,
+  } as any)
+const TOrgIdSitesSiteIdIndexRoute = TOrgIdSitesSiteIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TOrgIdSitesSiteIdRouteRoute,
+} as any)
+const TOrgIdSitesSiteIdHoursRoute = TOrgIdSitesSiteIdHoursRouteImport.update({
+  id: '/hours',
+  path: '/hours',
+  getParentRoute: () => TOrgIdSitesSiteIdRouteRoute,
+} as any)
+const TOrgIdSitesSiteIdLoadTypesRoute =
+  TOrgIdSitesSiteIdLoadTypesRouteImport.update({
+    id: '/load-types',
+    path: '/load-types',
+    getParentRoute: () => TOrgIdSitesSiteIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -187,9 +218,14 @@ export interface FileRoutesByFullPath {
   '/platform/': typeof PlatformIndexRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
+  '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
+  '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
+  '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
   '/t/$orgId/safety/briefings/': typeof TOrgIdSafetyBriefingsIndexRoute
+  '/t/$orgId/sites/$siteId/': typeof TOrgIdSitesSiteIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -211,8 +247,12 @@ export interface FileRoutesByTo {
   '/c/$orgId': typeof COrgIdIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/sites': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
+  '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
+  '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
   '/t/$orgId/safety/briefings': typeof TOrgIdSafetyBriefingsIndexRoute
+  '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -238,9 +278,14 @@ export interface FileRoutesById {
   '/platform/': typeof PlatformIndexRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
+  '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
+  '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
+  '/t/$orgId/sites/$siteId/load-types': typeof TOrgIdSitesSiteIdLoadTypesRoute
   '/t/$orgId/safety/briefings/': typeof TOrgIdSafetyBriefingsIndexRoute
+  '/t/$orgId/sites/$siteId/': typeof TOrgIdSitesSiteIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -267,9 +312,14 @@ export interface FileRouteTypes {
     | '/platform/'
     | '/c/$orgId/'
     | '/t/$orgId/'
+    | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
+    | '/t/$orgId/sites/$siteId/hours'
+    | '/t/$orgId/sites/$siteId/load-types'
     | '/t/$orgId/safety/briefings/'
+    | '/t/$orgId/sites/$siteId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,8 +341,12 @@ export interface FileRouteTypes {
     | '/c/$orgId'
     | '/t/$orgId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/sites'
     | '/t/$orgId/safety/briefings/$instructionId'
+    | '/t/$orgId/sites/$siteId/hours'
+    | '/t/$orgId/sites/$siteId/load-types'
     | '/t/$orgId/safety/briefings'
+    | '/t/$orgId/sites/$siteId'
   id:
     | '__root__'
     | '/'
@@ -317,9 +371,14 @@ export interface FileRouteTypes {
     | '/platform/'
     | '/c/$orgId/'
     | '/t/$orgId/'
+    | '/t/$orgId/sites/$siteId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
+    | '/t/$orgId/sites/$siteId/hours'
+    | '/t/$orgId/sites/$siteId/load-types'
     | '/t/$orgId/safety/briefings/'
+    | '/t/$orgId/sites/$siteId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -497,6 +556,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdSafetyAcknowledgementsRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/sites/': {
+      id: '/t/$orgId/sites/'
+      path: '/sites'
+      fullPath: '/t/$orgId/sites/'
+      preLoaderRoute: typeof TOrgIdSitesIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/sites/$siteId': {
+      id: '/t/$orgId/sites/$siteId'
+      path: '/sites/$siteId'
+      fullPath: '/t/$orgId/sites/$siteId'
+      preLoaderRoute: typeof TOrgIdSitesSiteIdRouteRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/safety/briefings/': {
       id: '/t/$orgId/safety/briefings/'
       path: '/safety/briefings'
@@ -510,6 +583,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/t/$orgId/safety/briefings/$instructionId'
       preLoaderRoute: typeof TOrgIdSafetyBriefingsInstructionIdRouteImport
       parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/sites/$siteId/': {
+      id: '/t/$orgId/sites/$siteId/'
+      path: '/'
+      fullPath: '/t/$orgId/sites/$siteId/'
+      preLoaderRoute: typeof TOrgIdSitesSiteIdIndexRouteImport
+      parentRoute: typeof TOrgIdSitesSiteIdRouteRoute
+    }
+    '/t/$orgId/sites/$siteId/hours': {
+      id: '/t/$orgId/sites/$siteId/hours'
+      path: '/hours'
+      fullPath: '/t/$orgId/sites/$siteId/hours'
+      preLoaderRoute: typeof TOrgIdSitesSiteIdHoursRouteImport
+      parentRoute: typeof TOrgIdSitesSiteIdRouteRoute
+    }
+    '/t/$orgId/sites/$siteId/load-types': {
+      id: '/t/$orgId/sites/$siteId/load-types'
+      path: '/load-types'
+      fullPath: '/t/$orgId/sites/$siteId/load-types'
+      preLoaderRoute: typeof TOrgIdSitesSiteIdLoadTypesRouteImport
+      parentRoute: typeof TOrgIdSitesSiteIdRouteRoute
     }
   }
 }
@@ -568,16 +662,38 @@ const COrgIdRouteRouteWithChildren = COrgIdRouteRoute._addFileChildren(
   COrgIdRouteRouteChildren,
 )
 
+interface TOrgIdSitesSiteIdRouteRouteChildren {
+  TOrgIdSitesSiteIdHoursRoute: typeof TOrgIdSitesSiteIdHoursRoute
+  TOrgIdSitesSiteIdLoadTypesRoute: typeof TOrgIdSitesSiteIdLoadTypesRoute
+  TOrgIdSitesSiteIdIndexRoute: typeof TOrgIdSitesSiteIdIndexRoute
+}
+
+const TOrgIdSitesSiteIdRouteRouteChildren: TOrgIdSitesSiteIdRouteRouteChildren =
+  {
+    TOrgIdSitesSiteIdHoursRoute: TOrgIdSitesSiteIdHoursRoute,
+    TOrgIdSitesSiteIdLoadTypesRoute: TOrgIdSitesSiteIdLoadTypesRoute,
+    TOrgIdSitesSiteIdIndexRoute: TOrgIdSitesSiteIdIndexRoute,
+  }
+
+const TOrgIdSitesSiteIdRouteRouteWithChildren =
+  TOrgIdSitesSiteIdRouteRoute._addFileChildren(
+    TOrgIdSitesSiteIdRouteRouteChildren,
+  )
+
 interface TOrgIdRouteRouteChildren {
   TOrgIdIndexRoute: typeof TOrgIdIndexRoute
+  TOrgIdSitesSiteIdRouteRoute: typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   TOrgIdSafetyAcknowledgementsRoute: typeof TOrgIdSafetyAcknowledgementsRoute
+  TOrgIdSitesIndexRoute: typeof TOrgIdSitesIndexRoute
   TOrgIdSafetyBriefingsInstructionIdRoute: typeof TOrgIdSafetyBriefingsInstructionIdRoute
   TOrgIdSafetyBriefingsIndexRoute: typeof TOrgIdSafetyBriefingsIndexRoute
 }
 
 const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdIndexRoute: TOrgIdIndexRoute,
+  TOrgIdSitesSiteIdRouteRoute: TOrgIdSitesSiteIdRouteRouteWithChildren,
   TOrgIdSafetyAcknowledgementsRoute: TOrgIdSafetyAcknowledgementsRoute,
+  TOrgIdSitesIndexRoute: TOrgIdSitesIndexRoute,
   TOrgIdSafetyBriefingsInstructionIdRoute:
     TOrgIdSafetyBriefingsInstructionIdRoute,
   TOrgIdSafetyBriefingsIndexRoute: TOrgIdSafetyBriefingsIndexRoute,

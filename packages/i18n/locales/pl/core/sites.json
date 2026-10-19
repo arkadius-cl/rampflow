@@ -1,0 +1,128 @@
+{
+  "title": "Lokalizacje i rampy",
+  "description": "Lokalizacje mają hale, hale mają rampy. Przewoźnicy rezerwują pule lub pojedyncze rampy, nigdy bezpośrednio rampę z puli.",
+  "nav_label": "Lokalizacje",
+  "new_site": "Nowa lokalizacja",
+  "edit_site": "Edytuj lokalizację",
+  "form_description": "Strefa czasowa wyznacza zegar lokalizacji dla slotów, godzin otwarcia i zamknięć. Region wyznacza święta.",
+  "create": "Utwórz lokalizację",
+  "save": "Zapisz",
+  "cancel": "Anuluj",
+  "saved": "Zapisano",
+  "empty": {
+    "title": "Brak lokalizacji",
+    "description": "Utwórz pierwszą lokalizację, a potem jej hale i rampy."
+  },
+  "columns": {
+    "name": "Nazwa",
+    "address": "Adres",
+    "time_zone": "Strefa czasowa",
+    "status": "Status"
+  },
+  "status": {
+    "active": "Aktywna",
+    "inactive": "Nieaktywna"
+  },
+  "usage": {
+    "sites": "Lokalizacje",
+    "docks": "Rampy",
+    "of": "{{used}} z {{limit}}",
+    "unlimited": "{{used}}, bez limitu",
+    "docks_hint": "Rampy aktywne i w konserwacji liczą się do limitu pakietu."
+  },
+  "fields": {
+    "name": "Nazwa",
+    "address_line1": "Ulica i numer",
+    "address_line2": "Druga linia adresu",
+    "postal_code": "Kod pocztowy",
+    "city": "Miasto",
+    "country": "Kraj",
+    "country_hint": "Dwie litery, na przykład PL.",
+    "subdivision": "Region",
+    "subdivision_hint": "Dla świąt, na przykład PL-14.",
+    "time_zone": "Strefa czasowa",
+    "time_zone_hint": "Sloty, godziny otwarcia i zamknięcia używają zegara tej strefy.",
+    "default_locale": "Język domyślny",
+    "phone": "Telefon",
+    "phone_hint": "Format międzynarodowy, na przykład +48221234567.",
+    "active": "Aktywna"
+  },
+  "locales": {
+    "de": "Deutsch",
+    "en": "English",
+    "pl": "Polski"
+  },
+  "tabs": {
+    "label": "Sekcje lokalizacji",
+    "docks": "Hale, rampy i pule",
+    "hours": "Godziny otwarcia i zamknięcia",
+    "load_types": "Rodzaje ładunku"
+  },
+  "halls": {
+    "new": "Nowa hala",
+    "rename": "Zmień nazwę hali",
+    "rename_named": "Zmień nazwę: {{name}}",
+    "name": "Nazwa hali",
+    "description": "Hale grupują rampy lokalizacji.",
+    "count": "Rampy: {{n}}",
+    "empty_title": "Brak hal",
+    "empty": "Dodaj halę, a potem jej rampy."
+  },
+  "docks": {
+    "new": "Rampa",
+    "new_title": "Nowa rampa",
+    "edit": "Edytuj rampę {{code}}",
+    "description": "Kod jest unikalny w lokalizacji. Kierowcy widzą go, gdy są wzywani.",
+    "empty": "Ta hala nie ma jeszcze ramp.",
+    "adr_yes": "Tak",
+    "adr_no": "Nie",
+    "status_hint": "Rampy w konserwacji nie dają pojemności, ale liczą się do pakietu. Nieaktywne rampy się nie liczą.",
+    "columns": {
+      "code": "Kod",
+      "door": "Brama",
+      "zone": "Strefa",
+      "adr": "ADR",
+      "status": "Status",
+      "actions": "Akcje"
+    },
+    "fields": {
+      "code": "Kod",
+      "hall": "Hala",
+      "door": "Typ bramy",
+      "zone": "Strefa temperaturowa",
+      "status": "Status",
+      "adr": "Towary niebezpieczne (ADR) dozwolone"
+    }
+  },
+  "door_types": {
+    "dock_leveler": "Pomost przeładunkowy",
+    "ground_level": "Na poziomie gruntu",
+    "side_loading": "Załadunek boczny",
+    "yard_open": "Plac otwarty"
+  },
+  "zones": {
+    "ambient": "Otoczenie",
+    "chilled": "Chłodnia",
+    "frozen": "Mroźnia"
+  },
+  "statuses": {
+    "active": "Aktywna",
+    "maintenance": "Konserwacja",
+    "inactive": "Nieaktywna"
+  },
+  "validation": {
+    "required": "Wypełnij to pole.",
+    "too_long": "To jest za długie.",
+    "too_small": "Podaj większą wartość.",
+    "too_big": "Podaj mniejszą wartość.",
+    "format": "Sprawdź format.",
+    "multiple_of_5": "Używaj kroków co 5 minut.",
+    "invalid": "Sprawdź tę wartość.",
+    "time_zone": "Nieznana strefa czasowa.",
+    "subdivision_country": "Region musi należeć do kraju.",
+    "window_order": "Otwarcie musi być przed zamknięciem.",
+    "overlap": "Nakłada się na inne okno tego dnia.",
+    "range_order": "Początek musi być przed końcem.",
+    "tiers": "Górne granice rosną, a tylko ostatni próg jest otwarty."
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "title": "Standorte und Rampen",
+  "description": "Standorte enthalten Hallen, Hallen enthalten Rampen. Spediteure buchen Pools oder Einzelrampen, nie eine Rampe aus einem Pool direkt.",
+  "nav_label": "Standorte",
+  "new_site": "Neuer Standort",
+  "edit_site": "Standort bearbeiten",
+  "form_description": "Die Zeitzone bestimmt die Uhr des Standorts für Slots, Öffnungszeiten und Schließungen. Die Region bestimmt die Feiertage.",
+  "create": "Standort anlegen",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "saved": "Gespeichert",
+  "empty": {
+    "title": "Noch keine Standorte",
+    "description": "Legen Sie Ihren ersten Standort an, dann seine Hallen und Rampen."
+  },
+  "columns": {
+    "name": "Name",
+    "address": "Adresse",
+    "time_zone": "Zeitzone",
+    "status": "Status"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv"
+  },
+  "usage": {
+    "sites": "Standorte",
+    "docks": "Rampen",
+    "of": "{{used}} von {{limit}}",
+    "unlimited": "{{used}}, ohne Grenze",
+    "docks_hint": "Aktive Rampen und Rampen in Wartung zählen gegen Ihr Paket."
+  },
+  "fields": {
+    "name": "Name",
+    "address_line1": "Straße und Hausnummer",
+    "address_line2": "Adresszusatz",
+    "postal_code": "PLZ",
+    "city": "Ort",
+    "country": "Land",
+    "country_hint": "Zwei Buchstaben, zum Beispiel DE.",
+    "subdivision": "Region",
+    "subdivision_hint": "Für Feiertage, zum Beispiel DE-BY.",
+    "time_zone": "Zeitzone",
+    "time_zone_hint": "Slots, Öffnungszeiten und Schließungen folgen der Uhr dieser Zone.",
+    "default_locale": "Standardsprache",
+    "phone": "Telefon",
+    "phone_hint": "Internationales Format, zum Beispiel +4940123456.",
+    "active": "Aktiv"
+  },
+  "locales": {
+    "de": "Deutsch",
+    "en": "English",
+    "pl": "Polski"
+  },
+  "tabs": {
+    "label": "Bereiche des Standorts",
+    "docks": "Hallen, Rampen und Pools",
+    "hours": "Öffnungszeiten und Schließungen",
+    "load_types": "Ladungsarten"
+  },
+  "halls": {
+    "new": "Neue Halle",
+    "rename": "Halle umbenennen",
+    "rename_named": "{{name}} umbenennen",
+    "name": "Name der Halle",
+    "description": "Hallen gruppieren die Rampen eines Standorts.",
+    "count": "Rampen: {{n}}",
+    "empty_title": "Noch keine Hallen",
+    "empty": "Legen Sie eine Halle an, dann ihre Rampen."
+  },
+  "docks": {
+    "new": "Rampe",
+    "new_title": "Neue Rampe",
+    "edit": "Rampe {{code}} bearbeiten",
+    "description": "Die Kennung ist am Standort eindeutig. Fahrer sehen sie, wenn sie gerufen werden.",
+    "empty": "Diese Halle hat noch keine Rampen.",
+    "adr_yes": "Ja",
+    "adr_no": "Nein",
+    "status_hint": "Rampen in Wartung bringen keine Kapazität, zählen aber gegen Ihr Paket. Inaktive Rampen zählen nicht.",
+    "columns": {
+      "code": "Kennung",
+      "door": "Torart",
+      "zone": "Zone",
+      "adr": "ADR",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "code": "Kennung",
+      "hall": "Halle",
+      "door": "Torart",
+      "zone": "Temperaturzone",
+      "status": "Status",
+      "adr": "Gefahrgut (ADR) erlaubt"
+    }
+  },
+  "door_types": {
+    "dock_leveler": "Überladebrücke",
+    "ground_level": "Ebenerdig",
+    "side_loading": "Seitenladung",
+    "yard_open": "Freifläche"
+  },
+  "zones": {
+    "ambient": "Umgebung",
+    "chilled": "Kühl",
+    "frozen": "Tiefkühl"
+  },
+  "statuses": {
+    "active": "Aktiv",
+    "maintenance": "Wartung",
+    "inactive": "Inaktiv"
+  },
+  "validation": {
+    "required": "Bitte ausfüllen.",
+    "too_long": "Das ist zu lang.",
+    "too_small": "Geben Sie einen größeren Wert ein.",
+    "too_big": "Geben Sie einen kleineren Wert ein.",
+    "format": "Prüfen Sie das Format.",
+    "multiple_of_5": "In Schritten von 5 Minuten.",
+    "invalid": "Prüfen Sie diesen Wert.",
+    "time_zone": "Unbekannte Zeitzone.",
+    "subdivision_country": "Die Region muss zum Land gehören.",
+    "window_order": "Öffnen liegt vor Schließen.",
+    "overlap": "Überschneidet sich mit einem anderen Zeitfenster des Tages.",
+    "range_order": "Der Beginn liegt vor dem Ende.",
+    "tiers": "Obergrenzen steigen an, und nur die letzte Stufe ist offen."
+  }
+}
