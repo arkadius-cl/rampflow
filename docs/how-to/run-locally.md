@@ -123,6 +123,12 @@ pnpm test:e2e
 
 This runs Playwright 1.64.1 inside the `mcr.microsoft.com/playwright:v1.64.1-noble` container with host networking and passes the checkout's ports and database URLs into it. Playwright starts the API (with `ENABLE_TEST_ROUTES=1` and the job runner) and the web app (`vite --mode e2e`, without the dev tools overlay) itself. It reuses servers that already listen on the checkout's ports, so stop `pnpm dev` first unless it runs with `ENABLE_TEST_ROUTES=1`: the specs seed their data through `/api/test/seed`. Pass spec paths to narrow the run.
 
+The specs in `e2e/core-loop/` (U12) pin the one API clock that every spec shares, through `POST /api/test/clock`. Their Playwright project `core-loop` therefore depends on the `staff` and `driver` projects and runs one spec at a time after them. A path filter does not apply to dependency projects, so `pnpm test:e2e e2e/core-loop` runs the whole suite. To run only the core loop, skip the dependencies:
+
+```sh
+pnpm test:e2e --project core-loop --no-deps
+```
+
 Helpers live in `e2e/support/`: `seedWorld`, `signInAs` (sets a seeded user's session cookie), `signInWithPassword`, `expectAccessible` (axe, no serious or critical violation), `latestEmailTo` and `linkIn` (Mailpit), and owner-role fixtures in `db.ts`. A unit adds its own helpers in `e2e/support/<unit>.ts`.
 
 If Chromium runs on your host, you can run Playwright directly:
