@@ -20,11 +20,10 @@ import type {
 import { and, asc, eq } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
-import { loadEntitlements } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { entitlementOverride, invitation, org, tenantSubscription } from '../schema.ts';
 import { isPending, issueInvitation } from '../staff/invitations.ts';
-import { tenantUsage } from './usage.ts';
+import { usageOf } from './usage.ts';
 
 // Tenants, packages and overrides (PL-01, PL-02, PL-04). Runs under the platform party, which
 // reads and writes org, tenant_subscription, entitlement_override and invitation (data model).
@@ -101,17 +100,21 @@ async function requireTenant(tx: Tx, tenantId: TenantId): Promise<TenantRow> {
   return row;
 }
 
-async function summary(tx: Tx, row: TenantRow, now: Date) {
-  const entitlements = await loadEntitlements(tx, row.id, now);
-  const usage = await tenantUsage(tx, row.id, entitlements, now);
-  return { summary: { ...row, usage } satisfies TenantSummary, entitlements };
+async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
+  const usage = await usageOf(tx, rows, now);
+  return rows.map((row) => {
+    const u = usage.get(row.id);
+    if (!u) throw new Error(`no usage for ${row.id}`);
+    return {
+      summary: { ...row, usage: u.usage } satisfies TenantSummary,
+      entitlements: u.entitlements,
+    };
+  });
 }
 
 /** PL-04: every tenant with its usage against its limits. */
 export async function listTenants(tx: Tx, now: Date): Promise<TenantSummary[]> {
-  const out: TenantSummary[] = [];
-  for (const row of await tenantRows(tx)) out.push((await summary(tx, row, now)).summary);
-  return out;
+  return (await summaries(tx, await tenantRows(tx), now)).map((s) => s.summary);
 }
 
 function entitlementViews(pkg: PackageId, resolved: Entitlements): EntitlementView[] {
@@ -129,7 +132,9 @@ function entitlementViews(pkg: PackageId, resolved: Entitlements): EntitlementVi
 /** PL-02: resolved entitlements with sources, overrides with expiry, pending admin invitations. */
 export async function tenantDetail(tx: Tx, tenantId: TenantId, now: Date): Promise<TenantDetail> {
   const row = await requireTenant(tx, tenantId);
-  const { summary: s, entitlements } = await summary(tx, row, now);
+  const [first] = await summaries(tx, [row], now);
+  if (!first) throw new Error(`no summary for ${tenantId}`);
+  const { summary: s, entitlements } = first;
   const overrides = await tx
     .select()
     .from(entitlementOverride)
