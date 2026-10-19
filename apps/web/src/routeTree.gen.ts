@@ -42,6 +42,7 @@ import { Route as COrgIdBookIndexRouteImport } from './routes/c/$orgId/book/inde
 import { Route as COrgIdBookingsIndexRouteImport } from './routes/c/$orgId/bookings/index'
 import { Route as COrgIdBookingsBookingIdRouteImport } from './routes/c/$orgId/bookings/$bookingId'
 import { Route as COrgIdTenantsIndexRouteImport } from './routes/c/$orgId/tenants/index'
+import { Route as COrgIdUsersIndexRouteImport } from './routes/c/$orgId/users/index'
 import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
 import { Route as TOrgIdBrandIndexRouteImport } from './routes/t/$orgId/brand/index'
 import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
@@ -226,6 +227,11 @@ const COrgIdTenantsIndexRoute = COrgIdTenantsIndexRouteImport.update({
   path: '/tenants/',
   getParentRoute: () => COrgIdRouteRoute,
 } as any)
+const COrgIdUsersIndexRoute = COrgIdUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
 const TOrgIdBookingsBookingIdRoute = TOrgIdBookingsBookingIdRouteImport.update({
   id: '/bookings/$bookingId',
   path: '/bookings/$bookingId',
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/c/$orgId/book/': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/c/$orgId/users/': typeof COrgIdUsersIndexRoute
   '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/c/$orgId/book': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants': typeof COrgIdTenantsIndexRoute
+  '/c/$orgId/users': typeof COrgIdUsersIndexRoute
   '/t/$orgId/brand': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/c/$orgId/book/': typeof COrgIdBookIndexRoute
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
+  '/c/$orgId/users/': typeof COrgIdUsersIndexRoute
   '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -515,6 +524,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/book/'
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
+    | '/c/$orgId/users/'
     | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -563,6 +573,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/book'
     | '/c/$orgId/bookings'
     | '/c/$orgId/tenants'
+    | '/c/$orgId/users'
     | '/t/$orgId/brand'
     | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/book/'
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
+    | '/c/$orgId/users/'
     | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -881,6 +893,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof COrgIdTenantsIndexRouteImport
       parentRoute: typeof COrgIdRouteRoute
     }
+    '/c/$orgId/users/': {
+      id: '/c/$orgId/users/'
+      path: '/users'
+      fullPath: '/c/$orgId/users/'
+      preLoaderRoute: typeof COrgIdUsersIndexRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
     '/t/$orgId/bookings/$bookingId': {
       id: '/t/$orgId/bookings/$bookingId'
       path: '/bookings/$bookingId'
@@ -1066,6 +1085,7 @@ interface COrgIdRouteRouteChildren {
   COrgIdBookIndexRoute: typeof COrgIdBookIndexRoute
   COrgIdBookingsIndexRoute: typeof COrgIdBookingsIndexRoute
   COrgIdTenantsIndexRoute: typeof COrgIdTenantsIndexRoute
+  COrgIdUsersIndexRoute: typeof COrgIdUsersIndexRoute
 }
 
 const COrgIdRouteRouteChildren: COrgIdRouteRouteChildren = {
@@ -1074,6 +1094,7 @@ const COrgIdRouteRouteChildren: COrgIdRouteRouteChildren = {
   COrgIdBookIndexRoute: COrgIdBookIndexRoute,
   COrgIdBookingsIndexRoute: COrgIdBookingsIndexRoute,
   COrgIdTenantsIndexRoute: COrgIdTenantsIndexRoute,
+  COrgIdUsersIndexRoute: COrgIdUsersIndexRoute,
 }
 
 const COrgIdRouteRouteWithChildren = COrgIdRouteRoute._addFileChildren(
