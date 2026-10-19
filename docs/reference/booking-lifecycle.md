@@ -110,6 +110,16 @@ Skipped states keep a NULL timestamp (YD-08). Idempotent retries of a command wh
 
 `uncall` exists for a called driver who never arrives: without it the dock stays held, and the only exits (reassign, depart) either hold another dock or end the visit. A wrong check-in has no undo in the MVP; the check-in dialog asks for an explicit "Check in now".
 
+### As built (U6a)
+
+- `transitionBooking(ctx, bookingId, command)` takes a `BookingContext` (`bookingContext(c)` builds it from a request; it carries the transaction, the actor, `access` and `now`). `createBooking(ctx, request)` takes `mode: 'carrier' | 'staff' | 'walk_in'` and returns `{ booking, created, safety }`. Both live in `apps/api/src/modules/booking/lifecycle/`.
+- Guard failures: a start off the slot grid, or for carriers outside lead time and horizon, answers 409 `not_offered` with `offers`; a blocked check-in answers 409 `safety_missing` with `instructionIds`; `link_acknowledgement` answers 409 `acknowledgement_invalid` with the acknowledgement's `status` (or `not_applicable`); a dock in maintenance answers 409 `dock_inactive`; `mark_no_show` before its deadline answers 409 `not_due`. A missing dock for `dock` or `start_loading` and a missing departure reason answer 422.
+- `version` increases with every change of the booking row, so an edit after a check-in or a call needs the current version. `link_acknowledgement`, `regenerate_driver_link` and `send_driver_link` leave the row unchanged.
+- `mark_no_show` stamps `no_show_at` with the deadline `starts_at + yard.no_show_after_minutes`, not with the run time, so the KPIs and the day rule of `check_in` use the deadline. It sends no email yet: the `booking.no-show` template belongs to U11, which adds the enqueue.
+- `turn_away` takes no note: the booking has no column for one.
+- A walk-in turned away without an avis keeps an avis row with only `plate_seen` (no counterparty, no load units).
+- `packages/shared/src/modules/booking/lifecycle.ts` holds the table (`COMMANDS`, `COMMAND_INPUTS`, `sourceStates`, `availableCommands`); `events.ts` holds the event union. A test (`lifecycle/single-writer.test.ts`) fails on any `update(booking)` outside `transition.ts`, standing in for the Biome rule of ADR-0005.
+
 ## Events
 
 `booking_event.data` is a zod discriminated union on `type`, defined next to the command table. Event payloads never contain personal data; the avis holds that.

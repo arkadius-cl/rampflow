@@ -575,6 +575,8 @@ One per booking (AV-01). Excludes loading method, customs, SSCC and attachments.
 
 FK `(booking_id, tenant_id) → booking(id, tenant_id)` on delete cascade. Indexes `(tenant_id, lower(driver_name))`, `(tenant_id, plate)`, `(tenant_id, driver_phone)` for YD-01 and TN-06 searches. RLS: `booking-family` without the `driver` read: the row holds the visit's personal data, and the driver view shows none of it (DR-01).
 
+As built (U6a): the request schema `AvisInput` in `packages/shared/src/modules/avis/avis.ts` nests `vehicle` (`type`, `plate`, `plateCountry`, `trailerPlate`) and `driver` (`name`, `phone`, `locale`) and maps them onto the flat columns; `references` become `avis_reference` rows with `value_norm` uppercase and trimmed. A walk-in turned away without an avis (YD-03) stores a row with `counterparty_name = ''`, `load_units = []` and only `plate_seen`.
+
 ### `avis_reference`
 
 | Column | Type | Null | Notes |

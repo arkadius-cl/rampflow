@@ -59,7 +59,7 @@ Every error has this body:
 | 403 | `forbidden` | | missing permission; foreign `Origin` |
 | 403 | `entitlement_required` | `{ key }` | the module, a route feature or a setting's required feature is off |
 | 404 | `not_found` | | unknown id, an id of another tenant, carrier, site or booking, or an org the caller is not a member of |
-| 409 | `conflict` | `{ reason, ... }` | `capacity_full` (with `offers`), `daily_cap_reached` (with `offers`), `closed`, `dock_occupied`, `dock_in_resource`, `invalid_transition` (with `status`), `cutoff_passed`, `stale_version` (with `version`), `duplicate_reference`, `already_member`, `link_inactive`, `quiz_incomplete` (with `locales`, `min`, `max`), `duplicate_code`, `holiday_closure`, `manual_closure`; `dock_in_resource` carries the taken `dockIds` |
+| 409 | `conflict` | `{ reason, ... }` | `capacity_full` (with `offers`), `daily_cap_reached` (with `offers`), `closed`, `dock_occupied`, `dock_in_resource`, `invalid_transition` (with `status`), `cutoff_passed`, `stale_version` (with `version`), `duplicate_reference`, `already_member`, `link_inactive`, `quiz_incomplete` (with `locales`, `min`, `max`), `duplicate_code`, `holiday_closure`, `manual_closure`, `not_offered` (with `offers`: off the slot grid, or for carriers outside lead time and horizon), `safety_missing` (with `instructionIds`), `acknowledgement_invalid` (with `status`), `dock_inactive`, `not_due` (with `dueAt`, no-show job only); `dock_in_resource` carries the taken `dockIds` |
 | 409 | `limit_reached` | `{ key, limit }` | a hard limit would be exceeded |
 | 422 | `validation_failed` | `{ issues: [{ path, code, message }] }` | the zod schema rejected body or query; `path` is the zod issue path, for example `["avis", "dangerousGoods", "items", 0, "unNumber"]` |
 | 429 | `rate_limited` | `{ retryAfterSeconds }` | auth and driver exchange limits |
@@ -215,22 +215,22 @@ The register routes take their filters in a POST body, not a query string, becau
 
 ## Bookings (staff)
 
-Unit U6a. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creates, reschedules and duration-changing avis edits take the site capacity lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)).
+Unit U6a, built. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creates, reschedules and duration-changing avis edits take the site capacity lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)). Request schemas and response shapes live in `packages/shared/src/modules/booking/api.staff.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Reads and commands answer the `BookingView` (booking, avis, safety status, driver link state).
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/bookings/board` | `booking.view` | | BK-01 | `?siteId&date`; columns per resource, booked against capacity per grid slot, `overCapacity` flags; polled every 15 s |
-| GET | `/api/t/:orgId/bookings` | `booking.view` | | BK-01 | list view with the same data; paginated |
-| GET | `/api/t/:orgId/bookings/carrier-options` | `booking.staff_book` | | BK-02 | `?q=`; linked active carriers |
+| GET | `/api/t/:orgId/bookings/board` | `booking.view` | | BK-01 | `?siteId&date`; columns per resource with `slots` (`capacity`, `booked` per grid slot) and `bookings` with `overCapacity`; polled every 15 s |
+| GET | `/api/t/:orgId/bookings` | `booking.view` | | BK-01 | `?siteId&date&status&limit&cursor`; list view with the same summaries, by start |
+| GET | `/api/t/:orgId/bookings/carrier-options` | `booking.staff_book` | | BK-02 | `?q=`; actively linked carriers `{ items: [{ id, name }] }` |
 | GET | `/api/t/:orgId/bookings/:bookingId` | `booking.view` | | BK-01, BK-03 | booking, avis, safety status |
-| GET | `/api/t/:orgId/bookings/:bookingId/events` | `booking.view` | | YD-08 | actors only with `booking.view_actors` |
-| POST | `/api/t/:orgId/bookings` | `booking.staff_book`; `booking.force` when `force` | | BK-02, AV-01 | `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } \| { name }, avis, force?, forceReason? }` |
+| GET | `/api/t/:orgId/bookings/:bookingId/events` | `booking.view` | | YD-08 | `?limit&cursor`, oldest first; `actor` only with `booking.view_actors` |
+| POST | `/api/t/:orgId/bookings` | `booking.staff_book`; `booking.force` when `force` | | BK-02, AV-01 | `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } \| { name }, avis, force?, forceReason? }`; 201, or 200 with the first booking for a repeated `clientRequestId`; `forceReason` required with `force` |
 | PATCH | `/api/t/:orgId/bookings/:bookingId` | `booking.staff_book`; `booking.force` when `force` | | BK-03 | reschedule `{ startsAt, resourceId?, version, force?, forceReason? }`; moves the driver link expiry to the new start plus 7 days |
 | PUT | `/api/t/:orgId/bookings/:bookingId/avis` | `booking.staff_book` | `avis.basic` | AV-02 | `{ avis, version }`; from `checked_in` on, no capacity check |
-| POST | `/api/t/:orgId/bookings/:bookingId/cancel` | `booking.staff_book` | | BK-03 | `{ reason? }` |
-| GET | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | `{ url }` |
-| POST | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | regenerate |
-| POST | `/api/t/:orgId/bookings/:bookingId/driver-link/email` | `booking.staff_book` | `notify.email` | CR-06 | `{ email, locale }` |
+| POST | `/api/t/:orgId/bookings/:bookingId/cancel` | `booking.staff_book` | | BK-03 | `{ reason? }` (send `{}` without one) |
+| GET | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | `{ url, expiresAt }`; 404 once the link is revoked |
+| POST | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | regenerate; answers the new `{ url, expiresAt }` |
+| POST | `/api/t/:orgId/bookings/:bookingId/driver-link/email` | `booking.staff_book` | `notify.email` | CR-06 | `{ email, locale }`; 202 |
 
 ## Carrier network
 
