@@ -122,42 +122,44 @@ Unit U2. Router files in `apps/api/src/modules/core/`.
 
 ## Platform administration
 
-Unit U3. `core/platform/routes.platform.ts`, mounted at the platform root.
+Unit U3. `core/platform/routes.platform.ts`, mounted at the platform root. Schemas in `packages/shared/src/modules/core/api.platform.ts` and `api.settings.ts`.
 
 | Method | Path | Permission | Story | Notes |
 |---|---|---|---|---|
-| GET | `/api/platform/tenants` | `core.manage_tenants` | PL-01, PL-04 | each with package, sites, docks, internal users and bookings this month against limits; soft limits above 100% flagged |
-| POST | `/api/platform/tenants` | `core.manage_tenants` | PL-01 | `{ name, package, adminEmail }`; creates org, subscription and `tenant_admin` invitation |
-| GET | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | resolved entitlements with sources, overrides with expiry |
-| PATCH | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | `{ name?, package? }` |
-| PUT | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | `{ value, expiresAt, note }`; 400 for unknown or reserved keys, 422 for a value of the wrong kind |
-| DELETE | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | |
-| POST | `/api/platform/tenants/:tenantId/invitations` | `core.manage_tenants` | PL-01 | re-invite a tenant admin |
-| GET | `/api/platform/packages` | `core.manage_tenants` | PL-02 | the three packages, read-only |
-| GET | `/api/platform/settings` | `core.manage_platform_settings` | PL-03 | every key with platform scope: value and source |
-| PUT | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | `{ value }`; 422 with zod path |
-| DELETE | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | back to the code default |
+| GET | `/api/platform/tenants` | `core.manage_tenants` | PL-01, PL-04 | `{ items: [{ id, name, package, usage }] }`. `usage` holds one meter `{ used, limit, soft, over }` per limit: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage` |
+| POST | `/api/platform/tenants` | `core.manage_tenants` | PL-01 | `{ name, package, adminEmail }` → 201 tenant detail. Creates org, subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts` |
+| GET | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | `{ id, name, package, usage, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. Reserved keys are left out; 404 for an id that is not a tenant |
+| PATCH | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | `{ name?, package? }` → tenant detail |
+| PUT | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | `{ value, expiresAt?, note? }`, `value` a boolean, a non-negative integer or `null` (unlimited) → the override. 400 `bad_request` with `reason` `unknown_key` or `reserved_key`, then 422 on `["value"]` for a value of the wrong kind. Applies from the tenant's next request |
+| DELETE | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | 204 |
+| POST | `/api/platform/tenants/:tenantId/invitations` | `core.manage_tenants` | PL-01 | `{ email }` → 201 invitation; re-invites a tenant admin. A pending invitation to the same email is revoked and replaced |
+| GET | `/api/platform/packages` | `core.manage_tenants` | PL-02 | `{ items: [{ id, values: [{ key, module, kind, soft, value }] }] }`, read-only |
+| GET | `/api/platform/settings` | `core.manage_platform_settings` | PL-03 | `{ scope: 'platform', siteId: null, items }`: every key with platform scope, shaped as in the tenant settings read |
+| PUT | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | `{ value }` → the field. 400 for an unknown key or one without platform scope; 422 with the zod path under `["value", ...]`. Tenant and site rows stay |
+| DELETE | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | 204; back to the code default |
 
 ## Tenant administration
 
+Schemas in `packages/shared/src/modules/core/api.staff.ts`, `api.settings.ts` and `packages/shared/src/modules/brand/api.ts`.
+
 | Method | Path | Permission | Entitlement | Story | Router (unit) |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/staff` | `core.manage_staff` | | TN-01 | `core/staff/routes.tenant.ts` (U3) |
-| POST | `/api/t/:orgId/staff/invitations` | `core.manage_staff` | limit `core.max_internal_users` (members plus pending invitations) | TN-01 | same |
-| DELETE | `/api/t/:orgId/staff/invitations/:invitationId` | `core.manage_staff` | | TN-01 | same |
-| PATCH | `/api/t/:orgId/staff/:membershipId` | `core.manage_staff` | | TN-01 | same; `{ role?, siteIds? }` |
+| GET | `/api/t/:orgId/staff` | `core.manage_staff` | | TN-01 | `core/staff/routes.tenant.ts` (U3); `{ members: [{ membershipId, userId, name, email, role, siteIds, self }], invitations: [{ id, email, role, siteIds, expiresAt, expired }] }` |
+| POST | `/api/t/:orgId/staff/invitations` | `core.manage_staff` | limit `core.max_internal_users` (members plus pending invitations) | TN-01 | same; `{ email, role, siteIds? }` → 201 invitation. `siteIds` only for gate and dock operators (422 on `["siteIds"]` otherwise, on `["siteIds", i]` for another tenant's site). A pending invitation to the same email is replaced and does not count twice; a member's email answers 409 `conflict` `already_member` |
+| DELETE | `/api/t/:orgId/staff/invitations/:invitationId` | `core.manage_staff` | | TN-01 | same; 204, the link stops working |
+| PATCH | `/api/t/:orgId/staff/:membershipId` | `core.manage_staff` | | TN-01 | same; `{ role?, siteIds? }` → the member; a role without a site list drops its `membership_site` rows |
 | DELETE | `/api/t/:orgId/staff/:membershipId` | `core.manage_staff` | | TN-01 | same; access ends on the member's next request |
-| GET | `/api/t/:orgId/settings` | `core.manage_settings` | | TN-02 | `core/settings/routes.tenant.ts` (U3); `?siteId=`: per available key the effective value, its source and the inherited value |
-| PUT | `/api/t/:orgId/settings/:key` | `core.manage_settings` | the key's `requires` | TN-02, TN-04 | same; `{ siteId: uuid \| null, value }` |
+| GET | `/api/t/:orgId/settings` | `core.manage_settings` | | TN-02 | `core/settings/routes.tenant.ts` (U3); `?siteId=` reads the site level, without it the tenant level: `{ scope, siteId, items: [{ key, module, scopes, value, source, inherited: { value, source } }] }` for every available key the level may hold |
+| PUT | `/api/t/:orgId/settings/:key` | `core.manage_settings` | the key's `requires` | TN-02, TN-04 | same; `{ siteId: uuid \| null, value }` → the field. 400 for an unknown key or a level the key lacks (`scope_not_allowed`, `allowed`), 403 `entitlement_required` with the blocking feature, 422 under `["value", ...]`, 404 for another tenant's site |
 | DELETE | `/api/t/:orgId/settings/:key` | `core.manage_settings` | | TN-02 | same; `?siteId=`; "Reset to inherited" |
-| GET | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | `brand/logo/routes.tenant.ts` (U3) |
-| PUT | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | raw PNG or JPEG up to 256 KB, checked by magic bytes; SVG answers 422 |
+| GET | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | `brand/logo/routes.tenant.ts` (U3); `{ logo: { url, contentType, byteSize, updatedAt } \| null }` |
+| PUT | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | raw PNG or JPEG up to 256 KB, checked by magic bytes whatever the `Content-Type` → `{ logo }`. A larger body answers 422 with issue code `too_big`; SVG and anything else 422 `invalid_format` |
 | DELETE | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | |
-| GET | `/api/public/logos/:tenantId/:sha` | public | module `brand` | TN-05 | `brand/logo/routes.public.ts` (U3); immutable cache headers |
-| GET | `/api/c/:orgId/users` | `core.manage_carrier_users` | | CR-04 | `core/carrier-users/routes.carrier.ts` (U3) |
-| POST | `/api/c/:orgId/users/invitations` | `core.manage_carrier_users` | | CR-04 | same; `{ email, role }` |
+| GET | `/api/public/logos/:tenantId/:sha` | public | module `brand` | TN-05 | `brand/logo/routes.public.ts` (U3); the image with `Cache-Control: public, max-age=31536000, immutable`; 404 for another hash, no logo or `brand.logo` off. URLs come from `logoUrl(tenantId, sha, origin?)` in `@rampflow/shared/modules/brand/api`, or `currentLogoUrl(tx, tenantId, entitlements, origin)` in `brand/logo/logo.ts` |
+| GET | `/api/c/:orgId/users` | `core.manage_carrier_users` | | CR-04 | `core/carrier-users/routes.carrier.ts` (U3); as the staff list, without site lists |
+| POST | `/api/c/:orgId/users/invitations` | `core.manage_carrier_users` | | CR-04 | same; `{ email, role }` → 201; the email goes out in the inviter's locale |
 | DELETE | `/api/c/:orgId/users/invitations/:invitationId` | `core.manage_carrier_users` | | CR-04 | same |
-| PATCH | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same |
+| PATCH | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same; `{ role }` |
 | DELETE | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same |
 
 ## Master data and capacity
