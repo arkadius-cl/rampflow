@@ -140,7 +140,7 @@ const ORACLE: Record<string, Rule> = {
   safety_instruction: tenantRef(['driver']),
   safety_instruction_site: tenantRef(['driver']),
   safety_version: (c, r) =>
-    tenantPrivate(c, r, never) || (is(c, 'driver') && sameTenant(c, r) && r.status === 'published'),
+    tenantPrivate(c, r, never) || (is(c, 'driver') && sameTenant(c, r) && r.status !== 'draft'),
   safety_content: (c, r, rel) =>
     tenantPrivate(c, r, rel) ||
     (is(c, 'driver') &&

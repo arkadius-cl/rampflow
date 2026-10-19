@@ -636,7 +636,7 @@ RLS: `tenant-reference(driver)`.
 | `material_change` | boolean | no | publishing invalidates earlier acknowledgements (SF-01) |
 | `published_at`, `published_by` | timestamptz, uuid | yes | |
 
-RLS: `tenant-private`; `driver` select where `status = 'published'` and same tenant.
+RLS: `tenant-private`; `driver` select where `status <> 'draft'` and same tenant, so a driver session can compute the material floor and read the version of an older acknowledgement (U5).
 
 ### `safety_content`
 
@@ -652,7 +652,7 @@ RLS: `tenant-private`; `driver` select where `status = 'published'` and same ten
 | `translation` | text | no | `source`, `machine`, `reviewed` |
 | `content_hash` | bytea | no | sha256 of canonical JSON of title, blocks, questions, statement |
 
-Rows of a published version are immutable (the API refuses writes; SF-01). RLS: like `safety_version`.
+Rows of a published version are immutable (the API refuses writes; SF-01). RLS: `tenant-private`; `driver` select where the version is `published` and same tenant.
 
 ### `safety_acknowledgement`
 
@@ -687,7 +687,7 @@ Indexes `(tenant_id, completed_at)`, `(tenant_id, lower(driver_name))`. RLS: `te
 | `linked_by_party` | text | no | |
 | `linked_by_user_id` | uuid | yes | |
 
-RLS: `tenant-private` site-scoped; `driver` insert and select where `booking_id = app.booking_id()`.
+RLS: `tenant-private` site-scoped; `driver` insert, select and update where `booking_id = app.booking_id()` (the update lets `link_acknowledgement` relink a repeated briefing; U5).
 
 ### `safety_attempt`
 

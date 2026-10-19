@@ -1,3 +1,8 @@
+import {
+  TRANSLATION_STATES,
+  VERSION_STATUSES,
+} from '@rampflow/shared/modules/safety/api.authoring';
+import { ACK_CHANNELS } from '@rampflow/shared/modules/safety/api.register';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -81,8 +86,6 @@ export const safetyInstructionSite = pgTable(
   ],
 );
 
-export const VERSION_STATUSES = ['draft', 'published', 'retired'] as const;
-
 export const safetyVersion = pgTable(
   'safety_version',
   {
@@ -109,11 +112,10 @@ export const safetyVersion = pgTable(
     index('safety_version_tenant_id_idx').on(t.tenantId),
     check('safety_version_status_check', oneOf(t.status, VERSION_STATUSES)),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('driver', 'select', and(tenantIs(t.tenantId), sql`${t.status} = 'published'`)),
+    // Retired versions too, so a driver session can judge an acknowledgement of an older version.
+    allow('driver', 'select', and(tenantIs(t.tenantId), sql`${t.status} <> 'draft'`)),
   ],
 );
-
-export const TRANSLATION_STATES = ['source', 'machine', 'reviewed'] as const;
 
 /** One locale of a version. Rows of a published version are immutable (SF-01). */
 export const safetyContent = pgTable(
@@ -149,8 +151,6 @@ export const safetyContent = pgTable(
     ),
   ],
 );
-
-export const ACK_CHANNELS = ['link', 'staff'] as const;
 
 export const safetyAcknowledgement = pgTable(
   'safety_acknowledgement',
@@ -226,6 +226,8 @@ export const bookingAcknowledgement = pgTable(
     allow('tenant', 'all', and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
     allow('driver', 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
     allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    // A repeated briefing in the same visit relinks the newer acknowledgement.
+    allow('driver', 'update', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
   ],
 );
 
