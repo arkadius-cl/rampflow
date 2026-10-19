@@ -18,12 +18,13 @@ import { toast } from 'sonner';
 import { errorText } from '@/components/app-shell/form-errors';
 import { RouteError, RouteNotFound } from '@/components/app-shell/route-states';
 import { SiteTime } from '@/components/site-time';
+import { TenantLogo } from '@/components/tenant-logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import { guard, useAccess } from '@/lib/access';
+import { carrierContextQuery, guard, useAccess } from '@/lib/access';
 import { ApiFailure, api, call, isFailure } from '@/lib/api';
 import { useSiteTime } from '@/lib/time';
 import {
@@ -64,6 +65,9 @@ function BookingPage() {
   const { t } = useTranslation('booking');
   const { orgId, bookingId } = Route.useParams();
   const booking = useSuspenseQuery(portalBookingQuery(orgId, bookingId)).data;
+  const logoUrl = useQuery(carrierContextQuery(orgId)).data?.tenants.find(
+    (x) => x.id === booking.tenant.id,
+  )?.logoUrl;
   const access = useAccess();
   const canBook = access.can('booking.book');
   const loadTypeName = useLoadTypeName();
@@ -88,6 +92,7 @@ function BookingPage() {
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
+          <TenantLogo url={logoUrl} className="mb-2" />
           <div className="font-mono text-sm text-muted-foreground">{booking.code}</div>
           <h1 className="text-xl font-semibold tracking-tight">
             {booking.tenant.name} · {booking.site.name}

@@ -117,6 +117,7 @@ function Invitation({
   return (
     <AuthLayout
       title={t(($) => $.carriers.accept.title)}
+      logoUrl={invitation.logoUrl}
       description={t(($) => $.carriers.accept.summary, {
         tenant: invitation.tenantName,
         company: invitation.companyName,

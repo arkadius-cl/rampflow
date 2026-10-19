@@ -19,6 +19,7 @@ import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-fo
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { errorText } from '@/components/app-shell/form-errors';
+import { TenantLogo } from '@/components/tenant-logo';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -218,8 +219,14 @@ export function BookingWizard({
     setDate(null);
     setStartsAt(null);
   };
+  const chosen = tenants.find((x) => x.id === selection.tenantId);
   const summary = {
-    tenant: tenants.find((x) => x.id === selection.tenantId)?.name,
+    tenant: chosen ? (
+      <span className="inline-flex items-center gap-2">
+        <TenantLogo url={chosen.logoUrl} className="h-5 max-w-24" />
+        {chosen.name}
+      </span>
+    ) : undefined,
     site,
     loadType,
     loadUnits,
@@ -565,7 +572,7 @@ function Summary({
   duration,
   startsAt,
 }: {
-  tenant: string | undefined;
+  tenant: React.ReactNode;
   site: PortalSite | undefined;
   loadType: PortalLoadType | undefined;
   loadUnits: number;

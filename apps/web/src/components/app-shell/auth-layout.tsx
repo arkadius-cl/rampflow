@@ -1,18 +1,24 @@
 import { APP_NAME } from '@rampflow/shared';
 import { WarehouseIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { TenantLogo } from '@/components/tenant-logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LanguageMenu } from './user-menu';
 
-/** The frame of sign-in, token pages and the org picker: brand, language, one centred card. */
+/**
+ * The frame of sign-in, token pages and the org picker: brand, language, one centred card.
+ * Pages of one tenant pass its `logoUrl` and name the tenant in `description`.
+ */
 export function AuthLayout({
   title,
   description,
+  logoUrl,
   signedIn = false,
   children,
 }: {
   title: string;
   description?: React.ReactNode;
+  logoUrl?: string | null;
   signedIn?: boolean;
   children: React.ReactNode;
 }) {
@@ -31,6 +37,7 @@ export function AuthLayout({
       <main className="flex flex-1 items-start justify-center px-4 pt-[8vh] pb-12">
         <Card className="w-full max-w-md">
           <CardHeader>
+            <TenantLogo url={logoUrl} className="mb-2" />
             <CardTitle>
               <h1 className="text-lg font-semibold">{title}</h1>
             </CardTitle>

@@ -68,6 +68,7 @@ function RegisterPage() {
   return (
     <AuthLayout
       title={t(($) => $.registration.page.title)}
+      logoUrl={info.logoUrl}
       description={
         <span className="flex flex-col gap-2">
           <span className="flex items-center gap-1.5 font-medium text-foreground">
