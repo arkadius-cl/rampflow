@@ -73,8 +73,15 @@ export async function signInWithPassword(page: Page, email: string, password: st
 
 /** No serious or critical axe violation on the current page (scope NFR, WCAG 2.2 AA). */
 export async function expectAccessible(page: Page) {
+  // A toast fading in has a transient low contrast; axe reads the settled page.
+  await page.waitForFunction(
+    `document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity)`,
+  );
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    // Sonner shows only the front toast of a collapsed stack; the others' content is at opacity 0.
+    .exclude('[data-sonner-toast][data-front="false"][data-expanded="false"]')
+    .exclude('[data-sonner-toast][data-visible="false"]')
     .analyze();
   const blocking = result.violations.filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',
