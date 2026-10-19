@@ -5,7 +5,7 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CopyIcon, MailIcon, RefreshCwIcon, Share2Icon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -42,6 +42,15 @@ import { portalDriverLinkQuery, portalKey } from './queries';
 type LinkBooking = Pick<PortalBookingView, 'id' | 'code' | 'tenant' | 'avis' | 'driverLink'>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// The confirmation page and the booking page each show this card. After "Open booking" the router
+// keeps the confirmation page on screen until the booking page's code has loaded, so what the
+// carrier types there must carry over to the booking page's card.
+interface Draft {
+  email: string;
+  locale: DriverLocale;
+}
+const drafts = new Map<string, Draft>();
 
 export function DriverLinkCard({ orgId, booking }: { orgId: string; booking: LinkBooking }) {
   const { t } = useTranslation('booking');
@@ -85,8 +94,13 @@ function LinkActions({
   const initial: DriverLocale =
     booking.avis?.driver.locale ??
     ((DRIVER_LOCALES as readonly string[]).includes(uiLocale) ? (uiLocale as DriverLocale) : 'en');
-  const [email, setEmail] = useState('');
-  const [locale, setLocale] = useState<DriverLocale>(initial);
+  const [draft, setDraft] = useState<Draft>(
+    () => drafts.get(booking.id) ?? { email: '', locale: initial },
+  );
+  useEffect(() => {
+    drafts.set(booking.id, draft);
+  }, [booking.id, draft]);
+  const { email, locale } = draft;
   const [emailError, setEmailError] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const param = { orgId, tenantId: booking.tenant.id, bookingId: booking.id };
@@ -112,7 +126,7 @@ function LinkActions({
     mutationFn: () => call(linkApi().email.$post({ param, json: { email, locale } })),
     onSuccess: () => {
       toast.success(t(($) => $.portal.driver.sent, { email }));
-      setEmail('');
+      setDraft((d) => ({ ...d, email: '' }));
     },
   });
   const regenerate = useMutation({
@@ -156,7 +170,7 @@ function LinkActions({
             autoComplete="off"
             value={email}
             aria-invalid={emailError}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setDraft({ ...draft, email: e.target.value })}
           />
           <FieldError>{emailError ? t(($) => $.portal.driver.email_invalid) : null}</FieldError>
         </Field>
@@ -166,7 +180,7 @@ function LinkActions({
             id={`${id}-locale`}
             className="w-full"
             value={locale}
-            onChange={(e) => setLocale(e.target.value as DriverLocale)}
+            onChange={(e) => setDraft({ ...draft, locale: e.target.value as DriverLocale })}
           >
             {DRIVER_LOCALES.map((l) => (
               <NativeSelectOption key={l} value={l}>
