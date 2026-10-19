@@ -1,0 +1,8 @@
+{
+  "subject": "Ihr Fahrerlink für {{site}} (Buchung {{code}})",
+  "preview": "Zeitfenster, Standortregeln und Toraufruf öffnen",
+  "intro": "Hier ist Ihr Link für die Anlieferung bei {{site}}. Er zeigt Zeitfenster, Adresse, Sicherheitsunterweisung und vor Ort, an welches Tor Sie fahren.",
+  "open": "Meine Buchung öffnen",
+  "personal": "Dieser Link gilt nur für diese Anlieferung. Bitte nicht weiterleiten.",
+  "footer": "Im Auftrag der Spedition mit rampflow gesendet."
+}

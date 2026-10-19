@@ -1,0 +1,8 @@
+{
+  "subject": "{{site}} için sürücü bağlantınız (rezervasyon {{code}})",
+  "preview": "Zaman aralığını, tesis kurallarını ve rampa çağrısını açın",
+  "intro": "{{site}} teslimatı için bağlantınız burada. Zaman aralığını, adresi, güvenlik eğitimini ve sahada hangi rampaya gideceğinizi gösterir.",
+  "open": "Rezervasyonumu aç",
+  "personal": "Bu bağlantı yalnızca bu teslimat içindir. Başkasına iletmeyin.",
+  "footer": "Taşıyıcı adına rampflow ile gönderildi."
+}

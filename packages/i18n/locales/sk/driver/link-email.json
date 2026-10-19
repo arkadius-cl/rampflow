@@ -1,0 +1,8 @@
+{
+  "subject": "Váš odkaz pre vodiča do {{site}} (rezervácia {{code}})",
+  "preview": "Otvorte časové okno, pravidlá areálu a výzvu k rampe",
+  "intro": "Tu je váš odkaz na dodávku do {{site}}. Ukazuje časové okno, adresu, bezpečnostné poučenie a na mieste, ku ktorej rampe ísť.",
+  "open": "Otvoriť moju rezerváciu",
+  "personal": "Tento odkaz platí len pre túto dodávku. Neposielajte ho ďalej.",
+  "footer": "Odoslané v mene dopravcu cez rampflow."
+}

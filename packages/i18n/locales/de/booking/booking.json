@@ -1,0 +1,29 @@
+{
+  "email": {
+    "footer": "Sie erhalten diese E-Mail als Ansprechpartner für diese Buchung.",
+    "code": "Buchungscode",
+    "slot": "Zeitfenster",
+    "site": "Standort",
+    "loadType": "Ladungsart",
+    "carrier": "Spedition",
+    "confirmed": {
+      "subject": "Buchung {{code}} bestätigt: {{site}}",
+      "preview": "Ihr Zeitfenster bei {{site}} ist gebucht",
+      "intro": "Ihr Zeitfenster bei {{site}} ist gebucht. Zeigen Sie den Buchungscode am Tor.",
+      "qr": "Buchungscode zum Scannen am Tor"
+    },
+    "changed": {
+      "subject": "Buchung {{code}} geändert",
+      "preview": "Das Lager hat Ihre Buchung bei {{site}} geändert",
+      "rescheduled": "Das Lager hat Ihre Buchung bei {{site}} auf ein neues Zeitfenster verschoben.",
+      "avis": "Das Lager hat die Avisdaten Ihrer Buchung bei {{site}} geändert.",
+      "previous": "Bisheriges Zeitfenster"
+    },
+    "cancelled": {
+      "subject": "Buchung {{code}} storniert",
+      "preview": "Das Lager hat Ihre Buchung bei {{site}} storniert",
+      "intro": "Das Lager hat Ihre Buchung bei {{site}} storniert. Das Zeitfenster ist wieder frei.",
+      "reason": "Grund"
+    }
+  }
+}

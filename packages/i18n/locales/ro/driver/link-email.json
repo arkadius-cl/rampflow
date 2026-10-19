@@ -1,0 +1,8 @@
+{
+  "subject": "Linkul tău de șofer pentru {{site}} (rezervarea {{code}})",
+  "preview": "Deschide intervalul, regulile locației și chemarea la rampă",
+  "intro": "Acesta este linkul pentru livrarea la {{site}}. Arată intervalul orar, adresa, instruirea de siguranță și, la fața locului, la ce rampă să mergi.",
+  "open": "Deschide rezervarea mea",
+  "personal": "Acest link este doar pentru această livrare. Nu îl trimite mai departe.",
+  "footer": "Trimis în numele transportatorului cu rampflow."
+}

@@ -1,0 +1,76 @@
+{
+  "status": {
+    "requested": "Angefragt",
+    "confirmed": "Gebucht",
+    "checked_in": "Eingecheckt",
+    "called": "Gerufen",
+    "at_dock": "Am Tor",
+    "loading": "Beladung",
+    "done": "Fertig",
+    "departed": "Abgefahren",
+    "cancelled": "Storniert",
+    "no_show": "Nicht erschienen",
+    "turned_away": "Abgewiesen"
+  },
+  "command": {
+    "reschedule": "Umbuchen",
+    "update_avis": "Avis bearbeiten",
+    "cancel": "Buchung stornieren",
+    "regenerate_driver_link": "Fahrerlink neu erzeugen",
+    "send_driver_link": "Fahrerlink per E-Mail senden",
+    "mark_no_show": "Als nicht erschienen markieren",
+    "check_in": "Einchecken",
+    "turn_away": "Abweisen",
+    "call": "Ans Tor rufen",
+    "uncall": "Aufruf zurücknehmen",
+    "dock": "Am Tor",
+    "start_loading": "Beladung starten",
+    "complete": "Beladung fertig",
+    "depart": "Auschecken",
+    "link_acknowledgement": "Unterweisung verknüpfen"
+  },
+  "event": {
+    "created": "Gebucht",
+    "rescheduled": "Umgebucht",
+    "avis_updated": "Avis geändert",
+    "cancelled": "Storniert",
+    "driver_link_regenerated": "Fahrerlink neu erzeugt",
+    "driver_link_sent": "Fahrerlink gesendet",
+    "no_show": "Als nicht erschienen markiert",
+    "checked_in": "Eingecheckt",
+    "turned_away": "Abgewiesen",
+    "called": "Ans Tor gerufen",
+    "reassigned": "An anderes Tor verlegt",
+    "uncalled": "Aufruf zurückgenommen",
+    "at_dock": "Am Tor",
+    "loading_started": "Beladung gestartet",
+    "done": "Beladung fertig",
+    "departed": "Abgefahren",
+    "safety_linked": "Unterweisung verknüpft"
+  },
+  "turnAwayReason": {
+    "safety_not_completed": "Sicherheitsunterweisung fehlt",
+    "no_capacity": "Keine Kapazität",
+    "too_late": "Zu spät",
+    "documents_missing": "Papiere fehlen",
+    "wrong_load": "Falsche Ladung",
+    "damaged": "Ware oder Fahrzeug beschädigt",
+    "other": "Sonstiges"
+  },
+  "punctuality": {
+    "early": "Zu früh",
+    "on_time": "Pünktlich",
+    "late": "Verspätet"
+  },
+  "party": {
+    "carrier": "Spedition",
+    "tenant": "Personal",
+    "driver": "Fahrer",
+    "system": "System"
+  },
+  "flag": {
+    "forced": "Über Kapazität gebucht",
+    "walkIn": "Ohne Buchung",
+    "overCapacity": "Über Kapazität"
+  }
+}

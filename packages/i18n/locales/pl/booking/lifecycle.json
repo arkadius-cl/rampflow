@@ -1,0 +1,76 @@
+{
+  "status": {
+    "requested": "Zgłoszona",
+    "confirmed": "Zarezerwowana",
+    "checked_in": "Zameldowany",
+    "called": "Wezwany",
+    "at_dock": "Przy rampie",
+    "loading": "Załadunek",
+    "done": "Gotowe",
+    "departed": "Odjechał",
+    "cancelled": "Anulowana",
+    "no_show": "Niestawienie się",
+    "turned_away": "Odprawiony"
+  },
+  "command": {
+    "reschedule": "Zmień termin",
+    "update_avis": "Edytuj awizację",
+    "cancel": "Anuluj rezerwację",
+    "regenerate_driver_link": "Wygeneruj nowy link kierowcy",
+    "send_driver_link": "Wyślij link kierowcy e-mailem",
+    "mark_no_show": "Oznacz jako niestawienie się",
+    "check_in": "Zamelduj",
+    "turn_away": "Odpraw",
+    "call": "Wezwij do rampy",
+    "uncall": "Cofnij wezwanie",
+    "dock": "Przy rampie",
+    "start_loading": "Rozpocznij załadunek",
+    "complete": "Załadunek gotowy",
+    "depart": "Wymelduj",
+    "link_acknowledgement": "Powiąż instruktaż"
+  },
+  "event": {
+    "created": "Zarezerwowano",
+    "rescheduled": "Zmieniono termin",
+    "avis_updated": "Zmieniono awizację",
+    "cancelled": "Anulowano",
+    "driver_link_regenerated": "Wygenerowano nowy link kierowcy",
+    "driver_link_sent": "Wysłano link kierowcy",
+    "no_show": "Oznaczono jako niestawienie się",
+    "checked_in": "Zameldowano",
+    "turned_away": "Odprawiono",
+    "called": "Wezwano do rampy",
+    "reassigned": "Przeniesiono na inną rampę",
+    "uncalled": "Cofnięto wezwanie",
+    "at_dock": "Przy rampie",
+    "loading_started": "Rozpoczęto załadunek",
+    "done": "Załadunek gotowy",
+    "departed": "Odjechał",
+    "safety_linked": "Powiązano instruktaż"
+  },
+  "turnAwayReason": {
+    "safety_not_completed": "Brak instruktażu BHP",
+    "no_capacity": "Brak przepustowości",
+    "too_late": "Za późno",
+    "documents_missing": "Brak dokumentów",
+    "wrong_load": "Niewłaściwy ładunek",
+    "damaged": "Uszkodzony towar lub pojazd",
+    "other": "Inne"
+  },
+  "punctuality": {
+    "early": "Za wcześnie",
+    "on_time": "Punktualnie",
+    "late": "Spóźniony"
+  },
+  "party": {
+    "carrier": "Przewoźnik",
+    "tenant": "Personel",
+    "driver": "Kierowca",
+    "system": "System"
+  },
+  "flag": {
+    "forced": "Zarezerwowano ponad przepustowość",
+    "walkIn": "Bez rezerwacji",
+    "overCapacity": "Ponad przepustowość"
+  }
+}

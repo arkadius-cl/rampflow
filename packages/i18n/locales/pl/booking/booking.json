@@ -1,0 +1,29 @@
+{
+  "email": {
+    "footer": "Otrzymujesz tę wiadomość jako osoba kontaktowa dla tej rezerwacji.",
+    "code": "Kod rezerwacji",
+    "slot": "Okno czasowe",
+    "site": "Lokalizacja",
+    "loadType": "Rodzaj ładunku",
+    "carrier": "Przewoźnik",
+    "confirmed": {
+      "subject": "Rezerwacja {{code}} potwierdzona: {{site}}",
+      "preview": "Twoje okno czasowe w {{site}} jest zarezerwowane",
+      "intro": "Twoje okno czasowe w {{site}} jest zarezerwowane. Pokaż kod rezerwacji przy bramie.",
+      "qr": "Kod rezerwacji do zeskanowania przy bramie"
+    },
+    "changed": {
+      "subject": "Rezerwacja {{code}} zmieniona",
+      "preview": "Magazyn zmienił Twoją rezerwację w {{site}}",
+      "rescheduled": "Magazyn przesunął Twoją rezerwację w {{site}} na nowe okno czasowe.",
+      "avis": "Magazyn zmienił dane awizacji Twojej rezerwacji w {{site}}.",
+      "previous": "Poprzednie okno czasowe"
+    },
+    "cancelled": {
+      "subject": "Rezerwacja {{code}} anulowana",
+      "preview": "Magazyn anulował Twoją rezerwację w {{site}}",
+      "intro": "Magazyn anulował Twoją rezerwację w {{site}}. Okno czasowe jest znowu wolne.",
+      "reason": "Powód"
+    }
+  }
+}

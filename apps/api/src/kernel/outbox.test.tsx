@@ -194,6 +194,19 @@ describe('enqueueEmail', () => {
   });
 });
 
+/**
+ * Ticks until the worker has claimed the row to `to`. The worker database is shared by every
+ * test file of a vitest worker, so older due rows of other modules may fill the first batches.
+ */
+async function tickUntilClaimed(to: string, mailer: Mailer) {
+  for (let i = 0; i < 50; i++) {
+    const tick = await runJobTick(outboxJob(mailer), { clock: systemClock, mailer });
+    const [row] = await rowsTo(to);
+    if (!row || row.attempts > 0) return tick;
+  }
+  throw new Error(`the outbox never claimed the row to ${to}`);
+}
+
 describe('outbox worker', () => {
   it('delivers to Mailpit, marks the row sent and drops its payload', async () => {
     const to = `deliver-${randomUUID()}@outbox.test`;
@@ -206,10 +219,7 @@ describe('outbox worker', () => {
         templates,
       ),
     );
-    const tick = await runJobTick(outboxJob(smtpMailer()), {
-      clock: systemClock,
-      mailer: smtpMailer(),
-    });
+    const tick = await tickUntilClaimed(to, smtpMailer());
     expect(tick).toMatchObject({ ran: true, stats: { sent: expect.any(Number) } });
     const [row] = await rowsTo(to);
     expect(row).toMatchObject({ attempts: 1, lastError: null, payload: {} });
@@ -231,7 +241,7 @@ describe('outbox worker', () => {
       },
     };
     const before = Date.now();
-    await runJobTick(outboxJob(failing), { clock: systemClock, mailer: failing });
+    await tickUntilClaimed(to, failing);
     const [row] = await rowsTo(to);
     expect(row).toMatchObject({ attempts: 1, sentAt: null, failedAt: null });
     expect(row?.lastError).toBe('550 mailbox <address> unavailable');

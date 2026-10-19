@@ -1,0 +1,8 @@
+{
+  "subject": "Twój link kierowcy do {{site}} (rezerwacja {{code}})",
+  "preview": "Otwórz okno czasowe, zasady na terenie i wezwanie do rampy",
+  "intro": "Oto Twój link do dostawy w {{site}}. Pokazuje okno czasowe, adres, instruktaż BHP, a na miejscu, do której rampy podjechać.",
+  "open": "Otwórz moją rezerwację",
+  "personal": "Ten link dotyczy tylko tej dostawy. Nie przekazuj go dalej.",
+  "footer": "Wysłano w imieniu przewoźnika przez rampflow."
+}

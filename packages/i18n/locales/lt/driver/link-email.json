@@ -1,0 +1,8 @@
+{
+  "subject": "Jūsų vairuotojo nuoroda į {{site}} (rezervacija {{code}})",
+  "preview": "Atidarykite laiko langą, vietos taisykles ir kvietimą prie rampos",
+  "intro": "Štai jūsų nuoroda pristatymui į {{site}}. Joje matysite laiko langą, adresą, saugos instruktažą ir vietoje, prie kurios rampos važiuoti.",
+  "open": "Atidaryti mano rezervaciją",
+  "personal": "Ši nuoroda skirta tik šiam pristatymui. Neperduokite jos kitiems.",
+  "footer": "Išsiųsta vežėjo vardu per rampflow."
+}

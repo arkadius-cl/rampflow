@@ -1,0 +1,29 @@
+{
+  "email": {
+    "footer": "You receive this email as the contact for this booking.",
+    "code": "Booking code",
+    "slot": "Slot",
+    "site": "Site",
+    "loadType": "Load type",
+    "carrier": "Carrier",
+    "confirmed": {
+      "subject": "Booking {{code}} confirmed: {{site}}",
+      "preview": "Your slot at {{site}} is booked",
+      "intro": "Your slot at {{site}} is booked. Show the booking code at the gate.",
+      "qr": "Booking code to scan at the gate"
+    },
+    "changed": {
+      "subject": "Booking {{code}} changed",
+      "preview": "The warehouse changed your booking at {{site}}",
+      "rescheduled": "The warehouse moved your booking at {{site}} to a new slot.",
+      "avis": "The warehouse changed the shipment details of your booking at {{site}}.",
+      "previous": "Previous slot"
+    },
+    "cancelled": {
+      "subject": "Booking {{code}} cancelled",
+      "preview": "The warehouse cancelled your booking at {{site}}",
+      "intro": "The warehouse cancelled your booking at {{site}}. The slot is free again.",
+      "reason": "Reason"
+    }
+  }
+}

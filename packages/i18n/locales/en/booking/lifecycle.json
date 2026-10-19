@@ -1,0 +1,76 @@
+{
+  "status": {
+    "requested": "Requested",
+    "confirmed": "Booked",
+    "checked_in": "Checked in",
+    "called": "Called",
+    "at_dock": "At dock",
+    "loading": "Loading",
+    "done": "Done",
+    "departed": "Departed",
+    "cancelled": "Cancelled",
+    "no_show": "No-show",
+    "turned_away": "Turned away"
+  },
+  "command": {
+    "reschedule": "Reschedule",
+    "update_avis": "Edit shipment details",
+    "cancel": "Cancel booking",
+    "regenerate_driver_link": "Regenerate driver link",
+    "send_driver_link": "Email driver link",
+    "mark_no_show": "Mark as no-show",
+    "check_in": "Check in",
+    "turn_away": "Turn away",
+    "call": "Call to dock",
+    "uncall": "Cancel call",
+    "dock": "At dock",
+    "start_loading": "Start loading",
+    "complete": "Loading done",
+    "depart": "Check out",
+    "link_acknowledgement": "Link briefing"
+  },
+  "event": {
+    "created": "Booked",
+    "rescheduled": "Rescheduled",
+    "avis_updated": "Shipment details changed",
+    "cancelled": "Cancelled",
+    "driver_link_regenerated": "Driver link regenerated",
+    "driver_link_sent": "Driver link emailed",
+    "no_show": "Marked as no-show",
+    "checked_in": "Checked in",
+    "turned_away": "Turned away",
+    "called": "Called to dock",
+    "reassigned": "Moved to another dock",
+    "uncalled": "Call cancelled",
+    "at_dock": "At dock",
+    "loading_started": "Loading started",
+    "done": "Loading done",
+    "departed": "Departed",
+    "safety_linked": "Briefing linked"
+  },
+  "turnAwayReason": {
+    "safety_not_completed": "Safety briefing not completed",
+    "no_capacity": "No capacity",
+    "too_late": "Too late",
+    "documents_missing": "Documents missing",
+    "wrong_load": "Wrong load",
+    "damaged": "Damaged goods or vehicle",
+    "other": "Other"
+  },
+  "punctuality": {
+    "early": "Early",
+    "on_time": "On time",
+    "late": "Late"
+  },
+  "party": {
+    "carrier": "Carrier",
+    "tenant": "Staff",
+    "driver": "Driver",
+    "system": "System"
+  },
+  "flag": {
+    "forced": "Booked over capacity",
+    "walkIn": "Walk-in",
+    "overCapacity": "Over capacity"
+  }
+}

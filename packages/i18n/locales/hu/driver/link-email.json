@@ -1,0 +1,8 @@
+{
+  "subject": "Sofőr linkje: {{site}} ({{code}} foglalás)",
+  "preview": "Nyissa meg az idősávot, a telephelyi szabályokat és a rámpahívást",
+  "intro": "Itt a linkje a(z) {{site}} telephelyre történő szállításhoz. Megmutatja az idősávot, a címet, a biztonsági oktatást, és a helyszínen, melyik rámpához álljon.",
+  "open": "Foglalásom megnyitása",
+  "personal": "Ez a link csak erre a szállításra szól. Ne továbbítsa.",
+  "footer": "A fuvarozó nevében küldve a rampflow-val."
+}

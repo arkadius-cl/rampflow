@@ -1,0 +1,8 @@
+{
+  "subject": "Your driver link for {{site}} (booking {{code}})",
+  "preview": "Open your slot, the site rules and the dock call",
+  "intro": "Here is your link for the delivery at {{site}}. It shows the slot, the address, the safety briefing and, on site, which dock to go to.",
+  "open": "Open my booking",
+  "personal": "This link is personal to this delivery. Do not forward it.",
+  "footer": "Sent on behalf of the carrier with rampflow."
+}
