@@ -1,0 +1,13 @@
+{
+  "reminder": {
+    "subject": "Reminder: booking {{code}} at {{site}}",
+    "preview": "Your slot at {{site}} is coming up",
+    "intro": "This is a reminder of your slot at {{site}}. Show the booking code at the gate. If the truck cannot make it, cancel or move the booking in the carrier portal."
+  },
+  "no_show": {
+    "subject": "Booking {{code}} closed as no-show",
+    "preview": "No check-in at {{site}}",
+    "intro": "The truck for this booking did not check in at {{site}} by {{deadline}}. The booking is closed as a no-show and the slot is free again.",
+    "next": "Book a new slot if the delivery still has to take place."
+  }
+}

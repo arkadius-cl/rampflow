@@ -69,7 +69,7 @@ export async function emailFacts(
 
 type BookingTemplate = Extract<
   TemplateId,
-  'booking.confirmed' | 'booking.changed' | 'booking.cancelled'
+  'booking.confirmed' | 'booking.changed' | 'booking.cancelled' | 'booking.no-show'
 >;
 
 /** Enqueues `template` to every booking contact in their language, in the caller's transaction. */

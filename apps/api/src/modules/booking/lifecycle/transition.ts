@@ -346,7 +346,11 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       }
       const dueAt = noShowDueAt(b.startsAt, await setting(ctx, 'yard.no_show_after_minutes', b));
       if (ctx.now < dueAt) throw conflict('not_due', { dueAt: dueAt.toISOString() });
-      return { patch: { noShowAt: dueAt }, event: { type: 'no_show', dueAt: dueAt.toISOString() } };
+      return {
+        patch: { noShowAt: dueAt },
+        event: { type: 'no_show', dueAt: dueAt.toISOString() },
+        after: () => emailContacts(ctx, b, 'booking.no-show', { dueAt: dueAt.toISOString() }),
+      };
     },
   },
 

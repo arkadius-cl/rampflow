@@ -1,0 +1,13 @@
+{
+  "reminder": {
+    "subject": "Przypomnienie: rezerwacja {{code}} w {{site}}",
+    "preview": "Zbliża się Twoje okno czasowe w {{site}}",
+    "intro": "Przypominamy o Twoim oknie czasowym w {{site}}. Pokaż kod rezerwacji przy bramie. Jeśli ciężarówka nie zdąży, anuluj lub przesuń rezerwację w portalu przewoźnika."
+  },
+  "no_show": {
+    "subject": "Rezerwacja {{code}} zamknięta jako niestawienie się",
+    "preview": "Brak odprawy w {{site}}",
+    "intro": "Ciężarówka tej rezerwacji nie odprawiła się w {{site}} do {{deadline}}. Rezerwacja została zamknięta jako niestawienie się, a okno czasowe jest znowu wolne.",
+    "next": "Zarezerwuj nowe okno czasowe, jeśli dostawa ma się jeszcze odbyć."
+  }
+}

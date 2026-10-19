@@ -1,0 +1,13 @@
+{
+  "reminder": {
+    "subject": "Erinnerung: Buchung {{code}} bei {{site}}",
+    "preview": "Ihr Zeitfenster bei {{site}} steht bevor",
+    "intro": "Wir erinnern Sie an Ihr Zeitfenster bei {{site}}. Zeigen Sie den Buchungscode am Tor. Wenn der Lkw es nicht schafft, stornieren oder verschieben Sie die Buchung im Carrier-Portal."
+  },
+  "no_show": {
+    "subject": "Buchung {{code}} als nicht erschienen geschlossen",
+    "preview": "Kein Check-in bei {{site}}",
+    "intro": "Der Lkw dieser Buchung hat bis {{deadline}} nicht bei {{site}} eingecheckt. Die Buchung ist als nicht erschienen geschlossen, das Zeitfenster ist wieder frei.",
+    "next": "Buchen Sie ein neues Zeitfenster, wenn die Lieferung noch stattfinden soll."
+  }
+}
