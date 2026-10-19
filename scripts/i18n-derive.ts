@@ -98,7 +98,7 @@ for (const ns of namespaces) {
     const part = file.slice(0, -'.json'.length);
     const name = `${ns}_${part}`.replaceAll('-', '_');
     imports.push(`import type ${name} from '@rampflow/i18n/locales/en/${ns}/${file}';`);
-    const key = /^[A-Za-z_$][\w$]*$/.test(part) ? part : JSON.stringify(part);
+    const key = /^[A-Za-z_$][\w$]*$/.test(part) ? part : `'${part}'`; // single quotes, as Biome formats
     return `    ${key}: typeof ${name};`;
   });
   fields.push(`  ${ns}: {\n${parts.join('\n')}\n  };`);
