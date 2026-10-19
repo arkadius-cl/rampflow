@@ -334,4 +334,5 @@ Unit U1. `apps/api/src/kernel/test-routes.ts`, only with `ENABLE_TEST_ROUTES=1`.
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/api/test/seed` | `{ scenario }`; creates a tenant world and returns ids and credentials for Playwright |
+| POST | `/api/test/clock` | `{ now: string \| null }`; pins the API's `Clock` to an instant, `null` returns to the system clock. U1, or U12 if missing |
 | POST | `/api/test/jobs/:name/run` | runs one job tick now |
