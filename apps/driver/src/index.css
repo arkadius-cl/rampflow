@@ -1,0 +1,4 @@
+/* The back office's theme tokens, density modes and fonts (one source for both apps). */
+@import "../../web/src/index.css";
+
+@source not "../../web";
