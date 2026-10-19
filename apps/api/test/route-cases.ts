@@ -33,10 +33,12 @@ export interface RouteCase {
   entitlement: ImplementedFeatureKey | null;
   /** Path parameters from world A. `orgId` (and `tenantId` under /at/) are swapped per check. */
   params: (world: World) => Record<string, string>;
+  /** Query parameters from world A, sent unchanged with every check. */
+  query?: (world: World) => Record<string, string>;
   body?: (world: World) => unknown;
   /** Module fixtures in worlds A and B, written as the owner. */
   setup?: (world: World, db: OwnerDb) => Promise<void>;
-  /** What world B (or a rival carrier, or a foreign site) gets: 404, or 200 without A's data. */
+  /** What world B (or a rival carrier, or a foreign site) gets: 404, or 2xx without A's data. */
   foreign: 'not_found' | 'empty';
   /** A gate or dock operator of the tenant's other site gets 404 (TN-01). */
   siteScoped: boolean;
@@ -151,8 +153,9 @@ async function expectForeign(
   const leaked = [...secrets].filter((s) => text.includes(s));
   if (leaked.length > 0) return `${res.status} body contains ${leaked.slice(0, 3).join(', ')}`;
   if (res.status === 404) return null;
-  if (foreign === 'empty' && res.status === 200) return null;
-  return `expected ${foreign === 'empty' ? '404 or 200 without foreign data' : '404'}, got ${res.status} ${text.slice(0, 200)}`;
+  // A create in the caller's own org answers 201 or 204; only A's data would be a leak.
+  if (foreign === 'empty' && res.status >= 200 && res.status < 300) return null;
+  return `expected ${foreign === 'empty' ? '404 or 2xx without foreign data' : '404'}, got ${res.status} ${text.slice(0, 200)}`;
 }
 
 async function expectError(res: Response, status: number, code: string): Promise<string | null> {
@@ -194,8 +197,9 @@ export async function checkRouteCase(
   const problems: Problem[] = [];
   const params = rc.params(w);
   const body = rc.body?.(w);
+  const query = rc.query ? `?${new URLSearchParams(rc.query(w))}` : '';
   const call = (actor: Actor, p: Record<string, string>) =>
-    as(app, actor).request(rc.method, fill(rc.path, p), { body });
+    as(app, actor).request(rc.method, `${fill(rc.path, p)}${query}`, { body });
   const secretsA = secretsOf(A);
   const role = rc.as;
   const party =
