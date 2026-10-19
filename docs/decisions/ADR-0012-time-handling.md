@@ -50,7 +50,7 @@ Sites sit in several EU zones, and carriers and dispatchers may view them from a
 ```ts
 export function localDayRange(day: LocalDate, zone: TimeZone): { start: Date; end: Date }; // 23, 24 or 25 h
 export function siteDay(instant: Date, zone: TimeZone): LocalDate;
-export function instantsAt(day: LocalDate, time: LocalTime, zone: TimeZone): Date[];       // 0 in a gap, 2 in a fold
+export function instantsAt(day: LocalDate, time: LocalTime, zone: TimeZone): Date[];       // 0 in a gap, 2 in a fold; '24:00' is the next day's start
 export function slotGrid(day: LocalDate, zone: TimeZone, gridMinutes: number): GridSlot[];
 export interface GridSlot { start: Date; wallTime: LocalTime; fold: 'earlier' | 'later' | null }
 export function formatSiteTime(instant: Date, zone: TimeZone, locale: StaffLocale | DriverLocale): string; // "08:30 CET"
@@ -58,16 +58,19 @@ export function formatSiteTime(instant: Date, zone: TimeZone, locale: StaffLocal
 
 `instantsAt` finds every instant whose wall time in `zone` equals the requested one:
 
-1. Collect the distinct offsets in force on that day: `tzOffset(zone, dayStart)` and `tzOffset(zone, dayEnd)`.
+1. Collect the distinct offsets `tzOffset(zone, Date.UTC(y, m, d + k))` for `k` from -1 to 2. Probing fixed UTC instants around the day avoids calling `localDayRange`, which is itself built on `instantsAt`. EU zones change at most once a day, so these four probes see every offset in force on the day.
 2. For each offset `o`, compute `utc = Date.UTC(y, m, d, h, min) - o minutes`.
 3. Keep `utc` when formatting it back in `zone` gives the same wall time.
+
+`24:00` is allowed only as a closing time. `instantsAt(day, '24:00', zone)` returns `[localDayRange(day, zone).end]`, the instant of the next day's 00:00, so it never formats back as `00:00` of the same day. `localDayRange(day, zone)` itself takes `instantsAt(day, '00:00')[0]` and the same for the next day; if a zone ever skipped midnight, the first existing instant after it counts.
 
 A spring-forward gap keeps none (02:30 on 2027-03-28 in Berlin), so the grid skips it. An autumn fold keeps two (02:30 on 2026-10-25 in Berlin, at UTC+2 and UTC+1), so the grid offers both and marks them `earlier` and `later`. The UI labels them with the offset ("02:30 GMT+2", "02:30 GMT+1").
 
 ### Rules
 
 - **Durations are elapsed minutes.** `ends_at = starts_at + duration`, `blocks_until = ends_at + buffer`, computed on instants. A 60-minute slot across the autumn fold lasts 60 real minutes.
-- **Hours on DST days.** An open window `[opens, closes)` converts with `instantsAt`; if `opens` falls in a gap, the window starts at the first existing instant after it.
+- **Hours on DST days.** An open window `[opens, closes)` converts with `instantsAt`; if `opens` falls in a gap, the window starts at the first existing instant after it. Capacity buckets are counted as instants from the day start, never as wall times ([ADR-0004](ADR-0004-booking-capacity-concurrency.md)).
+- **Across midnight.** An overnight shift is two rows whose windows meet at `24:00` and `00:00`. A booking may start on one site-local day and end on the next; it belongs to the day of its `starts_at` for daily caps, gate lists and KPIs.
 - **Days.** A daily cap counts bookings whose `starts_at` falls in `localDayRange(siteDay(starts_at))`. "Today" for gate lists, the no-show day rule (YD-02) and KPI date filters all use `siteDay` with the site zone. KPI queries turn the site-local date range into one instant range per site, so they stay indexed range scans.
 - **Display.** `formatSiteTime` uses `Intl.DateTimeFormat` with `timeZoneName: 'short'` and these formatting locales: `de` for de, `en-GB` for en, `pl` for pl. Measured on Node 24 for Europe/Berlin in January: `de` gives "08:30 MEZ", `en-GB` gives "08:30 CET", `pl` gives "08:30 CET". Plain `en` would give "GMT+1", which is why en uses `en-GB`. Driver locales use their own tag. When the viewer's zone (`Intl.DateTimeFormat().resolvedOptions().timeZone`) differs from the site zone, the UI adds the viewer's time as a secondary hint.
 - **Emails** format times in the site zone with the zone label of the recipient's locale. The server's own zone is never used.
@@ -75,6 +78,7 @@ A spring-forward gap keeps none (02:30 on 2027-03-28 in Berlin), so the grid ski
 
 ### Tests (U4)
 
+- `instantsAt('2026-10-19', '24:00', 'Europe/Berlin')` is `2026-10-19T22:00:00Z`; on 2026-10-24 it is `2026-10-24T22:00:00Z`, and on 2026-10-25 it is `2026-10-25T23:00:00Z`.
 - Europe/Berlin, 2026-10-25, 30-minute grid: 50 slots, with 02:00 and 02:30 each appearing twice (`earlier` and `later`); `localDayRange` is 25 hours.
 - Europe/Berlin, 2027-03-28: 46 slots, 02:00 and 02:30 missing; `localDayRange` is 23 hours.
 - A 60-minute booking starting 02:30 `earlier` on 2026-10-25 ends at 02:30 `later` wall time.
