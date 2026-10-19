@@ -53,7 +53,7 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 - The cookie `rf_session` holds 32 random bytes in base64url. The `session` table stores only `sha256(token)` as its primary key.
 - Cookie flags: `HttpOnly; Secure; SameSite=Lax; Path=/`. `Secure` is off only when `NODE_ENV=development`.
 - Lifetime: 30 days absolute, 7 days idle. `last_seen_at` is updated at most every 5 minutes.
-- Sign-in, magic-link exchange and invitation acceptance create a new session. Sign-out deletes the row. A password reset deletes every session of the user.
+- Sign-in, magic-link exchange and invitation acceptance create a new session. Sign-out deletes the row. A password reset deletes every session of the user and marks every other unused magic link and reset of the user used, so a link mailed before the reset cannot undo it.
 - **Membership changes take effect on the next request.** The session names a user, not an org. Every org-scoped request checks the membership again ([ADR-0002](ADR-0002-tenancy-isolation-rls.md)), so removing a member ends their access to that tenant without touching their sessions elsewhere.
 
 ### Tokens

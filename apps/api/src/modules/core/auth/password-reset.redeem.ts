@@ -4,11 +4,11 @@ import { asScope, type Tx } from '../../../db/scope.ts';
 import { appUser } from '../schema.ts';
 import { hashPassword } from './password.ts';
 import { revokeSessions } from './sessions.ts';
-import { claimAuthToken } from './tokens.ts';
+import { claimAuthToken, revokeAuthTokens } from './tokens.ts';
 
 /**
- * Claims a reset token, then hashes and sets the new password and deletes every session of the user, in
- * the caller's transaction. A reset proves the mailbox, so it also verifies the email.
+ * Claims a reset token, then hashes and sets the new password, voids every other reset and magic link
+ * of the user and deletes every session, in the caller's transaction. A reset proves the mailbox, so it also verifies the email.
  * Returns `null` for an unknown, used or expired token, before spending any scrypt work.
  */
 export async function redeemPasswordReset(
@@ -26,6 +26,7 @@ export async function redeemPasswordReset(
       .set({ passwordHash, emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${now})` })
       .where(eq(appUser.id, userId)),
   );
+  await revokeAuthTokens(tx, userId, now);
   await revokeSessions(tx, userId);
   return userId;
 }

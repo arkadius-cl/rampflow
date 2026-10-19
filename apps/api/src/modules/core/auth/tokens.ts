@@ -57,3 +57,11 @@ export async function claimAuthToken(
     .returning({ userId: authToken.userId });
   return row?.userId ?? null;
 }
+
+/** Marks every unused token of the user used, so no link mailed before a password reset still works. */
+export async function revokeAuthTokens(tx: Tx, userId: UserId, now: Date): Promise<void> {
+  await tx
+    .update(authToken)
+    .set({ usedAt: now })
+    .where(and(eq(authToken.userId, userId), isNull(authToken.usedAt)));
+}

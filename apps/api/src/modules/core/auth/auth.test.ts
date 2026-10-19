@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
 import { TEST_ORIGIN } from '../../../../test/http.ts';
@@ -45,12 +45,27 @@ const sessionOf = (res: Response) =>
 
 const sessionsOf = (userId: UserId) => ownerCount('session', sql`user_id = ${userId}`);
 
-/** The link token of the last email to `to`, derived from the outbox payload like the template does. */
+const TEMPLATE = { magic_link: 'core.magic-link', password_reset: 'core.password-reset' } as const;
+
+/** The link tokens of every `purpose` email to `to`, oldest first, derived like the template does. */
+async function linkTokensTo(to: string, purpose: 'magic_link' | 'password_reset') {
+  const rows = await ownerDb()
+    .select()
+    .from(outboxMessage)
+    .where(and(eq(outboxMessage.toEmail, to), eq(outboxMessage.template, TEMPLATE[purpose])))
+    .orderBy(asc(outboxMessage.createdAt));
+  return rows.map((row) => {
+    const payload = row.payload as { authTokenId?: string };
+    if (!payload.authTokenId) throw new Error(`no token in the ${purpose} email to ${to}`);
+    return deriveToken(purpose, payload.authTokenId);
+  });
+}
+
+/** The link token of the last email of `purpose` to `to`. */
 async function linkTokenTo(to: string, purpose: 'magic_link' | 'password_reset') {
-  const rows = await ownerDb().select().from(outboxMessage).where(eq(outboxMessage.toEmail, to));
-  const payload = rows.at(-1)?.payload as { authTokenId?: string } | undefined;
-  if (!payload?.authTokenId) throw new Error(`no ${purpose} email to ${to}`);
-  return deriveToken(purpose, payload.authTokenId);
+  const token = (await linkTokensTo(to, purpose)).at(-1);
+  if (!token) throw new Error(`no ${purpose} email to ${to}`);
+  return token;
 }
 
 describe('password sign-in (CR-03)', () => {
@@ -236,6 +251,31 @@ describe('password reset (CR-03)', () => {
     expect(await sessionsOf(a.id)).toBe(1);
     expect((await login(a.email, a.password)).status).toBe(401);
     expect((await login(a.email, 'a brand new secret')).status).toBe(200);
+  });
+
+  it('invalidates every other outstanding reset and magic link of the user', async () => {
+    const { request } = harness();
+    const a = await account(ownerDb());
+    await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
+    await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
+    await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
+    const [mine, stolen] = await linkTokensTo(a.email, 'password_reset');
+    const stolenMagic = await linkTokenTo(a.email, 'magic_link');
+
+    const done = await request('POST', '/api/auth/password-reset/confirm', {
+      body: { token: mine, password: 'the owner secret' },
+    });
+    expect(done.status).toBe(200);
+
+    const reset = await request('POST', '/api/auth/password-reset/confirm', {
+      body: { token: stolen, password: 'the attacker secret' },
+    });
+    expect(reset.status).toBe(401);
+    const magic = await request('POST', '/api/auth/magic-link/exchange', {
+      body: { token: stolenMagic },
+    });
+    expect(magic.status).toBe(401);
+    expect(await sessionsOf(a.id)).toBe(1);
   });
 
   it('rejects a short password with 422 and keeps the link usable', async () => {
