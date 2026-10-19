@@ -64,7 +64,8 @@ With the seeded **Palletised** load type, 20 pallets take 60 minutes and 40 pall
 
 ## Demo data
 
-`pnpm db:seed` creates two sites for Acme Logistics:
+`pnpm db:seed` creates three sites for Acme Logistics:
 
 - **Hamburg DC** (Europe/Berlin, DE-HH): halls *Halle 1* (T01 to T05) and *Halle 2* (T06 to T08), the inbound pool *Wareneingang* (T01 to T04), the outbound pool *Versand* (T06, T07), single docks T05 and T08, hours Monday to Friday 06:00 to 22:00 and Saturday 06:00 to 14:00, the three seeded load types plus *Palletised (outbound)*.
 - **Bucharest** (Europe/Bucharest, RO-B): hall *Hall A* with the pool *Ramps* (R1, R2), hours Monday to Friday 07:00 to 19:00.
+- **Lager Hamburg** (Europe/Berlin, DE-HH): hall *Halle 1* with the pool *Rampen 1–6* (D-01 to D-06), open around the clock. The first `pnpm db:seed` of a day adds that day's demo bookings here, around the current time and in every state of the visit, from booked to departed.

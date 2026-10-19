@@ -41,7 +41,7 @@ Opening hours and capacity never block a walk-in. If the site requires a briefin
 
 1. On the dock screen, select **Call to dock** next to a truck in the queue. Gate operators can do the same from the **On site** tab.
 2. Keep the suggested dock, or pick another one. A dock outside the booking's pool shows a warning, and the call still works. Occupied docks and docks in maintenance cannot be picked.
-3. Select **Call to <dock>**. The driver's phone shows the dock and hall on its next poll, within 20 seconds.
+3. Select **Call to <dock>**. The driver's phone shows the dock and hall on its next poll, within 15 seconds.
 
 If the driver does not come, select **Cancel call** on the dock card. The dock becomes free and the truck returns to the queue.
 

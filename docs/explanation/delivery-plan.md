@@ -11,6 +11,10 @@ related: [docs/explanation/mvp-scope.md, docs/reference/module-contract.md, docs
 
 # Delivery plan
 
+## Status
+
+As of 2026-10-19, units U1 to U11 are merged on `main`, including U6a and U6b. U12 (core loop end to end) and T1 (tests independent of the real date) are in progress. The sections below describe the plan as it was written; the code on `main` is the reference where they differ.
+
 The MVP is built in 13 units. A unit is one agent session in its own git worktree off `main`, sized at roughly 1,500 to 4,000 changed lines, and it ends with its stories green. Units in the same wave own disjoint files, so they run in parallel; waves run in order.
 
 The contract every unit builds on is already on `main`: the ADRs in `docs/decisions/`, the references in `docs/reference/`, and the typed module contract in `packages/shared` (manifests, packages, resolvers, key types).
@@ -78,7 +82,7 @@ For each unit of a wave, one at a time, in unit order:
 
 1. Rebase the unit branch onto `main`.
 2. Run `pnpm install`, `pnpm db:regen`, `pnpm --filter @rampflow/web routes:gen` and `pnpm docs:index`.
-3. Run `pnpm verify` and `pnpm test:e2e -- e2e/<the unit's modules>` in the unit's worktree, on its own ports and database.
+3. Run `pnpm verify` and `pnpm test:e2e e2e/<the unit's modules>` in the unit's worktree, on its own ports and database.
 4. Fast-forward `main`.
 
 After the last unit of a wave, run `pnpm verify` and `pnpm bench` (from W3) in the main checkout. Benchmarks stay out of `pnpm verify`: they seed design-load data and are slow and noisy on shared machines.
@@ -144,7 +148,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - After a member is removed, their next request to that tenant answers 404, while their other memberships still work.
   - Context endpoints return the role's permissions and the tenant's entitlements; route cases for them.
   - Playwright: CR-03 by password, magic link (Mailpit) and reset; invitation acceptance from `/invite#<token>`, and no request URL in the Playwright request log contains the token; org picker with two memberships; sidebar items match `navFor` for each role; axe on sign-in and shell shows no serious or critical violation.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/core`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/core`.
 - **Depends on.** U1, the UX concept.
 - **Size.** About 3,800 lines.
 
@@ -163,7 +167,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - TN-02: each field shows value and source; reset deletes the row; a setting whose entitlement is off is absent and its write answers 403; retention above the schema maximum answers 422.
   - TN-05: PNG and JPEG up to 262,144 bytes pass; 262,145 bytes and an SVG (also one renamed to `.png`) answer 422; the public logo route answers only while `brand.logo` is on.
   - CR-04: a carrier admin invites a colleague; a carrier user cannot (403); both see all bookings of their org (checked again in U8).
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/core e2e/brand`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/core e2e/brand`.
 - **Depends on.** U2.
 - **Size.** About 3,500 lines.
 
@@ -183,7 +187,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - The holiday import creates DE-BY closures for the next 400 days, and running it again after a reopen changes nothing.
   - Seeded load types: 20 pallets take 60 minutes and 40 take 90; tiers without `booking.duration_rules` use the largest tier.
   - Benchmark on seeded design-load data, in `*.bench.test.ts` behind `BENCH=1` (`pnpm bench`, not `pnpm verify`): availability for one resource-day under 200 ms and a 30-resource board under 1 s (p95 of 50 runs).
-- **Verify.** `pnpm verify && pnpm bench && pnpm test:e2e -- e2e/core/MD-0* e2e/booking/MD-0*`.
+- **Verify.** `pnpm verify && pnpm bench && pnpm test:e2e e2e/core/MD-0* e2e/booking/MD-0*`.
 - **Depends on.** U2.
 - **Size.** About 3,800 lines.
 
@@ -200,7 +204,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - With `safety.quiz`, publishing needs 3 to 5 questions per published locale; without it, questions are rejected.
   - The instruction beyond `safety.max_briefing_templates` answers 409 `limit_reached`.
   - The register filters by site, carrier, driver name, version and expiry, and the CSV has a BOM and the user's delimiter.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/safety`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/safety`.
 - **Depends on.** U2.
 - **Size.** About 3,000 lines.
 
@@ -241,7 +245,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - Staff booking sheet: lead time and horizon off; at a full slot the dispatcher books with a mandatory force reason; a gate operator sees no "New booking".
   - BK-03: edit and cancel before check-in; both buttons disable after check-in with a one-line reason; the carrier's Mailpit inbox receives each change.
   - AV-01 and AV-02 staff side: 422 field paths render under the fields; a 409 on a duration change keeps the old data on screen.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/booking/BK-0[1-3]* e2e/avis`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/booking/BK-0[1-3]* e2e/avis`.
 - **Depends on.** U6a.
 - **Size.** About 2,000 lines.
 
@@ -258,7 +262,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - A deactivated link fails `assertActiveLink`, and the carrier still reads its existing bookings.
   - A disabled public link answers 404; `auto_approve` links at once; `approval_required` keeps the registration pending; approval links and emails, rejection emails the reason; a known email gets the same empty 202 as a new one, a sign-in prompt by email, and attaches to its org; the public link answers 404 while the site setting is off, whatever slug exists; regenerate makes the old slug 404.
   - Route cases for every route, including the public ones' token checks.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/booking/TN-0* e2e/booking/CR-0*`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/booking/TN-0* e2e/booking/CR-0*`.
 - **Depends on.** U3 merged (W3).
 - **Size.** About 3,000 lines.
 
@@ -278,7 +282,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - CR-05 lists bookings at two tenants with filters; another carrier's booking answers 404.
   - CR-06: copy, email to driver in a chosen locale, Web Share where available; regenerate revokes the old link.
   - A deactivated link answers 403 `link_inactive` on create, while cancel still works.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/booking/BK-0[4-6]* e2e/booking/CR-0[5-6]*`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/booking/BK-0[4-6]* e2e/booking/CR-0[5-6]*`.
 - **Depends on.** U6a, U7.
 - **Size.** About 3,500 lines.
 
@@ -297,7 +301,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - YD-08: one tap per state, skipped timestamps stay NULL, `done` frees the dock; the event log shows actors to tenant admins only.
   - Station layout: gate and dock render without the sidebar; `?site=` survives a reload, and without it the device's last site is used; offline, every action is disabled and nothing is sent when the connection returns.
   - Route cases for every route, all `siteScoped`; touch targets of at least 44 CSS px on gate and dock screens; axe.
-- **Verify.** `pnpm verify && pnpm test:e2e -- e2e/yard`.
+- **Verify.** `pnpm verify && pnpm test:e2e e2e/yard`.
 - **Depends on.** U6a.
 - **Size.** About 3,500 lines.
 
@@ -313,7 +317,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - DR-03: while visible the PWA polls every 15 seconds, so a call appears within 20 seconds; offline it shows the last state with its time; a poll writes no row (row counts of `booking_acknowledgement`, `booking_event` and `safety_pass` unchanged); opening a new link offline shows the offline message, not the previous booking.
   - SF-04: a failed quiz shows the content again and counts the attempt; the acknowledgement stores instruction, version, locale, content hash, score, attempts, name, statement, channel and expiry (`safety.validity_days`, 0 means this visit); the next booking at the tenant on the same phone shows "valid until" after `GET /api/driver/briefings` redeems the pass, and a second call adds no row or event; a gate-device (`staff`) session never sets a pass.
   - `/d` responses carry `Referrer-Policy: no-referrer` and the CSP; `pnpm --filter @rampflow/driver size` stays under 150 KB gzip; first render under Playwright's mobile CPU and network throttling stays under 3 s.
-- **Verify.** `pnpm verify && pnpm --filter @rampflow/driver size && pnpm test:e2e -- e2e/driver`.
+- **Verify.** `pnpm verify && pnpm --filter @rampflow/driver size && pnpm test:e2e e2e/driver`.
 - **Depends on.** U6a.
 - **Size.** About 3,500 lines.
 
@@ -330,7 +334,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
   - BK-07: one reminder at `notify.reminder_hours_before`; none after a cancel or with `notify.reminders` off; none for a booking created inside the reminder window; a reschedule yields a reminder for the new start.
   - PL-05: every retention rule in [Data model](../reference/data-model.md#retention) at its boundary (clock); a second run changes nothing; the log holds counts only.
   - TN-06: search by name, phone or plate; JSON export of bookings and acknowledgements; erase pseudonymizes bookings and restricts acknowledgements still under retention.
-- **Verify.** `pnpm verify && pnpm bench && pnpm test:e2e -- e2e/report e2e/privacy`.
+- **Verify.** `pnpm verify && pnpm bench && pnpm test:e2e e2e/report e2e/privacy`.
 - **Depends on.** U6a (and U5, merged in W3).
 - **Size.** About 3,500 lines.
 

@@ -17,9 +17,8 @@ The driver PWA in `apps/driver` shows one booking to a driver without an account
 
 The PWA must run on the same origin as the API, so open it through the web dev server.
 
-1. Start the API and the web app: `pnpm dev`.
-2. In a second terminal, start the driver dev server: `pnpm --filter @rampflow/driver dev`. It listens on `DRIVER_PORT` under `/d/`.
-3. Open driver links on the web port. The web dev server forwards `/d` to the driver server and `/api` to the API.
+1. Start the API, the web app and the driver app: `pnpm dev`. The driver dev server listens on `DRIVER_PORT` under `/d/`.
+2. Open driver links on the web port. The web dev server forwards `/d` to the driver server and `/api` to the API.
 
 ## Open a driver link
 
