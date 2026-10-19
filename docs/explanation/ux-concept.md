@@ -26,52 +26,31 @@ This document explains how rampflow looks and behaves for each role, and why. Th
 
 ## Information architecture and route map
 
-The active organisation is part of the URL. A user with several memberships switches via the org menu at the top of the sidebar, and bookmarks keep working because the slug, not a session cookie, selects the membership. A carrier user sees every linked tenant inside one carrier org, so no switch is needed to work across tenants.
+The active organisation is part of the URL (`/t/$orgId/...`, `/c/$orgId/...`). A user with several memberships switches via the org menu at the top of the sidebar, and bookmarks keep working because the org id, not a session cookie, selects the membership. A carrier user sees every linked tenant inside one carrier org, so no switch is needed to work across tenants.
 
-| Area | Role | Route pattern | Notes |
-|---|---|---|---|
-| Sign in | all | `/login`, `/login/magic`, `/invite/:token`, `/register/:siteSlug` | `/register` is the public link (TN-04, CR-02). |
-| Org switch | all | `/orgs` | List of memberships. Shown after login when more than one exists. |
-| Tenant staff | tenant_admin, dispatcher | `/o/:org/board?site=&date=&view=board\|list` | BK-01. |
-| | | `/o/:org/bookings`, `/o/:org/bookings/:id`, `/o/:org/bookings/new` | BK-02, BK-03, AV-02. |
-| | | `/o/:org/reports?site=&from=&to=` | RP-01, RP-02. |
-| Gate station | gate_operator, dispatcher | `/o/:org/gate/:site?tab=expected\|onsite\|departed&checkin=:id` | YD-01 to YD-05. Dialog state in the URL so a tablet refresh returns to the same dialog. |
-| Dock station | dock_operator, dispatcher | `/o/:org/dock/:site?call=:id` | YD-06 to YD-08. |
-| Tenant admin | tenant_admin | `/o/:org/admin/sites`, `/o/:org/admin/sites/:site` | MD-01, MD-02, MD-03 (halls, docks and resources on one page). |
-| | | `/o/:org/admin/sites/:site/hours` | MD-04. |
-| | | `/o/:org/admin/load-types` | MD-05. |
-| | | `/o/:org/admin/carriers`, `/o/:org/admin/staff` | TN-01, TN-03, TN-04. |
-| | | `/o/:org/admin/safety`, `/o/:org/admin/safety/:instruction`, `/o/:org/admin/safety/register` | SF-01, SF-02, SF-03. |
-| | | `/o/:org/admin/settings?scope=tenant\|:site` | TN-02. |
-| | | `/o/:org/admin/privacy` | TN-05 (logo), TN-06 (data subject requests). |
-| Carrier | carrier_admin, carrier_user | `/c/:carrier/bookings?tenant=&site=&from=&to=&status=` | CR-05. |
-| | | `/c/:carrier/bookings/:id` | BK-05, AV-02, CR-06. |
-| | | `/c/:carrier/book?step=where\|slot\|avis\|confirmed&again=:id` | BK-04, BK-06. |
-| | | `/c/:carrier/warehouses`, `/c/:carrier/users` | CR-04. |
-| Platform | platform_admin | `/platform/tenants`, `/platform/tenants/:id` | PL-01, PL-02, PL-04. |
-| | | `/platform/packages`, `/platform/settings`, `/platform/jobs` | PL-02 (read-only packages), PL-03, PL-05. |
-| Driver | driver (token) | `/d#<token>` then `/d/booking`, `/d/briefing`, `/d/quiz`, `/d/status` | DR-01 to DR-03, SF-04. The fragment is exchanged for a cookie and removed. |
+The route map lives in [ADR-0011](../decisions/ADR-0011-frontend-routes-and-org-context.md#route-map), the only one. It gives each screen its path, its search params (dialog state such as `?checkin=` stays in the URL so a tablet refresh returns to the same dialog), and its nav item or the screen it is reached from. Tokens from emails travel only in the fragment (`/invite#<token>`).
 
-Navigation per role, as rendered by `OfficeShell`:
+Navigation per role, as rendered by `navFor` from the manifests:
 
-- **Tenant admin and dispatcher.** Operations: Plan board, Bookings, Gate, Docks, Reports. Administration: Sites and docks, Hours and closures, Load types, Carriers, Safety briefings, Staff, Settings. Gate and dock operators get the station screens only, full-screen, without the sidebar.
-- **Carrier.** Bookings, New booking, Warehouses, Colleagues.
-- **Platform admin.** Tenants, Packages, Platform defaults, Usage, Jobs.
+- **Tenant admin and dispatcher.** Operations: Plan board, Gate, Docks, Reports. Administration: Sites and docks (hours, closures and load types are tabs of a site), Carriers, Safety briefings, Acknowledgements, Staff, Settings, Logo, Privacy requests. Each item shows only with its permission and entitlement.
+- **Gate and dock operators.** Plan board (read-only), Gate, Docks, as their permissions allow. The gate and dock screens use the station layout (`TabletShell`) for every role: full-screen, no sidebar, the site in `?site=`, and a user menu that reaches the other items.
+- **Carrier.** Bookings, New booking, Warehouses, Colleagues (carrier admins).
+- **Platform admin.** Tenants (with usage meters), Packages, Platform defaults.
 
 ## Screen inventory
 
-| Screen | Stories | Device | Prototype route |
-|---|---|---|---|
-| Plan board (board and list view, detail panel) | BK-01, BK-02, BK-03, MD-03 | desktop | `/design/plan-board` |
-| Booking wizard (where, slot, avis, confirmed) | BK-04, AV-01, BK-06, CR-06 | desktop | `/design/booking-wizard` |
-| Carrier bookings across tenants | CR-05, BK-05, CR-06, CR-02 | desktop | `/design/carrier-bookings` |
-| Gate: expected trucks, check-in dialog, turn away | YD-01, YD-02, YD-03, YD-04, YD-05 | tablet | `/design/gate` |
-| Dock overview, queue, call dialog, progress | YD-06, YD-07, YD-08 | tablet | `/design/dock` |
-| Driver: booking, briefing, quiz, waiting, called, done | DR-01, DR-02, DR-03, SF-04 | phone | `/design/driver?step=` |
-| Sites, halls, docks and pool editor | MD-01, MD-02, MD-03 | desktop | `/design/master-data` |
-| Settings with inheritance | TN-02, PL-03 | desktop | `/design/settings` |
-| Platform tenants, usage, overrides | PL-01, PL-02, PL-04 | desktop | `/design/platform-admin` |
-| Not prototyped: hours and closures (MD-04), load types (MD-05), staff and carriers (TN-01, TN-03, TN-04), safety authoring (SF-01, SF-02, SF-03), reports (RP-01, RP-02), privacy (TN-05, TN-06), sign-in (CR-01, CR-03) | | | They reuse the office shell, `SettingField`, tables and forms shown here. |
+| Screen | Stories | Device | App route ([ADR-0011](../decisions/ADR-0011-frontend-routes-and-org-context.md#route-map)) | Prototype route |
+|---|---|---|---|---|
+| Plan board (board and list view, detail panel) | BK-01, BK-02, BK-03, MD-03 | desktop | `/t/$orgId/plan` | `/design/plan-board` |
+| Booking wizard (where, slot, avis, confirmed) | BK-04, AV-01, BK-06, CR-06 | desktop | `/c/$orgId/book`; staff variant as a sheet on `/t/$orgId/plan?new=1` | `/design/booking-wizard` |
+| Carrier bookings across tenants | CR-05, BK-05, CR-06, CR-02 | desktop | `/c/$orgId/bookings` | `/design/carrier-bookings` |
+| Gate: expected trucks, check-in dialog, walk-in, turn away | YD-01, YD-02, YD-03, YD-04, YD-05 | tablet | `/t/$orgId/gate?site=` | `/design/gate` |
+| Dock overview, queue, call dialog, progress | YD-06, YD-07, YD-08 | tablet | `/t/$orgId/docks?site=` | `/design/dock` |
+| Driver: booking, briefing, quiz, waiting, called, done | DR-01, DR-02, DR-03, SF-04 | phone | `/d#<token>`, then states of `/d` | `/design/driver?step=` |
+| Sites, halls, docks and pool editor | MD-01, MD-02, MD-03 | desktop | `/t/$orgId/sites`, `/t/$orgId/sites/$siteId` | `/design/master-data` |
+| Settings with inheritance | TN-02, PL-03 | desktop | `/t/$orgId/settings`, `/platform/settings` | `/design/settings` |
+| Platform tenants, usage, overrides | PL-01, PL-02, PL-04 | desktop | `/platform/tenants`, `/platform/tenants/$tenantId` | `/design/platform-admin` |
+| Not prototyped: hours and closures (MD-04), load types (MD-05), booking detail (BK-03, AV-02), staff (TN-01), carriers (TN-03, TN-04), warehouses (CR-02), safety authoring and register (SF-01, SF-02, SF-03), reports (RP-01, RP-02), logo (TN-05), privacy requests (TN-06), sign-in and token pages (CR-01, CR-03) | | desktop | see the route map | They reuse the office shell, `SettingField`, tables and forms shown here. |
 
 ## Key screens
 
@@ -113,7 +92,7 @@ Navigation per role, as rendered by `OfficeShell`:
 - Step 1 picks warehouse, site and load type (radio cards with duration hints) and load units. The duration line updates ("33 pallets take 90 minutes").
 - Step 2 is the `SlotPicker`: a seven-day strip with free counts and closed reasons, then start-time chips grouped Morning and Afternoon. Chips show free capacity ("2 free", "1 left" in amber, "full" disabled). Only offered times appear; a footnote explains lead time and horizon.
 - Step 3 is the avis form with the field pattern: label, control, description, error (shown on the PO field with the site's expected format).
-- Step 4 confirms with the booking code, a QR, the slot in site time, the address, the change cutoff, "Add to calendar", "Book again" (BK-06) and the driver link block (copy, email with locale, share sheet, regenerate).
+- Step 4 confirms with the booking code, a QR, the slot in site time, the address, the change cutoff, "Book again" (BK-06) and the driver link block (copy, email with locale, share sheet, regenerate). Calendar export is not in the MVP.
 - Race loss (409 on confirm): the slot step re-opens with a toast "That time was just taken" and the refreshed list.
 
 ### Carrier bookings across tenants (CR-05)
@@ -134,13 +113,15 @@ A filter row (tabs Upcoming/Today/Past, search, warehouse, status, date range) o
 - Rows are 64 px tall with the slot, carrier, plate, load, safety badge, booking status and one primary button. A no-show row still offers check-in (late arrival).
 - The check-in dialog shows the plate as seen (editable), the arrival time with the computed punctuality badge and tolerance, a safety section that is green when valid and red when not, "Find by driver name" and "Start briefing here", a turn-away reason select with the research list, and the primary "Check in now" button disabled with an inline reason when enforcement blocks it.
 - On site tab (YD-04): same rows with time since gate-in and a detention flag above `yard.standgeld_flag_minutes`. Check-out from any on-site state; before `done` a reason is required.
-- Offline: the header pill turns red "Offline", lists stay, actions queue and show "pending" until the connection returns.
+- Walk-in (YD-03): a dialog for an unbooked truck takes carrier, load type, plate and the avis, then ends with "Check in now" or "Turn away" with a reason. Closed hours and full capacity never block it; the plan board shows the truck as over capacity. When safety enforcement blocks the check-in, the walk-in stays on the expected list with "Briefing missing" and the usual link or start-briefing actions.
+- "Turn away" also shows for a checked-in truck that has not been called (wrong load, missing documents).
+- Offline: the header pill turns red "Offline", lists stay with "as of HH:mm", and every action is disabled with the reason. Nothing is queued: a check-in replayed later would record the wrong arrival time.
 
 ### Dock overview and call (YD-06 to YD-08)
 
 Docks are cards grouped by hall. A free dock says "Free" in green text with the word, an occupied dock shows carrier, plate, units, the status badge with "since 09:05 CET", one progress button (At dock, Loading, Done) and a phone button. Maintenance docks are dashed. The right column lists checked-in trucks ordered by slot start with waiting minutes and "Call to dock".
 
-The call dialog shows all docks as large buttons: free member docks of the pool are green and labelled "suggested", occupied docks show the occupant and are disabled, docks outside the pool are selectable with a warning line. The footer offers the driver phone as a `tel:` link, Cancel and "Call to A-01". Done opens a small sheet for actual units and a discrepancy note.
+The call dialog shows all docks as large buttons: free member docks of the pool are green and labelled "suggested", occupied docks show the occupant and are disabled, docks outside the pool are selectable with a warning line. The footer offers the driver phone as a `tel:` link, Cancel and "Call to A-01". A called truck's card offers "Cancel call", which frees the dock and returns the truck to the queue when the driver does not show up. Done opens a small sheet for actual units and a discrepancy note.
 
 ### Driver PWA (DR-01 to DR-03, SF-04)
 
@@ -181,7 +162,7 @@ A tenant table with meters for sites, docks, users and bookings per month. A sof
 - **Booking state to tone.** confirmed planned; checked_in onsite; called, at_dock, loading active; done success; departed and cancelled neutral; no_show and turned_away danger. Safety: valid success, missing and expired danger, outdated onsite. Punctuality: early neutral, on time success, late onsite.
 - **Typography.** Geist Variable for everything, tabular numerals for times, codes and counts, monospace for plates and booking codes. Office 14 px base, tablet 17 px base, phone 17 px base with 30 px slot times and 96 px dock code.
 - **Spacing and density.** Office uses shadcn's compact sizes (32 px controls). `data-density="touch"` lifts every control to at least 44 px and buttons to 16 px text. Radios, checkboxes and switches keep a 24 px glyph inside a 44 px label row.
-- **Dark mode.** Yes for the office shell and the driver PWA (system preference, tokens defined). No for gate and dock tablets, which run light for daylight contrast.
+- **Dark mode.** Not in the MVP. Every screen runs light, so the axe contrast checks cover one theme. The dark tokens stay defined for later.
 - **Radius and elevation.** 8 px radius, 1 px borders, shadows only on cards that float (board cards on hover, dialogs).
 
 ## shadcn component mapping
@@ -207,7 +188,7 @@ Custom components and why no shadcn component fits:
 - `SiteTime` (`components/site-time.tsx`). Enforces the zone label.
 - `SettingField` and `SourceBadge` (`components/settings-field.tsx`). Field plus provenance plus reset is a product pattern, not a form primitive.
 - `EntitlementGate` and `UpsellHint` (`components/entitlement-gate.tsx`). Behavioural wrapper around the three entitlement states.
-- Shells (`components/shells/`). Composed from Sidebar for the office; tablet and driver shells are plain layout because Sidebar assumes a desktop.
+- Shells (`components/shells/`). Composed from Sidebar for the office; the tablet shell (gate and dock stations) and the driver shell are plain layout because Sidebar assumes a desktop.
 - `QrPlaceholder`. Stand-in for a QR encoder; the implementation swaps in a real one.
 
 ## Copy tone and i18n
@@ -225,4 +206,4 @@ Custom components and why no shadcn component fits:
 - Does the gate need a dedicated "On site" layout with larger waiting timers, or do the tabs cover YD-04?
 - The driver "Called" screen could show an expected walking route or yard map later. The MVP shows hall and dock only.
 - Carriers booking at a tenant with `approval_required` see a pending alert. Should the booking wizard let them draft a booking before approval, or stay disabled?
-- Tablet dark mode is off by design. Night shifts may ask for it.
+- Dark mode is out of the MVP. Night shifts at the gate may ask for it first.
