@@ -269,7 +269,7 @@ Bookings answer `PortalBookingView`: the summary (tenant, site, slot with `timeZ
 
 | Method | Path | Permission | Entitlement (tenant's) | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/c/:orgId/bookings` | `booking.view` | | CR-05 | all tenants; `?tenantId&siteId&from&to&status&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }` |
+| GET | `/api/c/:orgId/bookings` | `booking.view` | | CR-05 | all tenants; `?tenantId&siteId&from&to&status&when&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `when=upcoming` keeps trucks on site and requested or confirmed bookings starting today or later in site time, `when=past` keeps the rest (every final booking, and pending ones from earlier days); `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }` |
 | GET | `/api/c/:orgId/bookings/:bookingId` | `booking.view` | | CR-05 | `PortalBookingView` |
 | GET | `/api/c/:orgId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | `{ url, expiresAt }`; 404 without an active link |
 | GET | `/api/c/:orgId/bookings/:bookingId/rebook` | `booking.book` | | BK-06 | `{ tenantId, siteId, loadTypeId, avis }`: the avis without references and driver; no date |

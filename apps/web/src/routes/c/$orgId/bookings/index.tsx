@@ -1,6 +1,6 @@
 import type { PortalBookingSummary } from '@rampflow/shared/modules/booking/api.portal';
 import { BOOKING_STATUSES, type BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { addDays, type LocalDate, localDateSchema } from '@rampflow/shared/time';
+import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -81,8 +81,8 @@ function filtersOf(s: Search): BookingFilters {
     s.tab === 'today'
       ? { from: today, to: today, order: 'asc' as const }
       : s.tab === 'past'
-        ? { to: addDays(today, -1), order: 'desc' as const }
-        : { from: today, order: 'asc' as const };
+        ? { when: 'past' as const, order: 'desc' as const }
+        : { when: 'upcoming' as const, order: 'asc' as const };
   return { ...base, ...range, ...(s.from ? { from: s.from } : {}), ...(s.to ? { to: s.to } : {}) };
 }
 

@@ -38,7 +38,12 @@ export const carrier = new Hono<AppEnv>()
     requirePermission('booking.view'),
     zValidator('query', PortalBookingListQuery, onInvalid),
     async (c) => {
-      const page = await listPortalBookings(c.var.db, carrierOf(c).carrierId, c.req.valid('query'));
+      const page = await listPortalBookings(
+        c.var.db,
+        carrierOf(c).carrierId,
+        c.req.valid('query'),
+        c.var.clock.now(),
+      );
       return c.json(page, 200);
     },
   )

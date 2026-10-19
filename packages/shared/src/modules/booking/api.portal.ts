@@ -14,6 +14,10 @@ const limit = z.coerce.number().pipe(z.int().min(1).max(200)).default(50);
 /**
  * CR-05. `from` and `to` are site-local dates of each booking's start, so one filter reads the
  * same at sites in different zones. `order: 'desc'` lists the past newest first.
+ *
+ * `when` splits the list by lifecycle state. `upcoming`: a truck on site, or a requested or
+ * confirmed booking starting today or later in its site's zone. `past`: everything else, so a
+ * final booking (departed, cancelled, no-show, turned away) is past even when it is today.
  */
 export const PortalBookingListQuery = z.object({
   tenantId: z.uuid().optional(),
@@ -21,6 +25,7 @@ export const PortalBookingListQuery = z.object({
   from: localDateSchema.optional(),
   to: localDateSchema.optional(),
   status: z.enum(BOOKING_STATUSES).optional(),
+  when: z.enum(['upcoming', 'past']).optional(),
   order: z.enum(['asc', 'desc']).default('asc'),
   limit,
   cursor: z.string().max(200).optional(),

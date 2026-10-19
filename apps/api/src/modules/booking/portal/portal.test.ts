@@ -6,6 +6,7 @@ import type {
   PortalRebook,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
+import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -18,7 +19,7 @@ import { tenantCarrierLink } from '../../core/schema.ts';
 import { driverAccess } from '../../driver/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { type CapacitySite, capacitySite, placeBooking } from '../capacity/fixtures.ts';
-import { avisInput, setSetting } from '../lifecycle/fixtures.ts';
+import { avisInput, seedBooking, setSetting } from '../lifecycle/fixtures.ts';
 import { closure, loadType } from '../schema.resources.ts';
 import { booking } from '../schema.ts';
 
@@ -371,6 +372,32 @@ describe('bookings across tenants (CR-05)', () => {
     const rivalList = await carrierAs(rivalUser()).get(`${mine(w.A.rivalCarrierId)}`);
     const rivalIds = ((await rivalList.json()) as PortalBookingPage).items.map((b) => b.id);
     expect(rivalIds).not.toContain(atA.id);
+  });
+});
+
+describe('upcoming and past tabs (CR-05)', () => {
+  it('splits by lifecycle state: final is past, on site is upcoming, a pending booking by its day', async () => {
+    const s = await site();
+    const sun = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() - 86_400_000);
+    const tue = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() + 86_400_000);
+    const seeded = async (startsAt: Date, status: BookingStatus) =>
+      (await seedBooking(w.A, { startsAt, status, site: s, createdParty: 'carrier' })).id;
+    const departedToday = await seeded(new Date(mon('07:00')), 'departed');
+    const doneToday = await seeded(new Date(mon('08:00')), 'done');
+    const laterToday = await seeded(new Date(mon('16:00')), 'confirmed');
+    const staleYesterday = await seeded(sun('10:00'), 'confirmed');
+    const stillOnSite = await seeded(sun('22:00'), 'checked_in');
+    const cancelledTomorrow = await seeded(tue('09:00'), 'cancelled');
+    const tomorrow = await seeded(tue('10:00'), 'requested');
+    const noon = new Date(mon('12:00'));
+    const tab = async (when: string) => {
+      const q = new URLSearchParams({ siteId: s.siteId, when });
+      const res = await carrierAs(carrierUser(), noon).get(`${mine()}?${q}`);
+      expect(res.status).toBe(200);
+      return ((await res.json()) as PortalBookingPage).items.map((b) => b.id).sort();
+    };
+    expect(await tab('upcoming')).toEqual([stillOnSite, doneToday, laterToday, tomorrow].sort());
+    expect(await tab('past')).toEqual([departedToday, staleYesterday, cancelledTomorrow].sort());
   });
 });
 

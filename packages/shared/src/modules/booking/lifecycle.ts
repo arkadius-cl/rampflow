@@ -45,6 +45,14 @@ export const ON_SITE_STATUSES = [
   'done',
 ] as const satisfies readonly BookingStatus[];
 
+/** Final statuses (docs/reference/booking-lifecycle.md): the visit is over or never happens. */
+export const FINAL_STATUSES = [
+  'departed',
+  'cancelled',
+  'no_show',
+  'turned_away',
+] as const satisfies readonly BookingStatus[];
+
 export const TURN_AWAY_REASONS = [
   'safety_not_completed',
   'no_capacity',

@@ -8,8 +8,9 @@ import type {
   PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
+import { FINAL_STATUSES, ON_SITE_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
 import type { TimeZone } from '@rampflow/shared/time';
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, not, type SQL, sql } from 'drizzle-orm';
 import type * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -106,11 +107,16 @@ function summaryQuery(tx: Tx) {
 
 const localDay = sql`(${booking.startsAt} at time zone ${booking.siteTimeZone})::date`;
 
+/** CR-05 `when=upcoming`: on site, or not final and starting today or later in site time. */
+const upcoming = (now: Date): SQL =>
+  sql`(${inArray(booking.status, ON_SITE_STATUSES)} or (${not(inArray(booking.status, FINAL_STATUSES))} and ${localDay} >= (${now}::timestamptz at time zone ${booking.siteTimeZone})::date))`;
+
 /** CR-05: the carrier's bookings at every tenant, by start, with the filters of the list. */
 export async function listPortalBookings(
   tx: Tx,
   carrierId: CarrierId,
   q: ListQuery,
+  now: Date,
 ): Promise<PortalBookingPage> {
   const after = q.cursor ? decodeCursor(q.cursor) : null;
   const ascending = q.order === 'asc';
@@ -121,6 +127,7 @@ export async function listPortalBookings(
         q.tenantId ? eq(booking.tenantId, q.tenantId as TenantId) : undefined,
         q.siteId ? eq(booking.siteId, q.siteId as SiteId) : undefined,
         q.status ? eq(booking.status, q.status) : undefined,
+        q.when === 'upcoming' ? upcoming(now) : q.when === 'past' ? not(upcoming(now)) : undefined,
         q.from ? sql`${localDay} >= ${q.from}::date` : undefined,
         q.to ? sql`${localDay} <= ${q.to}::date` : undefined,
         after

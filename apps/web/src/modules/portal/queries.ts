@@ -1,4 +1,5 @@
 import type {
+  PortalBookingListQuery,
   PortalBookingPage,
   PortalBookingView,
   PortalDriverLink,
@@ -25,6 +26,7 @@ export interface BookingFilters {
   tenantId?: string;
   siteId?: string;
   status?: BookingStatus;
+  when?: PortalBookingListQuery['when'];
   from?: LocalDate;
   to?: LocalDate;
   order: 'asc' | 'desc';
@@ -43,6 +45,7 @@ export const portalBookingsQuery = (orgId: string, f: BookingFilters) =>
             ...(f.tenantId ? { tenantId: f.tenantId } : {}),
             ...(f.siteId ? { siteId: f.siteId } : {}),
             ...(f.status ? { status: f.status } : {}),
+            ...(f.when ? { when: f.when } : {}),
             ...(f.from ? { from: f.from } : {}),
             ...(f.to ? { to: f.to } : {}),
             ...(pageParam ? { cursor: pageParam } : {}),
