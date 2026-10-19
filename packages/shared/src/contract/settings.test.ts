@@ -110,6 +110,19 @@ describe('parseSettingWrite', () => {
     expect(isSettingAvailable(catalog, pro, 'yard.grace_minutes')).toBe(true);
   });
 
+  it('accepts platform writes without tenant entitlements, gated keys included', () => {
+    const gated = { key: 'safety.require_for_checkin', scope: 'platform', value: false } as const;
+    expect(parseSettingWrite(catalog, null, gated)).toEqual({ ok: true, value: gated });
+    const tooBig = { key: 'yard.grace_minutes', scope: 'platform', value: 241 } as const;
+    expect(parseSettingWrite(catalog, null, tooBig)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_value' },
+    });
+    expect(() =>
+      parseSettingWrite(catalog, null, { key: 'yard.grace_minutes', scope: 'site', value: 10 }),
+    ).toThrow(/needs the tenant's entitlements/);
+  });
+
   it('rejects unknown keys and returns the parsed value otherwise', () => {
     expect(
       parseSettingWrite(catalog, start, { key: 'booking.teleport', scope: 'site', value: 1 }),

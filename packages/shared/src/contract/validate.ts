@@ -2,6 +2,13 @@ import { type Catalog, findEntitlement } from './catalog.ts';
 import { isValidEntitlementValue } from './entitlements.ts';
 import { ROLE_PARTY } from './module.ts';
 
+/** Route map of ADR-0011: every screen of an area lives under its prefix. */
+const AREA_PREFIX = {
+  tenant: '/t/$orgId/',
+  carrier: '/c/$orgId/',
+  platform: '/platform/',
+} as const;
+
 type LoosePackages = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 
 function checkFeatureRef(catalog: Catalog, where: string, key: string): string[] {
@@ -54,6 +61,9 @@ export function validateCatalog(catalog: Catalog, packages: LoosePackages): stri
     }
     for (const item of module.nav) {
       const where = `nav ${module.id}.${item.id}`;
+      if (!item.to.startsWith(AREA_PREFIX[item.area])) {
+        problems.push(`${where}: ${item.to} is outside ${AREA_PREFIX[item.area]}`);
+      }
       const permission = module.permissions[item.permission];
       if (!permission) {
         problems.push(`${where}: permission ${item.permission} is not declared by ${module.id}`);

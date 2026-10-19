@@ -89,10 +89,11 @@ export interface SettingWrite<K extends string = string> {
 /**
  * Validates a settings write at the API boundary. The API maps the error codes to
  * 400 (`unknown_key`, `scope_not_allowed`), 403 (`entitlement_required`) and 422 (`invalid_value`).
+ * Platform writes (PL-03) pass `null` entitlements: no package gates the platform defaults.
  */
 export function parseSettingWrite<C extends Catalog>(
   catalog: C,
-  entitlements: ResolvedEntitlementsOf<C>,
+  entitlements: ResolvedEntitlementsOf<C> | null,
   write: SettingWrite,
 ): Result<SettingWrite<SettingKeyOf<C>>, SettingWriteError> {
   const found = findSetting(catalog, write.key);
@@ -104,7 +105,13 @@ export function parseSettingWrite<C extends Catalog>(
       error: { code: 'scope_not_allowed', key: write.key, scope: write.scope, allowed: def.scopes },
     };
   }
-  const blockedBy = settingBlockedBy(catalog, entitlements, write.key);
+  if (write.scope !== 'platform' && entitlements === null) {
+    throw new Error(`A ${write.scope} write of ${write.key} needs the tenant's entitlements`);
+  }
+  const blockedBy =
+    write.scope === 'platform' || entitlements === null
+      ? null
+      : settingBlockedBy(catalog, entitlements, write.key);
   if (blockedBy) {
     return {
       ok: false,

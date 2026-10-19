@@ -32,7 +32,7 @@ The settings catalog has 29 keys with types from booleans to enums and reference
 3. **Write path** (`parseSettingWrite(catalog, entitlements, { key, scope, value })`):
    - Unknown key: 400 `bad_request`.
    - Scope not in the key's `scopes`: 400 `bad_request` with `allowed`.
-   - Module off or `requires` feature off: 403 `entitlement_required` with the blocking feature key.
+   - Module off or `requires` feature off: 403 `entitlement_required` with the blocking feature key. Platform writes (PL-03) skip this check and pass `null` entitlements, because no package gates the platform defaults.
    - Schema rejects the value: 422 `validation_failed` with zod issues (`path`, `code`, `message`).
    - Otherwise upsert the row. `DELETE` removes it and answers 204 even when no row exists.
 4. **"Platform maximum".** TN-02's "retention values above the platform maximum return 422" is the upper bound of the key's zod schema (for example 30 days for `privacy.retention.driver_phone_days`), which matches the "Max" column of domain research §5. Platform admins cannot lower that bound in the MVP; locked settings are LATER.

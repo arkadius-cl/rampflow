@@ -67,13 +67,6 @@ export const booking = defineModule({
       permission: 'booking.view',
     },
     {
-      id: 'resources',
-      area: 'tenant',
-      to: '/t/$orgId/resources',
-      icon: 'layout-grid',
-      permission: 'booking.manage_resources',
-    },
-    {
       id: 'carriers',
       area: 'tenant',
       to: '/t/$orgId/carriers',
@@ -93,6 +86,13 @@ export const booking = defineModule({
       to: '/c/$orgId/book',
       icon: 'calendar-plus',
       permission: 'booking.book',
+    },
+    {
+      id: 'tenants',
+      area: 'carrier',
+      to: '/c/$orgId/tenants',
+      icon: 'warehouse',
+      permission: 'booking.view',
     },
   ],
 });

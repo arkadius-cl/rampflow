@@ -37,13 +37,14 @@ describe('catalog', () => {
       settings: {
         'extra.size': { ...booking.settings['booking.horizon_days'], default: 0, requires: 'x.y' },
       },
-      nav: [{ id: 'list', area: 'tenant', to: '/', icon: 'list', permission: 'extra.view' }],
+      nav: [{ id: 'list', area: 'tenant', to: '/o/list', icon: 'list', permission: 'extra.view' }],
     };
     expect(validateCatalog([core, broken], {})).toEqual([
       'module extra: depends on later, which is not listed before it',
       'module extra enabledBy: reserved entitlement extra.later',
       'setting extra.size requires: unknown entitlement x.y',
       'setting extra.size: default does not match its schema',
+      'nav extra.list: /o/list is outside /t/$orgId/',
       'nav extra.list: no tenant role holds extra.view',
     ]);
   });
@@ -61,6 +62,8 @@ describe('permissions', () => {
   it('keeps narrow roles narrow', () => {
     const gate = permissionsFor(catalog, 'gate_operator');
     expect(gate.has('booking.staff_book')).toBe(false);
+    // Walk-ins skip the capacity checks, so the gate needs walk_in, never force (ADR-0004).
+    expect(gate.has('booking.walk_in') && !gate.has('booking.force')).toBe(true);
     expect(gate.has('yard.dock')).toBe(false);
     expect(permissionsFor(catalog, 'carrier_user').has('core.manage_carrier_users')).toBe(false);
     expect(permissionsFor(catalog, 'dispatcher').has('booking.view_actors')).toBe(false);
@@ -109,11 +112,16 @@ describe('navFor', () => {
       area: 'carrier',
       permissions: permissionsFor(catalog, 'carrier_user'),
     });
-    expect(ids(user)).toEqual(['booking.bookings', 'booking.book']);
+    expect(ids(user)).toEqual(['booking.bookings', 'booking.book', 'booking.tenants']);
     const admin = navFor(catalog, {
       area: 'carrier',
       permissions: permissionsFor(catalog, 'carrier_admin'),
     });
-    expect(ids(admin)).toEqual(['core.users', 'booking.bookings', 'booking.book']);
+    expect(ids(admin)).toEqual([
+      'core.users',
+      'booking.bookings',
+      'booking.book',
+      'booking.tenants',
+    ]);
   });
 });

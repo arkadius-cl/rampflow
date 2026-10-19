@@ -27,6 +27,7 @@ export const avis = defineModule({
   },
   permissions: {},
   settings: {
+    /** Every listed type must appear at least once. Empty: one reference of any type suffices. */
     'avis.required_reference_types': {
       schema: z
         .array(z.enum(REFERENCE_TYPES))

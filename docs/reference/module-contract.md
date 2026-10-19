@@ -58,7 +58,7 @@ Write a manifest with `defineModule({...})`. It returns the literal type, which 
 - a nav `permission` the module does not declare,
 - an `entitlement` on carrier or platform navigation.
 
-`validateCatalog(catalog, packages)` repeats these checks at runtime, adds dependency order, default-matches-schema, nav-permission-matches-area and package checks, and runs in `pnpm test`.
+`validateCatalog(catalog, packages)` repeats these checks at runtime, adds dependency order, default-matches-schema, nav-permission-matches-area, nav-path-inside-area (`/t/$orgId/`, `/c/$orgId/`, `/platform/`, [ADR-0011](../decisions/ADR-0011-frontend-routes-and-org-context.md)) and package checks, and runs in `pnpm test`.
 
 ### Roles and permissions
 
@@ -82,7 +82,7 @@ A permission names the lowest roles that hold it. `ROLE_INCLUDES` adds the rest:
 | `parseEntitlementOverride(catalog, raw)` | `Result` with `unknown_key`, `reserved_key` or `invalid_value` |
 | `blockingFeature(catalog, entitlements, moduleId)` | the feature that keeps a module off, or `null` |
 | `resolveSetting(catalog, key, { site, tenant, platform })` | `{ value, source }` |
-| `parseSettingWrite(catalog, entitlements, { key, scope, value })` | `Result` with `unknown_key`, `scope_not_allowed`, `entitlement_required` or `invalid_value` (zod issues) |
+| `parseSettingWrite(catalog, entitlements, { key, scope, value })` | `Result` with `unknown_key`, `scope_not_allowed`, `entitlement_required` or `invalid_value` (zod issues). Platform writes (PL-03) pass `entitlements: null`; a tenant or site write without entitlements throws |
 | `isSettingAvailable(catalog, entitlements, key)` | module on and `requires` on |
 | `permissionsFor(catalog, role)` | the role's permission set |
 | `navFor(catalog, { area, permissions, entitlements? })` | visible nav items with their module |
@@ -185,10 +185,10 @@ Generated from `packages/shared/src/registry.ts` and `packages.ts` by `pnpm docs
 | `privacy:nav.privacy` | tenant | `/t/$orgId/privacy` | `privacy.manage_requests` |  |
 | `brand:nav.brand` | tenant | `/t/$orgId/brand` | `brand.manage` |  |
 | `booking:nav.plan` | tenant | `/t/$orgId/plan` | `booking.view` |  |
-| `booking:nav.resources` | tenant | `/t/$orgId/resources` | `booking.manage_resources` |  |
 | `booking:nav.carriers` | tenant | `/t/$orgId/carriers` | `booking.manage_carriers` |  |
 | `booking:nav.bookings` | carrier | `/c/$orgId/bookings` | `booking.view` |  |
 | `booking:nav.book` | carrier | `/c/$orgId/book` | `booking.book` |  |
+| `booking:nav.tenants` | carrier | `/c/$orgId/tenants` | `booking.view` |  |
 | `yard:nav.gate` | tenant | `/t/$orgId/gate` | `yard.gate` |  |
 | `yard:nav.docks` | tenant | `/t/$orgId/docks` | `yard.call` | `yard.call_to_dock` |
 | `safety:nav.briefings` | tenant | `/t/$orgId/safety/briefings` | `safety.manage_briefings` |  |
