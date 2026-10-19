@@ -108,20 +108,20 @@ const siteId = (name) => {
 const hamburgDc = siteId('Hamburg DC');
 const lager = siteId('Lager Hamburg');
 
-// Tenant admin: the site with its pools and single docks, and the settings with their sources.
 await goto(admin, `/t/${tenantId}/sites/${hamburgDc}`);
 await shot(admin, 'master-data-site');
 await goto(admin, `/t/${tenantId}/settings`);
 await admin.getByRole('tab', { name: 'Hamburg DC' }).click();
 await shot(admin, 'settings', admin.getByRole('region', { name: 'Booking rules' }));
 
-// Carrier: book the first free time at Hamburg DC and read the driver link.
 const carrier = await open('carrier', 'desktop');
 const carrierId = (await json(carrier, '/me')).memberships.find(
   (m) => m.orgKind === 'carrier',
 )?.orgId;
 await goto(carrier, `/c/${carrierId}/book`);
-await carrier.getByRole('combobox', { name: 'Site' }).selectOption({ label: 'Hamburg DC · CEST' });
+const siteSelect = carrier.getByRole('combobox', { name: 'Site' });
+const hamburgDcOption = siteSelect.locator('option', { hasText: /^Hamburg DC · / });
+await siteSelect.selectOption((await hamburgDcOption.getAttribute('value')) ?? '');
 await carrier.getByRole('radio', { name: /^Palletised Delivery/ }).check();
 await carrier.getByLabel('Load units').fill('20');
 await carrier.getByRole('button', { name: 'Continue' }).click();
@@ -156,7 +156,6 @@ await shot(carrier, 'carrier-booking-confirmed');
 await goto(carrier, `/c/${carrierId}/bookings`);
 await shot(carrier, 'carrier-bookings');
 
-// Driver: open the link on a phone and complete the briefing and its quiz.
 const driver = await open('driver', 'phone');
 await driver.goto(driverUrl);
 await driver.getByRole('button', { name: 'Start safety briefing' }).waitFor();
@@ -176,7 +175,6 @@ await driver.getByRole('checkbox').check();
 await driver.getByRole('button', { name: 'Confirm briefing' }).click();
 await driver.getByText('Safety briefing valid until').waitFor();
 
-// Gate: the busy demo day at Lager Hamburg, then the check-in of the tutorial truck.
 const gate = await open('gate', 'tablet');
 await goto(gate, `/t/${tenantId}/gate?site=${lager}&tab=onsite`);
 await shot(gate, 'gate');
@@ -188,7 +186,6 @@ await shot(gate, 'gate-check-in');
 await gate.getByRole('button', { name: 'Check in now' }).click();
 await gate.getByRole('tab', { name: /On site/ }).waitFor();
 
-// Dock: call the truck, show the driver's phone, then record the loading.
 const dock = await open('dock', 'tablet');
 await goto(dock, `/t/${tenantId}/docks?site=${hamburgDc}`);
 await dock.getByRole('button', { name: 'Call to dock' }).first().click();
@@ -209,7 +206,6 @@ await gate.getByRole('button', { name: 'Check out' }).first().click();
 await gate.getByRole('dialog').getByRole('button', { name: 'Check out' }).click();
 await gate.getByText(/has left\.$/).waitFor();
 
-// Dispatcher: the plan board around the current time, and the KPIs of the demo day.
 const dispatcher = await open('dispatcher', 'desktop');
 await goto(dispatcher, `/t/${tenantId}/plan?site=${lager}`);
 const now = dispatcher.getByRole('main').locator('time').last();
@@ -220,7 +216,6 @@ await dispatcher.getByRole('combobox', { name: 'Site' }).selectOption({ label: '
 await dispatcher.getByRole('region', { name: /^KPIs for Lager Hamburg/ }).waitFor();
 await shot(dispatcher, 'reports');
 
-// Platform admin: the tenant list with usage against the package limits.
 const platform = await open('platform', 'desktop');
 await goto(platform, '/platform/tenants');
 await shot(platform, 'platform-tenants');
