@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test } from '@playwright/test';
+import { expect, type Locator, test } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiAs, bookingsOf } from '../support/u5.ts';
 import { at, avis, ownBooking, planSite, staffBooking, WORLD_DAY, walkIn } from '../support/u6b.ts';
@@ -116,6 +116,59 @@ test.describe('BK-01 Plan board', () => {
     );
   });
 
+  test('final bookings take a lane of their own, so no card covers another', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    const site = await planSite(w);
+    const cancel = async (startsAt: string) => {
+      const b = await staffBooking(request, w.A, site, { startsAt, resourceId: site.poolId });
+      await apiAs(
+        request,
+        w.A.users.dispatcher,
+        'POST',
+        `/t/${w.A.tenantId}/bookings/${b.id}/cancel`,
+        {},
+      );
+      return b;
+    };
+    const cancelled = [await cancel(at('09:00')), await cancel(at('09:30'))];
+    await staffBooking(request, w.A, site, { startsAt: at('09:30'), resourceId: site.poolId });
+
+    await signInAs(context, w.A.users.dispatcher);
+    await page.goto(`/t/${w.A.tenantId}/plan?site=${site.siteId}&date=${WORLD_DAY}`);
+    const pool = page.getByRole('region', { name: 'Ramp pool' });
+    for (const b of cancelled) {
+      await expect(pool.locator(`[data-booking-code="${b.code}"]`)).toContainText('Cancelled');
+    }
+    const cards = await boxes(pool.locator('[data-booking-code]'));
+    expect(cards.length).toBeGreaterThanOrEqual(4);
+    const overlaps = cards.flatMap((a, i) =>
+      cards
+        .slice(i + 1)
+        .filter((b) => intersects(a, b))
+        .map((b) => `${a.code} covers ${b.code}`),
+    );
+    expect(overlaps).toEqual([]);
+  });
+
+  test('the resource header stays in view while the day scrolls', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    const site = await planSite(w, w.A, ['00:00', '24:00']);
+    await signInAs(context, w.A.users.dispatcher);
+    await page.goto(`/t/${w.A.tenantId}/plan?site=${site.siteId}&date=${WORLD_DAY}`);
+    const header = page.getByText('Pool · up to 2 per slot');
+    await expect(header).toBeInViewport();
+    await page.getByText('16:00', { exact: true }).scrollIntoViewIfNeeded();
+    await expect(header).toBeInViewport();
+  });
+
   test('today shows a now line in site time with the zone label', async ({
     page,
     context,
@@ -134,5 +187,27 @@ test.describe('BK-01 Plan board', () => {
     await expect(page.getByTestId('now-line')).toContainText(/\d{2}:\d{2}\s*CES?T/);
     await expect(page.getByTestId('now-line')).toContainText(now.slice(0, 2));
     await expect(page.getByRole('button', { name: 'Today' })).toBeDisabled();
+    // A 24/7 site opens on the current time, not at midnight.
+    await expect(page.getByTestId('now-line').getByText(/\d{2}:\d{2}/)).toBeInViewport();
   });
 });
+
+interface Box {
+  code: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function boxes(cards: Locator): Promise<Box[]> {
+  return Promise.all(
+    (await cards.all()).map(async (card) => ({
+      code: (await card.getAttribute('data-booking-code')) ?? '',
+      ...((await card.boundingBox()) ?? { x: 0, y: 0, width: 0, height: 0 }),
+    })),
+  );
+}
+
+const intersects = (a: Box, b: Box) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;

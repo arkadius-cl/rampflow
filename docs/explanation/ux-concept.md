@@ -71,7 +71,8 @@ Navigation per role, as rendered by `navFor` from the manifests:
 ```
 
 - One column per bookable resource, time down the side, 48 px per 30 min slot. Pool columns split into capacity lanes. Each grid slot in a pool shows `booked/capacity`; a full slot turns the counter amber, an over-booked slot tints the row red and the extra card gets a dashed red border with a warning icon (MD-03 "over capacity").
-- Final states (departed, cancelled, no-show) render dimmed at full column width so they do not consume a lane.
+- Final states (departed, cancelled, no-show, turned away) render dimmed in a lane of their own. Live bookings are placed first and finals fill the free lanes after them, so a cancellation never moves a live card and never covers one. A dispatcher still sees the cancelled or no-show slot next to its neighbours, which a separate strip would hide.
+- The resource header row and the time column stay in view while the board scrolls. On today the board opens at the current time; on other days at the opening time.
 - A signal-orange "now" line with the site time crosses all columns.
 - The sidebar collapses to icons on this screen to give the board room. The detail panel opens on card click and offers Edit, Cancel and the timeline with actors (BK-03). After check-in both buttons disable with a one-line reason.
 - List view (Tabs: Board | List) shows the same bookings as a table for keyboard and screen-reader users.

@@ -3,8 +3,9 @@ import type {
   BoardView,
   BookingSummary,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { LOAD_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { FINAL_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SiteTime } from '@/components/site-time';
 import { BOOKING_STATUS, toneClasses } from '@/components/status-badge';
@@ -17,7 +18,7 @@ import { BookingStatusBadge } from './display';
 // model, so a DST day and server-side capacity per slot need no wall-clock arithmetic here.
 
 const MINUTE = 60_000;
-const counts = (b: BookingSummary) => (LOAD_STATUSES as readonly string[]).includes(b.status);
+const isFinal = (b: BookingSummary) => (FINAL_STATUSES as readonly string[]).includes(b.status);
 
 /** The rows the board shows: from the first open or booked slot to the last. */
 export function visibleWindow(board: BoardView): { first: number; last: number } | null {
@@ -43,18 +44,22 @@ export function visibleWindow(board: BoardView): { first: number; last: number }
   return Number.isFinite(first) ? { first, last } : null;
 }
 
-/** Bookings that count against capacity get lanes; final ones span the column, dimmed. */
+/**
+ * Every booking gets a lane, so no card covers another. Open bookings are placed first, so a
+ * cancellation or no-show never moves a live card; final ones fill the free lanes after them.
+ */
 function lanesOf(bookings: BookingSummary[]) {
-  const ends: number[] = [];
+  const lanes: { start: number; end: number }[][] = [];
   const lane = new Map<string, number>();
-  for (const b of bookings.filter(counts)) {
+  for (const b of [...bookings.filter((b) => !isFinal(b)), ...bookings.filter(isFinal)]) {
     const start = Date.parse(b.startsAt);
-    let i = ends.findIndex((end) => end <= start);
-    if (i === -1) i = ends.push(0) - 1;
-    ends[i] = Date.parse(b.endsAt);
+    const end = Date.parse(b.endsAt);
+    let i = lanes.findIndex((l) => l.every((o) => o.end <= start || o.start >= end));
+    if (i === -1) i = lanes.push([]) - 1;
+    lanes[i]?.push({ start, end });
     lane.set(b.id, i);
   }
-  return { lane, count: Math.max(1, ends.length) };
+  return { lane, count: Math.max(1, lanes.length) };
 }
 
 export interface PlanBoardProps {
@@ -68,19 +73,37 @@ export interface PlanBoardProps {
 
 export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: PlanBoardProps) {
   const siteTime = useSiteTime();
+  const scroller = useRef<HTMLDivElement>(null);
+  const openedDay = useRef<string | null>(null);
   const window = visibleWindow(board);
-  const grid = board.resources[0]?.slots;
-  if (!window || !grid) return null;
-  const rows = grid.slice(window.first, window.last + 1);
+  const grid = board.resources[0]?.slots ?? [];
+  const rows = window ? grid.slice(window.first, window.last + 1) : [];
   const start = Date.parse(rows[0]?.startsAt ?? '');
   const end = Date.parse(rows.at(-1)?.startsAt ?? '') + board.gridMinutes * MINUTE;
   const y = (instant: number) => ((instant - start) / MINUTE) * scale;
-  const height = y(end);
   const nowAt = now.getTime();
+  const showsNow = nowAt >= start && nowAt < end;
+  const opening = board.resources
+    .flatMap((r) => r.slots.filter((s) => s.capacity > 0).map((s) => Date.parse(s.startsAt)))
+    .reduce((a, b) => Math.min(a, b), end);
+  const day = `${board.siteId}:${board.date}`;
+  // The day opens on the current time, a third down so some of the past stays in view, or on
+  // the opening time. Refreshes of the same day leave the dispatcher's scroll position alone.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || openedDay.current === day) return;
+    openedDay.current = day;
+    el.scrollTop = showsNow ? y(nowAt) - el.clientHeight / 3 : y(opening);
+  });
+  if (!window || rows.length === 0) return null;
+  const height = y(end);
   const zone = siteTime(new Date(start), board.timeZone).zone;
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-auto rounded-lg border bg-background">
+    <div
+      ref={scroller}
+      className="relative min-h-0 flex-1 overflow-auto rounded-lg border bg-background"
+    >
       <div
         className="grid min-w-max"
         style={{
@@ -129,7 +152,7 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
           />
         ))}
 
-        {nowAt >= start && nowAt < end ? (
+        {showsNow ? (
           <div
             className="pointer-events-none relative z-10"
             style={{ gridColumn: '1 / -1', gridRow: 2 }}
@@ -245,24 +268,22 @@ function ResourceColumn({
       })}
 
       {resource.bookings.map((b) => {
-        const at = lane.get(b.id);
+        const left = (lane.get(b.id) ?? 0) / lanes;
         const top = y(Date.parse(b.startsAt));
         const h = y(Date.parse(b.endsAt)) - top;
-        const width = at === undefined ? 1 : 1 / lanes;
-        const left = at === undefined ? 0 : at / lanes;
         return (
           <BookingCard
             key={b.id}
             booking={b}
             timeZone={timeZone}
             selected={b.id === selectedId}
-            dimmed={at === undefined}
+            dimmed={isFinal(b)}
             onSelect={onSelect}
             style={{
               top: top + 2,
               height: Math.max(h - 4, 18),
               left: `calc((100% - ${counterStrip}) * ${left} + 3px)`,
-              width: `calc((100% - ${counterStrip}) * ${width} - 6px)`,
+              width: `calc((100% - ${counterStrip}) / ${lanes} - 6px)`,
             }}
           />
         );

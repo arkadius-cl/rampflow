@@ -21,8 +21,9 @@ The plan board shows one day of one site (BK-01). Dispatchers book, reschedule a
    - Each bookable resource has a column. A pool column shows `booked/capacity` for each grid slot, for example `1/2`. A single dock shows only its bookings.
    - Times are site time. The zone label (CET or CEST) is in the top left corner and next to every time in the detail panel.
    - A grey slot is closed. A red slot holds more load than its capacity. Bookings in a red slot have a dashed red border and a warning icon (MD-03 "over capacity").
-   - Departed, cancelled and no-show bookings span the column and are dimmed.
-   - On today, an orange line marks the current site time.
+   - Departed, cancelled, no-show and turned-away bookings are dimmed. They take a free lane next to the live bookings, so no card covers another.
+   - On today, an orange line marks the current site time, and the board opens at it. On other days the board opens at the opening time.
+   - The resource names stay at the top while you scroll the day.
 4. Select a booking to open the detail panel. It shows the slot, the load, the plate, the references, the flags and the timeline.
 
 The board refreshes every 15 seconds. A booking made elsewhere shows without a reload.
