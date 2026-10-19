@@ -1,0 +1,18 @@
+{
+  "early_tolerance_minutes": {
+    "label": "Early arrival tolerance (minutes)",
+    "description": "Arrivals up to this early count as on time."
+  },
+  "grace_minutes": {
+    "label": "Late arrival grace (minutes)",
+    "description": "Arrivals up to this late count as on time."
+  },
+  "no_show_after_minutes": {
+    "label": "No-show after (minutes)",
+    "description": "A booking without check-in becomes a no-show this long after its start."
+  },
+  "standgeld_flag_minutes": {
+    "label": "Flag long stays after (minutes)",
+    "description": "Visits on site longer than this are flagged for detention charges."
+  }
+}

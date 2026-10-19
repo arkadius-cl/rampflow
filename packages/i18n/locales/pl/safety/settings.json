@@ -1,0 +1,14 @@
+{
+  "validity_days": {
+    "label": "Ważność instruktażu (dni)",
+    "description": "Jak długo ukończony instruktaż BHP pozostaje ważny."
+  },
+  "require_for_checkin": {
+    "label": "Instruktaż wymagany do odprawy",
+    "description": "Brama nie może odprawić kierowcy bez ważnego instruktażu."
+  },
+  "quiz_pass_percent": {
+    "label": "Próg zaliczenia testu (%)",
+    "description": "Odsetek poprawnych odpowiedzi potrzebny do zaliczenia testu."
+  }
+}

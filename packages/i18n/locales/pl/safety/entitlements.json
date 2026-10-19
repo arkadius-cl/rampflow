@@ -1,0 +1,7 @@
+{
+  "briefings": "Instruktaże BHP",
+  "validity": "Ważność instruktażu",
+  "quiz": "Test po instruktażu",
+  "gate_enforcement": "Instruktaż wymagany na bramie",
+  "max_briefing_templates": "Instruktaże"
+}

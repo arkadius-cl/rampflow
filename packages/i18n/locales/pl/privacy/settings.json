@@ -1,0 +1,36 @@
+{
+  "notice_url": {
+    "label": "Link do informacji o prywatności",
+    "description": "Wyświetlany przewoźnikom i kierowcom na stronach rezerwacji i instruktażu."
+  },
+  "retention": {
+    "driver_phone_days": {
+      "label": "Przechowywanie numerów telefonów kierowców (dni)",
+      "description": "Liczba dni po wizycie, po której numer telefonu kierowcy jest usuwany."
+    },
+    "driver_identity_days": {
+      "label": "Przechowywanie nazwisk kierowców i tablic (dni)",
+      "description": "Liczba dni po wizycie, po której nazwisko kierowcy i tablica są pseudonimizowane."
+    },
+    "visit_days": {
+      "label": "Przechowywanie wizyt (dni)",
+      "description": "Liczba dni, po której zakończona rezerwacja i jej zdarzenia są usuwane."
+    },
+    "safety_after_expiry_days": {
+      "label": "Przechowywanie potwierdzeń po wygaśnięciu (dni)",
+      "description": "Liczba dni po wygaśnięciu potwierdzenia instruktażu, po której jest ono usuwane."
+    },
+    "audit_log_days": {
+      "label": "Przechowywanie dziennika audytu (dni)",
+      "description": "Liczba dni, po której wpisy dziennika audytu są usuwane."
+    },
+    "driver_link_hours": {
+      "label": "Ważność linku kierowcy po wyjeździe (godziny)",
+      "description": "Liczba godzin po wyjeździe, po której link kierowcy przestaje działać."
+    },
+    "carrier_inactive_days": {
+      "label": "Przechowywanie nieaktywnych kont przewoźników (dni)",
+      "description": "Liczba dni bez aktywności, po której konto przewoźnika jest usuwane."
+    }
+  }
+}

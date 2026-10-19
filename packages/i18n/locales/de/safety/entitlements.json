@@ -1,0 +1,7 @@
+{
+  "briefings": "Sicherheitsunterweisungen",
+  "validity": "Gültigkeit der Unterweisung",
+  "quiz": "Unterweisungsquiz",
+  "gate_enforcement": "Unterweisung am Tor erzwingen",
+  "max_briefing_templates": "Unterweisungen"
+}

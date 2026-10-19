@@ -1,0 +1,18 @@
+{
+  "required_reference_types": {
+    "label": "Pflichtreferenzen",
+    "description": "Referenzarten, die jedes Avis enthalten muss."
+  },
+  "unique_references": {
+    "label": "Eindeutige Referenzen",
+    "description": "Eine Referenz darf nur in einer aktiven Buchung vorkommen."
+  },
+  "require_gross_weight": {
+    "label": "Bruttogewicht erforderlich",
+    "description": "Ein Avis braucht das Bruttogewicht."
+  },
+  "require_driver_phone": {
+    "label": "Fahrertelefon erforderlich",
+    "description": "Ein Avis braucht die Telefonnummer des Fahrers."
+  }
+}

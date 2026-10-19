@@ -1,0 +1,36 @@
+{
+  "notice_url": {
+    "label": "Privacy notice link",
+    "description": "Shown to carriers and drivers on booking and briefing pages."
+  },
+  "retention": {
+    "driver_phone_days": {
+      "label": "Keep driver phone numbers (days)",
+      "description": "Days after the visit until the driver phone number is deleted."
+    },
+    "driver_identity_days": {
+      "label": "Keep driver names and plates (days)",
+      "description": "Days after the visit until driver name and plate are pseudonymized."
+    },
+    "visit_days": {
+      "label": "Keep visits (days)",
+      "description": "Days until a finished booking and its events are deleted."
+    },
+    "safety_after_expiry_days": {
+      "label": "Keep acknowledgements after expiry (days)",
+      "description": "Days after a safety acknowledgement expires until it is deleted."
+    },
+    "audit_log_days": {
+      "label": "Keep the audit log (days)",
+      "description": "Days until audit log entries are deleted."
+    },
+    "driver_link_hours": {
+      "label": "Driver link lifetime after departure (hours)",
+      "description": "Hours after departure until the driver link stops working."
+    },
+    "carrier_inactive_days": {
+      "label": "Keep inactive carrier accounts (days)",
+      "description": "Days without activity until a carrier user account is deleted."
+    }
+  }
+}

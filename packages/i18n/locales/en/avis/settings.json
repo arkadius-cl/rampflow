@@ -1,0 +1,18 @@
+{
+  "required_reference_types": {
+    "label": "Required references",
+    "description": "Reference types every avis must contain."
+  },
+  "unique_references": {
+    "label": "Unique references",
+    "description": "A reference may appear in only one active booking."
+  },
+  "require_gross_weight": {
+    "label": "Gross weight required",
+    "description": "An avis needs the gross weight."
+  },
+  "require_driver_phone": {
+    "label": "Driver phone required",
+    "description": "An avis needs the driver's phone number."
+  }
+}

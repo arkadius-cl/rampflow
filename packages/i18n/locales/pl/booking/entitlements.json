@@ -1,0 +1,7 @@
+{
+  "carrier_portal": "Portal przewoźnika",
+  "public_link": "Publiczny link do rezerwacji",
+  "pools": "Pule ramp",
+  "duration_rules": "Reguły czasu trwania",
+  "max_bookings_per_month": "Rezerwacje miesięcznie"
+}

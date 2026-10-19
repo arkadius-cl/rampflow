@@ -1,0 +1,18 @@
+{
+  "required_reference_types": {
+    "label": "Wymagane referencje",
+    "description": "Rodzaje referencji, które musi zawierać każda awizacja."
+  },
+  "unique_references": {
+    "label": "Unikalne referencje",
+    "description": "Referencja może wystąpić tylko w jednej aktywnej rezerwacji."
+  },
+  "require_gross_weight": {
+    "label": "Wymagana waga brutto",
+    "description": "Awizacja wymaga podania wagi brutto."
+  },
+  "require_driver_phone": {
+    "label": "Wymagany telefon kierowcy",
+    "description": "Awizacja wymaga numeru telefonu kierowcy."
+  }
+}

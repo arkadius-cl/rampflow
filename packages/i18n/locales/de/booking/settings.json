@@ -1,0 +1,34 @@
+{
+  "slot_grid_minutes": {
+    "label": "Zeitraster (Minuten)",
+    "description": "Startzeiten werden in diesem Raster angeboten."
+  },
+  "min_lead_minutes": {
+    "label": "Mindestvorlauf (Minuten)",
+    "description": "Wie lange vor dem Start Spediteure spätestens buchen müssen."
+  },
+  "horizon_days": {
+    "label": "Buchungshorizont (Tage)",
+    "description": "Wie viele Tage im Voraus Spediteure buchen können."
+  },
+  "cancel_cutoff_minutes": {
+    "label": "Frist für Änderung und Storno (Minuten)",
+    "description": "Spediteure können bis so lange vor dem Start ändern oder stornieren."
+  },
+  "close_on_public_holidays": {
+    "label": "An Feiertagen geschlossen",
+    "description": "Gesetzliche Feiertage der Region des Standorts werden zu Schließtagen."
+  },
+  "require_plate": {
+    "label": "Kennzeichen erforderlich",
+    "description": "Eine Buchung braucht das Kennzeichen des Lkw."
+  },
+  "public_link_enabled": {
+    "label": "Öffentlicher Buchungslink",
+    "description": "Neue Spediteure können sich über einen öffentlichen Link für diesen Standort registrieren."
+  },
+  "public_registration_mode": {
+    "label": "Freigabe von Registrierungen",
+    "description": "Ob Registrierungen über den öffentlichen Link freigegeben werden müssen."
+  }
+}

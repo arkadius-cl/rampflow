@@ -1,0 +1,34 @@
+{
+  "slot_grid_minutes": {
+    "label": "Siatka slotów (minuty)",
+    "description": "Godziny rozpoczęcia są oferowane w tej siatce."
+  },
+  "min_lead_minutes": {
+    "label": "Minimalne wyprzedzenie (minuty)",
+    "description": "Najpóźniej ile minut przed rozpoczęciem przewoźnik musi zarezerwować."
+  },
+  "horizon_days": {
+    "label": "Horyzont rezerwacji (dni)",
+    "description": "Na ile dni do przodu przewoźnicy mogą rezerwować."
+  },
+  "cancel_cutoff_minutes": {
+    "label": "Termin na zmianę i anulowanie (minuty)",
+    "description": "Przewoźnicy mogą zmienić lub anulować rezerwację najpóźniej tyle minut przed rozpoczęciem."
+  },
+  "close_on_public_holidays": {
+    "label": "Zamknięte w święta",
+    "description": "Święta ustawowe regionu lokalizacji stają się dniami zamknięcia."
+  },
+  "require_plate": {
+    "label": "Wymagana tablica rejestracyjna",
+    "description": "Rezerwacja wymaga numeru rejestracyjnego ciężarówki."
+  },
+  "public_link_enabled": {
+    "label": "Publiczny link do rezerwacji",
+    "description": "Nowi przewoźnicy mogą zarejestrować się w tej lokalizacji przez publiczny link."
+  },
+  "public_registration_mode": {
+    "label": "Zatwierdzanie rejestracji",
+    "description": "Czy rejestracje przez publiczny link wymagają zatwierdzenia."
+  }
+}

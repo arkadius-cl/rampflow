@@ -1,0 +1,34 @@
+{
+  "slot_grid_minutes": {
+    "label": "Slot grid (minutes)",
+    "description": "Start times are offered on this grid."
+  },
+  "min_lead_minutes": {
+    "label": "Minimum lead time (minutes)",
+    "description": "How long before the start carriers must book at the latest."
+  },
+  "horizon_days": {
+    "label": "Booking horizon (days)",
+    "description": "How many days ahead carriers can book."
+  },
+  "cancel_cutoff_minutes": {
+    "label": "Change and cancel cutoff (minutes)",
+    "description": "Carriers can change or cancel until this long before the start."
+  },
+  "close_on_public_holidays": {
+    "label": "Closed on public holidays",
+    "description": "Public holidays of the site's region become closures."
+  },
+  "require_plate": {
+    "label": "Plate required",
+    "description": "A booking needs the truck's plate."
+  },
+  "public_link_enabled": {
+    "label": "Public booking link",
+    "description": "New carriers can register for this site through a public link."
+  },
+  "public_registration_mode": {
+    "label": "Registration approval",
+    "description": "Whether registrations through the public link need approval."
+  }
+}

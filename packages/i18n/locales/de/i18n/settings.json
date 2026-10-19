@@ -1,0 +1,6 @@
+{
+  "default_locale": {
+    "label": "Standardsprache",
+    "description": "Sprache für Nutzer, E-Mails und Seiten ohne eigene Spracheinstellung."
+  }
+}

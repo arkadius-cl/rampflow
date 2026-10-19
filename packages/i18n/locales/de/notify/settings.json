@@ -1,0 +1,6 @@
+{
+  "reminder_hours_before": {
+    "label": "Erinnerung vor dem Termin (Stunden)",
+    "description": "Spediteure erhalten so lange vor dem Start eine Erinnerung per E-Mail."
+  }
+}

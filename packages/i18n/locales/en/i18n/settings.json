@@ -1,0 +1,6 @@
+{
+  "default_locale": {
+    "label": "Default language",
+    "description": "Language for users, emails and pages without a language of their own."
+  }
+}

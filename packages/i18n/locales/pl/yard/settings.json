@@ -1,0 +1,18 @@
+{
+  "early_tolerance_minutes": {
+    "label": "Tolerancja wcześniejszego przyjazdu (minuty)",
+    "description": "Przyjazdy do tylu minut wcześniej liczą się jako punktualne."
+  },
+  "grace_minutes": {
+    "label": "Tolerancja spóźnienia (minuty)",
+    "description": "Przyjazdy do tylu minut później liczą się jako punktualne."
+  },
+  "no_show_after_minutes": {
+    "label": "Niestawienie się po (minuty)",
+    "description": "Rezerwacja bez odprawy staje się niestawiennictwem po tylu minutach od rozpoczęcia."
+  },
+  "standgeld_flag_minutes": {
+    "label": "Oznaczaj długie postoje po (minuty)",
+    "description": "Wizyty dłuższe niż ten czas są oznaczane do naliczenia postojowego."
+  }
+}
