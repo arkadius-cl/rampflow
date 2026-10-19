@@ -12,6 +12,8 @@ export default defineConfig({
       ENABLE_TEST_ROUTES: '1',
       APP_ORIGIN: 'http://rampflow.test',
     },
+    // Cached transforms keep the template glob of kernel/outbox.ts from before new email files existed.
+    fsModuleCache: false,
     testTimeout: 20_000,
     hookTimeout: 60_000,
   },
