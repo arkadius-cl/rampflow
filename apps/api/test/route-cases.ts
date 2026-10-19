@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -50,21 +51,68 @@ export function defineRouteCases(cases: readonly RouteCase[]): readonly RouteCas
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
-/** Every case of every `src/modules/**\/route-cases.ts`, with the file it came from. */
-export async function loadRouteCases(): Promise<{ file: string; case: RouteCase }[]> {
-  const out: { file: string; case: RouteCase }[] = [];
+/**
+ * A route outside the org areas: `/api/me`, `/api/auth/*`, `/api/public/*`. These routes take
+ * no org id, so the harness checks who may call them and that they reveal no other world.
+ */
+export interface AccountRouteCase {
+  method: Method;
+  path: string;
+  /**
+   * `session`: a signed-in user's `rf_session` (party `user`).
+   * `token`: an emailed token in the body's `token` field (party `token`).
+   * `none`: open to anyone, for example sign-in and link requests.
+   */
+  credential: 'session' | 'token' | 'none';
+  /**
+   * Writes the case's fixtures and returns the control request, which must succeed. A session
+   * case acts as a user of world A, so the harness can call as their counterpart in world B.
+   */
+  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown }>;
+}
+
+export function defineAccountCases(
+  cases: readonly AccountRouteCase[],
+): readonly AccountRouteCase[] {
+  return cases;
+}
+
+interface CaseModule {
+  cases?: readonly RouteCase[];
+  accountCases?: readonly AccountRouteCase[];
+}
+
+async function caseModules(): Promise<{ file: string; mod: CaseModule }[]> {
+  const out: { file: string; mod: CaseModule }[] = [];
   for (const file of globSync('modules/**/route-cases.ts', { cwd: SRC }).sort()) {
-    const mod: { cases?: readonly RouteCase[] } = await import(pathToFileURL(join(SRC, file)).href);
-    if (!mod.cases) throw new Error(`${file} must export \`cases\` from defineRouteCases`);
-    for (const c of mod.cases) out.push({ file, case: c });
+    const mod: CaseModule = await import(pathToFileURL(join(SRC, file)).href);
+    if (!mod.cases && !mod.accountCases) {
+      throw new Error(`${file} must export \`cases\` or \`accountCases\``);
+    }
+    out.push({ file, mod });
   }
   return out;
+}
+
+/** Every case of every `src/modules/**\/route-cases.ts`, with the file it came from. */
+export async function loadRouteCases(): Promise<{ file: string; case: RouteCase }[]> {
+  return (await caseModules()).flatMap(({ file, mod }) =>
+    (mod.cases ?? []).map((c) => ({ file, case: c })),
+  );
+}
+
+export async function loadAccountCases(): Promise<{ file: string; case: AccountRouteCase }[]> {
+  return (await caseModules()).flatMap(({ file, mod }) =>
+    (mod.accountCases ?? []).map((c) => ({ file, case: c })),
+  );
 }
 
 export const routeKey = (method: string, path: string) => `${method} ${path}`;
 
 /** Prefixes whose every route needs a case (ADR-0002, "Leak tests"). */
 const GUARDED = /^\/api\/(t|c|platform|driver)(\/|$)/;
+/** Prefixes whose every route needs an account case. */
+const ACCOUNT = /^\/api\/(me|auth|public)(\/|$)/;
 
 export interface Coverage {
   /** Routes without a case. */
@@ -77,10 +125,11 @@ export interface Coverage {
 export function coverage(
   routes: readonly { method: string; path: string }[],
   cases: readonly Pick<RouteCase, 'method' | 'path'>[],
+  guarded: RegExp = GUARDED,
 ): Coverage {
   const handlers = new Set(
     routes
-      .filter((r) => r.method !== 'ALL' && GUARDED.test(r.path))
+      .filter((r) => r.method !== 'ALL' && guarded.test(r.path))
       .map((r) => routeKey(r.method, r.path)),
   );
   const covered = new Set(cases.map((c) => routeKey(c.method, c.path)));
@@ -89,6 +138,12 @@ export function coverage(
     stale: [...covered].filter((k) => !handlers.has(k)).sort(),
   };
 }
+
+/** `coverage` of `/api/me`, `/api/auth` and `/api/public` against the account cases. */
+export const accountCoverage = (
+  routes: readonly { method: string; path: string }[],
+  cases: readonly Pick<AccountRouteCase, 'method' | 'path'>[],
+) => coverage(routes, cases, ACCOUNT);
 
 const TENANT_ROLES: readonly Role[] = [
   'dock_operator',
@@ -294,5 +349,76 @@ export async function checkRouteCase(
   const res = await call(actorOf(A, w, role), params);
   if (res.status >= 400)
     report('control', `${role} got ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return problems;
+}
+
+export interface AccountProblem {
+  check: 'anonymous' | 'wrong_party' | 'foreign_org' | 'control';
+  detail: string;
+}
+
+/** The user of world B who holds the same key as `actor` in world A. */
+function counterpart(w: World, actor: Actor): Actor {
+  if (!actor || !('sessionToken' in actor)) return actor;
+  const keys = Object.keys(w.A.users) as (keyof WorldSide['users'])[];
+  const key = keys.find((k) => w.A.users[k].id === actor.id);
+  if (!key) throw new Error('A session case acts as a user of world A');
+  return w.B.users[key];
+}
+
+const leakIn = (text: string, secrets: ReadonlySet<string>) =>
+  [...secrets].filter((s) => text.includes(s)).slice(0, 3);
+
+/**
+ * The checks for a route outside the org areas. A session route refuses an anonymous caller and
+ * a driver cookie with 401, and shows B's counterpart nothing of world A. A token route refuses
+ * an unknown token and a token of another purpose with 401, even with a session. Every control
+ * call succeeds and shows nothing of world B.
+ */
+export async function checkAccountCase(
+  app: Pick<Hono, 'request'>,
+  ac: AccountRouteCase,
+): Promise<AccountProblem[]> {
+  const w = await seedWorld();
+  const { actor, body } = await ac.arrange(w, ownerDb());
+  const problems: AccountProblem[] = [];
+  const report = (check: AccountProblem['check'], detail: string | null) => {
+    if (detail) problems.push({ check, detail });
+  };
+  const call = (who: Actor, b: unknown = body) =>
+    as(app, who).request(ac.method, ac.path, { body: b });
+
+  if (ac.credential === 'session') {
+    report('anonymous', await expectError(await call(null), 401, 'unauthorized'));
+    report('wrong_party', await expectError(await call(w.A.bookings.own), 401, 'unauthorized'));
+    const res = await call(counterpart(w, actor));
+    const text = await res.text();
+    const leaked = leakIn(text, secretsOf(w.A));
+    if (res.status >= 500 || leaked.length > 0) {
+      report('foreign_org', `${res.status} ${leaked.length ? `leaks ${leaked.join(', ')}` : text}`);
+    }
+  }
+  if (ac.credential === 'token') {
+    const withToken = (token: string) => ({ ...(body as object), token });
+    const unknown = randomBytes(32).toString('base64url');
+    report(
+      'anonymous',
+      await expectError(await call(null, withToken(unknown)), 401, 'unauthorized'),
+    );
+    report(
+      'wrong_party',
+      await expectError(
+        await call(w.A.users.tenant_admin, withToken(w.A.bookings.own.driverToken)),
+        401,
+        'unauthorized',
+      ),
+    );
+  }
+
+  const res = await call(actor);
+  const text = await res.text();
+  if (res.status >= 400) report('control', `got ${res.status} ${text.slice(0, 200)}`);
+  const leaked = leakIn(text, secretsOf(w.B));
+  if (leaked.length > 0) report('foreign_org', `control answer leaks ${leaked.join(', ')}`);
   return problems;
 }

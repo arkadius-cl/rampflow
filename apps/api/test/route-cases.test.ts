@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { app } from '../src/app.ts';
 import type { BookingId, DockId } from '../src/db/ids.ts';
@@ -8,13 +8,22 @@ import { systemClock } from '../src/kernel/clock.ts';
 import type { AppEnv } from '../src/kernel/env.ts';
 import { ApiError, onError, onNotFound } from '../src/kernel/errors.ts';
 import { scoped } from '../src/kernel/scoped.ts';
-import { carrierScope, tenantScope } from '../src/kernel/scopes.ts';
+import { carrierScope, tenantScope, userScope } from '../src/kernel/scopes.ts';
 import { booking } from '../src/modules/booking/schema.ts';
-import { dock } from '../src/modules/core/schema.ts';
+import { dock, membership } from '../src/modules/core/schema.ts';
 import { ownerDb } from './db.ts';
-import { checkRouteCase, defineRouteCases, loadRouteCases, type RouteCase } from './route-cases.ts';
+import {
+  type AccountRouteCase,
+  checkAccountCase,
+  checkRouteCase,
+  defineRouteCases,
+  loadAccountCases,
+  loadRouteCases,
+  type RouteCase,
+} from './route-cases.ts';
 
 const loaded = await loadRouteCases();
+const accountLoaded = await loadAccountCases();
 
 describe('route cases of every module', () => {
   it('load from src/modules/**/route-cases.ts', () => {
@@ -25,6 +34,72 @@ describe('route cases of every module', () => {
       expect(await checkRouteCase(app, rc)).toEqual([]);
     });
   }
+  for (const { file, case: ac } of accountLoaded) {
+    it(`${ac.method} ${ac.path} (${file}, account)`, async () => {
+      expect(await checkAccountCase(app, ac)).toEqual([]);
+    });
+  }
+});
+
+// The account harness against a toy /api/me: correct, without the session check, reading every
+// membership past the user filter, and accepting a driver cookie as a session.
+
+type AccountDefect = 'none' | 'no_session' | 'all_users' | 'driver_is_user';
+
+function toyAccountApp(defect: AccountDefect) {
+  const resolve = async (c: Context<AppEnv>) => {
+    if (defect === 'driver_is_user' && c.req.header('Cookie')?.startsWith('rf_driver=')) {
+      return { party: 'anonymous' } as const;
+    }
+    if (defect === 'no_session') return { party: 'anonymous' } as const;
+    return userScope(c);
+  };
+  const me = new Hono<AppEnv>().use(scoped(resolve)).get('/', async (c) => {
+    const { scope } = c.var;
+    const rows = await ownerDb()
+      .select({ orgId: membership.orgId, userId: membership.userId })
+      .from(membership);
+    const visible = rows.filter(
+      (r) => defect === 'all_users' || (scope.party === 'user' && r.userId === scope.userId),
+    );
+    return c.json({ orgs: visible.map((r) => r.orgId) });
+  });
+  return new Hono<AppEnv>()
+    .use(async (c, next) => {
+      c.set('clock', systemClock);
+      await next();
+    })
+    .route('/api/me', me)
+    .onError(onError)
+    .notFound(onNotFound);
+}
+
+const meCase: AccountRouteCase = {
+  method: 'GET',
+  path: '/api/me',
+  credential: 'session',
+  arrange: async (w) => ({ actor: w.A.users.dispatcher }),
+};
+
+const accountChecks = async (defect: AccountDefect) =>
+  [...new Set((await checkAccountCase(toyAccountApp(defect), meCase)).map((p) => p.check))].sort();
+
+describe('the account harness', () => {
+  it('passes a correct session route', async () => {
+    expect(await checkAccountCase(toyAccountApp('none'), meCase)).toEqual([]);
+  });
+
+  it('fails a route that serves anonymous callers', async () => {
+    expect(await accountChecks('no_session')).toContain('anonymous');
+  });
+
+  it('fails a route that treats a driver cookie as a session', async () => {
+    expect(await accountChecks('driver_is_user')).toEqual(['wrong_party']);
+  });
+
+  it('fails a route that shows other users their memberships', async () => {
+    expect(await accountChecks('all_users')).toContain('foreign_org');
+  });
 });
 
 // The harness must catch the defects it exists for. A toy area, wired like modules/index.ts,
