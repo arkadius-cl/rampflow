@@ -352,12 +352,12 @@ describe('YD-04 on site and YD-05 check out', () => {
       await at(now, w.A.users.gate_operator).get(`${yard(w.A)}/on-site?siteId=${w.A.sites[0].id}`),
     );
 
-  it('flags a truck above yard.standgeld_flag_minutes, not at it', async () => {
+  it('flags a truck above yard.standgeld_flag_minutes, not at it, to the second', async () => {
     const b = await seedBooking(w.A, { startsAt: new Date(MON_0900) });
     await json(await checkIn(w.A, b.id, '2026-11-02T07:50:00.000Z'));
     const atLimit = (await onSite('2026-11-02T09:50:00.000Z')).items.find((t) => t.id === b.id);
     expect(atLimit).toMatchObject({ onSiteMinutes: 120, waitMinutes: 110, standgeld: false });
-    const view = await onSite('2026-11-02T09:51:00.000Z');
+    const view = await onSite('2026-11-02T09:50:30.000Z');
     expect(view.standgeldMinutes).toBe(120);
     expect(view.items.find((t) => t.id === b.id)?.standgeld).toBe(true);
   });

@@ -272,7 +272,7 @@ export function withWaits(t: YardTruck, now: Date, standgeldMinutes: number): On
     ...t,
     onSiteMinutes,
     waitMinutes: minutesBetween(waitFrom, docked ? new Date(docked) : now),
-    standgeld: onSiteMinutes > standgeldMinutes,
+    standgeld: now.getTime() - checkedIn.getTime() > standgeldMinutes * MINUTE,
   };
 }
 
