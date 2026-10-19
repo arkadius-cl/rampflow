@@ -113,7 +113,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - "Walk-in now" starts at the current grid slot and continues to check-in.
 3. **BK-03 Staff edit and cancel.** Staff change or cancel any booking before check-in, ignoring the carrier cutoff. Reschedules re-check capacity. The booking carrier user gets an email for each change.
 4. **RP-01 KPI dashboard.** Filters are site, date range in site-local days, resource and carrier. It shows on-time rate (early and late apart), no-show rate, late-cancellation rate, wait, dock dwell, turnaround, dock utilisation, portal adoption, and visits above `yard.standgeld_flag_minutes`.
-   - Definitions follow the market research KPI table. A seeded fixture of 10 visits returns the exact expected values.
+   - Definitions follow the market research KPI table, except that a no-show uses the BK-08 deadline (`starts_at + yard.no_show_after_minutes`), so the job, the carrier email and the KPI agree. [Booking lifecycle](../reference/booking-lifecycle.md#kpis) holds the exact definitions and a seeded fixture of 10 visits with the expected values.
    - A visit missing a timestamp is left out only of KPIs that need it.
 5. **RP-02 CSV export.** The visit list and the KPI table export as UTF-8 CSV with BOM. The delimiter is `;` for de users and `,` for en. Timestamps are ISO 8601 with the site offset.
 

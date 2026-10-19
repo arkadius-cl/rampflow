@@ -11,7 +11,7 @@ related: [docs/explanation/mvp-scope.md, docs/explanation/research/domain-standa
 
 # ADR-0005: Booking and visit lifecycle as one state machine with one writer
 
-Status: accepted, 2026-10-19.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: walk-in mode, turn-away of unbooked and checked-in trucks, `uncall`, and the no-show day rule.
 
 ## Context
 
@@ -28,7 +28,7 @@ The scope makes the booking carry the visit lifecycle (walk-ins are staff bookin
 
 ## Decision
 
-1. **States.** Active: `confirmed`, `checked_in`, `called`, `at_dock`, `loading`, `done`. Final: `departed`, `cancelled`, `no_show`, `turned_away`. `requested` is reserved for `booking.approval` and has no transitions in the MVP. `no_show` is final for capacity but allows one way back: check-in on the same site-local day (YD-02).
+1. **States.** Active: `confirmed`, `checked_in`, `called`, `at_dock`, `loading`, `done`. Final: `departed`, `cancelled`, `no_show`, `turned_away`. `requested` is reserved for `booking.approval` and has no transitions in the MVP. `no_show` is final for capacity but allows one way back: check-in on the site-local day of `no_show_at` (YD-02). Comparing with the day of `no_show_at`, not of `starts_at`, keeps the rule usable for a 23:30 slot that turns `no_show` after midnight.
 2. **The table is data in `packages/shared/src/modules/booking/lifecycle.ts`.** Each command names its source states, target state, permission, the actor parties allowed, and its input schema. [Booking lifecycle](../reference/booking-lifecycle.md) is the full table. The web app reads the same table to decide which actions to offer, so the UI and the API cannot disagree.
 3. **One writer.** `transitionBooking(tx, actor, bookingId, command)` in `apps/api/src/modules/booking/lifecycle/transition.ts` is the only code that updates `booking.status`. It:
    1. Locks the booking row `FOR UPDATE`.
@@ -37,7 +37,10 @@ The scope makes the booking carry the visit lifecycle (walk-ins are staff bookin
    4. Stamps the state's timestamp column (`checked_in_at`, `called_at`, ...), writes the projection columns, and inserts one `booking_event` row.
    5. Runs side effects inside the same transaction: driver link revocation or expiry, outbox emails.
    A Biome rule forbids `update(booking).set({ status })` outside that file.
-4. **Creation is not a transition.** `createBooking` (capacity, [ADR-0004](ADR-0004-booking-capacity-concurrency.md)) inserts a `confirmed` booking and its `created` event. Walk-in is `createBooking` followed by the `check_in` command in the same transaction.
+4. **Creation is not a transition.** `createBooking` (capacity, [ADR-0004](ADR-0004-booking-capacity-concurrency.md)) inserts a `confirmed` booking and its `created` event.
+   - **Walk-in** is `createBooking` in walk-in mode, followed in the same transaction by `check_in` or, for a truck the gate refuses, `turn_away`. Walk-in mode skips the closed, capacity and daily-cap checks, because the truck is already at the gate, and needs `booking.walk_in`, which gate operators hold, not `booking.force`. When check-in's safety guard blocks, the walk-in stays `confirmed` and the gate links an acknowledgement or starts the briefing, then checks in from the normal row.
+   - The gate can therefore record every arrival: an unbooked truck it turns away, a walk-in before opening or at a full slot, and a truck it turns away after check-in (wrong load, missing documents).
+   - **`uncall`** returns a called truck to `checked_in` and frees the dock, for a driver who never arrives at the dock.
 5. **Events.** `booking_event (id, tenant_id, booking_id, carrier_id, type, from_status, to_status, at, actor_party, actor_user_id, actor_job, data)` is append-only: RLS grants no `UPDATE`, and only the retention job deletes. `data` is a zod-typed discriminated union per event type. Actor identities are visible to tenant admins only (`booking.view_actors`, works council rule).
 6. **Skipped states** leave their timestamp NULL (YD-08). KPIs that need a missing timestamp skip that visit (RP-01).
 7. **Idempotent retries.** A command whose target state the booking already has, with the same input, returns 200 with the current booking and writes no event. Any other mismatch returns 409 `conflict` with reason `invalid_transition` and the current status.
@@ -46,4 +49,4 @@ The scope makes the booking carry the visit lifecycle (walk-ins are staff bookin
 
 - Adding a state or command is one table entry, one guard, and the tests that cover it. The compiler forces exhaustive handling where code switches on status.
 - The yard module owns no table. It calls `transitionBooking` and reads bookings.
-- KPI queries read timestamp columns on `booking`, not events, so the 90-day KPI query stays one indexed scan.
+- KPI queries read columns on `booking`, not events, so the 90-day KPI query stays one indexed scan and event retention cannot change a KPI. `cancel` stamps `booking.cancelled_late` for the late-cancellation rate. The KPI definitions and their reference fixture live in [Booking lifecycle](../reference/booking-lifecycle.md#kpis).
