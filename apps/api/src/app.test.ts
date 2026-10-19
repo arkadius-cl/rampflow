@@ -47,9 +47,10 @@ describe('api', () => {
 });
 
 describe('Origin check', () => {
+  const LAN_ORIGIN = 'http://192.168.0.10:5173';
   const echo = () =>
     new Hono()
-      .use(requireSameOrigin(TEST_ORIGIN))
+      .use(requireSameOrigin([TEST_ORIGIN, `${LAN_ORIGIN}/`]))
       .get('/x', (c) => c.text('read'))
       .post('/x', (c) => c.text('written'))
       .onError(onError);
@@ -66,7 +67,17 @@ describe('Origin check', () => {
 
   it('accepts a same-origin POST and any GET', async () => {
     expect((await as(echo(), null).post('/x')).status).toBe(200);
+    expect((await as(echo(), null).post('/x', { origin: LAN_ORIGIN })).status).toBe(200);
     expect((await as(echo(), null).get('/x', { origin: null })).status).toBe(200);
+  });
+
+  it('accepts only the origins the app was built with', async () => {
+    const lan = createApp({ origins: [TEST_ORIGIN, LAN_ORIGIN] });
+    const fromLan = await as(lan, null).post('/api/auth/anything', { origin: LAN_ORIGIN });
+    expect(fromLan.status).toBe(404);
+    const strict = createApp({ origins: [TEST_ORIGIN] });
+    const refused = await as(strict, null).post('/api/auth/anything', { origin: LAN_ORIGIN });
+    expect(refused.status).toBe(403);
   });
 
   it('runs before routing in the real app', async () => {
@@ -172,6 +183,26 @@ describe('environment', () => {
 
   it('refuses the development token secret in production', () => {
     expect(() => parseEnv({ ...base, NODE_ENV: 'production' })).toThrow(/TOKEN_SECRET/);
+  });
+
+  it('parses APP_EXTRA_ORIGINS into origins, empty by default', () => {
+    const dev = { ...base, NODE_ENV: 'development' };
+    expect(parseEnv(dev).APP_EXTRA_ORIGINS).toEqual([]);
+    expect(parseEnv({ ...dev, APP_EXTRA_ORIGINS: '' }).APP_EXTRA_ORIGINS).toEqual([]);
+    expect(
+      parseEnv({
+        ...dev,
+        APP_EXTRA_ORIGINS: 'http://localhost:5173, http://192.168.0.10:5173/',
+      }).APP_EXTRA_ORIGINS,
+    ).toEqual(['http://localhost:5173', 'http://192.168.0.10:5173']);
+  });
+
+  it('refuses an APP_EXTRA_ORIGINS entry that is not an http origin', () => {
+    for (const bad of ['http://localhost:5173,not a url', 'ftp://files.example', 'http://x/path']) {
+      expect(() => parseEnv({ ...base, NODE_ENV: 'development', APP_EXTRA_ORIGINS: bad })).toThrow(
+        /APP_EXTRA_ORIGINS/,
+      );
+    }
   });
 
   it('treats a missing NODE_ENV as production', () => {

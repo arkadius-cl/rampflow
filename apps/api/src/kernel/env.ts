@@ -5,6 +5,24 @@ import type { Clock } from './clock.ts';
 
 const flag = z.enum(['0', '1']).transform((v) => v === '1');
 
+/** A bare http(s) origin such as `http://192.168.0.10:5173`, normalized without a trailing slash. */
+const origin = z
+  .url({ protocol: /^https?$/ })
+  .transform((u) => new URL(u))
+  .refine((u) => u.pathname === '/' && !u.search && !u.hash, 'Expected an origin without a path')
+  .transform((u) => u.origin);
+
+/** Comma-separated origins, e.g. the LAN addresses of a dev machine (scripts/checkout-env.mjs). */
+const originList = z
+  .string()
+  .transform((s) =>
+    s
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+  )
+  .pipe(z.array(origin));
+
 const EnvSchema = z
   .object({
     // Production unless said otherwise: a deployment that forgets NODE_ENV must still refuse the
@@ -15,6 +33,8 @@ const EnvSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
     APP_ORIGIN: z.url().default('http://localhost:5173'),
+    // Further origins the Origin check accepts; dev lists the machine's other addresses.
+    APP_EXTRA_ORIGINS: originList.default([]),
     TOKEN_SECRET: z.string().min(32).default('dev-only-token-secret-change-me-0000'),
     TRUST_PROXY: flag.default(false),
     ENABLE_JOBS: flag.default(true),

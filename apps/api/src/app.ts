@@ -13,7 +13,8 @@ import { modulesApi } from './modules/index.ts';
 
 export interface AppOptions {
   clock?: Clock;
-  appOrigin?: string;
+  /** Origins whose mutating requests the API accepts; defaults to APP_ORIGIN and APP_EXTRA_ORIGINS. */
+  origins?: readonly string[];
   testRoutes?: boolean;
   /** Serve the built SPAs (production). */
   static?: StaticRoots;
@@ -42,7 +43,7 @@ function buildApi(options: AppOptions) {
         await next();
       }),
     )
-    .use(requireSameOrigin(options.appOrigin ?? env.APP_ORIGIN))
+    .use(requireSameOrigin(options.origins ?? [env.APP_ORIGIN, ...env.APP_EXTRA_ORIGINS]))
     .route('/health', health)
     .route('/test', pinnable ? testRoutes(pinnable) : new Hono<AppEnv>())
     .route('/', modulesApi);
