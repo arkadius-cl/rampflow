@@ -1,0 +1,56 @@
+{
+  "search": "Szukaj",
+  "not_in_package": "Poza Twoim pakietem",
+  "your_orgs": "Twoje organizacje",
+  "language": "Język",
+  "sign_out": "Wyloguj się",
+  "site_time": "Czas lokalizacji",
+  "live": "Na żywo",
+  "offline": "Offline",
+  "choose_site": "Wybierz lokalizację",
+  "site": "Lokalizacja",
+  "tagline": "Zarządzanie rampami i placem. Bezpłatnie dla przewoźników.",
+  "org_kind": {
+    "tenant": "Magazyn",
+    "carrier": "Przewoźnik",
+    "platform": "Platforma"
+  },
+  "nav_group": {
+    "operations": "Operacje",
+    "administration": "Administracja"
+  },
+  "no_access": {
+    "title": "Brak dostępu",
+    "description": "Nie możesz otworzyć tej strony ani organizacji. W razie potrzeby zwróć się do administratora.",
+    "action": "Przejdź do swoich organizacji"
+  },
+  "not_found": {
+    "title": "Nie znaleziono strony",
+    "description": "Ten adres nie istnieje."
+  },
+  "error": {
+    "title": "Coś poszło nie tak",
+    "description": "Nie udało się załadować strony. Spróbuj ponownie.",
+    "retry": "Spróbuj ponownie"
+  },
+  "picker": {
+    "title": "Wybierz organizację",
+    "signed_in_as": "Zalogowano jako {{name}}",
+    "none_title": "Brak organizacji",
+    "none_description": "Nie należysz do żadnej organizacji. Poproś o zaproszenie.",
+    "last_used": "Ostatnio używana"
+  },
+  "home": {
+    "title": "Witaj, {{name}}",
+    "description": "Od czego chcesz zacząć?"
+  },
+  "roles": {
+    "platform_admin": "Administrator platformy",
+    "tenant_admin": "Administrator klienta",
+    "dispatcher": "Dyspozytor",
+    "gate_operator": "Obsługa bramy",
+    "dock_operator": "Obsługa rampy",
+    "carrier_admin": "Administrator przewoźnika",
+    "carrier_user": "Użytkownik przewoźnika"
+  }
+}

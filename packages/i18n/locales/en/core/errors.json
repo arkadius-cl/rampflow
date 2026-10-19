@@ -1,0 +1,25 @@
+{
+  "bad_request": "The request was not understood.",
+  "unauthorized": "Please sign in again.",
+  "forbidden": "You are not allowed to do this.",
+  "entitlement_required": "Your package does not include this.",
+  "not_found": "This does not exist or is not visible to you.",
+  "conflict": {
+    "default": "This conflicts with a change made meanwhile. Reload and try again.",
+    "capacity_full": "That time is full. Choose another one.",
+    "daily_cap_reached": "This day is fully booked. Choose another day.",
+    "closed": "The site is closed at that time.",
+    "dock_occupied": "This dock is occupied.",
+    "dock_in_resource": "This dock already belongs to another resource.",
+    "invalid_transition": "This step is not possible in the current status.",
+    "cutoff_passed": "Changes are no longer possible this close to the slot.",
+    "stale_version": "Someone changed this meanwhile. Reload and try again.",
+    "duplicate_reference": "This reference is already used in another booking.",
+    "already_member": "This person is already a member.",
+    "link_inactive": "The link to this warehouse is deactivated."
+  },
+  "limit_reached": "Your package limit is reached.",
+  "validation_failed": "Some fields need your attention.",
+  "rate_limited": "Too many attempts. Wait a moment and try again.",
+  "internal_error": "Something went wrong on our side. Try again."
+}

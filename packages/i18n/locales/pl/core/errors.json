@@ -1,0 +1,25 @@
+{
+  "bad_request": "Nie zrozumiano żądania.",
+  "unauthorized": "Zaloguj się ponownie.",
+  "forbidden": "Nie masz uprawnień do tej czynności.",
+  "entitlement_required": "Twój pakiet nie obejmuje tej funkcji.",
+  "not_found": "To nie istnieje lub nie jest dla Ciebie widoczne.",
+  "conflict": {
+    "default": "To koliduje ze zmianą wprowadzoną w międzyczasie. Odśwież i spróbuj ponownie.",
+    "capacity_full": "Ten termin jest zajęty. Wybierz inny.",
+    "daily_cap_reached": "Ten dzień jest w pełni zarezerwowany. Wybierz inny dzień.",
+    "closed": "Lokalizacja jest wtedy zamknięta.",
+    "dock_occupied": "Ta rampa jest zajęta.",
+    "dock_in_resource": "Ta rampa należy już do innego zasobu.",
+    "invalid_transition": "Ten krok nie jest możliwy w obecnym statusie.",
+    "cutoff_passed": "Tak blisko terminu zmiany nie są już możliwe.",
+    "stale_version": "Ktoś zmienił to w międzyczasie. Odśwież i spróbuj ponownie.",
+    "duplicate_reference": "Ta referencja jest już użyta w innej rezerwacji.",
+    "already_member": "Ta osoba jest już członkiem.",
+    "link_inactive": "Połączenie z tym magazynem jest dezaktywowane."
+  },
+  "limit_reached": "Osiągnięto limit Twojego pakietu.",
+  "validation_failed": "Niektóre pola wymagają poprawy.",
+  "rate_limited": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
+  "internal_error": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie."
+}

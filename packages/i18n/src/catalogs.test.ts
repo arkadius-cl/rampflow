@@ -8,7 +8,7 @@ import { createServerI18n, LOCALES_DIR } from './server.ts';
 
 describe('catalog check', () => {
   it('passes on the shipped catalogs', () => {
-    const problems = checkCatalogs(LOCALES_DIR, catalog, { requireDerivedParts: false });
+    const problems = checkCatalogs(LOCALES_DIR, catalog, { requireDerivedParts: true });
     expect(problems.map(formatProblem)).toEqual([]);
   });
 

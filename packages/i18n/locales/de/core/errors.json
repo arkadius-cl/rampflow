@@ -1,0 +1,25 @@
+{
+  "bad_request": "Die Anfrage wurde nicht verstanden.",
+  "unauthorized": "Bitte melden Sie sich erneut an.",
+  "forbidden": "Dafür fehlt Ihnen die Berechtigung.",
+  "entitlement_required": "Ihr Paket enthält diese Funktion nicht.",
+  "not_found": "Das gibt es nicht oder es ist für Sie nicht sichtbar.",
+  "conflict": {
+    "default": "Das widerspricht einer zwischenzeitlichen Änderung. Laden Sie neu und versuchen Sie es erneut.",
+    "capacity_full": "Diese Zeit ist ausgebucht. Wählen Sie eine andere.",
+    "daily_cap_reached": "Dieser Tag ist ausgebucht. Wählen Sie einen anderen Tag.",
+    "closed": "Der Standort ist zu dieser Zeit geschlossen.",
+    "dock_occupied": "Diese Rampe ist belegt.",
+    "dock_in_resource": "Diese Rampe gehört bereits zu einer anderen Ressource.",
+    "invalid_transition": "Dieser Schritt ist im aktuellen Status nicht möglich.",
+    "cutoff_passed": "So kurz vor dem Termin sind keine Änderungen mehr möglich.",
+    "stale_version": "Jemand hat das inzwischen geändert. Laden Sie neu und versuchen Sie es erneut.",
+    "duplicate_reference": "Diese Referenz wird bereits in einer anderen Buchung verwendet.",
+    "already_member": "Diese Person ist bereits Mitglied.",
+    "link_inactive": "Die Verbindung zu diesem Lager ist deaktiviert."
+  },
+  "limit_reached": "Das Limit Ihres Pakets ist erreicht.",
+  "validation_failed": "Einige Felder brauchen Ihre Aufmerksamkeit.",
+  "rate_limited": "Zu viele Versuche. Warten Sie kurz und versuchen Sie es erneut.",
+  "internal_error": "Bei uns ist etwas schiefgelaufen. Versuchen Sie es erneut."
+}

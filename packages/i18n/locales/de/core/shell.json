@@ -1,0 +1,56 @@
+{
+  "search": "Suchen",
+  "not_in_package": "Nicht in Ihrem Paket",
+  "your_orgs": "Ihre Organisationen",
+  "language": "Sprache",
+  "sign_out": "Abmelden",
+  "site_time": "Standortzeit",
+  "live": "Live",
+  "offline": "Offline",
+  "choose_site": "Standort wählen",
+  "site": "Standort",
+  "tagline": "Rampen- und Hofmanagement. Für Spediteure kostenlos.",
+  "org_kind": {
+    "tenant": "Lager",
+    "carrier": "Spediteur",
+    "platform": "Plattform"
+  },
+  "nav_group": {
+    "operations": "Betrieb",
+    "administration": "Verwaltung"
+  },
+  "no_access": {
+    "title": "Kein Zugriff",
+    "description": "Sie können diese Seite oder Organisation nicht öffnen. Wenden Sie sich bei Bedarf an Ihre Administration.",
+    "action": "Zu Ihren Organisationen"
+  },
+  "not_found": {
+    "title": "Seite nicht gefunden",
+    "description": "Diese Adresse gibt es nicht."
+  },
+  "error": {
+    "title": "Etwas ist schiefgelaufen",
+    "description": "Die Seite konnte nicht geladen werden. Versuchen Sie es erneut.",
+    "retry": "Erneut versuchen"
+  },
+  "picker": {
+    "title": "Organisation wählen",
+    "signed_in_as": "Angemeldet als {{name}}",
+    "none_title": "Noch keine Organisation",
+    "none_description": "Sie sind in keiner Organisation Mitglied. Bitten Sie um eine Einladung.",
+    "last_used": "Zuletzt verwendet"
+  },
+  "home": {
+    "title": "Willkommen, {{name}}",
+    "description": "Womit möchten Sie beginnen?"
+  },
+  "roles": {
+    "platform_admin": "Plattform-Admin",
+    "tenant_admin": "Mandanten-Admin",
+    "dispatcher": "Disponent",
+    "gate_operator": "Torpersonal",
+    "dock_operator": "Rampenpersonal",
+    "carrier_admin": "Spediteurs-Admin",
+    "carrier_user": "Spediteursnutzer"
+  }
+}
