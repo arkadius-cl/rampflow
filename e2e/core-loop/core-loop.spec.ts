@@ -256,6 +256,8 @@ test.describe('Core loop', () => {
         expect(code).toMatch(/^[0-9A-Z]{8}$/);
 
         await page.getByRole('link', { name: 'Open booking' }).click();
+        // The confirmation page has its own driver link card; fill the one on the booking page.
+        await expect(page).toHaveURL(/\/c\/[^/]+\/bookings\/[^/?#]+$/);
         await page.getByLabel('Email to driver').fill(email.driver);
         await page.getByLabel("Driver's language").selectOption('en');
         await page.getByRole('button', { name: 'Send' }).click();
