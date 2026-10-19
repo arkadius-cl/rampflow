@@ -1,4 +1,4 @@
-import type { TenantId, VersionId } from '../../src/db/ids.ts';
+import type { TenantId } from '../../src/db/ids.ts';
 import { loadEntitlements } from '../../src/kernel/access.ts';
 import {
   createInstruction,
@@ -7,6 +7,7 @@ import {
   publishVersion,
   putContent,
 } from '../../src/modules/safety/authoring/instructions.ts';
+import type { VersionId } from '../../src/modules/safety/schema.ts';
 import { findOrg, type SeedContext } from './context.ts';
 import { ACME } from './core.ts';
 
