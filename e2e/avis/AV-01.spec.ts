@@ -42,6 +42,21 @@ test.describe('AV-01 Avis (staff)', () => {
       sheet.getByRole('alert').filter({ hasText: 'Required at this site' }),
     ).toBeVisible();
     await expect(sheet.getByRole('alert')).toHaveCount(1);
+    // The error toast must leave the sheet's "Book" free: hovering a toast keeps it open.
+    const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'need your attention' });
+    const book = await sheet.getByRole('button', { name: 'Book', exact: true }).boundingBox();
+    const box = await toast.boundingBox();
+    expect(box && book).toBeTruthy();
+    if (box && book) {
+      const overlaps =
+        box.x < book.x + book.width &&
+        book.x < box.x + box.width &&
+        box.y < book.y + book.height &&
+        book.y < box.y + box.height;
+      expect(overlaps, `toast ${JSON.stringify(box)} over Book ${JSON.stringify(book)}`).toBe(
+        false,
+      );
+    }
 
     await plate.fill('hh-ab 123');
     await sheet.getByLabel('Driver phone').fill('0049 151 2345678');

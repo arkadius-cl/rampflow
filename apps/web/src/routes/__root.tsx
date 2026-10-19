@@ -20,7 +20,8 @@ function RootLayout() {
   return (
     <TooltipProvider>
       <Outlet />
-      <Toaster />
+      {/* Sheets and dialogs keep their actions bottom right; toasts there would cover them. */}
+      <Toaster position="top-center" />
       {isDesign || import.meta.env.MODE === 'e2e' ? null : (
         <Suspense>
           <Devtools />
