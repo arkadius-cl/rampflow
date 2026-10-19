@@ -24,7 +24,39 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["**/db/pool.ts"],
+                "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+              },
+              {
+                "group": ["**/core/schema.ts"],
+                "importNamePattern": "(session|authToken|rateLimitEvent|jobRun)",
+                "message": "Tables without RLS are reachable only from their owning directory: core/auth/ for auth tables, kernel/ for job_run (ADR-0002)."
+              },
+              {
+                "group": ["**/booking/schema.carriers.ts"],
+                "importNamePattern": "publicLink",
+                "message": "public_link has no RLS; only modules/booking/ reads it (ADR-0002)."
+              },
+              {
+                "group": ["**/kernel/system.ts"],
+                "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+              },
+              {
+                "group": ["**/db/scope.ts"],
+                "importNamePattern": "asScope",
+                "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "javascript": {
@@ -44,5 +76,127 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/api/src/modules/core/auth/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/db/pool.ts"],
+                    "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/booking/schema.carriers.ts"],
+                    "importNamePattern": "publicLink",
+                    "message": "public_link has no RLS; only modules/booking/ reads it (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/kernel/system.ts"],
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/db/scope.ts"],
+                    "importNamePattern": "asScope",
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/api/src/modules/booking/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/db/pool.ts"],
+                    "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/core/schema.ts"],
+                    "importNamePattern": "(session|authToken|rateLimitEvent|jobRun)",
+                    "message": "Tables without RLS are reachable only from their owning directory: core/auth/ for auth tables, kernel/ for job_run (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/kernel/system.ts"],
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/db/scope.ts"],
+                    "importNamePattern": "asScope",
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/api/src/modules/*/jobs/**",
+        "**/*.redeem.ts",
+        "apps/api/src/modules/booking/capacity/**",
+        "apps/api/src/modules/core/platform/usage.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/db/pool.ts"],
+                    "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/core/schema.ts"],
+                    "importNamePattern": "(session|authToken|rateLimitEvent|jobRun)",
+                    "message": "Tables without RLS are reachable only from their owning directory: core/auth/ for auth tables, kernel/ for job_run (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/booking/schema.carriers.ts"],
+                    "importNamePattern": "publicLink",
+                    "message": "public_link has no RLS; only modules/booking/ reads it (ADR-0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/api/src/db/**",
+        "apps/api/src/kernel/**",
+        "apps/api/src/app.ts",
+        "apps/api/src/server.ts",
+        "apps/api/test/**",
+        "apps/api/scripts/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
 }
