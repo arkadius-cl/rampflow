@@ -17,8 +17,12 @@ describe('pnpm db:seed, sites', () => {
   it('creates Hamburg DC and Bucharest once, with pools, single docks, hours and load types', async () => {
     await run();
     await run();
+    // Only the sites this module owns: the booking seed adds Acme's "Lager Hamburg" when it ran first.
     expect(
-      await ownerCount('site', sql`tenant_id = (select id from org where name = ${ACME})`),
+      await ownerCount(
+        'site',
+        sql`tenant_id = (select id from org where name = ${ACME}) and name in ('Hamburg DC', 'Bucharest')`,
+      ),
     ).toBe(2);
     const hamburg = acmeSite('Hamburg DC');
     expect(await ownerCount('dock', hamburg)).toBe(8);
