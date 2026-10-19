@@ -10,3 +10,4 @@ test-results/
 .vite/
 todo.md
 .DS_Store
+.claude/worktrees/
