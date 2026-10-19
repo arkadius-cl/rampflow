@@ -26,8 +26,12 @@ if (databaseOf(app) !== worker) {
   process.env.MIGRATION_DATABASE_URL = withDatabase(owner, worker).toString();
 }
 
+// Worlds are per test, but platform-level settings are shared by every later file in this worker.
 afterAll(async () => {
   const { pool } = await import('../src/db/pool.ts');
-  const { closeOwnerDb } = await import('./db.ts');
+  const { closeOwnerDb, ownerDb } = await import('./db.ts');
+  const { settingValue } = await import('../src/modules/core/schema.ts');
+  const { isNull } = await import('drizzle-orm');
+  await ownerDb().delete(settingValue).where(isNull(settingValue.tenantId));
   await Promise.all([pool.end(), closeOwnerDb()]);
 });
