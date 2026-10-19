@@ -95,6 +95,12 @@ export interface World {
   B: WorldSide;
 }
 
+/**
+ * Tests pin their clocks anywhere from years before to years after the real date, so world
+ * sessions are valid at every instant: a last-seen time in the future never counts as idle.
+ */
+const SESSIONS_VALID_UNTIL = new Date('2100-01-01T00:00:00Z');
+
 const uid = <T extends string>() => randomUUID() as T;
 const suffix = () => randomBytes(4).toString('hex');
 
@@ -128,8 +134,8 @@ async function user(
   await o.insert(session).values({
     id: hashToken(sessionToken),
     userId: id,
-    expiresAt: new Date(now.getTime() + 24 * 3600_000),
-    lastSeenAt: now,
+    expiresAt: SESSIONS_VALID_UNTIL,
+    lastSeenAt: SESSIONS_VALID_UNTIL,
   });
   return { id, email, role, sessionToken };
 }

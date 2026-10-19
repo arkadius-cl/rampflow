@@ -1,5 +1,5 @@
 import type { KpiReport, VisitPage } from '@rampflow/shared/modules/report/api';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
@@ -158,21 +158,11 @@ async function seedVisit(side: World['A'], v: Visit, site?: 0 | 1) {
   return row;
 }
 
-/** World sessions start at the wall clock; move them to the test clock so they stay valid. */
-async function sessionsAt(w: World, at: Date) {
-  const ids = Object.values(w.A.users).map((u) => u.id);
-  const expires = new Date(at.getTime() + 29 * 86_400_000);
-  await ownerDb().execute(
-    sql`update session set last_seen_at = ${at}, expires_at = ${expires} where user_id in ${ids}`,
-  );
-}
-
 const setLocale = (u: WorldUser, locale: 'de' | 'en') =>
   ownerDb().update(appUser).set({ locale }).where(eq(appUser.id, u.id));
 
 beforeAll(async () => {
   w = await world();
-  await sessionsAt(w, clock.now());
   const open: [number, string, string][] = [1, 2, 3, 4, 5, 6, 7].map((d) => [d, '06:00', '22:00']);
   await bookableSite(w.A, ownerDb(), open);
   const by = w.A.users.tenant_admin.id;

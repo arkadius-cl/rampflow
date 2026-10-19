@@ -73,10 +73,6 @@ function p95(samples: number[]): number {
 describe.skipIf(!process.env.BENCH)('KPIs at design load', () => {
   beforeAll(async () => {
     w = await world();
-    const ids = Object.values(w.A.users).map((u) => u.id);
-    await ownerDb().execute(
-      sql`update session set last_seen_at = ${NOW}, expires_at = ${new Date(NOW.getTime() + 86_400_000)} where user_id in ${ids}`,
-    );
     const hours = [1, 2, 3, 4, 5, 6, 7].map(
       (d) => [d, '05:00', '22:00'] as [number, string, string],
     );

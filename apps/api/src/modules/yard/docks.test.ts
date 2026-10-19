@@ -3,13 +3,12 @@ import type { CallResult, DocksView, YardTruck } from '@rampflow/shared/modules/
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
 import { as } from '../../../test/http.ts';
-import type { World, WorldSide, WorldUser } from '../../../test/world.ts';
+import { type World, type WorldSide, type WorldUser, world } from '../../../test/world.ts';
 import { createApp } from '../../app.ts';
 import type { DockId } from '../../db/ids.ts';
 import { testClock } from '../../kernel/clock.ts';
 import { bookableSite, bookingRow, seedBooking } from '../booking/lifecycle/fixtures.ts';
 import { dock, hall } from '../core/schema.ts';
-import { yardWorld } from './fixtures.ts';
 
 // Dock station (YD-06 to YD-08), through the HTTP routes.
 
@@ -26,7 +25,7 @@ let w: World;
 let outside: DockId;
 let maintenance: DockId;
 beforeAll(async () => {
-  w = await yardWorld();
+  w = await world();
   await bookableSite(w.A);
   const s = w.A.sites[0];
   const [hall2] = await ownerDb()

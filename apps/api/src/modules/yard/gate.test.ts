@@ -12,7 +12,7 @@ import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
 import { as } from '../../../test/http.ts';
-import type { World, WorldSide, WorldUser } from '../../../test/world.ts';
+import { type World, type WorldSide, type WorldUser, world } from '../../../test/world.ts';
 import { createApp } from '../../app.ts';
 import type { BookingId } from '../../db/ids.ts';
 import { testClock } from '../../kernel/clock.ts';
@@ -27,7 +27,6 @@ import {
 } from '../booking/lifecycle/fixtures.ts';
 import { driverAccess } from '../driver/schema.ts';
 import { briefingOf, seedBriefing } from '../safety/authoring/fixtures.ts';
-import { yardWorld } from './fixtures.ts';
 
 // Gate station (YD-01 to YD-05, the gate side of BK-02 walk-in), through the HTTP routes.
 
@@ -53,7 +52,7 @@ describe('YD-01 expected trucks and search', () => {
   let ids: { early: BookingId; later: BookingId; otherDay: BookingId; noShow: BookingId };
 
   beforeAll(async () => {
-    w = await yardWorld();
+    w = await world();
     const early = await seedBooking(w.A, { startsAt: new Date('2026-11-02T07:30:00Z') });
     const later = await seedBooking(w.A, { startsAt: new Date('2026-11-02T12:00:00Z') });
     const otherDay = await seedBooking(w.A, { startsAt: new Date('2026-11-03T08:00:00Z') });
@@ -137,7 +136,7 @@ describe('YD-01 expected trucks and search', () => {
 describe('YD-02 check in', () => {
   let w: World;
   beforeAll(async () => {
-    w = await yardWorld();
+    w = await world();
   });
 
   const fresh = (startsAt = MON_0900) => seedBooking(w.A, { startsAt: new Date(startsAt) });
@@ -200,8 +199,8 @@ describe('YD-02 safety at the gate', () => {
   let pro: World;
   let start: World;
   beforeAll(async () => {
-    pro = await yardWorld();
-    start = await yardWorld({ packages: { A: 'start' } });
+    pro = await world();
+    start = await world({ packages: { A: 'start' } });
     await seedBriefing(ownerDb(), pro.A);
     await seedBriefing(ownerDb(), start.A);
   });
@@ -261,7 +260,7 @@ describe('YD-02 safety at the gate', () => {
 describe('YD-03 walk-in', () => {
   let w: World;
   beforeAll(async () => {
-    w = await yardWorld();
+    w = await world();
     // Open only on Tuesdays: Monday morning is outside the opening hours.
     await bookableSite(w.A, ownerDb(), [[2, '08:00', '16:00']]);
   });
@@ -344,7 +343,7 @@ describe('YD-03 walk-in', () => {
 describe('YD-04 on site and YD-05 check out', () => {
   let w: World;
   beforeAll(async () => {
-    w = await yardWorld();
+    w = await world();
   });
 
   const onSite = async (now: string) =>

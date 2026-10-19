@@ -10,14 +10,13 @@ import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
-import type { World, WorldSide, WorldUser } from '../../../../test/world.ts';
+import { type World, type WorldSide, type WorldUser, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
 import { type BookingId, hashToken } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { tenantCarrierLink } from '../../core/schema.ts';
 import { driverAccess } from '../../driver/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
-import { yardWorld } from '../../yard/fixtures.ts';
 import { type CapacitySite, capacitySite, placeBooking } from '../capacity/fixtures.ts';
 import { avisInput, setSetting } from '../lifecycle/fixtures.ts';
 import { closure, loadType } from '../schema.resources.ts';
@@ -28,8 +27,7 @@ import { booking } from '../schema.ts';
 
 let w: World;
 beforeAll(async () => {
-  // Sessions stay valid under the fixed test clocks.
-  w = await yardWorld();
+  w = await world();
 });
 
 const FRIDAY = new Date('2026-10-30T08:00:00Z');
