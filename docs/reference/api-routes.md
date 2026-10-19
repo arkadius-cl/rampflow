@@ -164,7 +164,7 @@ Unit U4.
 
 | Method | Path | Permission | Entitlement | Story | Router |
 |---|---|---|---|---|---|
-| GET | `/api/t/:orgId/sites` | member | | MD-01 | `core/sites/routes.tenant.ts` |
+| GET | `/api/t/:orgId/sites` | member | | MD-01 | `core/sites/routes.tenant.ts`; a site-limited operator sees only its sites |
 | POST | `/api/t/:orgId/sites` | `core.manage_sites` | limit `core.max_sites` | MD-01, MD-05 | same; seeds the three load types, imports holidays |
 | GET | `/api/t/:orgId/sites/:siteId` | member | | MD-01 | same |
 | PATCH | `/api/t/:orgId/sites/:siteId` | `core.manage_sites` | limit `core.max_sites` when activating | MD-01 | same; unknown zone answers 422 |
@@ -172,23 +172,25 @@ Unit U4.
 | POST | `/api/t/:orgId/sites/:siteId/halls` | `core.manage_sites` | | MD-02 | same |
 | PATCH | `/api/t/:orgId/sites/:siteId/halls/:hallId` | `core.manage_sites` | | MD-02 | same |
 | GET | `/api/t/:orgId/sites/:siteId/docks` | member | | MD-02 | same |
-| POST | `/api/t/:orgId/sites/:siteId/docks` | `core.manage_sites` | limit `core.max_docks` | MD-02 | same; 409 `conflict` for a duplicate code |
+| POST | `/api/t/:orgId/sites/:siteId/docks` | `core.manage_sites` | limit `core.max_docks` | MD-02 | same; 409 `conflict` with reason `duplicate_code`; a hall of another site answers 422 |
 | PATCH | `/api/t/:orgId/sites/:siteId/docks/:dockId` | `core.manage_sites` | limit `core.max_docks` when leaving `inactive` | MD-02 | same |
-| GET | `/api/t/:orgId/capacity/resources` | `booking.view` | | MD-03 | `booking/capacity/routes.tenant.ts` |
+| GET | `/api/t/:orgId/capacity/resources` | `booking.view` | | MD-03 | `booking/capacity/routes.tenant.ts`; optional `?siteId=` |
 | POST | `/api/t/:orgId/capacity/resources` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }` |
 | PATCH | `/api/t/:orgId/capacity/resources/:resourceId` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; never cancels bookings |
-| PUT | `/api/t/:orgId/capacity/resources/:resourceId/docks` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; 409 `dock_in_resource` |
+| PUT | `/api/t/:orgId/capacity/resources/:resourceId/docks` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; `{ dockIds }`; 409 `dock_in_resource` with `dockIds` |
 | GET | `/api/t/:orgId/capacity/hours` | `booking.view` | | MD-04 | same; `?siteId=` |
 | PUT | `/api/t/:orgId/capacity/hours` | `booking.manage_resources` | | MD-04 | same; `{ siteId, resourceId: uuid \| null, rows: [{ weekday, opens, closes }] }` |
 | GET | `/api/t/:orgId/capacity/closures` | `booking.view` | | MD-04 | same; `?siteId=&from=&to=` |
 | POST | `/api/t/:orgId/capacity/closures` | `booking.manage_resources` | | MD-04 | same |
-| DELETE | `/api/t/:orgId/capacity/closures/:closureId` | `booking.manage_resources` | | MD-04 | same; manual closures only |
-| POST | `/api/t/:orgId/capacity/closures/:closureId/reopen` | `booking.manage_resources` | | MD-04 | same; holiday closures |
+| DELETE | `/api/t/:orgId/capacity/closures/:closureId` | `booking.manage_resources` | | MD-04 | same; manual closures only, a holiday answers 409 `holiday_closure`; an unknown id answers 404 |
+| POST | `/api/t/:orgId/capacity/closures/:closureId/reopen` | `booking.manage_resources` | | MD-04 | same; holiday closures, a manual one answers 409 `manual_closure`; idempotent |
 | GET | `/api/t/:orgId/capacity/load-types` | `booking.view` | | MD-05 | same; `?siteId=` |
 | POST | `/api/t/:orgId/capacity/load-types` | `booking.manage_resources` | `booking.duration_rules` for tiers | MD-05 | same |
 | PATCH | `/api/t/:orgId/capacity/load-types/:loadTypeId` | `booking.manage_resources` | `booking.duration_rules` for tiers | MD-05 | same |
 | PUT | `/api/t/:orgId/capacity/load-types/:loadTypeId/resources` | `booking.manage_resources` | | MD-05 | same |
-| GET | `/api/t/:orgId/capacity/availability` | `booking.view` | | MD-04, BK-02 | same; `?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource |
+| GET | `/api/t/:orgId/capacity/availability` | `booking.view` | | MD-04, BK-02 | same; `?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource and their union (`Offers` in `api.capacity.ts`), staff view without lead time and horizon |
+
+Request schemas and response shapes live in `packages/shared/src/modules/core/api.sites.ts` and `packages/shared/src/modules/booking/api.capacity.ts`. Capacity writers in other units call `lockSiteCapacity`, `loadDayTimeline`, `checkFit`, `offersFor` and `isOverCapacity` from `apps/api/src/modules/booking/capacity/` ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)); `offersFor` with `audience: 'carrier'` applies `booking.min_lead_minutes` and `booking.horizon_days`.
 
 ## Safety authoring and register
 
