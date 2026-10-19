@@ -27,7 +27,7 @@ Hono 4 on `/api`. The web app calls it through the `hc` client typed by `AppType
 | `/api/c/:orgId/at/:tenantId` | `carrier_at_tenant` | as carrier, plus a link between the carrier and `:tenantId` |
 | `/api/driver` | `driver` | `rf_driver` cookie ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)) |
 | `/api/public` | `token` or `public` | a token in the body, or a public link slug |
-| `/api/test` | none | mounted only when `ENABLE_TEST_ROUTES=1`; startup fails if that is set with `NODE_ENV=production` |
+| `/api/test` | none | mounted only when `ENABLE_TEST_ROUTES=1`; startup fails if that is set with `NODE_ENV=production` or without `NODE_ENV`, which counts as production |
 
 - A failed membership or link check answers 404 `not_found`, so a foreign org id reveals nothing.
 - Router files are `apps/api/src/modules/<module>/<area>/routes.<party>.ts`. Each mounts at the prefix its section below names, inside its party prefix. Routers of modules that can be off are wrapped with `withModule(id, ...)`, which needs a non-root prefix so its middleware stays inside that router.

@@ -7,7 +7,10 @@ const flag = z.enum(['0', '1']).transform((v) => v === '1');
 
 const EnvSchema = z
   .object({
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    // Production unless said otherwise: a deployment that forgets NODE_ENV must still refuse the
+    // dev secret and the test routes and send Secure cookies. Dev and tests set it explicitly
+    // (.env.example through scripts/checkout-env.mjs, vitest.config.ts, playwright.config.ts).
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
     API_PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),

@@ -76,6 +76,7 @@ describe('password sign-in (CR-03)', () => {
     expect(res.status).toBe(200);
     const cookie = sessionOf(res);
     expect(res.headers.get('set-cookie')).toMatch(/HttpOnly/i);
+    expect(res.headers.get('set-cookie')).toMatch(/; Secure/i);
     const me = await request('GET', '/api/me', { cookie: cookie ?? '' });
     expect(me.status).toBe(200);
     expect(((await me.json()) as { user: { id: string } }).user.id).toBe(a.id);

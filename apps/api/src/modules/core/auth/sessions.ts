@@ -14,6 +14,7 @@ import { session } from '../schema.ts';
 const cookieOptions = () =>
   ({
     httpOnly: true,
+    // Secure everywhere but development, which also covers an unset NODE_ENV (env.ts).
     secure: env.NODE_ENV !== 'development',
     sameSite: 'Lax',
     path: '/',

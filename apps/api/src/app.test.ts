@@ -131,4 +131,13 @@ describe('environment', () => {
   it('refuses the development token secret in production', () => {
     expect(() => parseEnv({ ...base, NODE_ENV: 'production' })).toThrow(/TOKEN_SECRET/);
   });
+
+  it('treats a missing NODE_ENV as production', () => {
+    const secret = { TOKEN_SECRET: 'x'.repeat(40) };
+    expect(() => parseEnv(base)).toThrow(/TOKEN_SECRET/);
+    expect(() => parseEnv({ ...base, ...secret, ENABLE_TEST_ROUTES: '1' })).toThrow(
+      /ENABLE_TEST_ROUTES/,
+    );
+    expect(parseEnv({ ...base, ...secret }).NODE_ENV).toBe('production');
+  });
 });

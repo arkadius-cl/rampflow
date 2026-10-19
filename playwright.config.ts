@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// The container gets no .env, and an unset NODE_ENV means production (apps/api/src/kernel/env.ts).
+// The API server and the specs that derive tokens with the dev TOKEN_SECRET inherit this.
+process.env.NODE_ENV ??= 'development';
+
 const reuseExistingServer = !process.env.CI;
 // Ports come from the e2e profile of scripts/checkout-env.mjs (dev ports + 5), so a running
 // `pnpm dev` and its database are never reused.
