@@ -30,7 +30,8 @@
     "i18n:derive": "node scripts/i18n-derive.ts",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm i18n:derive --check",
     "bench": "BENCH=1 pnpm --filter @rampflow/api test bench.test",
-    "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs"
+    "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs",
+    "retention:run": "pnpm --filter @rampflow/api retention:run"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

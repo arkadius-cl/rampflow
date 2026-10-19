@@ -19,7 +19,8 @@
     "db:generate": "tsx scripts/db-regen.ts",
     "db:regen": "tsx scripts/db-regen.ts",
     "admin:create": "node ../../scripts/checkout-env.mjs run -- tsx scripts/admin-create.ts",
-    "db:seed": "node ../../scripts/checkout-env.mjs run -- tsx scripts/seed-dev.ts"
+    "db:seed": "node ../../scripts/checkout-env.mjs run -- tsx scripts/seed-dev.ts",
+    "retention:run": "node ../../scripts/checkout-env.mjs run -- tsx scripts/retention-run.ts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",

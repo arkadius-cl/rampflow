@@ -1,0 +1,10 @@
+{
+  "inactive": {
+    "subject": "Your rampflow carrier account will be deleted",
+    "preview": "Sign in before {{date}} to keep your account",
+    "intro": "You have not signed in to rampflow for a long time. Under our retention rules we delete inactive carrier accounts, and yours goes on {{date}}.",
+    "keep": "To keep the account, sign in once before that date. Bookings your company made stay with the warehouses.",
+    "sign_in": "Sign in",
+    "footer": "You receive this email because you have a carrier account at rampflow."
+  }
+}

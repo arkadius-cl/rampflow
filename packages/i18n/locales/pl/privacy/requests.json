@@ -1,0 +1,73 @@
+{
+  "title": "Wnioski dotyczące danych",
+  "description": "Znajdź dane kierowcy po nazwisku, telefonie lub numerze rejestracyjnym, a następnie je wyeksportuj lub usuń.",
+  "form": {
+    "name": "Imię i nazwisko kierowcy",
+    "name_placeholder": "Pełne imię i nazwisko jak wpisano",
+    "phone": "Telefon",
+    "phone_placeholder": "+48 600 123 456",
+    "plate": "Numer rejestracyjny",
+    "plate_placeholder": "WA 12345",
+    "hint": "Wyniki są dokładne: całe imię i nazwisko bez względu na wielkość liter, telefon w formacie międzynarodowym, numer rejestracyjny bez spacji i myślników. Wystarczy jeden identyfikator.",
+    "search": "Szukaj",
+    "clear": "Wyczyść"
+  },
+  "errors": {
+    "identifier": "Podaj imię i nazwisko, telefon lub numer rejestracyjny.",
+    "name": "Podaj całe imię i nazwisko, od 2 do 120 znaków.",
+    "phone": "Użyj formatu międzynarodowego, na przykład +48 600 123 456.",
+    "plate": "Użyj od 2 do 15 liter i cyfr."
+  },
+  "start": {
+    "title": "Wyszukaj kierowcę",
+    "description": "Wyszukiwanie obejmuje dane awizacji wszystkich rezerwacji i potwierdzenia instruktaży tej firmy."
+  },
+  "no_match": {
+    "title": "Brak danych",
+    "description": "Żadna rezerwacja ani potwierdzenie nie pasuje do tych identyfikatorów."
+  },
+  "bookings": {
+    "title": "Rezerwacje",
+    "count": "Znaleziono: {{count}}",
+    "columns": {
+      "code": "Kod",
+      "slot": "Okno",
+      "site": "Lokalizacja",
+      "carrier": "Przewoźnik",
+      "driver": "Kierowca",
+      "phone": "Telefon",
+      "plates": "Numery rej.",
+      "status": "Status"
+    }
+  },
+  "acknowledgements": {
+    "title": "Potwierdzenia instruktaży",
+    "count": "Znaleziono: {{count}}",
+    "columns": {
+      "completed": "Ukończono",
+      "driver": "Kierowca",
+      "instruction": "Instruktaż",
+      "booking": "Rezerwacja",
+      "retention": "Przechowywanie"
+    },
+    "version": "w{{version}}",
+    "restricted": "Ograniczone",
+    "under_retention": "Przechowywane do końca okresu",
+    "retention_ended": "Okres minął"
+  },
+  "export": "Eksportuj JSON",
+  "exported": "Eksport został pobrany.",
+  "erase": "Usuń",
+  "erase_dialog": {
+    "title": "Usunąć dane tego kierowcy?",
+    "description": "Tej operacji nie można cofnąć. Rezerwacje pozostają dla wskaźników, bez kierowcy.",
+    "bookings": "Rezerwacje do pseudonimizacji (usunięte imię, telefon i numery): {{count}}",
+    "restrict": "Potwierdzenia w okresie przechowywania, do ograniczenia: {{count}}",
+    "pseudonymize": "Potwierdzenia po okresie przechowywania, do pseudonimizacji: {{count}}",
+    "confirm": "Zweryfikowałem tożsamość osoby składającej wniosek.",
+    "cancel": "Anuluj",
+    "submit": "Usuń dane"
+  },
+  "erased": "Gotowe: pseudonimizowano rezerwacje: {{bookings}}, ograniczono potwierdzenia: {{restricted}}, pseudonimizowano: {{pseudonymized}}.",
+  "none": "–"
+}

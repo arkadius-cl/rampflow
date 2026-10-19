@@ -1,0 +1,73 @@
+{
+  "title": "Privacy requests",
+  "description": "Find what is stored about a driver by name, phone or plate, then export it or erase it.",
+  "form": {
+    "name": "Driver name",
+    "name_placeholder": "Full name as entered",
+    "phone": "Phone",
+    "phone_placeholder": "+49 151 2345678",
+    "plate": "Plate",
+    "plate_placeholder": "HH-AB 1234",
+    "hint": "Matches are exact: the whole name in any letter case, the phone in international format, the plate without spaces or dashes. Any one identifier is enough.",
+    "search": "Search",
+    "clear": "Clear"
+  },
+  "errors": {
+    "identifier": "Enter a name, phone or plate.",
+    "name": "Enter the whole name, 2 to 120 characters.",
+    "phone": "Use the international format, for example +49 151 2345678.",
+    "plate": "Use 2 to 15 letters and digits."
+  },
+  "start": {
+    "title": "Search for a driver",
+    "description": "The search covers the avis data of every booking and the safety acknowledgements of this company."
+  },
+  "no_match": {
+    "title": "Nothing stored",
+    "description": "No booking or acknowledgement matches these identifiers."
+  },
+  "bookings": {
+    "title": "Bookings",
+    "count": "{{count}} found",
+    "columns": {
+      "code": "Code",
+      "slot": "Slot",
+      "site": "Site",
+      "carrier": "Carrier",
+      "driver": "Driver",
+      "phone": "Phone",
+      "plates": "Plates",
+      "status": "Status"
+    }
+  },
+  "acknowledgements": {
+    "title": "Safety acknowledgements",
+    "count": "{{count}} found",
+    "columns": {
+      "completed": "Completed",
+      "driver": "Driver",
+      "instruction": "Briefing",
+      "booking": "Booking",
+      "retention": "Retention"
+    },
+    "version": "v{{version}}",
+    "restricted": "Restricted",
+    "under_retention": "Kept until retention ends",
+    "retention_ended": "Retention ended"
+  },
+  "export": "Export JSON",
+  "exported": "The export was downloaded.",
+  "erase": "Erase",
+  "erase_dialog": {
+    "title": "Erase this driver's data?",
+    "description": "This cannot be undone. The bookings stay for the KPIs, without the driver.",
+    "bookings": "Bookings to pseudonymize (name, phone and plates removed): {{count}}",
+    "restrict": "Acknowledgements still under retention, to restrict: {{count}}",
+    "pseudonymize": "Acknowledgements past retention, to pseudonymize: {{count}}",
+    "confirm": "I have verified the identity of the person who made this request.",
+    "cancel": "Cancel",
+    "submit": "Erase data"
+  },
+  "erased": "Done: {{bookings}} bookings pseudonymized, {{restricted}} acknowledgements restricted, {{pseudonymized}} pseudonymized.",
+  "none": "–"
+}

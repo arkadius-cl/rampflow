@@ -1,0 +1,10 @@
+{
+  "inactive": {
+    "subject": "Twoje konto przewoźnika w rampflow zostanie usunięte",
+    "preview": "Zaloguj się przed {{date}}, aby zachować konto",
+    "intro": "Od dawna nie logowałeś się do rampflow. Zgodnie z zasadami przechowywania danych usuwamy nieaktywne konta przewoźników; Twoje zostanie usunięte {{date}}.",
+    "keep": "Aby zachować konto, zaloguj się raz przed tą datą. Rezerwacje Twojej firmy pozostają w magazynach.",
+    "sign_in": "Zaloguj się",
+    "footer": "Otrzymujesz tę wiadomość, ponieważ masz konto przewoźnika w rampflow."
+  }
+}

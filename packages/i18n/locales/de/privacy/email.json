@@ -1,0 +1,10 @@
+{
+  "inactive": {
+    "subject": "Ihr rampflow-Carrier-Konto wird gelöscht",
+    "preview": "Melden Sie sich vor dem {{date}} an, um Ihr Konto zu behalten",
+    "intro": "Sie haben sich lange nicht bei rampflow angemeldet. Nach unseren Aufbewahrungsregeln löschen wir inaktive Carrier-Konten; Ihres wird am {{date}} gelöscht.",
+    "keep": "Um das Konto zu behalten, melden Sie sich vor diesem Datum einmal an. Buchungen Ihres Unternehmens bleiben bei den Lagern erhalten.",
+    "sign_in": "Anmelden",
+    "footer": "Sie erhalten diese E-Mail, weil Sie ein Carrier-Konto bei rampflow haben."
+  }
+}

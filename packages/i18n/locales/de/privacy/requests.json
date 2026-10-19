@@ -1,0 +1,73 @@
+{
+  "title": "Datenschutzanfragen",
+  "description": "Finden Sie, was zu einem Fahrer gespeichert ist, nach Name, Telefon oder Kennzeichen, und exportieren oder löschen Sie es.",
+  "form": {
+    "name": "Name des Fahrers",
+    "name_placeholder": "Vollständiger Name wie erfasst",
+    "phone": "Telefon",
+    "phone_placeholder": "+49 151 2345678",
+    "plate": "Kennzeichen",
+    "plate_placeholder": "HH-AB 1234",
+    "hint": "Treffer sind exakt: der ganze Name in beliebiger Groß- und Kleinschreibung, das Telefon im internationalen Format, das Kennzeichen ohne Leerzeichen und Bindestriche. Ein Merkmal genügt.",
+    "search": "Suchen",
+    "clear": "Leeren"
+  },
+  "errors": {
+    "identifier": "Geben Sie einen Namen, ein Telefon oder ein Kennzeichen ein.",
+    "name": "Geben Sie den ganzen Namen ein, 2 bis 120 Zeichen.",
+    "phone": "Nutzen Sie das internationale Format, zum Beispiel +49 151 2345678.",
+    "plate": "Nutzen Sie 2 bis 15 Buchstaben und Ziffern."
+  },
+  "start": {
+    "title": "Fahrer suchen",
+    "description": "Die Suche umfasst die Avis-Daten aller Buchungen und die Sicherheitsunterweisungen dieses Unternehmens."
+  },
+  "no_match": {
+    "title": "Nichts gespeichert",
+    "description": "Keine Buchung und keine Unterweisung passt zu diesen Merkmalen."
+  },
+  "bookings": {
+    "title": "Buchungen",
+    "count": "{{count}} gefunden",
+    "columns": {
+      "code": "Code",
+      "slot": "Slot",
+      "site": "Standort",
+      "carrier": "Carrier",
+      "driver": "Fahrer",
+      "phone": "Telefon",
+      "plates": "Kennzeichen",
+      "status": "Status"
+    }
+  },
+  "acknowledgements": {
+    "title": "Sicherheitsunterweisungen",
+    "count": "{{count}} gefunden",
+    "columns": {
+      "completed": "Abgeschlossen",
+      "driver": "Fahrer",
+      "instruction": "Unterweisung",
+      "booking": "Buchung",
+      "retention": "Aufbewahrung"
+    },
+    "version": "V{{version}}",
+    "restricted": "Eingeschränkt",
+    "under_retention": "Aufbewahrt bis Fristende",
+    "retention_ended": "Frist abgelaufen"
+  },
+  "export": "Als JSON exportieren",
+  "exported": "Der Export wurde heruntergeladen.",
+  "erase": "Löschen",
+  "erase_dialog": {
+    "title": "Daten dieses Fahrers löschen?",
+    "description": "Das lässt sich nicht rückgängig machen. Die Buchungen bleiben für die Kennzahlen erhalten, ohne den Fahrer.",
+    "bookings": "Zu pseudonymisierende Buchungen (Name, Telefon und Kennzeichen entfernt): {{count}}",
+    "restrict": "Unterweisungen in der Aufbewahrungsfrist, einzuschränken: {{count}}",
+    "pseudonymize": "Unterweisungen nach Fristende, zu pseudonymisieren: {{count}}",
+    "confirm": "Ich habe die Identität der anfragenden Person geprüft.",
+    "cancel": "Abbrechen",
+    "submit": "Daten löschen"
+  },
+  "erased": "Erledigt: {{bookings}} Buchungen pseudonymisiert, {{restricted}} Unterweisungen eingeschränkt, {{pseudonymized}} pseudonymisiert.",
+  "none": "–"
+}
