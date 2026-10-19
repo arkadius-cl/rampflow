@@ -15,7 +15,7 @@ Status: accepted, 2026-10-19. Implemented in `packages/shared/src/contract/` and
 
 ## Context
 
-The scope lists 9 entitlement modules with 21 implemented and 28 reserved keys, 3 packages, 29 settings, 7 roles, and per-tenant overrides with expiry. It requires that CI fails on unknown or reserved keys in packages, navigation or settings, that a module turns off when a module it depends on is off, and that the API and the UI gate the same keys. Twelve implementation units will add routes, screens and settings in parallel. Any list that two units must keep in sync will drift.
+The scope lists 9 entitlement modules with 21 implemented and 25 reserved keys, 3 packages, 29 settings, 7 roles, and per-tenant overrides with expiry. It requires that CI fails on unknown or reserved keys in packages, navigation or settings, that a module turns off when a module it depends on is off, and that the API and the UI gate the same keys. Twelve implementation units will add routes, screens and settings in parallel. Any list that two units must keep in sync will drift.
 
 ## Options considered
 

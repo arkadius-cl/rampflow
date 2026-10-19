@@ -1,0 +1,336 @@
+---
+title: API routes
+description: API conventions (areas, auth, error envelope and codes, validation, pagination, idempotency, concurrency, time and CSV formats) and the route map per module with party, permission, entitlement, story IDs, router file and owning unit.
+type: reference
+audience: [agent, developer]
+tags: [api, routes, errors, tenancy, entitlements, permissions]
+status: draft
+updated: 2026-10-19
+related: [docs/reference/module-contract.md, docs/reference/booking-lifecycle.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0011-frontend-routes-and-org-context.md]
+---
+
+# API routes
+
+Hono 4 on `/api`. The web app calls it through the `hc` client typed by `AppType`; request and response schemas live in `packages/shared/src/modules/<module>/api.<area>.ts`.
+
+## Conventions
+
+### Areas and parties
+
+| Prefix | Party ([ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md)) | Resolved from |
+|---|---|---|
+| `/api/auth` | `anonymous`, `user` | session cookie if present |
+| `/api/me` | `user` | session cookie |
+| `/api/platform` | `platform` | session plus `platform_admin` membership |
+| `/api/t/:orgId` | `tenant` | session plus membership in `:orgId`; site list for gate and dock operators |
+| `/api/c/:orgId` | `carrier` | session plus membership in `:orgId` |
+| `/api/c/:orgId/at/:tenantId` | `carrier_at_tenant` | as carrier, plus a link between the carrier and `:tenantId` |
+| `/api/driver` | `driver` | `rf_driver` cookie ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)) |
+| `/api/public` | `token` or `public` | a token in the body, or a public link slug |
+| `/api/test` | none | mounted only when `ENABLE_TEST_ROUTES=1`; startup fails if that is set with `NODE_ENV=production` |
+
+- A failed membership or link check answers 404 `not_found`, so a foreign org id reveals nothing.
+- Router files are `apps/api/src/modules/<module>/<area>/routes.<party>.ts`. Each mounts at the prefix its section below names, inside its party prefix. Routers of modules that can be off are wrapped with `withModule(id, ...)`, which needs a non-root prefix so its middleware stays inside that router.
+- In the tables, **Permission** `member` means any member of the org; `driver` means a valid driver cookie; `token` means a valid token in the body.
+
+### Requests
+
+- JSON bodies with `Content-Type: application/json`. Exceptions: `PUT /brand/logo` takes the raw image body, and `*.csv` routes return `text/csv`.
+- Mutating requests need `Origin` equal to `APP_ORIGIN`, else 403 `forbidden` ([ADR-0003](../decisions/ADR-0003-authentication-self-built-sessions.md)).
+- Personal search terms (driver name, phone, plate) travel in POST bodies, never in query strings, so they stay out of logs.
+- Path ids are UUIDs. A malformed id answers 404, like an unknown one.
+
+### Responses and errors
+
+Success: 200 for reads and commands, 201 for a created resource, 202 when the only effect is an email, 204 for deletes.
+
+Every error has this body:
+
+```json
+{ "error": { "code": "limit_reached", "message": "Your package allows 1 site.", "details": { "key": "core.max_sites", "limit": 1 } } }
+```
+
+`message` is English for logs and developers. The UI shows `core:errors.<code>` (or `core:errors.conflict.<reason>`) in the user's language.
+
+| Status | `code` | `details` | When |
+|---|---|---|---|
+| 400 | `bad_request` | `{ reason }` | malformed JSON; unknown or reserved entitlement key (`unknown_key`, `reserved_key`); unknown setting key; setting scope not allowed (`scope_not_allowed`, `allowed`) |
+| 401 | `unauthorized` | | no valid session; unknown, expired or revoked driver or email token |
+| 403 | `forbidden` | | missing permission; foreign `Origin` |
+| 403 | `entitlement_required` | `{ key }` | the module, a route feature or a setting's required feature is off |
+| 404 | `not_found` | | unknown id, an id of another tenant, carrier, site or booking, or an org the caller is not a member of |
+| 409 | `conflict` | `{ reason, ... }` | `capacity_full` (with `offers`), `daily_cap_reached` (with `offers`), `closed`, `dock_occupied`, `dock_in_resource`, `invalid_transition` (with `status`), `cutoff_passed`, `stale_version` (with `version`), `duplicate_reference`, `already_member`, `link_inactive` |
+| 409 | `limit_reached` | `{ key, limit }` | a hard limit would be exceeded |
+| 422 | `validation_failed` | `{ issues: [{ path, code, message }] }` | the zod schema rejected body or query; `path` is the zod issue path, for example `["avis", "dangerousGoods", "items", 0, "unNumber"]` |
+| 429 | `rate_limited` | `{ retryAfterSeconds }` | auth and driver exchange limits |
+| 500 | `internal_error` | | anything else; logged with a request id |
+
+TN-03's "a deactivated link blocks new bookings (403)" uses 403 `forbidden` with `details.reason = 'link_inactive'`.
+
+### Validation
+
+`zValidator(target, schema, onInvalid)` validates `param`, `query` and `json`. `onInvalid` maps `param` failures to 404 and `query` and `json` failures to 422 with zod paths. Business rules that need data (capacity, cutoff, limits) answer 409.
+
+### Pagination
+
+Lists that grow without bound (bookings, visits, acknowledgements, events) are cursor-paginated: `?limit=50&cursor=<opaque>` returns `{ items, nextCursor: string | null }`. `limit` is 1 to 200, default 50. The cursor encodes the sort key and the id. Master-data lists (sites, docks, resources, load types, staff) return `{ items }` without paging.
+
+### Idempotency and concurrency
+
+- `POST` booking creation takes `clientRequestId` (UUID, generated per form submission). A retry with the same id by the same user returns 200 and the existing booking instead of 201 and a second booking.
+- Lifecycle commands are idempotent: repeating a command whose target state and input already match returns 200 without a new event ([Booking lifecycle](booking-lifecycle.md)).
+- `PUT` replaces and `DELETE` answers 204 even when nothing existed.
+- Edits of bookings and avis carry `version`; a mismatch answers 409 `conflict` with reason `stale_version` and the current `version`.
+- Email-only endpoints (magic link, password reset, registration) answer 202 whether or not the address exists.
+
+### Time and formats
+
+- Instants are ISO 8601 UTC strings (`2026-10-25T06:30:00.000Z`). Local dates are `YYYY-MM-DD`, wall times `HH:mm`. Each booking and site carries its `timeZone` ([ADR-0012](../decisions/ADR-0012-time-handling.md)).
+- CSV (RP-02, SF-03): UTF-8 with BOM, `;` for de and pl users and `,` for en, timestamps in ISO 8601 with the site offset (`2026-10-25T08:30:00+01:00`), header row from the user's locale.
+
+### Leak, permission and entitlement tests
+
+Every route in the tables below except `/api/health`, `/api/auth/*` and `/api/test/*` has a route case ([Module contract](module-contract.md)). The harness checks:
+
+1. **Foreign tenant, carrier or booking**: 404 or an empty list.
+2. **Foreign site**: for routes that take a site, hall, dock, resource, load type or booking, a gate operator limited to another site of the same tenant gets 404 (TN-01).
+3. **Missing permission**: 403 `forbidden`.
+4. **Entitlement off**: 403 `entitlement_required`.
+
+## Auth, me and invitations
+
+Unit U2. Router files in `apps/api/src/modules/core/`.
+
+| Method | Path | Party | Permission | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/health` | none | none | | U1 |
+| POST | `/api/auth/login` | anonymous | none | CR-03 | `{ email, password }`; sets `rf_session`; 429 after 5 failures |
+| POST | `/api/auth/logout` | user | member | CR-03 | |
+| POST | `/api/auth/magic-link` | anonymous | none | CR-03 | `{ email }`; 202 |
+| POST | `/api/auth/magic-link/exchange` | token | token | CR-03 | `{ token }`; sets `rf_session` |
+| POST | `/api/auth/password-reset` | anonymous | none | CR-03 | `{ email }`; 202 |
+| POST | `/api/auth/password-reset/confirm` | token | token | CR-03 | `{ token, password }`; revokes all sessions |
+| GET | `/api/me` | user | member | | memberships for the org picker |
+| PATCH | `/api/me` | user | member | | `{ name?, locale? }` |
+| POST | `/api/public/invitations/inspect` | token | token | PL-01, TN-01, CR-01, CR-04 | `{ token }` → org name, role, whether the email has an account |
+| POST | `/api/public/invitations/accept` | token, then user | token | PL-01, TN-01, CR-01, CR-04 | `{ token, name?, password? }`; a new user sets name and password, a signed-in user with the invited email just accepts |
+| GET | `/api/t/:orgId/context` | tenant | member | | `core/context/routes.tenant.ts` |
+| GET | `/api/c/:orgId/context` | carrier | member | | `core/context/routes.carrier.ts` |
+| GET | `/api/platform/context` | platform | member | | `core/context/routes.platform.ts` |
+
+## Platform administration
+
+Unit U3. `core/platform/routes.platform.ts`, mounted at the platform root.
+
+| Method | Path | Permission | Story | Notes |
+|---|---|---|---|---|
+| GET | `/api/platform/tenants` | `core.manage_tenants` | PL-01, PL-04 | each with package, sites, docks, internal users and bookings this month against limits; soft limits above 100% flagged |
+| POST | `/api/platform/tenants` | `core.manage_tenants` | PL-01 | `{ name, package, adminEmail }`; creates org, subscription and `tenant_admin` invitation |
+| GET | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | resolved entitlements with sources, overrides with expiry |
+| PATCH | `/api/platform/tenants/:tenantId` | `core.manage_tenants` | PL-02 | `{ name?, package? }` |
+| PUT | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | `{ value, expiresAt, note }`; 400 for unknown or reserved keys, 422 for a value of the wrong kind |
+| DELETE | `/api/platform/tenants/:tenantId/overrides/:key` | `core.manage_tenants` | PL-02 | |
+| POST | `/api/platform/tenants/:tenantId/invitations` | `core.manage_tenants` | PL-01 | re-invite a tenant admin |
+| GET | `/api/platform/packages` | `core.manage_tenants` | PL-02 | the three packages, read-only |
+| GET | `/api/platform/settings` | `core.manage_platform_settings` | PL-03 | every key with platform scope: value and source |
+| PUT | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | `{ value }`; 422 with zod path |
+| DELETE | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | back to the code default |
+
+## Tenant administration
+
+| Method | Path | Permission | Entitlement | Story | Router (unit) |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/staff` | `core.manage_staff` | | TN-01 | `core/staff/routes.tenant.ts` (U3) |
+| POST | `/api/t/:orgId/staff/invitations` | `core.manage_staff` | limit `core.max_internal_users` (members plus pending invitations) | TN-01 | same |
+| DELETE | `/api/t/:orgId/staff/invitations/:invitationId` | `core.manage_staff` | | TN-01 | same |
+| PATCH | `/api/t/:orgId/staff/:membershipId` | `core.manage_staff` | | TN-01 | same; `{ role?, siteIds? }` |
+| DELETE | `/api/t/:orgId/staff/:membershipId` | `core.manage_staff` | | TN-01 | same; access ends on the member's next request |
+| GET | `/api/t/:orgId/settings` | `core.manage_settings` | | TN-02 | `core/settings/routes.tenant.ts` (U3); `?siteId=`: per available key the effective value, its source and the inherited value |
+| PUT | `/api/t/:orgId/settings/:key` | `core.manage_settings` | the key's `requires` | TN-02, TN-04 | same; `{ siteId: uuid \| null, value }` |
+| DELETE | `/api/t/:orgId/settings/:key` | `core.manage_settings` | | TN-02 | same; `?siteId=`; "Reset to inherited" |
+| GET | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | `brand/logo/routes.tenant.ts` (U3) |
+| PUT | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | raw PNG or JPEG up to 256 KB, checked by magic bytes; SVG answers 422 |
+| DELETE | `/api/t/:orgId/brand/logo` | `brand.manage` | module `brand` | TN-05 | |
+| GET | `/api/public/logos/:tenantId/:sha` | public | module `brand` | TN-05 | `brand/logo/routes.public.ts` (U3); immutable cache headers |
+| GET | `/api/c/:orgId/users` | `core.manage_carrier_users` | | CR-04 | `core/carrier-users/routes.carrier.ts` (U3) |
+| POST | `/api/c/:orgId/users/invitations` | `core.manage_carrier_users` | | CR-04 | same; `{ email, role }` |
+| DELETE | `/api/c/:orgId/users/invitations/:invitationId` | `core.manage_carrier_users` | | CR-04 | same |
+| PATCH | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same |
+| DELETE | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same |
+
+## Master data and capacity
+
+Unit U4.
+
+| Method | Path | Permission | Entitlement | Story | Router |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/sites` | member | | MD-01 | `core/sites/routes.tenant.ts` |
+| POST | `/api/t/:orgId/sites` | `core.manage_sites` | limit `core.max_sites` | MD-01, MD-05 | same; seeds the three load types, imports holidays |
+| GET | `/api/t/:orgId/sites/:siteId` | member | | MD-01 | same |
+| PATCH | `/api/t/:orgId/sites/:siteId` | `core.manage_sites` | limit `core.max_sites` when activating | MD-01 | same; unknown zone answers 422 |
+| GET | `/api/t/:orgId/sites/:siteId/halls` | member | | MD-02 | same |
+| POST | `/api/t/:orgId/sites/:siteId/halls` | `core.manage_sites` | | MD-02 | same |
+| PATCH | `/api/t/:orgId/sites/:siteId/halls/:hallId` | `core.manage_sites` | | MD-02 | same |
+| GET | `/api/t/:orgId/sites/:siteId/docks` | member | | MD-02 | same |
+| POST | `/api/t/:orgId/sites/:siteId/docks` | `core.manage_sites` | limit `core.max_docks` | MD-02 | same; 409 `conflict` for a duplicate code |
+| PATCH | `/api/t/:orgId/sites/:siteId/docks/:dockId` | `core.manage_sites` | limit `core.max_docks` when leaving `inactive` | MD-02 | same |
+| GET | `/api/t/:orgId/capacity/resources` | `booking.view` | | MD-03 | `booking/capacity/routes.tenant.ts` |
+| POST | `/api/t/:orgId/capacity/resources` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }` |
+| PATCH | `/api/t/:orgId/capacity/resources/:resourceId` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; never cancels bookings |
+| PUT | `/api/t/:orgId/capacity/resources/:resourceId/docks` | `booking.manage_resources` | `booking.pools` for pools | MD-03 | same; 409 `dock_in_resource` |
+| GET | `/api/t/:orgId/capacity/hours` | `booking.view` | | MD-04 | same; `?siteId=` |
+| PUT | `/api/t/:orgId/capacity/hours` | `booking.manage_resources` | | MD-04 | same; `{ siteId, resourceId: uuid \| null, rows: [{ weekday, opens, closes }] }` |
+| GET | `/api/t/:orgId/capacity/closures` | `booking.view` | | MD-04 | same; `?siteId=&from=&to=` |
+| POST | `/api/t/:orgId/capacity/closures` | `booking.manage_resources` | | MD-04 | same |
+| DELETE | `/api/t/:orgId/capacity/closures/:closureId` | `booking.manage_resources` | | MD-04 | same; manual closures only |
+| POST | `/api/t/:orgId/capacity/closures/:closureId/reopen` | `booking.manage_resources` | | MD-04 | same; holiday closures |
+| GET | `/api/t/:orgId/capacity/load-types` | `booking.view` | | MD-05 | same; `?siteId=` |
+| POST | `/api/t/:orgId/capacity/load-types` | `booking.manage_resources` | `booking.duration_rules` for tiers | MD-05 | same |
+| PATCH | `/api/t/:orgId/capacity/load-types/:loadTypeId` | `booking.manage_resources` | `booking.duration_rules` for tiers | MD-05 | same |
+| PUT | `/api/t/:orgId/capacity/load-types/:loadTypeId/resources` | `booking.manage_resources` | | MD-05 | same |
+| GET | `/api/t/:orgId/capacity/availability` | `booking.view` | | MD-04, BK-02 | same; `?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource |
+
+## Safety authoring and register
+
+Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule('safety')`.
+
+| Method | Path | Permission | Entitlement | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | | SF-01 | |
+| POST | `/api/t/:orgId/safety/instructions` | `safety.manage_briefings` | limit `safety.max_briefing_templates` | SF-01 | `{ name, allSites, siteIds }`; version 1 draft from the 12-language platform template, non-de/en flagged `machine` |
+| PATCH | `/api/t/:orgId/safety/instructions/:instructionId` | `safety.manage_briefings` | | SF-01 | name, sites, archive |
+| GET | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | |
+| POST | `/api/t/:orgId/safety/instructions/:instructionId/versions` | `safety.manage_briefings` | | SF-01 | new draft copied from the latest version |
+| GET | `/api/t/:orgId/safety/versions/:versionId` | `safety.manage_briefings` | | SF-01 | all locales |
+| PUT | `/api/t/:orgId/safety/versions/:versionId/content/:locale` | `safety.manage_briefings` | `safety.quiz` when questions are sent | SF-01, SF-02 | draft only, else 409 `invalid_transition` |
+| POST | `/api/t/:orgId/safety/versions/:versionId/publish` | `safety.manage_briefings` | | SF-01, SF-02 | `{ materialChange }`; with `safety.quiz`, 3 to 5 questions per published locale |
+| GET | `/api/t/:orgId/safety/acknowledgements` | `safety.view_register` | | SF-03 | paginated; filters site, carrier, driver name, version, expiry |
+| GET | `/api/t/:orgId/safety/acknowledgements.csv` | `safety.view_register` | | SF-03 | same filters |
+
+## Bookings (staff)
+
+Unit U6. `booking/staff/routes.tenant.ts`, mounted at `/bookings`.
+
+| Method | Path | Permission | Entitlement | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/bookings/board` | `booking.view` | | BK-01 | `?siteId&date`; columns per resource, booked against capacity per grid slot, `overCapacity` flags; polled every 15 s |
+| GET | `/api/t/:orgId/bookings` | `booking.view` | | BK-01 | list view with the same data; paginated |
+| GET | `/api/t/:orgId/bookings/carrier-options` | `booking.staff_book` | | BK-02 | `?q=`; linked active carriers |
+| GET | `/api/t/:orgId/bookings/:bookingId` | `booking.view` | | BK-01, BK-03 | booking, avis, safety status |
+| GET | `/api/t/:orgId/bookings/:bookingId/events` | `booking.view` | | YD-08 | actors only with `booking.view_actors` |
+| POST | `/api/t/:orgId/bookings` | `booking.staff_book`; `booking.force` when `force` | | BK-02, AV-01 | `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } \| { name }, avis, force?, forceReason? }` |
+| PATCH | `/api/t/:orgId/bookings/:bookingId` | `booking.staff_book`; `booking.force` when `force` | | BK-03 | reschedule `{ startsAt, resourceId?, version, force?, forceReason? }` |
+| PUT | `/api/t/:orgId/bookings/:bookingId/avis` | `booking.staff_book` | `avis.basic` | AV-02 | `{ avis, version }` |
+| POST | `/api/t/:orgId/bookings/:bookingId/cancel` | `booking.staff_book` | | BK-03 | `{ reason? }` |
+| GET | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | `{ url }` |
+| POST | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | regenerate |
+| POST | `/api/t/:orgId/bookings/:bookingId/driver-link/email` | `booking.staff_book` | `notify.email` | CR-06 | `{ email, locale }` |
+
+## Carrier network
+
+Unit U7.
+
+| Method | Path | Party | Permission | Entitlement | Story | Router |
+|---|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/carriers` | tenant | `booking.manage_carriers` | | TN-03 | `booking/carriers/routes.tenant.ts` |
+| POST | `/api/t/:orgId/carriers/invitations` | tenant | `booking.manage_carriers` | `booking.carrier_portal` | TN-03 | same; `{ companyName, email }` |
+| DELETE | `/api/t/:orgId/carriers/invitations/:invitationId` | tenant | `booking.manage_carriers` | | TN-03 | same |
+| PATCH | `/api/t/:orgId/carriers/:carrierId` | tenant | `booking.manage_carriers` | | TN-03 | same; `{ status }` |
+| GET | `/api/t/:orgId/carriers/registrations` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same |
+| POST | `/api/t/:orgId/carriers/registrations/:registrationId/approve` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; links the carrier, emails it |
+| POST | `/api/t/:orgId/carriers/registrations/:registrationId/reject` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ reason }`, emails it |
+| GET | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; slug per site |
+| POST | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ siteId }`, idempotent |
+| DELETE | `/api/t/:orgId/carriers/public-links/:siteId` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; revokes the slug |
+| GET | `/api/c/:orgId/tenants` | carrier | member | | CR-02, CR-05 | `booking/carriers/routes.carrier.ts`; linked tenants with link and registration status |
+| GET | `/api/public/links/:slug` | public | none | `booking.public_link` and the site's `booking.public_link_enabled` | CR-02, TN-04 | `booking/registration/routes.public.ts`; 404 when disabled |
+| POST | `/api/public/links/:slug/registrations` | public | none | same | CR-02 | same; `{ companyName, country, contactName, email }`; 202; a known email gets `{ signIn: true }` |
+| POST | `/api/public/registrations/verify` | token | token | | CR-02 | same; `{ token }`; verifies the email, signs in, applies `booking.public_registration_mode` |
+| POST | `/api/public/carrier-invitations/inspect` | token | token | | TN-03, CR-01 | `booking/carriers/routes.public.ts` |
+| POST | `/api/public/carrier-invitations/accept` | token, then user | token | | TN-03, CR-01 | same; an existing carrier user's email links that org instead of creating one |
+
+## Carrier booking portal
+
+Unit U8. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/bookings`; writes in `booking/portal/routes.carrier-at-tenant.ts` at `/api/c/:orgId/at/:tenantId`. Every `at` route needs an active link (else 403 `forbidden`, reason `link_inactive`), except `cancel`, which a deactivated link still allows.
+
+| Method | Path | Permission | Entitlement (tenant's) | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/c/:orgId/bookings` | `booking.view` | | CR-05 | all linked tenants; `?tenantId&siteId&from&to&status&cursor` |
+| GET | `/api/c/:orgId/bookings/:bookingId` | `booking.view` | | CR-05 | timeline gate-in to gate-out, events without actors |
+| GET | `/api/c/:orgId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | `{ url }` |
+| GET | `/api/c/:orgId/bookings/:bookingId/rebook` | `booking.book` | | BK-06 | prefill: site, load type, avis without references, date and driver |
+| GET | `/api/c/:orgId/at/:tenantId/sites` | `booking.book` | `booking.carrier_portal` | BK-04 | address, phone, zone |
+| GET | `/api/c/:orgId/at/:tenantId/load-types` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId=`; carrier-bookable only |
+| GET | `/api/c/:orgId/at/:tenantId/availability` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId&loadTypeId&date&loadUnits`; offered starts |
+| POST | `/api/c/:orgId/at/:tenantId/bookings` | `booking.book` | `booking.carrier_portal` | BK-04, AV-01 | `{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 409 with `offers` when the last unit went elsewhere |
+| PATCH | `/api/c/:orgId/at/:tenantId/bookings/:bookingId` | `booking.book` | `booking.carrier_portal` | BK-05 | `{ startsAt, version }`; before the cutoff |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/cancel` | `booking.book` | `booking.carrier_portal` | BK-05 | before the cutoff |
+| PUT | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/avis` | `booking.book` | `avis.basic` | AV-02 | before the cutoff |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | regenerate |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link/email` | `booking.book` | `notify.email` | CR-06 | `{ email, locale }` |
+
+## Yard
+
+Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`).
+
+| Method | Path | Permission | Entitlement | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/yard/expected` | `yard.gate` | | YD-01 | `?siteId&date`; carrier, plate, load type, load units, safety status, punctuality |
+| POST | `/api/t/:orgId/yard/search` | `yard.gate` | | YD-01 | `{ siteId, q }`; booking code (scanner input), plate, reference or carrier |
+| GET | `/api/t/:orgId/yard/on-site` | `yard.gate` | | YD-04 | state, time since gate-in, wait, Standgeld flag |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | `yard.gate` | | YD-02 | `{ plateSeen }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/turn-away` | `yard.gate` | | YD-02 | `{ reason, note? }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/depart` | `yard.gate` | | YD-05 | `{ reason? }` |
+| POST | `/api/t/:orgId/yard/walk-ins` | `yard.gate` and `booking.walk_in` | | YD-03 | staff create at the current grid slot plus check-in |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgement-candidates` | `yard.gate` | module `safety` | YD-02 | `{ name }`; valid acknowledgements of the tenant |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/acknowledgements` | `yard.gate` | module `safety` | YD-02 | `{ acknowledgementId }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/briefing-session` | `yard.gate` | module `safety` | YD-02 | issues a 30-minute `staff` driver access; returns `{ url }` |
+| GET | `/api/t/:orgId/yard/docks` | `yard.call` | `yard.call_to_dock` | YD-06 | docks by hall with current truck and state; queue of checked-in trucks by slot start |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/call` | `yard.call` | `yard.call_to_dock` | YD-07 | `{ dockId }`; 409 `dock_occupied`; `outsideResource` warning in the response |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/dock` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/loading` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }` |
+| POST | `/api/t/:orgId/yard/bookings/:bookingId/complete` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ actualLoadUnits, discrepancyNote? }` |
+
+## Driver
+
+Unit U10.
+
+| Method | Path | Party | Entitlement | Story | Router |
+|---|---|---|---|---|---|
+| POST | `/api/public/driver-session` | token | | DR-01 | `driver/session/routes.public.ts`; `{ token }`; sets `rf_driver` with `Path=/api/driver`; 10 per minute per IP |
+| DELETE | `/api/driver/session` | driver | | DR-01 | `driver/session/routes.driver.ts`; clears the cookie |
+| GET | `/api/driver/booking` | driver | | DR-01, DR-03, SF-04 | `driver/view/routes.driver.ts`; redeems safety passes |
+| GET | `/api/driver/briefings` | driver | module `safety` | SF-04 | `safety/driver/routes.driver.ts` at `/briefings`; applicable instructions with status and locales |
+| GET | `/api/driver/briefings/:instructionId` | driver | module `safety` | SF-04, DR-02 | `?locale=`; content and questions without answers |
+| POST | `/api/driver/briefings/:instructionId/attempts` | driver | `safety.quiz` | SF-04, SF-02 | `{ locale, answers }`; score, pass, attempt count |
+| POST | `/api/driver/briefings/:instructionId/acknowledgement` | driver | module `safety` | SF-04 | `{ locale, name, confirmed: true }`; needs a passed quiz when one exists; sets the safety pass unless the session channel is `staff` |
+
+## Reports
+
+Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule('report')`.
+
+| Method | Path | Permission | Entitlement | Story | Notes |
+|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/reports/kpis` | `report.view` | | RP-01 | `?siteId&from&to&resourceId?&carrierId?`; dates are site-local |
+| GET | `/api/t/:orgId/reports/kpis.csv` | `report.view` | `report.export` | RP-02 | |
+| GET | `/api/t/:orgId/reports/visits` | `report.view` | | RP-02 | paginated visit list with all timestamps |
+| GET | `/api/t/:orgId/reports/visits.csv` | `report.view` | `report.export` | RP-02 | |
+
+## Privacy
+
+Unit U11. `privacy/requests/routes.tenant.ts`, mounted at `/privacy`.
+
+| Method | Path | Permission | Story | Notes |
+|---|---|---|---|---|
+| POST | `/api/t/:orgId/privacy/search` | `privacy.manage_requests` | TN-06 | `{ name?, phone?, plate? }`; matching bookings and acknowledgements |
+| POST | `/api/t/:orgId/privacy/export` | `privacy.manage_requests` | TN-06 | same body; JSON download |
+| POST | `/api/t/:orgId/privacy/erase` | `privacy.manage_requests` | TN-06 | same body plus `{ confirm: true }`; pseudonymizes bookings, restricts acknowledgements under retention |
+
+## Test routes
+
+Unit U1. `apps/api/src/kernel/test-routes.ts`, only with `ENABLE_TEST_ROUTES=1`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/test/seed` | `{ scenario }`; creates a tenant world and returns ids and credentials for Playwright |
+| POST | `/api/test/jobs/:name/run` | runs one job tick now |

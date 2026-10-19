@@ -49,7 +49,7 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 
 ### Exchange and session
 
-1. The PWA reads `location.hash`, posts `{ token }` to `POST /api/driver/session`, and calls `history.replaceState(null, '', '/d')`.
+1. The PWA reads `location.hash`, posts `{ token }` to `POST /api/public/driver-session`, and calls `history.replaceState(null, '', '/d')`. The exchange sits under `/api/public` because the driver scope middleware covers all of `/api/driver/*`.
 2. The API applies the `driver_exchange` rate limit (10 per minute per IP, [ADR-0003](ADR-0003-authentication-self-built-sessions.md)), hashes the token, and reads the row under the `token` party.
 3. Unknown, expired and revoked tokens all answer 401 `unauthorized`. The PWA shows one generic "This link is no longer valid" message (DR-01).
 4. A valid token sets `rf_driver=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/driver; Max-Age=<seconds to expiry>`.

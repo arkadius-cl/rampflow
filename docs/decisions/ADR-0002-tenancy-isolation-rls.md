@@ -1,6 +1,6 @@
 ---
 title: ADR-0002 Tenancy isolation with application scoping and row-level security
-description: How every request runs in one scoped transaction as a NOBYPASSRLS role, which parties exist (platform, tenant, carrier, carrier at tenant, driver, token, public, system), and how CI proves no route leaks across tenants.
+description: How every request runs in one scoped transaction as a NOBYPASSRLS role, which parties exist (anonymous, user, platform, tenant, carrier, carrier at tenant, driver, token, public, system), and how CI proves no route leaks across tenants.
 type: explanation
 audience: [agent, developer]
 tags: [adr, tenancy, security, rls, postgres, testing]
@@ -44,6 +44,7 @@ Every database access runs inside `withScope(scope, fn)`. The function opens a t
 ```ts
 // apps/api/src/db/scope.ts
 export type Scope =
+  | { party: 'anonymous' }                                     // sign-in, magic-link and reset requests
   | { party: 'user'; userId: UserId }                          // signed in, no org chosen: /api/me
   | { party: 'platform'; userId: UserId }
   | { party: 'tenant'; tenantId: TenantId; siteIds: readonly SiteId[] | 'all'; actor: TenantActor }
@@ -51,7 +52,7 @@ export type Scope =
   | { party: 'carrier_at_tenant'; carrierId: CarrierId; tenantId: TenantId; userId: UserId }
   | { party: 'driver'; tenantId: TenantId; bookingId: BookingId; channel: 'link' | 'staff' }
   | { party: 'token'; tokenHash: TokenHash }                   // anonymous holder of an emailed token
-  | { party: 'public'; tenantId: TenantId; siteId: SiteId }   // anonymous visitor of a public booking link
+  | { party: 'public'; tenantId: TenantId; siteId: SiteId | null } // public booking link visitor or logo request
   | { party: 'system'; job: JobName };                         // cross-tenant job steps only
 
 export type TenantActor =
@@ -115,6 +116,7 @@ export const scoped = (resolve: (c: Context<AppEnv>) => Promise<Scope>) =>
 
 | Party | Entered by | Sees | Writes |
 |---|---|---|---|
+| `anonymous` | `/api/auth/*` before a session exists | Nothing under RLS; the auth tables have no RLS ([ADR-0003](ADR-0003-authentication-self-built-sessions.md)) | Outbox rows without a tenant (magic links, resets) |
 | `user` | Any signed-in request without an org: `/api/me`, invitation acceptance by a signed-in user | Own memberships and their orgs | Own profile; a new carrier org during acceptance |
 | `platform` | `/api/platform/*` for `platform_admin` members of the platform org | All orgs, subscriptions, overrides, platform settings, invitations | The same. It has no policy on operational tenant tables. |
 | `tenant` | `/api/t/:orgId/*` after the server finds the caller's membership in `:orgId`. Gate and dock operators carry their site list. | Rows with `tenant_id = app.tenant_id()`. Tables with `site_id` also require `app.site_allowed(site_id)`. | Same rows. |
@@ -122,7 +124,7 @@ export const scoped = (resolve: (c: Context<AppEnv>) => Promise<Scope>) =>
 | `carrier_at_tenant` | `/api/c/:orgId/tenants/:tenantId/*`. The server first checks the carrier's link to the tenant; it must be active for create and reschedule. | Reference data of that tenant. All its bookings, for capacity counting. The `booking` row holds no personal data, so another carrier's booking reveals only slot, resource and company. | Bookings, avis, events and driver links with `carrier_id = app.carrier_id()` and `tenant_id = app.tenant_id()`; outbox rows |
 | `driver` | `/api/driver/*` after the token cookie resolves to a valid `driver_access` row | The one booking (`id = app.booking_id()`), its avis, and the tenant's reference data and published safety content | Safety acknowledgements and their link to this booking |
 | `token` | Invitation, carrier invitation and driver token exchange, before the holder has a session | Only the row whose `token_hash = app.token_hash()` | Marks that row used |
-| `public` | `/api/public/links/:slug` after the slug lookup | That tenant's name, logo and the linked site | Carrier registrations for that tenant |
+| `public` | `/api/public/links/:slug` after the slug lookup, and `/api/public/logos/:tenantId/:sha` | That tenant's name, logo and the linked site | Carrier registrations for that tenant |
 | `system` | Job runner steps that span tenants | `org` (to list tenants), `outbox_message`, `job_run` | `outbox_message`, `job_run` |
 
 Rules that follow from the table:
@@ -152,11 +154,12 @@ export function carrierOwnedPolicies(t: BookingFamilyTable): PgPolicy[]; // book
 
 ### Leak tests
 
-Each module ships route cases next to its routes (`apps/api/src/modules/<module>/**/route-cases.ts`). A case names the route, the permission, the entitlement, and how to fill its path parameters from a seeded world. The harness in `apps/api/test/route-cases.ts` runs three checks per case:
+Each module ships route cases next to its routes (`apps/api/src/modules/<module>/**/route-cases.ts`). A case names the route, the permission, the entitlement, and how to fill its path parameters from a seeded world. The harness in `apps/api/test/route-cases.ts` runs four checks per case:
 
 1. **Leak.** Two complete worlds, A and B, are seeded. The case runs as B's actor against A's ids, and also with A's org id in the path. It expects 404, or 200 with no A ids in the body.
-2. **Permission.** The case runs as a role of the same party that lacks the permission, if one exists, and expects 403 `forbidden`.
-3. **Entitlement.** The case runs for a tenant with the entitlement overridden off, and expects 403 `entitlement_required`.
+2. **Site.** Each world has two sites. For a site-scoped case, a gate operator limited to the other site of the same tenant expects 404 (TN-01).
+3. **Permission.** The case runs as a role of the same party that lacks the permission, if one exists, and expects 403 `forbidden`.
+4. **Entitlement.** The case runs for a tenant with the entitlement overridden off, and expects 403 `entitlement_required`.
 
 `apps/api/src/kernel/route-coverage.test.ts` compares `app.routes` with all route cases and fails for any `/api/t`, `/api/c`, `/api/platform` or `/api/driver` route without a case. A short allowlist covers `/api/health`, `/api/auth/*` and `/api/test/*`. Repository functions are covered through their routes; a read that no route calls is dead code.
 
