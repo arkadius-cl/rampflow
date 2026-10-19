@@ -52,5 +52,6 @@
     "dock_operator": "Rampenpersonal",
     "carrier_admin": "Spediteurs-Admin",
     "carrier_user": "Spediteursnutzer"
-  }
+  },
+  "viewer_time": "({{time}} Ihre Zeit)"
 }

@@ -52,5 +52,6 @@
     "dock_operator": "Obsługa rampy",
     "carrier_admin": "Administrator przewoźnika",
     "carrier_user": "Użytkownik przewoźnika"
-  }
+  },
+  "viewer_time": "({{time}} Twój czas)"
 }

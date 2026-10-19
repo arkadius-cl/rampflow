@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 export interface SiteTimeProps extends React.ComponentProps<'time'> {
@@ -9,14 +10,17 @@ export interface SiteTimeProps extends React.ComponentProps<'time'> {
   viewerTime?: string;
 }
 
-/** Renders "08:30 CET" and, for viewers in another zone, "(07:30 your time)". */
+/** Renders "08:30 CET" and, for viewers in another zone, "(07:30 your time)" in their language. */
 export function SiteTime({ time, zone, viewerTime, className, ...props }: SiteTimeProps) {
+  const { t } = useTranslation();
   return (
     <time className={cn('tabular-nums', className)} {...props}>
       {time}
       <span className="ml-1 text-[0.8em] font-medium text-muted-foreground">{zone}</span>
       {viewerTime ? (
-        <span className="ml-1 text-[0.8em] text-muted-foreground">({viewerTime} your time)</span>
+        <span className="ml-1 text-[0.8em] text-muted-foreground">
+          {t(($) => $.shell.viewer_time, { time: viewerTime })}
+        </span>
       ) : null}
     </time>
   );

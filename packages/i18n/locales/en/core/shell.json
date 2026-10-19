@@ -52,5 +52,6 @@
     "dock_operator": "Dock operator",
     "carrier_admin": "Carrier admin",
     "carrier_user": "Carrier user"
-  }
+  },
+  "viewer_time": "({{time}} your time)"
 }
