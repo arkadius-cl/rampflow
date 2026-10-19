@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const reuseExistingServer = !process.env.CI;
-// Ports come from the environment so parallel checkouts do not collide (scripts/checkout-env.mjs).
+// Ports come from the e2e profile of scripts/checkout-env.mjs (dev ports + 5), so a running
+// `pnpm dev` and its database are never reused.
 const apiPort = Number(process.env.API_PORT ?? 3000);
 const webPort = Number(process.env.WEB_PORT ?? 5173);
 const driverPort = Number(process.env.DRIVER_PORT ?? 5174);

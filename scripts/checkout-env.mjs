@@ -4,9 +4,12 @@
 //   node scripts/checkout-env.mjs              print this checkout's env
 //   node scripts/checkout-env.mjs --write      write it into .env (keeps other keys)
 //   node scripts/checkout-env.mjs run -- cmd   run cmd with process env > .env > checkout defaults
+//   node scripts/checkout-env.mjs --e2e [run -- cmd]   the same for this checkout's e2e profile
 //
 // The main checkout (where .git is a directory) keeps rampflow, 3000, 5173 and 5174.
 // A worktree gets rampflow_<slug> and port block n: 3000+10n, 5173+10n, 5174+10n.
+// The e2e profile derives from the dev env: database <db>_e2e and every port +5, so e2e runs
+// never write to the dev database and never reuse a running `pnpm dev`.
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -127,6 +130,28 @@ function resolvedEnv() {
   };
 }
 
+const E2E_PORT_OFFSET = 5;
+
+/** The e2e profile of a resolved dev env: its own database and its own servers. */
+function e2eEnv(env) {
+  const shift = (key) => String(Number(env[key]) + E2E_PORT_OFFSET);
+  const suffixed = (key) => {
+    const url = new URL(env[key]);
+    url.pathname = `${url.pathname}_e2e`;
+    return url.toString();
+  };
+  const web = shift('WEB_PORT');
+  return {
+    ...env,
+    API_PORT: shift('API_PORT'),
+    WEB_PORT: web,
+    DRIVER_PORT: shift('DRIVER_PORT'),
+    APP_ORIGIN: `http://localhost:${web}`,
+    DATABASE_URL: suffixed('DATABASE_URL'),
+    MIGRATION_DATABASE_URL: suffixed('MIGRATION_DATABASE_URL'),
+  };
+}
+
 function format(env) {
   return CHECKOUT_KEYS.map((k) => `${k}=${env[k]}`).join('\n');
 }
@@ -142,10 +167,10 @@ function write() {
   console.log(`Wrote ${envPath} (port block ${block})\n${format(merged)}`);
 }
 
-function run(argv) {
+function run(env, argv) {
   const [cmd, ...args] = argv;
-  if (!cmd) throw new Error('usage: checkout-env.mjs run -- <command> [args...]');
-  const child = spawn(cmd, args, { stdio: 'inherit', env: resolvedEnv(), shell: false });
+  if (!cmd) throw new Error('usage: checkout-env.mjs [--e2e] run -- <command> [args...]');
+  const child = spawn(cmd, args, { stdio: 'inherit', env, shell: false });
   child.on('exit', (code, signal) => {
     if (signal) process.kill(process.pid, signal);
     else process.exit(code ?? 1);
@@ -153,10 +178,13 @@ function run(argv) {
   for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => child.kill(sig));
 }
 
-const [mode, ...rest] = process.argv.slice(2);
-if (mode === 'run') run(rest[0] === '--' ? rest.slice(1) : rest);
-else if (mode === '--write') write();
-else if (mode === undefined) console.log(format(resolvedEnv()));
+const argv = process.argv.slice(2);
+const e2e = argv[0] === '--e2e';
+const [mode, ...rest] = e2e ? argv.slice(1) : argv;
+const env = () => (e2e ? e2eEnv(resolvedEnv()) : resolvedEnv());
+if (mode === 'run') run(env(), rest[0] === '--' ? rest.slice(1) : rest);
+else if (mode === '--write' && !e2e) write();
+else if (mode === undefined) console.log(format(env()));
 else {
   console.error(`unknown argument ${mode}`);
   process.exit(2);

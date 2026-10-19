@@ -121,7 +121,13 @@ The API tests never touch the development database. Each run migrates a template
 pnpm test:e2e
 ```
 
-This runs Playwright 1.64.1 inside the `mcr.microsoft.com/playwright:v1.64.1-noble` container with host networking and passes the checkout's ports and database URLs into it. Playwright starts the API (with `ENABLE_TEST_ROUTES=1` and the job runner) and the web app (`vite --mode e2e`, without the dev tools overlay) itself. It reuses servers that already listen on the checkout's ports, so stop `pnpm dev` first unless it runs with `ENABLE_TEST_ROUTES=1`: the specs seed their data through `/api/test/seed`. Pass spec paths to narrow the run.
+This runs Playwright 1.64.1 inside the `mcr.microsoft.com/playwright:v1.64.1-noble` container with host networking. Playwright starts the API (with `ENABLE_TEST_ROUTES=1` and the job runner) and the web app (`vite --mode e2e`, without the dev tools overlay) itself. Pass spec paths to narrow the run.
+
+The end-to-end tests never touch the development database. They run under the checkout's e2e profile (`node scripts/checkout-env.mjs --e2e`):
+
+- The database is `<checkout database>_e2e`. Each run drops, recreates and migrates it first (`pnpm db:reset` under the profile, under 2 seconds). Every run therefore starts empty: the job runner never sees the worlds of earlier runs, and a spec that pins the API clock moves only the bookings of this run.
+- Every port is the checkout's port plus 5, for example API 3005, web 5178 and driver 5179 in the main checkout. `pnpm dev` keeps running next to an e2e run, and Playwright never reuses the dev servers. It reuses only e2e servers that already listen on the e2e ports.
+- The API, the web servers and the owner-role helpers in `e2e/support/` all receive the profile's `DATABASE_URL`, `MIGRATION_DATABASE_URL` and ports. Mail still goes to the shared Mailpit.
 
 The specs in `e2e/core-loop/` (U12) pin the one API clock that every spec shares, through `POST /api/test/clock`. Their Playwright project `core-loop` therefore depends on the `staff` and `driver` projects and runs one spec at a time after them. A path filter does not apply to dependency projects, so `pnpm test:e2e e2e/core-loop` runs the whole suite. To run only the core loop, skip the dependencies:
 
@@ -188,11 +194,11 @@ Units of one wave run in separate git worktrees on one machine. Each worktree ne
 How the script decides:
 
 - The main checkout (where `.git` is a directory) keeps `rampflow` and ports 3000, 5173 and 5174.
-- A worktree gets the database `rampflow_<slug>`, where the slug is the worktree directory name in lowercase with other characters replaced by `_`. Test databases derive from it (`_tpl`, `_test_<n>`).
-- A worktree gets port block `n` from 1 to 99: API `3000 + 10n`, web `5173 + 10n`, driver `5174 + 10n`. `--write` starts at a block hashed from the slug and skips blocks that other worktrees of the repository already use.
+- A worktree gets the database `rampflow_<slug>`, where the slug is the worktree directory name in lowercase with other characters replaced by `_`. Test databases derive from it (`_tpl`, `_test_<n>`, `_e2e`).
+- A worktree gets port block `n` from 1 to 99: API `3000 + 10n`, web `5173 + 10n`, driver `5174 + 10n`. Its e2e profile uses the same ports plus 5. `--write` starts at a block hashed from the slug and skips blocks that other worktrees of the repository already use.
 - Values resolve as the process environment, then `.env`, then the checkout defaults, then `.env.example`. Every `pnpm` script that touches a port or a database runs through `node scripts/checkout-env.mjs run -- <command>`, so a worktree without `.env` still gets its own hashed defaults.
 
-To remove a worktree's databases, drop `rampflow_<slug>`, `rampflow_<slug>_tpl` and `rampflow_<slug>_test_*` as the superuser.
+To remove a worktree's databases, drop `rampflow_<slug>`, `rampflow_<slug>_tpl`, `rampflow_<slug>_e2e` and `rampflow_<slug>_test_*` as the superuser.
 
 ## Change the schema
 

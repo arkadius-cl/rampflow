@@ -22,7 +22,7 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 | `pnpm db:seed` | Load the demo data. Accounts are in `docs/how-to/run-locally.md`. |
 | `pnpm dev` | Run the API, the web app and the driver app. |
 | `pnpm verify` | Lint, typecheck, unit and integration tests, docs check, i18n check. Green before every commit. |
-| `pnpm test:e2e` | Playwright inside the pinned container. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
+| `pnpm test:e2e` | Playwright inside the pinned container, on a fresh `<checkout db>_e2e` and ports +5, never the dev database or `pnpm dev`. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
 | `pnpm format` | Biome fixes. |
 | `pnpm docs:index` | Regenerate `docs/INDEX.md` and the catalog tables in `docs/reference/module-contract.md`. Run after changing any doc or manifest. |
 | `pnpm i18n:derive` | Write the label parts derived from the manifests and `apps/web/src/lib/i18n-resources.gen.ts`. Run after changing a manifest or adding a part file. |
