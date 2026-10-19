@@ -533,6 +533,9 @@ CR-02.
 | `country` | char(2) | no | |
 | `contact_name` | text | no | **PD** |
 | `email` | citext | no | **PD** |
+| `locale` | text | yes | `de`, `en`, `pl`: the form's language; the carrier's emails use it |
+| `token_hash` | bytea | yes | unique; `sha256` of the emailed `registration` token |
+| `expires_at` | timestamptz | yes | 24 hours after the registration |
 | `user_id` | uuid | yes | the new or existing user |
 | `carrier_id` | uuid | yes | the new or existing carrier org |
 | `status` | text | no | `pending_email`, `pending_approval`, `approved`, `rejected` |
@@ -540,7 +543,7 @@ CR-02.
 | `email_verified_at`, `decided_at` | timestamptz | yes | |
 | `decided_by` | uuid | yes | |
 
-Index `(tenant_id, status)`. RLS: `tenant-private`; `public` insert where `tenant_id = app.tenant_id()`; `carrier` select where `carrier_id = app.carrier_id()`.
+Index `(tenant_id, status)`. Check: a `pending_email` row has `token_hash` and `expires_at`. RLS: `tenant-private`; `public` insert where `tenant_id = app.tenant_id()`; `carrier` select where `carrier_id = app.carrier_id()`; `token` select and update by `token_hash`. The verification claims the row with one guarded update while `status = 'pending_email'` and `expires_at > now`.
 
 ## avis
 

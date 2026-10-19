@@ -236,26 +236,28 @@ Unit U6a, built. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creat
 
 ## Carrier network
 
-Unit U7.
+Unit U7. Router files in `apps/api/src/modules/booking/{carriers,registration}/`; shapes in `packages/shared/src/modules/booking/api.carriers.ts`.
 
 | Method | Path | Party | Permission | Entitlement | Story | Router |
 |---|---|---|---|---|---|---|
-| GET | `/api/t/:orgId/carriers` | tenant | `booking.manage_carriers` | | TN-03 | `booking/carriers/routes.tenant.ts` |
-| POST | `/api/t/:orgId/carriers/invitations` | tenant | `booking.manage_carriers` | `booking.carrier_portal` | TN-03 | same; `{ companyName, email }` |
-| DELETE | `/api/t/:orgId/carriers/invitations/:invitationId` | tenant | `booking.manage_carriers` | | TN-03 | same |
-| PATCH | `/api/t/:orgId/carriers/:carrierId` | tenant | `booking.manage_carriers` | | TN-03 | same; `{ status }` |
-| GET | `/api/t/:orgId/carriers/registrations` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same |
-| POST | `/api/t/:orgId/carriers/registrations/:registrationId/approve` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; links the carrier, emails it |
-| POST | `/api/t/:orgId/carriers/registrations/:registrationId/reject` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ reason }`, emails it |
-| GET | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; slug per site |
-| POST | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ siteId }`; returns the site's slug, creating it once |
+| GET | `/api/t/:orgId/carriers` | tenant | `booking.manage_carriers` | | TN-03 | `booking/carriers/routes.tenant.ts`; `{ links, invitations }`: linked carriers with name, country, status and source, and invitations neither accepted nor revoked |
+| POST | `/api/t/:orgId/carriers/invitations` | tenant | `booking.manage_carriers` | `booking.carrier_portal` | TN-03 | same; `{ companyName, email, locale? }` → 201; emails `booking.carrier-invitation` in `locale` (default the inviter's). A pending invitation for the same email is revoked, so inviting again resends |
+| DELETE | `/api/t/:orgId/carriers/invitations/:invitationId` | tenant | `booking.manage_carriers` | | TN-03 | same; 204, also when nothing matched |
+| PATCH | `/api/t/:orgId/carriers/:carrierId` | tenant | `booking.manage_carriers` | | TN-03 | same; `{ status: 'active' \| 'deactivated' }`; 404 without a link |
+| GET | `/api/t/:orgId/carriers/registrations` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ items }`, newest first, every status |
+| POST | `/api/t/:orgId/carriers/registrations/:registrationId/approve` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; links the carrier (reactivating a deactivated link), emails `booking.registration-approved`; 409 `invalid_transition` with `status` unless `pending_approval` |
+| POST | `/api/t/:orgId/carriers/registrations/:registrationId/reject` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ reason }`, emails `booking.registration-rejected`; 409 as for approve |
+| GET | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ items }`: per site the slug (or `null`), `enabled` (`booking.public_link_enabled`) and `mode` (`booking.public_registration_mode`) |
+| POST | `/api/t/:orgId/carriers/public-links` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; `{ siteId }`; 201 when it creates the site's slug, 200 with the existing one; 404 for a site of another tenant |
 | POST | `/api/t/:orgId/carriers/public-links/:siteId/regenerate` | tenant | `booking.manage_carriers` | `booking.public_link` | TN-04 | same; revokes the slug and issues a new one, for a link that leaked |
-| GET | `/api/c/:orgId/tenants` | carrier | member | | CR-02, CR-05 | `booking/carriers/routes.carrier.ts`; linked tenants with link and registration status |
-| GET | `/api/public/links/:slug` | public | none | `booking.public_link` and the site's `booking.public_link_enabled` | CR-02, TN-04 | `booking/registration/routes.public.ts`; 404 when disabled. The setting is the only on and off switch; the slug only names the link |
-| POST | `/api/public/links/:slug/registrations` | public | none | same | CR-02 | same; `{ companyName, country, contactName, email }`; always 202 with an empty body. A known email gets a sign-in prompt by email instead of the verification link, so the response never reveals an account |
-| POST | `/api/public/registrations/verify` | token | token | | CR-02 | same; `{ token }`; verifies the email, signs in, applies `booking.public_registration_mode` |
-| POST | `/api/public/carrier-invitations/inspect` | token | token | | TN-03, CR-01 | `booking/carriers/routes.public.ts` |
-| POST | `/api/public/carrier-invitations/accept` | token, then user | token | | TN-03, CR-01 | same; an existing carrier user's email links that org instead of creating one |
+| GET | `/api/c/:orgId/tenants` | carrier | member | | CR-02, CR-05 | `booking/carriers/routes.carrier.ts`; `{ items }`: every tenant the carrier is linked to or registered at, with `link` (status, since) and the newest `registration` (status, reject reason) |
+| GET | `/api/public/links/:slug` | public | none | `booking.public_link` and the site's `booking.public_link_enabled` | CR-02, TN-04 | `booking/registration/routes.public.ts`; `{ tenantName, siteName, city, country }`. 404 for an unknown or revoked slug, the feature or the site setting off, or an inactive site. The setting is the only on and off switch; the slug only names the link |
+| POST | `/api/public/links/:slug/registrations` | public | none | same | CR-02 | same; `{ companyName, country, contactName, email, locale? }`; always 202 with an empty body. A known email gets a sign-in prompt by email instead of the verification text, both with the single-use `/carrier-registration#<token>` link, so the response never reveals an account. Shares the `magic_link_request` limit (5 per hour per email); over it nothing is written |
+| POST | `/api/public/registrations/verify` | token | token | | CR-02 | same; `{ token, locale? }` → `{ carrierId, status }`; verifies the email, signs in, applies `booking.public_registration_mode`. A new email gets a verified account without password and a new carrier org; a known email answers 401 `sign_in_required` with `email` until that user is signed in, then attaches to their carrier org. `auto_approve` links at once but leaves a link the tenant deactivated off. Single use, 24 hours. Service: `verifyRegistration` in `verify.redeem.ts` |
+| POST | `/api/public/carrier-invitations/inspect` | token | token | | TN-03, CR-01 | `booking/carriers/routes.public.ts`; `{ token }` → `{ tenantName, companyName, email, hasAccount }` |
+| POST | `/api/public/carrier-invitations/accept` | token, then user | token | | TN-03, CR-01 | same; `{ token, name?, password?, companyName?, locale? }` → `{ carrierId }`. A new user needs `name` and `password` (422 without) and becomes carrier admin of a new org; a user signed in with the invited email links their existing carrier org; an email with an account answers 401 `sign_in_required` with `email`. The link is active, also when it was deactivated. Single use, 7 days. Service: `acceptCarrierInvitation` in `accept.redeem.ts` |
+
+`assertActiveLink(tx, tenantId, carrierId)` in `booking/carriers/links.ts` throws 403 `forbidden` with `reason: 'link_inactive'` unless the link is active. Booking creation and reschedules call it (U8); reads and cancel do not, so a deactivated carrier keeps seeing its bookings.
 
 ## Carrier booking portal
 

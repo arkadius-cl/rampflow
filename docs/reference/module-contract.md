@@ -353,7 +353,10 @@ export interface AccountRouteCase {
   credential: 'session' | 'token' | 'none';       // rf_session, a `token` in the body, or open
   singleUse?: boolean;                            // token routes; default true: a second call answers 401
   // The control call; token cases also return a valid token of another purpose, which must fail.
-  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown; otherToken?: string }>;
+  // `params` fills path parameters such as the `:slug` of a public link.
+  arrange: (world: World, db: OwnerDb) => Promise<{
+    actor: Actor; body?: unknown; otherToken?: string; params?: Record<string, string>;
+  }>;
 }
 export function defineAccountCases(cases: readonly AccountRouteCase[]): readonly AccountRouteCase[];
 ```
