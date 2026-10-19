@@ -1,3 +1,4 @@
+import { DrizzleQueryError } from 'drizzle-orm';
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
@@ -64,6 +65,43 @@ function fromHttpException(err: HTTPException): ApiError {
   return new ApiError('internal_error');
 }
 
+/** The fields of a node-postgres `DatabaseError` that name what failed without quoting any value. */
+interface PgErrorFields {
+  code?: unknown;
+  constraint?: unknown;
+  table?: unknown;
+  column?: unknown;
+}
+
+/**
+ * A log line for an unexpected error. A failed query names its class, SQL state, constraint and
+ * statement text but never the bound parameters or Postgres' message, which quote emails,
+ * password hashes and driver data; other errors keep their stack.
+ */
+export function describeForLog(err: unknown): string {
+  if (err instanceof DrizzleQueryError) {
+    const cause = (err.cause ?? {}) as Error & PgErrorFields;
+    const fields = Object.entries({
+      code: cause.code,
+      constraint: cause.constraint,
+      table: cause.table,
+      column: cause.column,
+    })
+      .filter(([, v]) => typeof v === 'string')
+      .map(([k, v]) => `${k}=${String(v)}`);
+    return [`${err.name}(${cause.name ?? 'Error'})`, ...fields, `query: ${err.query}`].join(' ');
+  }
+  // A DatabaseError of node-postgres outside Drizzle: its message may quote a value too.
+  if (
+    err instanceof Error &&
+    'severity' in err &&
+    typeof (err as PgErrorFields).code === 'string'
+  ) {
+    return `${err.name} code=${String((err as PgErrorFields).code)}`;
+  }
+  return err instanceof Error ? (err.stack ?? `${err.name}: ${err.message}`) : String(err);
+}
+
 export const onError: ErrorHandler = (err, c) => {
   const apiError =
     err instanceof ApiError
@@ -73,7 +111,9 @@ export const onError: ErrorHandler = (err, c) => {
         : new ApiError('internal_error');
   if (apiError.code === 'internal_error') {
     const requestId = crypto.randomUUID();
-    console.error(`internal_error ${requestId} ${c.req.method} ${c.req.routePath}`, err);
+    console.error(
+      `internal_error ${requestId} ${c.req.method} ${c.req.routePath} ${describeForLog(err)}`,
+    );
     return c.json<ErrorBody>(
       {
         error: {

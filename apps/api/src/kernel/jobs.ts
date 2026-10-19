@@ -7,6 +7,7 @@ import { db } from '../db/pool.ts';
 import { asScope, type JobName, type Tx } from '../db/scope.ts';
 import { jobRun, org } from '../modules/core/schema.ts';
 import type { Clock } from './clock.ts';
+import { describeForLog } from './errors.ts';
 import type { Mailer } from './mailer.ts';
 import { systemActor, systemScope } from './system.ts';
 
@@ -89,7 +90,7 @@ export async function forEachTenant(
       for (const [k, v] of Object.entries(stats)) total[k] = (total[k] ?? 0) + v;
     } catch (e) {
       total.failedTenants = (total.failedTenants ?? 0) + 1;
-      console.error(`job ${job}: tenant ${tenantId} failed`, e);
+      console.error(`job ${job}: tenant ${tenantId} failed ${describeForLog(e)}`);
     }
   }
   return total;
@@ -107,7 +108,7 @@ export function startJobRunner(
       if (running) return;
       running = true;
       runJobTick(job, ctx)
-        .catch((e: unknown) => console.error(`job ${job.name} failed`, e))
+        .catch((e: unknown) => console.error(`job ${job.name} failed ${describeForLog(e)}`))
         .finally(() => {
           running = false;
         });

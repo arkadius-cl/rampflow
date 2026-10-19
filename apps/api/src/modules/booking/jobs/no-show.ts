@@ -3,6 +3,7 @@ import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
 import { loadAccess } from '../../../kernel/access.ts';
 import type { Clock } from '../../../kernel/clock.ts';
+import { describeForLog } from '../../../kernel/errors.ts';
 import { forEachTenant, type Job, type JobStats } from '../../../kernel/jobs.ts';
 import { systemActor } from '../../../kernel/system.ts';
 import type { BookingContext } from '../lifecycle/context.ts';
@@ -51,7 +52,7 @@ async function markNoShows(tx: Tx, tenantId: TenantId, clock: Clock): Promise<Jo
       });
     } catch (e) {
       stats.failed++;
-      console.error(`job ${JOB}: booking ${b.id} failed`, e);
+      console.error(`job ${JOB}: booking ${b.id} failed ${describeForLog(e)}`);
     }
   }
   return stats;

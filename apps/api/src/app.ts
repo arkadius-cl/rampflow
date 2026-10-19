@@ -4,7 +4,7 @@ import { createMiddleware } from 'hono/factory';
 import { db } from './db/pool.ts';
 import { type Clock, isPinnable, pinnableClock, systemClock } from './kernel/clock.ts';
 import { type AppEnv, env } from './kernel/env.ts';
-import { onError, onNotFound } from './kernel/errors.ts';
+import { describeForLog, onError, onNotFound } from './kernel/errors.ts';
 import { requireSameOrigin } from './kernel/origin.ts';
 import { type StaticRoots, staticFiles } from './kernel/static.ts';
 import { testRoutes } from './kernel/test-routes.ts';
@@ -23,7 +23,7 @@ const health = new Hono<AppEnv>().get('/', async (c) => {
     await db.execute(sql`select 1`);
     return c.json({ status: 'ok', db: 'ok' } as const, 200);
   } catch (err) {
-    console.error('health: database check failed', err);
+    console.error(`health: database check failed ${describeForLog(err)}`);
     return c.json({ status: 'degraded', db: 'error' } as const, 503);
   }
 });

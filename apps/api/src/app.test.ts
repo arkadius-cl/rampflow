@@ -1,13 +1,16 @@
 import { zValidator } from '@hono/zod-validator';
+import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as z from 'zod';
+import { ownerDb } from '../test/db.ts';
 import { as, TEST_ORIGIN } from '../test/http.ts';
 import { app, createApp } from './app.ts';
 import { parseEnv } from './kernel/env.ts';
 import { onError } from './kernel/errors.ts';
 import { requireSameOrigin } from './kernel/origin.ts';
 import { onInvalid } from './kernel/validate.ts';
+import { appUser } from './modules/core/schema.ts';
 
 describe('api', () => {
   it('reports ok health against the real database', async () => {
@@ -111,6 +114,45 @@ describe('validation', () => {
     });
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: { code: 'bad_request' } });
+  });
+});
+
+describe('internal errors', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('log the error class and SQL state, never the bound parameters', async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      lines.push(
+        args
+          .map((a) =>
+            a instanceof Error ? `${a.message} ${a.stack} ${String(a.cause)}` : String(a),
+          )
+          .join(' '),
+      );
+    });
+    const email = `victim-${crypto.randomUUID()}@example.com`;
+    const passwordHash = 'scrypt$16384$16$1$SALT$SECRETHASH';
+    const failing = new Hono()
+      .get('/duplicate', async (c) => {
+        const row = { email, name: 'Victim', passwordHash };
+        await ownerDb().insert(appUser).values(row);
+        await ownerDb().insert(appUser).values(row);
+        return c.body(null, 204);
+      })
+      .get('/cast', async (c) => {
+        await ownerDb().execute(sql`select ${email}::int`);
+        return c.body(null, 204);
+      })
+      .onError(onError);
+
+    expect((await failing.request('/duplicate')).status).toBe(500);
+    expect((await failing.request('/cast')).status).toBe(500);
+    const output = lines.join('\n');
+    expect(output).toContain('23505');
+    expect(output).toContain('22P02');
+    expect(output).not.toContain(email);
+    expect(output).not.toContain('SECRETHASH');
   });
 });
 
