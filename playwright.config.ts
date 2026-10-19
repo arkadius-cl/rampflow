@@ -15,16 +15,22 @@ export default defineConfig({
     baseURL: `http://localhost:${webPort}`,
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Office and station screens of staff and carriers (U2). U10 adds the Pixel 7 driver project.
+    { name: 'staff', testIgnore: /driver\//, use: { ...devices['Desktop Chrome'] } },
+  ],
   webServer: [
     {
+      // Test routes seed worlds; the job runner sends the outbox to Mailpit every 5 seconds.
       command: 'node --import tsx src/server.ts',
       cwd: 'apps/api',
       url: `http://localhost:${apiPort}/api/health`,
+      env: { ENABLE_TEST_ROUTES: '1', ENABLE_JOBS: '1' },
       reuseExistingServer,
     },
     {
-      command: 'node_modules/.bin/vite',
+      // Mode e2e keeps the dev tools overlay out of screenshots and axe runs.
+      command: 'node_modules/.bin/vite --mode e2e',
       cwd: 'apps/web',
       url: `http://localhost:${webPort}`,
       reuseExistingServer,
