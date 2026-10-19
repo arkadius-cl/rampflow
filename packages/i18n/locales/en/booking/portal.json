@@ -1,0 +1,190 @@
+{
+  "minutes": "{{minutes}} min",
+  "qr": "QR code of booking {{code}}",
+  "direction": {
+    "inbound": "Delivery",
+    "outbound": "Pick-up"
+  },
+  "actions": {
+    "reschedule": "Change time",
+    "cancel": "Cancel booking",
+    "book_again": "Book again",
+    "edit_avis": "Edit avis",
+    "save": "Save avis",
+    "discard": "Discard changes",
+    "close": "Close"
+  },
+  "wizard": {
+    "title": "New booking",
+    "steps": "Booking steps",
+    "back": "Back",
+    "continue": "Continue",
+    "taken": "That time was just taken. Pick another one.",
+    "no_tenants_title": "No warehouse to book at yet",
+    "no_tenants": "A warehouse has to invite you or approve your registration first.",
+    "tenants": "Show my warehouses",
+    "where": {
+      "step": "Where and what",
+      "hint": "Warehouse, site, load type",
+      "title": "Where and what",
+      "description": "Pick the warehouse you deliver to and what the truck carries. The load type decides the duration.",
+      "tenant": "Warehouse",
+      "tenant_hint": "Only warehouses that work with you appear here.",
+      "site": "Site",
+      "load_type": "Load type",
+      "no_load_types": "This site offers no load types for carriers.",
+      "units": "Load units",
+      "units_required": "Enter at least one load unit.",
+      "unit_type": "Unit type",
+      "more_rows": "{{units}} load units in total; edit the rows in the avis step.",
+      "duration": "{{units}} load units take {{minutes}} minutes at this site."
+    },
+    "when": {
+      "step": "When",
+      "hint": "Day and start time",
+      "title": "When",
+      "description": "Only start times that fit the site's hours, closures and free capacity are offered.",
+      "rules": "The site needs {{hours}} hours lead time and takes bookings up to {{days}} days ahead."
+    },
+    "avis": {
+      "step": "Avis",
+      "hint": "Truck, driver, references",
+      "title": "Avis",
+      "description": "Tell the warehouse what arrives. Required fields follow the site's settings.",
+      "confirm": "Confirm booking"
+    },
+    "done": {
+      "step": "Confirmed",
+      "hint": "Code, QR, driver link"
+    }
+  },
+  "slot": {
+    "day": "Day",
+    "free": "{{count}} free",
+    "none": "none",
+    "loading": "loading",
+    "previous_week": "Previous week",
+    "next_week": "Next week",
+    "zone": "Start times in",
+    "duration": "Duration {{minutes}} min",
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "pick_day": "Pick a day.",
+    "no_times": "No start times left on this day.",
+    "to": "to"
+  },
+  "summary": {
+    "title": "Your booking",
+    "tenant": "Warehouse",
+    "site": "Site",
+    "load": "Load",
+    "duration": "Duration",
+    "slot": "Slot",
+    "free": "Booking is free for carriers."
+  },
+  "done": {
+    "title": "Booked. The warehouse expects you.",
+    "changes": "Changes",
+    "open": "Open booking"
+  },
+  "cutoff": {
+    "until": "Change or cancel free until",
+    "passed": "Changes are closed for this booking.",
+    "call": "Call the site:",
+    "no_phone": "Contact the warehouse."
+  },
+  "driver": {
+    "title": "Driver link",
+    "description": "One link with the slot, the address, the safety briefing in the driver's language and the dock call. No app, no account.",
+    "inactive": "This booking has no active driver link.",
+    "link": "Link for the driver",
+    "copy": "Copy",
+    "copied": "Link copied",
+    "email": "Email to driver",
+    "email_invalid": "Enter a valid email address.",
+    "language": "Driver's language",
+    "send": "Send",
+    "sent": "Link sent to {{email}}",
+    "share": "Share…",
+    "share_title": "Booking {{code}}",
+    "share_text": "Your slot, address and safety briefing for booking {{code}}",
+    "regenerate": "Regenerate link",
+    "regenerate_title": "Regenerate the driver link?",
+    "regenerate_description": "The current link stops working at once and shows \"no longer valid\". Send the new link to the driver.",
+    "regenerated": "New driver link created",
+    "keep": "Keep the link"
+  },
+  "list": {
+    "title": "Bookings",
+    "description": "Your slots at every warehouse that works with you. Times are shown in each site's local time.",
+    "new": "New booking",
+    "pending_title": "Registration at {{name}} is waiting for approval",
+    "pending": "You can book there as soon as their dispatcher approves your request.",
+    "range": "Time range",
+    "tabs": {
+      "upcoming": "Upcoming",
+      "today": "Today",
+      "past": "Past"
+    },
+    "tenant": "Warehouse",
+    "all_tenants": "All warehouses",
+    "site": "Site",
+    "all_sites": "All sites",
+    "status": "Status",
+    "any_status": "Any status",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear filters",
+    "empty_title": "No bookings yet",
+    "empty": "Bookings you make show up here, at every warehouse.",
+    "more": "Show more",
+    "change": "Change",
+    "details": "Details",
+    "gate_in": "Gate in",
+    "gate_out": "gate out",
+    "col": {
+      "slot": "Date and slot",
+      "where": "Warehouse · site",
+      "code": "Code",
+      "load": "Load",
+      "status": "Status",
+      "visit": "Gate in → out",
+      "actions": "Actions"
+    }
+  },
+  "detail": {
+    "back": "All bookings",
+    "where": "Site and load",
+    "phone": "Site phone",
+    "dock": "Dock",
+    "cancel_reason": "Cancel reason",
+    "code": "Booking code",
+    "code_hint": "The gate scans this code or the driver's link.",
+    "avis": "Avis",
+    "avis_saved": "Avis saved",
+    "avis_unchanged": "The stored avis is unchanged.",
+    "locked_status": "No changes: the booking is {{status}}.",
+    "link_inactive": "The warehouse has paused your link. You can still cancel."
+  },
+  "visit": {
+    "title": "Visit",
+    "checked_in": "Gate in",
+    "at_dock": "At dock",
+    "done": "Done",
+    "departed": "Gate out"
+  },
+  "reschedule": {
+    "title": "Change time of {{code}}",
+    "description": "Pick a new start. The warehouse checks capacity again and emails you the change.",
+    "submit": "Change time",
+    "done": "Time changed"
+  },
+  "cancel": {
+    "title": "Cancel booking {{code}}?",
+    "description": "The slot is freed at once and the driver link stops working.",
+    "reason": "Reason (optional)",
+    "keep": "Keep booking",
+    "confirm": "Cancel booking",
+    "done": "Booking {{code}} cancelled"
+  }
+}

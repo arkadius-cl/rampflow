@@ -1,0 +1,190 @@
+{
+  "minutes": "{{minutes}} Min.",
+  "qr": "QR-Code der Buchung {{code}}",
+  "direction": {
+    "inbound": "Anlieferung",
+    "outbound": "Abholung"
+  },
+  "actions": {
+    "reschedule": "Zeit ändern",
+    "cancel": "Buchung stornieren",
+    "book_again": "Erneut buchen",
+    "edit_avis": "Avis bearbeiten",
+    "save": "Avis speichern",
+    "discard": "Änderungen verwerfen",
+    "close": "Schließen"
+  },
+  "wizard": {
+    "title": "Neue Buchung",
+    "steps": "Buchungsschritte",
+    "back": "Zurück",
+    "continue": "Weiter",
+    "taken": "Diese Zeit wurde gerade vergeben. Bitte eine andere wählen.",
+    "no_tenants_title": "Noch kein Lager zum Buchen",
+    "no_tenants": "Ein Lager muss Sie zuerst einladen oder Ihre Registrierung freigeben.",
+    "tenants": "Meine Lager anzeigen",
+    "where": {
+      "step": "Wo und was",
+      "hint": "Lager, Standort, Ladungsart",
+      "title": "Wo und was",
+      "description": "Wählen Sie das Lager, das Sie beliefern, und was der Lkw geladen hat. Die Ladungsart bestimmt die Dauer.",
+      "tenant": "Lager",
+      "tenant_hint": "Hier erscheinen nur Lager, die mit Ihnen arbeiten.",
+      "site": "Standort",
+      "load_type": "Ladungsart",
+      "no_load_types": "Dieser Standort bietet Spediteuren keine Ladungsarten an.",
+      "units": "Ladeeinheiten",
+      "units_required": "Mindestens eine Ladeeinheit eingeben.",
+      "unit_type": "Art der Einheit",
+      "more_rows": "{{units}} Ladeeinheiten insgesamt; die Zeilen bearbeiten Sie im Schritt Avis.",
+      "duration": "{{units}} Ladeeinheiten dauern an diesem Standort {{minutes}} Minuten."
+    },
+    "when": {
+      "step": "Wann",
+      "hint": "Tag und Startzeit",
+      "title": "Wann",
+      "description": "Angeboten werden nur Startzeiten, die zu Öffnungszeiten, Schließungen und freier Kapazität des Standorts passen.",
+      "rules": "Der Standort braucht {{hours}} Stunden Vorlauf und nimmt Buchungen bis {{days}} Tage im Voraus an."
+    },
+    "avis": {
+      "step": "Avis",
+      "hint": "Lkw, Fahrer, Referenzen",
+      "title": "Avis",
+      "description": "Teilen Sie dem Lager mit, was ankommt. Pflichtfelder folgen den Einstellungen des Standorts.",
+      "confirm": "Buchung bestätigen"
+    },
+    "done": {
+      "step": "Bestätigt",
+      "hint": "Code, QR, Fahrerlink"
+    }
+  },
+  "slot": {
+    "day": "Tag",
+    "free": "{{count}} frei",
+    "none": "keine",
+    "loading": "lädt",
+    "previous_week": "Vorherige Woche",
+    "next_week": "Nächste Woche",
+    "zone": "Startzeiten in",
+    "duration": "Dauer {{minutes}} Min.",
+    "morning": "Vormittag",
+    "afternoon": "Nachmittag",
+    "pick_day": "Wählen Sie einen Tag.",
+    "no_times": "An diesem Tag sind keine Startzeiten mehr frei.",
+    "to": "bis"
+  },
+  "summary": {
+    "title": "Ihre Buchung",
+    "tenant": "Lager",
+    "site": "Standort",
+    "load": "Ladung",
+    "duration": "Dauer",
+    "slot": "Zeitfenster",
+    "free": "Buchen ist für Spediteure kostenlos."
+  },
+  "done": {
+    "title": "Gebucht. Das Lager erwartet Sie.",
+    "changes": "Änderungen",
+    "open": "Buchung öffnen"
+  },
+  "cutoff": {
+    "until": "Ändern oder stornieren kostenlos bis",
+    "passed": "Änderungen sind für diese Buchung geschlossen.",
+    "call": "Rufen Sie den Standort an:",
+    "no_phone": "Wenden Sie sich an das Lager."
+  },
+  "driver": {
+    "title": "Fahrerlink",
+    "description": "Ein Link mit Zeitfenster, Adresse, Sicherheitsunterweisung in der Sprache des Fahrers und dem Rampenruf. Keine App, kein Konto.",
+    "inactive": "Diese Buchung hat keinen aktiven Fahrerlink.",
+    "link": "Link für den Fahrer",
+    "copy": "Kopieren",
+    "copied": "Link kopiert",
+    "email": "E-Mail an den Fahrer",
+    "email_invalid": "Geben Sie eine gültige E-Mail-Adresse ein.",
+    "language": "Sprache des Fahrers",
+    "send": "Senden",
+    "sent": "Link an {{email}} gesendet",
+    "share": "Teilen…",
+    "share_title": "Buchung {{code}}",
+    "share_text": "Ihr Zeitfenster, die Adresse und die Sicherheitsunterweisung zur Buchung {{code}}",
+    "regenerate": "Link neu erzeugen",
+    "regenerate_title": "Fahrerlink neu erzeugen?",
+    "regenerate_description": "Der bisherige Link funktioniert sofort nicht mehr und zeigt „nicht mehr gültig“. Senden Sie dem Fahrer den neuen Link.",
+    "regenerated": "Neuer Fahrerlink erzeugt",
+    "keep": "Link behalten"
+  },
+  "list": {
+    "title": "Buchungen",
+    "description": "Ihre Zeitfenster bei allen Lagern, die mit Ihnen arbeiten. Zeiten in der Ortszeit des jeweiligen Standorts.",
+    "new": "Neue Buchung",
+    "pending_title": "Registrierung bei {{name}} wartet auf Freigabe",
+    "pending": "Sie können dort buchen, sobald die Disposition Ihre Anfrage freigibt.",
+    "range": "Zeitraum",
+    "tabs": {
+      "upcoming": "Anstehend",
+      "today": "Heute",
+      "past": "Vergangen"
+    },
+    "tenant": "Lager",
+    "all_tenants": "Alle Lager",
+    "site": "Standort",
+    "all_sites": "Alle Standorte",
+    "status": "Status",
+    "any_status": "Jeder Status",
+    "from": "Von",
+    "to": "Bis",
+    "clear": "Filter zurücksetzen",
+    "empty_title": "Noch keine Buchungen",
+    "empty": "Ihre Buchungen erscheinen hier, bei jedem Lager.",
+    "more": "Mehr anzeigen",
+    "change": "Ändern",
+    "details": "Details",
+    "gate_in": "Einfahrt",
+    "gate_out": "Ausfahrt",
+    "col": {
+      "slot": "Datum und Zeitfenster",
+      "where": "Lager · Standort",
+      "code": "Code",
+      "load": "Ladung",
+      "status": "Status",
+      "visit": "Einfahrt → Ausfahrt",
+      "actions": "Aktionen"
+    }
+  },
+  "detail": {
+    "back": "Alle Buchungen",
+    "where": "Standort und Ladung",
+    "phone": "Telefon des Standorts",
+    "dock": "Rampe",
+    "cancel_reason": "Stornogrund",
+    "code": "Buchungscode",
+    "code_hint": "Das Tor scannt diesen Code oder den Link des Fahrers.",
+    "avis": "Avis",
+    "avis_saved": "Avis gespeichert",
+    "avis_unchanged": "Die gespeicherte Avis bleibt unverändert.",
+    "locked_status": "Keine Änderungen: Die Buchung ist {{status}}.",
+    "link_inactive": "Das Lager hat Ihre Verbindung pausiert. Stornieren ist weiter möglich."
+  },
+  "visit": {
+    "title": "Besuch",
+    "checked_in": "Einfahrt",
+    "at_dock": "An der Rampe",
+    "done": "Fertig",
+    "departed": "Ausfahrt"
+  },
+  "reschedule": {
+    "title": "Zeit von {{code}} ändern",
+    "description": "Wählen Sie einen neuen Start. Das Lager prüft die Kapazität erneut und schickt Ihnen die Änderung per E-Mail.",
+    "submit": "Zeit ändern",
+    "done": "Zeit geändert"
+  },
+  "cancel": {
+    "title": "Buchung {{code}} stornieren?",
+    "description": "Das Zeitfenster wird sofort frei und der Fahrerlink funktioniert nicht mehr.",
+    "reason": "Grund (optional)",
+    "keep": "Buchung behalten",
+    "confirm": "Buchung stornieren",
+    "done": "Buchung {{code}} storniert"
+  }
+}

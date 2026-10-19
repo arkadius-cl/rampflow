@@ -1,0 +1,190 @@
+{
+  "minutes": "{{minutes}} min",
+  "qr": "Kod QR rezerwacji {{code}}",
+  "direction": {
+    "inbound": "Dostawa",
+    "outbound": "Odbiór"
+  },
+  "actions": {
+    "reschedule": "Zmień godzinę",
+    "cancel": "Anuluj rezerwację",
+    "book_again": "Zarezerwuj ponownie",
+    "edit_avis": "Edytuj awizację",
+    "save": "Zapisz awizację",
+    "discard": "Odrzuć zmiany",
+    "close": "Zamknij"
+  },
+  "wizard": {
+    "title": "Nowa rezerwacja",
+    "steps": "Kroki rezerwacji",
+    "back": "Wstecz",
+    "continue": "Dalej",
+    "taken": "Ta godzina właśnie została zajęta. Wybierz inną.",
+    "no_tenants_title": "Brak magazynu do rezerwacji",
+    "no_tenants": "Magazyn musi Cię najpierw zaprosić lub zatwierdzić Twoją rejestrację.",
+    "tenants": "Pokaż moje magazyny",
+    "where": {
+      "step": "Gdzie i co",
+      "hint": "Magazyn, lokalizacja, rodzaj ładunku",
+      "title": "Gdzie i co",
+      "description": "Wybierz magazyn, do którego jedziesz, i co wiezie ciężarówka. Rodzaj ładunku określa czas trwania.",
+      "tenant": "Magazyn",
+      "tenant_hint": "Widoczne są tylko magazyny, które z Tobą współpracują.",
+      "site": "Lokalizacja",
+      "load_type": "Rodzaj ładunku",
+      "no_load_types": "Ta lokalizacja nie oferuje przewoźnikom rodzajów ładunku.",
+      "units": "Jednostki ładunkowe",
+      "units_required": "Podaj co najmniej jedną jednostkę ładunkową.",
+      "unit_type": "Rodzaj jednostki",
+      "more_rows": "Łącznie {{units}} jednostek ładunkowych; wiersze edytujesz w kroku awizacji.",
+      "duration": "{{units}} jednostek ładunkowych zajmuje w tej lokalizacji {{minutes}} minut."
+    },
+    "when": {
+      "step": "Kiedy",
+      "hint": "Dzień i godzina rozpoczęcia",
+      "title": "Kiedy",
+      "description": "Proponujemy tylko godziny zgodne z godzinami otwarcia, zamknięciami i wolną przepustowością lokalizacji.",
+      "rules": "Lokalizacja wymaga {{hours}} godz. wyprzedzenia i przyjmuje rezerwacje do {{days}} dni naprzód."
+    },
+    "avis": {
+      "step": "Awizacja",
+      "hint": "Pojazd, kierowca, referencje",
+      "title": "Awizacja",
+      "description": "Poinformuj magazyn, co przyjedzie. Pola wymagane wynikają z ustawień lokalizacji.",
+      "confirm": "Potwierdź rezerwację"
+    },
+    "done": {
+      "step": "Potwierdzono",
+      "hint": "Kod, QR, link dla kierowcy"
+    }
+  },
+  "slot": {
+    "day": "Dzień",
+    "free": "wolne: {{count}}",
+    "none": "brak",
+    "loading": "ładowanie",
+    "previous_week": "Poprzedni tydzień",
+    "next_week": "Następny tydzień",
+    "zone": "Godziny rozpoczęcia w strefie",
+    "duration": "Czas trwania {{minutes}} min",
+    "morning": "Przed południem",
+    "afternoon": "Po południu",
+    "pick_day": "Wybierz dzień.",
+    "no_times": "Tego dnia nie ma już wolnych godzin.",
+    "to": "do"
+  },
+  "summary": {
+    "title": "Twoja rezerwacja",
+    "tenant": "Magazyn",
+    "site": "Lokalizacja",
+    "load": "Ładunek",
+    "duration": "Czas trwania",
+    "slot": "Okno czasowe",
+    "free": "Rezerwacja jest bezpłatna dla przewoźników."
+  },
+  "done": {
+    "title": "Zarezerwowano. Magazyn na Ciebie czeka.",
+    "changes": "Zmiany",
+    "open": "Otwórz rezerwację"
+  },
+  "cutoff": {
+    "until": "Zmiana lub anulowanie bezpłatnie do",
+    "passed": "Zmiany tej rezerwacji są już zamknięte.",
+    "call": "Zadzwoń do lokalizacji:",
+    "no_phone": "Skontaktuj się z magazynem."
+  },
+  "driver": {
+    "title": "Link dla kierowcy",
+    "description": "Jeden link z oknem czasowym, adresem, instruktażem BHP w języku kierowcy i wezwaniem do rampy. Bez aplikacji, bez konta.",
+    "inactive": "Ta rezerwacja nie ma aktywnego linku dla kierowcy.",
+    "link": "Link dla kierowcy",
+    "copy": "Kopiuj",
+    "copied": "Link skopiowany",
+    "email": "E-mail do kierowcy",
+    "email_invalid": "Podaj prawidłowy adres e-mail.",
+    "language": "Język kierowcy",
+    "send": "Wyślij",
+    "sent": "Link wysłany do {{email}}",
+    "share": "Udostępnij…",
+    "share_title": "Rezerwacja {{code}}",
+    "share_text": "Twoje okno czasowe, adres i instruktaż BHP do rezerwacji {{code}}",
+    "regenerate": "Wygeneruj nowy link",
+    "regenerate_title": "Wygenerować nowy link dla kierowcy?",
+    "regenerate_description": "Dotychczasowy link od razu przestanie działać i pokaże „link nieważny”. Wyślij kierowcy nowy link.",
+    "regenerated": "Utworzono nowy link dla kierowcy",
+    "keep": "Zachowaj link"
+  },
+  "list": {
+    "title": "Rezerwacje",
+    "description": "Twoje okna czasowe we wszystkich magazynach, które z Tobą współpracują. Godziny w czasie lokalnym danej lokalizacji.",
+    "new": "Nowa rezerwacja",
+    "pending_title": "Rejestracja w {{name}} czeka na zatwierdzenie",
+    "pending": "Możesz tam rezerwować, gdy dyspozytor zatwierdzi Twoje zgłoszenie.",
+    "range": "Zakres czasu",
+    "tabs": {
+      "upcoming": "Nadchodzące",
+      "today": "Dziś",
+      "past": "Minione"
+    },
+    "tenant": "Magazyn",
+    "all_tenants": "Wszystkie magazyny",
+    "site": "Lokalizacja",
+    "all_sites": "Wszystkie lokalizacje",
+    "status": "Status",
+    "any_status": "Każdy status",
+    "from": "Od",
+    "to": "Do",
+    "clear": "Wyczyść filtry",
+    "empty_title": "Brak rezerwacji",
+    "empty": "Tutaj pojawią się Twoje rezerwacje ze wszystkich magazynów.",
+    "more": "Pokaż więcej",
+    "change": "Zmień",
+    "details": "Szczegóły",
+    "gate_in": "Wjazd",
+    "gate_out": "wyjazd",
+    "col": {
+      "slot": "Data i okno czasowe",
+      "where": "Magazyn · lokalizacja",
+      "code": "Kod",
+      "load": "Ładunek",
+      "status": "Status",
+      "visit": "Wjazd → wyjazd",
+      "actions": "Akcje"
+    }
+  },
+  "detail": {
+    "back": "Wszystkie rezerwacje",
+    "where": "Lokalizacja i ładunek",
+    "phone": "Telefon lokalizacji",
+    "dock": "Rampa",
+    "cancel_reason": "Powód anulowania",
+    "code": "Kod rezerwacji",
+    "code_hint": "Brama skanuje ten kod lub link kierowcy.",
+    "avis": "Awizacja",
+    "avis_saved": "Awizacja zapisana",
+    "avis_unchanged": "Zapisana awizacja pozostaje bez zmian.",
+    "locked_status": "Brak zmian: rezerwacja ma status {{status}}.",
+    "link_inactive": "Magazyn wstrzymał współpracę. Nadal możesz anulować."
+  },
+  "visit": {
+    "title": "Wizyta",
+    "checked_in": "Wjazd",
+    "at_dock": "Przy rampie",
+    "done": "Zakończono",
+    "departed": "Wyjazd"
+  },
+  "reschedule": {
+    "title": "Zmień godzinę {{code}}",
+    "description": "Wybierz nową godzinę. Magazyn ponownie sprawdzi przepustowość i wyśle Ci zmianę e-mailem.",
+    "submit": "Zmień godzinę",
+    "done": "Godzina zmieniona"
+  },
+  "cancel": {
+    "title": "Anulować rezerwację {{code}}?",
+    "description": "Okno czasowe zostanie od razu zwolnione, a link dla kierowcy przestanie działać.",
+    "reason": "Powód (opcjonalnie)",
+    "keep": "Zachowaj rezerwację",
+    "confirm": "Anuluj rezerwację",
+    "done": "Rezerwacja {{code}} anulowana"
+  }
+}

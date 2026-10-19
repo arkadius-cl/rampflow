@@ -34,6 +34,9 @@ import { Route as RSlugRouteImport } from './routes/r/$slug'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
+import { Route as COrgIdBookIndexRouteImport } from './routes/c/$orgId/book/index'
+import { Route as COrgIdBookingsIndexRouteImport } from './routes/c/$orgId/bookings/index'
+import { Route as COrgIdBookingsBookingIdRouteImport } from './routes/c/$orgId/bookings/$bookingId'
 import { Route as COrgIdTenantsIndexRouteImport } from './routes/c/$orgId/tenants/index'
 import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
 import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
@@ -176,6 +179,21 @@ const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const COrgIdBookIndexRoute = COrgIdBookIndexRouteImport.update({
+  id: '/book/',
+  path: '/book/',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
+const COrgIdBookingsIndexRoute = COrgIdBookingsIndexRouteImport.update({
+  id: '/bookings/',
+  path: '/bookings/',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
+const COrgIdBookingsBookingIdRoute = COrgIdBookingsBookingIdRouteImport.update({
+  id: '/bookings/$bookingId',
+  path: '/bookings/$bookingId',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
 const COrgIdTenantsIndexRoute = COrgIdTenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
@@ -288,8 +306,11 @@ export interface FileRoutesByFullPath {
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
+  '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/book/': typeof COrgIdBookIndexRoute
+  '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -326,8 +347,11 @@ export interface FileRoutesByTo {
   '/platform': typeof PlatformIndexRoute
   '/c/$orgId': typeof COrgIdIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
+  '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/book': typeof COrgIdBookIndexRoute
+  '/c/$orgId/bookings': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants': typeof COrgIdTenantsIndexRoute
   '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
@@ -370,8 +394,11 @@ export interface FileRoutesById {
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
+  '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
+  '/c/$orgId/book/': typeof COrgIdBookIndexRoute
+  '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -415,8 +442,11 @@ export interface FileRouteTypes {
     | '/c/$orgId/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
+    | '/c/$orgId/bookings/$bookingId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/book/'
+    | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -453,8 +483,11 @@ export interface FileRouteTypes {
     | '/platform'
     | '/c/$orgId'
     | '/t/$orgId'
+    | '/c/$orgId/bookings/$bookingId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/book'
+    | '/c/$orgId/bookings'
     | '/c/$orgId/tenants'
     | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
@@ -496,8 +529,11 @@ export interface FileRouteTypes {
     | '/c/$orgId/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
+    | '/c/$orgId/bookings/$bookingId'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
+    | '/c/$orgId/book/'
+    | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -705,6 +741,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/c/$orgId/book/': {
+      id: '/c/$orgId/book/'
+      path: '/book'
+      fullPath: '/c/$orgId/book/'
+      preLoaderRoute: typeof COrgIdBookIndexRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
+    '/c/$orgId/bookings/': {
+      id: '/c/$orgId/bookings/'
+      path: '/bookings'
+      fullPath: '/c/$orgId/bookings/'
+      preLoaderRoute: typeof COrgIdBookingsIndexRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
+    '/c/$orgId/bookings/$bookingId': {
+      id: '/c/$orgId/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/c/$orgId/bookings/$bookingId'
+      preLoaderRoute: typeof COrgIdBookingsBookingIdRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
     '/c/$orgId/tenants/': {
       id: '/c/$orgId/tenants/'
       path: '/tenants'
@@ -864,11 +921,17 @@ const PlatformRouteRouteWithChildren = PlatformRouteRoute._addFileChildren(
 
 interface COrgIdRouteRouteChildren {
   COrgIdIndexRoute: typeof COrgIdIndexRoute
+  COrgIdBookingsBookingIdRoute: typeof COrgIdBookingsBookingIdRoute
+  COrgIdBookIndexRoute: typeof COrgIdBookIndexRoute
+  COrgIdBookingsIndexRoute: typeof COrgIdBookingsIndexRoute
   COrgIdTenantsIndexRoute: typeof COrgIdTenantsIndexRoute
 }
 
 const COrgIdRouteRouteChildren: COrgIdRouteRouteChildren = {
   COrgIdIndexRoute: COrgIdIndexRoute,
+  COrgIdBookingsBookingIdRoute: COrgIdBookingsBookingIdRoute,
+  COrgIdBookIndexRoute: COrgIdBookIndexRoute,
+  COrgIdBookingsIndexRoute: COrgIdBookingsIndexRoute,
   COrgIdTenantsIndexRoute: COrgIdTenantsIndexRoute,
 }
 
