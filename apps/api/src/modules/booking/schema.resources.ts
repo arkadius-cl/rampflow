@@ -1,3 +1,9 @@
+import {
+  CLOSURE_KINDS,
+  DIRECTIONS,
+  type LoadTypeDuration,
+  RESOURCE_KINDS,
+} from '@rampflow/shared/modules/booking/api.capacity';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -34,8 +40,7 @@ import { dock, siteForeignKey } from '../core/schema.ts';
 export type ResourceId = Id<'resource'>;
 export type LoadTypeId = Id<'load_type'>;
 
-export const RESOURCE_KINDS = ['pool', 'single'] as const;
-export const DIRECTIONS = ['inbound', 'outbound'] as const;
+export { CLOSURE_KINDS, DIRECTIONS, type LoadTypeDuration, RESOURCE_KINDS };
 
 /** A single dock or a pool of docks that bookings are planned on (MD-03). */
 export const bookableResource = pgTable(
@@ -130,7 +135,6 @@ export const openingHours = pgTable(
   ],
 );
 
-export const CLOSURE_KINDS = ['closed', 'blocked'] as const;
 export const CLOSURE_SOURCES = ['manual', 'holiday'] as const;
 
 export const closure = pgTable(
@@ -173,11 +177,6 @@ export const closure = pgTable(
     ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
   ],
 );
-
-/** Duration rules: `{ kind: 'fixed', minutes }` or `{ kind: 'tiers', tiers: [{ upTo, minutes }] }`. */
-export type LoadTypeDuration =
-  | { kind: 'fixed'; minutes: number }
-  | { kind: 'tiers'; tiers: { upTo: number | null; minutes: number }[] };
 
 export const loadType = pgTable(
   'load_type',
