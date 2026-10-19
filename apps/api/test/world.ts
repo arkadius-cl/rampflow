@@ -101,6 +101,12 @@ export interface World {
  */
 const SESSIONS_VALID_UNTIL = new Date('2100-01-01T00:00:00Z');
 
+/**
+ * A fixed "now" before every world booking, while their driver links are valid, for tests that
+ * need a plausible present rather than a particular date.
+ */
+export const WORLD_NOW = new Date('2026-10-19T08:00:00Z');
+
 const uid = <T extends string>() => randomUUID() as T;
 const suffix = () => randomBytes(4).toString('hex');
 

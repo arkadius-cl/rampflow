@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
-import { app } from '../src/app.ts';
+import { createApp } from '../src/app.ts';
 import type { BookingId, DockId } from '../src/db/ids.ts';
 import { requireEntitlement, requirePermission, withModule } from '../src/kernel/access.ts';
-import { systemClock } from '../src/kernel/clock.ts';
+import { testClock } from '../src/kernel/clock.ts';
 import type { AppEnv } from '../src/kernel/env.ts';
 import { ApiError, onError, onNotFound } from '../src/kernel/errors.ts';
 import { scoped } from '../src/kernel/scoped.ts';
@@ -21,7 +21,9 @@ import {
   loadRouteCases,
   type RouteCase,
 } from './route-cases.ts';
+import { WORLD_NOW } from './world.ts';
 
+const app = createApp({ clock: testClock(WORLD_NOW), testRoutes: true });
 const loaded = await loadRouteCases();
 const accountLoaded = await loadAccountCases();
 
@@ -66,7 +68,7 @@ function toyAccountApp(defect: AccountDefect) {
   });
   return new Hono<AppEnv>()
     .use(async (c, next) => {
-      c.set('clock', systemClock);
+      c.set('clock', testClock(WORLD_NOW));
       await next();
     })
     .route('/api/me', me)
@@ -156,7 +158,7 @@ function toyApp(defect: Defect) {
     });
   return new Hono<AppEnv>()
     .use(async (c, next) => {
-      c.set('clock', systemClock);
+      c.set('clock', testClock(WORLD_NOW));
       await next();
     })
     .route(

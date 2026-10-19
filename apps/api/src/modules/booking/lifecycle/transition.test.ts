@@ -14,9 +14,10 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
 import { type World, world } from '../../../../test/world.ts';
-import { app } from '../../../app.ts';
+import { createApp } from '../../../app.ts';
 import type { DockId } from '../../../db/ids.ts';
 import { withScope } from '../../../db/scope.ts';
+import { testClock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { seedBriefing } from '../../safety/authoring/fixtures.ts';
 import { safetyAcknowledgement } from '../../safety/schema.ts';
@@ -32,6 +33,7 @@ beforeAll(async () => {
 });
 
 const NOW = new Date('2026-11-02T08:00:00Z');
+const app = createApp({ clock: testClock(NOW) });
 const outcome = (p: Promise<unknown>) =>
   p.then(
     () => ({ code: 'ok' }) as const,

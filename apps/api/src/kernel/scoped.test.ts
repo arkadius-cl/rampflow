@@ -4,9 +4,9 @@ import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
-import { type World, world } from '../../test/world.ts';
+import { WORLD_NOW, type World, world } from '../../test/world.ts';
 import { hall } from '../modules/core/schema.ts';
-import { systemClock } from './clock.ts';
+import { testClock } from './clock.ts';
 import type { AppEnv } from './env.ts';
 import { ApiError, onError, onNotFound } from './errors.ts';
 import { scoped } from './scoped.ts';
@@ -45,7 +45,7 @@ function toyApp() {
     .get('/scope', (c) => c.json(c.var.scope));
   return new Hono<AppEnv>()
     .use(async (c, next) => {
-      c.set('clock', systemClock);
+      c.set('clock', testClock(WORLD_NOW));
       await next();
     })
     .route('/api/t/:orgId', tenant)
