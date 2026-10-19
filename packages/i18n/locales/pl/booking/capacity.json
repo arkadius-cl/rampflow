@@ -68,7 +68,7 @@
     "add": "Dodaj zamknięcie",
     "form_description": "Zamknij całą lokalizację lub zablokuj jeden zasób. Godziny według zegara lokalizacji.",
     "empty": "Brak zamknięć w najbliższych 400 dniach.",
-    "holidays_off": "Święta nie zamykają tej lokalizacji: ustawienie „Zamykaj w święta” jest wyłączone.",
+    "holidays_off": "Święta nie zamykają tej lokalizacji: ustawienie „Zamknięte w święta” jest wyłączone.",
     "whole_site": "Cała lokalizacja",
     "columns": {
       "when": "Kiedy",

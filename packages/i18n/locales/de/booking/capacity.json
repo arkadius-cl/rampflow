@@ -68,7 +68,7 @@
     "add": "Schließung hinzufügen",
     "form_description": "Schließen Sie den ganzen Standort oder sperren Sie eine Ressource. Die Zeiten folgen der Uhr des Standorts.",
     "empty": "Keine Schließungen in den nächsten 400 Tagen.",
-    "holidays_off": "Feiertage schließen diesen Standort nicht: Die Einstellung „An Feiertagen schließen“ ist aus.",
+    "holidays_off": "Feiertage schließen diesen Standort nicht: Die Einstellung „An Feiertagen geschlossen“ ist aus.",
     "whole_site": "Ganzer Standort",
     "columns": {
       "when": "Wann",

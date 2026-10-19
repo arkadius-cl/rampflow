@@ -68,7 +68,7 @@
     "add": "Add closure",
     "form_description": "Close the whole site or block one resource. Times are the site's wall clock.",
     "empty": "No closures in the next 400 days.",
-    "holidays_off": "Public holidays do not close this site: the setting \"Close on public holidays\" is off.",
+    "holidays_off": "Public holidays do not close this site: the setting \"Closed on public holidays\" is off.",
     "whole_site": "Whole site",
     "columns": {
       "when": "When",
