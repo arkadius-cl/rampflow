@@ -29,7 +29,11 @@ export const accountCases = defineAccountCases([
     credential: 'token',
     arrange: async (_w, db) => {
       const a = await account(db);
-      return { actor: null, body: { token: await authTokenFor(db, 'magic_link', a.id) } };
+      return {
+        actor: null,
+        body: { token: await authTokenFor(db, 'magic_link', a.id) },
+        otherToken: await authTokenFor(db, 'password_reset', a.id),
+      };
     },
   },
   {
@@ -45,7 +49,11 @@ export const accountCases = defineAccountCases([
     arrange: async (_w, db) => {
       const a = await account(db);
       const token = await authTokenFor(db, 'password_reset', a.id);
-      return { actor: null, body: { token, password: 'a new password 2026' } };
+      return {
+        actor: null,
+        body: { token, password: 'a new password 2026' },
+        otherToken: await authTokenFor(db, 'magic_link', a.id),
+      };
     },
   },
 ]);

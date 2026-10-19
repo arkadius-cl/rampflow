@@ -122,13 +122,29 @@ describe('password sign-in (CR-03)', () => {
     expect((await login(a.email, a.password, '203.0.113.9')).status).toBe(200);
   });
 
-  it('lets five concurrent wrong passwords through the check at most once each', async () => {
+  it('counts a burst larger than the connection pool exactly, without starving the pool', async () => {
     const { login } = harness();
     const a = await account(ownerDb());
     const burst = await Promise.all(
-      Array.from({ length: 8 }, () => login(a.email, 'wrong password', '198.51.100.8')),
+      Array.from({ length: 30 }, () => login(a.email, 'wrong password', '198.51.100.8')),
     );
-    expect(burst.map((r) => r.status).sort()).toEqual([401, 401, 401, 401, 401, 429, 429, 429]);
+    const statuses = burst.map((r) => r.status);
+    expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(25);
+  });
+
+  it('refuses a token of the other kind: a magic link cannot set a password', async () => {
+    const { request } = harness();
+    const a = await account(ownerDb());
+    await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
+    const magic = await linkTokenTo(a.email, 'magic_link');
+    const res = await request('POST', '/api/auth/password-reset/confirm', {
+      body: { token: magic, password: 'hijacked password' },
+    });
+    expect(res.status).toBe(401);
+    expect(
+      (await request('POST', '/api/auth/magic-link/exchange', { body: { token: magic } })).status,
+    ).toBe(200);
   });
 
   it('signs out: the session row is gone and the cookie no longer works', async () => {

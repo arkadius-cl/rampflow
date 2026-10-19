@@ -21,6 +21,9 @@ const cookieOptions = () =>
 
 /** Creates a session for `userId` in `tx` and sets `rf_session`. Returns the new session's id. */
 export async function startSession(c: Context, tx: Tx, userId: UserId, now: Date) {
+  // The browser's previous session would stay valid with no cookie left to sign it out.
+  const previous = currentSessionId(c);
+  if (previous) await tx.delete(session).where(eq(session.id, previous));
   const token = randomBytes(32).toString('base64url');
   const id = hashToken(token);
   await tx.insert(session).values({

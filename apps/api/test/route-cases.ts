@@ -64,11 +64,18 @@ export interface AccountRouteCase {
    * `none`: open to anyone, for example sign-in and link requests.
    */
   credential: 'session' | 'token' | 'none';
+  /** A token route whose token works once: a second control call must answer 401. */
+  singleUse?: boolean;
   /**
    * Writes the case's fixtures and returns the control request, which must succeed. A session
    * case acts as a user of world A, so the harness can call as their counterpart in world B.
+   * A token case also returns `otherToken`: a valid token of another purpose for the same
+   * person (a reset token for a magic-link route, ...), which the route must refuse.
    */
-  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown }>;
+  arrange: (
+    world: World,
+    db: OwnerDb,
+  ) => Promise<{ actor: Actor; body?: unknown; otherToken?: string }>;
 }
 
 export function defineAccountCases(
@@ -353,7 +360,7 @@ export async function checkRouteCase(
 }
 
 export interface AccountProblem {
-  check: 'anonymous' | 'wrong_party' | 'foreign_org' | 'control';
+  check: 'anonymous' | 'wrong_party' | 'foreign_org' | 'reuse' | 'control';
   detail: string;
 }
 
@@ -372,15 +379,16 @@ const leakIn = (text: string, secrets: ReadonlySet<string>) =>
 /**
  * The checks for a route outside the org areas. A session route refuses an anonymous caller and
  * a driver cookie with 401, and shows B's counterpart nothing of world A. A token route refuses
- * an unknown token and a token of another purpose with 401, even with a session. Every control
- * call succeeds and shows nothing of world B.
+ * an unknown token, a driver token and a token of another purpose with 401, even with a session,
+ * and a single-use token the second time. Every control call succeeds and shows nothing of
+ * world B.
  */
 export async function checkAccountCase(
   app: Pick<Hono, 'request'>,
   ac: AccountRouteCase,
 ): Promise<AccountProblem[]> {
   const w = await seedWorld();
-  const { actor, body } = await ac.arrange(w, ownerDb());
+  const { actor, body, otherToken } = await ac.arrange(w, ownerDb());
   const problems: AccountProblem[] = [];
   const report = (check: AccountProblem['check'], detail: string | null) => {
     if (detail) problems.push({ check, detail });
@@ -413,6 +421,13 @@ export async function checkAccountCase(
         'unauthorized',
       ),
     );
+    if (!otherToken) report('wrong_party', 'arrange returns no otherToken of another purpose');
+    else {
+      report(
+        'wrong_party',
+        await expectError(await call(null, withToken(otherToken)), 401, 'unauthorized'),
+      );
+    }
   }
 
   const res = await call(actor);
@@ -420,5 +435,8 @@ export async function checkAccountCase(
   if (res.status >= 400) report('control', `got ${res.status} ${text.slice(0, 200)}`);
   const leaked = leakIn(text, secretsOf(w.B));
   if (leaked.length > 0) report('foreign_org', `control answer leaks ${leaked.join(', ')}`);
+  if (ac.credential === 'token' && (ac.singleUse ?? true)) {
+    report('reuse', await expectError(await call(actor), 401, 'unauthorized'));
+  }
   return problems;
 }
