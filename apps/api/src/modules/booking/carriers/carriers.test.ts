@@ -8,7 +8,13 @@ import { type CarrierId, type UserId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { account } from '../../core/auth/fixtures.ts';
-import { entitlementOverride, membership, org, tenantCarrierLink } from '../../core/schema.ts';
+import {
+  appUser,
+  entitlementOverride,
+  membership,
+  org,
+  tenantCarrierLink,
+} from '../../core/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { carrierInvitation } from '../schema.carriers.ts';
 import { booking } from '../schema.ts';
@@ -182,14 +188,32 @@ describe('CR-01 accept a carrier invitation', () => {
     expect(await linkOf(w, w.B.carrierId)).toMatchObject({ status: 'active' });
   });
 
-  it('works once', async () => {
+  it('works once, also for the invitee signed in by the first acceptance', async () => {
     const inv = await carrierInvitationFor(ownerDb(), {
       tenantId: w.A.tenantId,
       invitedBy: w.A.users.dispatcher.id,
     });
     const body = { token: inv.token, name: 'Once Only', password: 'carrier password 2026' };
-    expect((await anon.post('/api/public/carrier-invitations/accept', { body })).status).toBe(200);
-    expect((await anon.post('/api/public/carrier-invitations/accept', { body })).status).toBe(401);
+    const first = await anon.post('/api/public/carrier-invitations/accept', { body });
+    expect(first.status).toBe(200);
+    const { carrierId } = (await first.json()) as { carrierId: string };
+    const [invitee] = await ownerDb()
+      .select({ id: appUser.id })
+      .from(appUser)
+      .where(eq(appUser.email, inv.email));
+    const again = await as(app, userWith(sessionOf(first) as string, invitee?.id as UserId)).post(
+      '/api/public/carrier-invitations/accept',
+      { body },
+    );
+    expect(again.status).toBe(401);
+    expect(await again.json()).toMatchObject({
+      error: { message: 'Invalid or expired invitation' },
+    });
+    const companies = await ownerDb()
+      .select({ id: membership.orgId })
+      .from(membership)
+      .where(eq(membership.userId, invitee?.id as UserId));
+    expect(companies).toEqual([{ id: carrierId }]);
   });
 
   it('expires after 7 days', async () => {
