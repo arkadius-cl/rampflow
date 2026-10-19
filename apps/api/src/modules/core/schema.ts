@@ -77,11 +77,12 @@ export const org = pgTable(
       'select',
       sql`exists (select 1 from membership m where m.org_id = ${t.id} and m.user_id = (select app.user_id()))`,
     ),
-    // A tenant reads its own org and the carriers linked to it (TN-03).
+    // A tenant reads its own org, the carriers linked to it (TN-03), and the carriers a
+    // registration would link, so it decides on the company it actually gets (TN-04).
     allow(
       'tenant',
       'select',
-      sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id})`,
+      sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id}) or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = ${t.id})`,
     ),
     allow('carrier_at_tenant', 'select', sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`),
     allow('driver', 'select', tenantIs(t.id)),

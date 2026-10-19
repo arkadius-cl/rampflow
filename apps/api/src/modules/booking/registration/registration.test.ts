@@ -308,6 +308,63 @@ describe('CR-02 register through a public link', () => {
   });
 });
 
+describe('CR-02 only a carrier admin binds an existing company', () => {
+  it('a carrier_user gets 403 and the registration stays unverified', async () => {
+    const other = await world();
+    const member = other.B.users.carrier_user;
+    const slug = await open('auto_approve');
+    await anon.post(`/api/public/links/${slug}/registrations`, { body: form(member.email) });
+    const { token, row } = await registered(member.email);
+    const orgsBefore = (await ownerDb().select({ id: org.id }).from(org)).length;
+    const res = await as(app, member).post('/api/public/registrations/verify', { body: { token } });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({
+      error: { code: 'forbidden', details: { reason: 'carrier_admin_required' } },
+    });
+    expect(await linkOf(w.A.tenantId, other.B.carrierId)).toBeNull();
+    expect((await ownerDb().select({ id: org.id }).from(org)).length).toBe(orgsBefore);
+    const [after] = await ownerDb()
+      .select({ status: carrierRegistration.status })
+      .from(carrierRegistration)
+      .where(eq(carrierRegistration.id, row.id));
+    expect(after?.status).toBe('pending_email');
+  });
+
+  it('the tenant sees and is emailed the name of the company that gets linked', async () => {
+    const other = await world();
+    const carrierAdmin = other.B.users.carrier_admin;
+    const [company] = await ownerDb()
+      .select({ name: org.name })
+      .from(org)
+      .where(eq(org.id, other.B.carrierId));
+    const slug = await open('approval_required');
+    await anon.post(`/api/public/links/${slug}/registrations`, { body: form(carrierAdmin.email) });
+    const { token, row } = await registered(carrierAdmin.email);
+    const verified = await as(app, carrierAdmin).post('/api/public/registrations/verify', {
+      body: { token },
+    });
+    expect(verified.status).toBe(200);
+
+    const listed = await as(app, w.A.users.dispatcher).get(
+      `/api/t/${w.A.tenantId}/carriers/registrations`,
+    );
+    const { items } = (await listed.json()) as { items: { id: string }[] };
+    expect(items.find((i) => i.id === row.id)).toMatchObject({
+      companyName: 'Baltic Freight UAB',
+      carrierName: company?.name,
+    });
+
+    const approved = await as(app, w.A.users.dispatcher).post(
+      `/api/t/${w.A.tenantId}/carriers/registrations/${row.id}/approve`,
+    );
+    expect(await approved.json()).toMatchObject({ carrierName: company?.name });
+    const mail = (await mailsTo(carrierAdmin.email)).find(
+      (m) => m.template === 'booking.registration-approved',
+    );
+    expect(mail?.payload).toMatchObject({ carrierName: company?.name });
+  });
+});
+
 describe('CR-02 registration limits', () => {
   it('a sixth registration of one email within an hour answers 202 and writes nothing', async () => {
     const slug = await open('approval_required');

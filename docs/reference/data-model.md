@@ -116,7 +116,7 @@ Every party organisation: the single platform org, tenants and carriers.
 | `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) |
 
 - Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org.
-- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` and `token` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration; ids are generated in the app, because these parties cannot read the new row back).
+- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` and `token` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration; ids are generated in the app, because these parties cannot read the new row back).
 
 ### `app_user`
 

@@ -130,7 +130,10 @@ export interface RegistrationView {
   id: string;
   siteId: string;
   siteName: string;
+  /** The company name the registrant typed. */
   companyName: string;
+  /** The carrier org that verification bound, which the link connects; null before verification. */
+  carrierName: string | null;
   country: string;
   contactName: string;
   email: string;

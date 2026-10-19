@@ -19,6 +19,8 @@
     "verifying": "Potwierdzanie rejestracji…",
     "invalid_title": "Link nieważny",
     "invalid": "Ten link jest nieprawidłowy, wygasł lub został już użyty. Zarejestruj się ponownie przez link do rezerwacji magazynu.",
+    "admin_required_title": "Poproś administratora",
+    "admin_required": "Tylko administrator Twojej firmy może połączyć ją z magazynem. Poproś administratora swojej firmy o rejestrację przez link rezerwacyjny magazynu.",
     "sign_in_first": "Ten adres e-mail ma już konto. Zaloguj się, a rejestracja zostanie przypisana do Twojej firmy.",
     "password": "Hasło",
     "sign_in_and_confirm": "Zaloguj się i potwierdź",
@@ -42,7 +44,7 @@
     },
     "approved": {
       "subject": "{{tenant}} zatwierdził Twoją rejestrację",
-      "intro": "Możesz teraz rezerwować okna czasowe w {{tenant}}, {{site}}.",
+      "intro": "{{company}} może teraz rezerwować okna czasowe w {{tenant}}, {{site}}.",
       "action": "Zarezerwuj okno"
     },
     "rejected": {

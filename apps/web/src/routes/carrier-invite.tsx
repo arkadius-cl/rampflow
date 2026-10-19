@@ -136,7 +136,9 @@ function Invitation({
             <AlertTitle>
               {failure.code === 'unauthorized'
                 ? t(($) => $.carriers.accept.invalid)
-                : errorText(core, failure)}
+                : failure.reason === 'carrier_admin_required'
+                  ? t(($) => $.carriers.accept.admin_required, { tenant: invitation.tenantName })
+                  : errorText(core, failure)}
             </AlertTitle>
           </Alert>
         ) : null}

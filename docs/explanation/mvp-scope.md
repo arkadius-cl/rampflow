@@ -74,7 +74,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - Settings whose entitlement is off are hidden, and writes return 403.
    - Retention values above the platform maximum return 422.
 3. **TN-03 Invite carriers.** The admin invites a carrier by company name and email.
-   - Accepting with an existing carrier user's email links that org instead of creating one.
+   - Accepting with an existing carrier admin's email links that org instead of creating one. A `carrier_user` cannot bind the company (403).
    - A deactivated link blocks new bookings by that carrier (403). Existing bookings stay visible to both sides.
 4. **TN-04 Public booking link.** Per site, the admin enables a public link and picks `auto_approve` or `approval_required`.
    - Approving a pending registration links the carrier and emails it. Rejecting emails the reason.

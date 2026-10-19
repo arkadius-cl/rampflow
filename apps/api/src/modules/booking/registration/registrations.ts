@@ -100,12 +100,17 @@ export async function submitRegistration(
   );
 }
 
-function view(row: RegistrationRow, siteName: string): RegistrationView {
+function view(
+  row: RegistrationRow,
+  siteName: string,
+  carrierName: string | null,
+): RegistrationView {
   return {
     id: row.id,
     siteId: row.siteId,
     siteName,
     companyName: row.companyName,
+    carrierName,
     country: row.country,
     contactName: row.contactName,
     email: row.email,
@@ -116,15 +121,16 @@ function view(row: RegistrationRow, siteName: string): RegistrationView {
   };
 }
 
-/** Every registration of the tenant, newest first, with its site's name. */
+/** Every registration of the tenant, newest first, with its site's and its carrier org's name. */
 export async function listRegistrations(tx: Tx, tenantId: TenantId): Promise<RegistrationView[]> {
   const rows = await tx
-    .select({ registration: carrierRegistration, siteName: site.name })
+    .select({ registration: carrierRegistration, siteName: site.name, carrierName: org.name })
     .from(carrierRegistration)
     .innerJoin(site, eq(site.id, carrierRegistration.siteId))
+    .leftJoin(org, eq(org.id, carrierRegistration.carrierId))
     .where(eq(carrierRegistration.tenantId, tenantId))
     .orderBy(desc(carrierRegistration.createdAt));
-  return rows.map((r) => view(r.registration, r.siteName));
+  return rows.map((r) => view(r.registration, r.siteName, r.carrierName));
 }
 
 type Decision = { status: 'approved' } | { status: 'rejected'; reason: string };
@@ -179,6 +185,8 @@ export async function decideRegistration(
   }
 
   const [tenant] = await tx.select({ name: org.name }).from(org).where(eq(org.id, tenantId));
+  const [carrier] = await tx.select({ name: org.name }).from(org).where(eq(org.id, carrierId));
+  const carrierName = carrier?.name ?? row.companyName;
   const [s] = await tx
     .select({ name: site.name })
     .from(site)
@@ -199,7 +207,7 @@ export async function decideRegistration(
       {
         ...email,
         template: 'booking.registration-approved',
-        payload: { ...common, carrierId },
+        payload: { ...common, carrierId, carrierName },
       },
       o.entitlements,
     );
@@ -214,5 +222,5 @@ export async function decideRegistration(
       o.entitlements,
     );
   }
-  return view(row, s?.name ?? '');
+  return view(row, s?.name ?? '', carrierName);
 }

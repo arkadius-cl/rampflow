@@ -19,6 +19,8 @@
     "verifying": "Ihre Registrierung wird bestätigt…",
     "invalid_title": "Link ungültig",
     "invalid": "Dieser Link ist ungültig, abgelaufen oder bereits verwendet. Registrieren Sie sich erneut über den Buchungslink des Lagers.",
+    "admin_required_title": "Fragen Sie Ihren Administrator",
+    "admin_required": "Nur ein Administrator Ihres Unternehmens kann es mit einem Lager verknüpfen. Bitten Sie den Administrator Ihres Unternehmens, sich über den Buchungslink des Lagers zu registrieren.",
     "sign_in_first": "Für diese E-Mail-Adresse gibt es bereits ein Konto. Melden Sie sich an, dann gilt die Registrierung für Ihr Unternehmen.",
     "password": "Passwort",
     "sign_in_and_confirm": "Anmelden und bestätigen",
@@ -42,7 +44,7 @@
     },
     "approved": {
       "subject": "{{tenant}} hat Ihre Registrierung freigegeben",
-      "intro": "Sie können jetzt Zeitfenster bei {{tenant}}, {{site}} buchen.",
+      "intro": "{{company}} kann jetzt Zeitfenster bei {{tenant}}, {{site}} buchen.",
       "action": "Zeitfenster buchen"
     },
     "rejected": {

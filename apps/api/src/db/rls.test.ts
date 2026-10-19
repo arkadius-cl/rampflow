@@ -88,6 +88,8 @@ const ORACLE: Record<string, Rule> = {
     (is(c, 'user') && rel.memberships.some((m) => m.user_id === c.user && m.org_id === r.id)) ||
     (is(c, 'tenant', 'driver', 'public') && r.id === c.tenant) ||
     (is(c, 'tenant') && rel.links.some((l) => l.tenant_id === c.tenant && l.carrier_id === r.id)) ||
+    (is(c, 'tenant') &&
+      rel.registrations.some((g) => g.tenant_id === c.tenant && g.carrier_id === r.id)) ||
     (is(c, 'carrier_at_tenant') && (r.id === c.tenant || r.id === c.carrier)) ||
     (is(c, 'carrier') &&
       (r.id === c.carrier ||

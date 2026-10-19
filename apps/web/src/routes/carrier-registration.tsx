@@ -64,12 +64,22 @@ function VerifyRegistrationPage() {
       </AuthLayout>
     );
   }
+  const adminRequired =
+    isFailure(failure, 'forbidden') && failure.reason === 'carrier_admin_required';
   return (
     <AuthLayout title={t(($) => $.registration.verify.title)}>
       <Alert variant="destructive">
         <CircleAlertIcon />
-        <AlertTitle>{t(($) => $.registration.verify.invalid_title)}</AlertTitle>
-        <AlertDescription>{t(($) => $.registration.verify.invalid)}</AlertDescription>
+        <AlertTitle>
+          {adminRequired
+            ? t(($) => $.registration.verify.admin_required_title)
+            : t(($) => $.registration.verify.invalid_title)}
+        </AlertTitle>
+        <AlertDescription>
+          {adminRequired
+            ? t(($) => $.registration.verify.admin_required)
+            : t(($) => $.registration.verify.invalid)}
+        </AlertDescription>
       </Alert>
     </AuthLayout>
   );

@@ -85,6 +85,11 @@ export function RegistrationsTab({ orgId }: { orgId: string }) {
               <TableRow key={r.id}>
                 <TableCell className="pl-6">
                   <div className="font-medium">{r.companyName}</div>
+                  {r.carrierName && r.carrierName !== r.companyName ? (
+                    <div className="text-xs font-medium">
+                      {t(($) => $.carriers.registrations.links_to, { company: r.carrierName })}
+                    </div>
+                  ) : null}
                   <div className="text-xs text-muted-foreground">{country(r.country)}</div>
                 </TableCell>
                 <TableCell>
@@ -129,7 +134,9 @@ function Decide({ orgId, registration }: { orgId: string; registration: Registra
       ),
     onSuccess: async () => {
       toast.success(
-        t(($) => $.carriers.registrations.approved, { company: registration.companyName }),
+        t(($) => $.carriers.registrations.approved, {
+          company: registration.carrierName ?? registration.companyName,
+        }),
       );
       await queryClient.invalidateQueries({ queryKey: carrierKeys.all(orgId) });
     },

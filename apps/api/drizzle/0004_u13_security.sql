@@ -1,0 +1,1 @@
+ALTER POLICY "tenant_select" ON "org" TO public USING (((select app.party()) = 'tenant') and ("org"."id" = (select app.tenant_id()) or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = "org"."id") or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = "org"."id")));

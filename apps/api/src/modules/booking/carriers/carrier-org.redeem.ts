@@ -69,9 +69,10 @@ export async function redeemingUser(
 }
 
 /**
- * The carrier org the user acts for: an existing carrier membership links that org (TN-03,
- * CR-02), preferring one where the user is carrier admin; otherwise a new company with the user
- * as its carrier admin.
+ * The carrier org the user acts for: the org where the user is carrier admin links that org
+ * (TN-03, CR-02); a user with no carrier membership gets a new company with the user as its
+ * carrier admin. Binding a company to a tenant is an admin decision, so a user who is only
+ * `carrier_user` somewhere answers 403 `carrier_admin_required` and nothing is written.
  */
 export async function carrierOfUser(
   tx: Tx,
@@ -85,8 +86,13 @@ export async function carrierOfUser(
       .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'carrier')))
       .orderBy(asc(membership.createdAt)),
   );
-  const existing = memberships.find((m) => m.role === 'carrier_admin') ?? memberships[0];
-  if (existing) return existing.orgId as CarrierId;
+  const administered = memberships.find((m) => m.role === 'carrier_admin');
+  if (administered) return administered.orgId as CarrierId;
+  if (memberships.length > 0) {
+    throw new ApiError('forbidden', 'Only a carrier admin can link the company', {
+      reason: 'carrier_admin_required',
+    });
+  }
 
   const carrierId = randomUUID() as CarrierId;
   await tx

@@ -8,6 +8,8 @@ import { button, languageOf } from './carrier-invitation.tsx';
 export interface RegistrationApprovedPayload {
   registrationId: string;
   carrierId: string;
+  /** The carrier org the registration linked, which may differ from the typed company name. */
+  carrierName: string;
   tenantName: string;
   siteName: string;
 }
@@ -23,6 +25,7 @@ export const category = 'account';
 export const example: RegistrationApprovedPayload = {
   registrationId: '01900000-0000-7000-8000-000000000003',
   carrierId: '01900000-0000-7000-8000-000000000004',
+  carrierName: 'Baltic Freight UAB',
   tenantName: 'Acme Logistics',
   siteName: 'Hamburg',
 };
@@ -30,7 +33,11 @@ export const example: RegistrationApprovedPayload = {
 /** Links to the carrier's booking wizard; sign-in comes first when needed. */
 export function render(payload: RegistrationApprovedPayload, t: TFunction) {
   const link = `${env.APP_ORIGIN}/c/${payload.carrierId}/book`;
-  const values = { tenant: payload.tenantName, site: payload.siteName };
+  const values = {
+    tenant: payload.tenantName,
+    site: payload.siteName,
+    company: payload.carrierName,
+  };
   const subject = t('registration.email.approved.subject', values);
   return {
     subject,

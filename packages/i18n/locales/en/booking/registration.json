@@ -19,6 +19,8 @@
     "verifying": "Confirming your registration…",
     "invalid_title": "Link not valid",
     "invalid": "This link is invalid, expired or already used. Register again through the warehouse's booking link.",
+    "admin_required_title": "Ask your administrator",
+    "admin_required": "Only an administrator of your company can link it to a warehouse. Ask your company's administrator to register through the warehouse's booking link.",
     "sign_in_first": "This email already has an account. Sign in, and the registration joins your company.",
     "password": "Password",
     "sign_in_and_confirm": "Sign in and confirm",
@@ -42,7 +44,7 @@
     },
     "approved": {
       "subject": "{{tenant}} approved your registration",
-      "intro": "You can now book slots at {{tenant}}, {{site}}.",
+      "intro": "{{company}} can now book slots at {{tenant}}, {{site}}.",
       "action": "Book a slot"
     },
     "rejected": {

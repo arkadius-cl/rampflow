@@ -190,6 +190,31 @@ describe('CR-01 accept a carrier invitation', () => {
     expect(await linkOf(w, w.B.carrierId)).toMatchObject({ status: 'active' });
   });
 
+  it('a carrier_user may not bind their company: 403, the invitation stays pending', async () => {
+    const other = await world();
+    const member = other.B.users.carrier_user;
+    const inv = await carrierInvitationFor(ownerDb(), {
+      tenantId: w.A.tenantId,
+      invitedBy: w.A.users.dispatcher.id,
+      email: member.email,
+    });
+    const orgsBefore = (await ownerDb().select({ id: org.id }).from(org)).length;
+    const res = await as(app, member).post('/api/public/carrier-invitations/accept', {
+      body: { token: inv.token },
+    });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({
+      error: { code: 'forbidden', details: { reason: 'carrier_admin_required' } },
+    });
+    expect(await linkOf(w, other.B.carrierId)).toBeUndefined();
+    expect((await ownerDb().select({ id: org.id }).from(org)).length).toBe(orgsBefore);
+    const [row] = await ownerDb()
+      .select()
+      .from(carrierInvitation)
+      .where(eq(carrierInvitation.id, inv.id as never));
+    expect(row?.acceptedAt).toBeNull();
+  });
+
   it('works once, also for the invitee signed in by the first acceptance', async () => {
     const inv = await carrierInvitationFor(ownerDb(), {
       tenantId: w.A.tenantId,
