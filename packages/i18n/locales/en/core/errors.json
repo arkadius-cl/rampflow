@@ -16,7 +16,11 @@
     "stale_version": "Someone changed this meanwhile. Reload and try again.",
     "duplicate_reference": "This reference is already used in another booking.",
     "already_member": "This person is already a member.",
-    "link_inactive": "The link to this warehouse is deactivated."
+    "link_inactive": "The link to this warehouse is deactivated.",
+    "quiz_incomplete": "Each published language needs the required number of quiz questions.",
+    "duplicate_code": "This code is already used at this site.",
+    "holiday_closure": "This day is a public holiday closure.",
+    "manual_closure": "A closure already covers this time."
   },
   "limit_reached": "Your package limit is reached.",
   "validation_failed": "Some fields need your attention.",

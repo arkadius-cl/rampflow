@@ -16,7 +16,11 @@
     "stale_version": "Jemand hat das inzwischen geändert. Laden Sie neu und versuchen Sie es erneut.",
     "duplicate_reference": "Diese Referenz wird bereits in einer anderen Buchung verwendet.",
     "already_member": "Diese Person ist bereits Mitglied.",
-    "link_inactive": "Die Verbindung zu diesem Lager ist deaktiviert."
+    "link_inactive": "Die Verbindung zu diesem Lager ist deaktiviert.",
+    "quiz_incomplete": "Jede veröffentlichte Sprache braucht die vorgeschriebene Zahl an Quizfragen.",
+    "duplicate_code": "Dieser Code wird an diesem Standort bereits verwendet.",
+    "holiday_closure": "Dieser Tag ist als Feiertag geschlossen.",
+    "manual_closure": "Eine Schließung deckt diese Zeit bereits ab."
   },
   "limit_reached": "Das Limit Ihres Pakets ist erreicht.",
   "validation_failed": "Einige Felder brauchen Ihre Aufmerksamkeit.",

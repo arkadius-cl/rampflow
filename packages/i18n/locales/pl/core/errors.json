@@ -16,7 +16,11 @@
     "stale_version": "Ktoś zmienił to w międzyczasie. Odśwież i spróbuj ponownie.",
     "duplicate_reference": "Ta referencja jest już użyta w innej rezerwacji.",
     "already_member": "Ta osoba jest już członkiem.",
-    "link_inactive": "Połączenie z tym magazynem jest dezaktywowane."
+    "link_inactive": "Połączenie z tym magazynem jest dezaktywowane.",
+    "quiz_incomplete": "Każdy opublikowany język wymaga określonej liczby pytań testowych.",
+    "duplicate_code": "Ten kod jest już używany w tej lokalizacji.",
+    "holiday_closure": "Ten dzień jest zamknięty z powodu święta.",
+    "manual_closure": "Ten czas obejmuje już zamknięcie."
   },
   "limit_reached": "Osiągnięto limit Twojego pakietu.",
   "validation_failed": "Niektóre pola wymagają poprawy.",
