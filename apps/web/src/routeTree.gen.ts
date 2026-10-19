@@ -40,6 +40,8 @@ import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carri
 import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
 import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
 import { Route as TOrgIdPlanIndexRouteImport } from './routes/t/$orgId/plan/index'
+import { Route as TOrgIdPrivacyIndexRouteImport } from './routes/t/$orgId/privacy/index'
+import { Route as TOrgIdReportsIndexRouteImport } from './routes/t/$orgId/reports/index'
 import { Route as TOrgIdSafetyAcknowledgementsRouteImport } from './routes/t/$orgId/safety/acknowledgements'
 import { Route as TOrgIdSitesIndexRouteImport } from './routes/t/$orgId/sites/index'
 import { Route as TOrgIdSitesSiteIdRouteRouteImport } from './routes/t/$orgId/sites/$siteId/route'
@@ -204,6 +206,16 @@ const TOrgIdPlanIndexRoute = TOrgIdPlanIndexRouteImport.update({
   path: '/plan/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const TOrgIdPrivacyIndexRoute = TOrgIdPrivacyIndexRouteImport.update({
+  id: '/privacy/',
+  path: '/privacy/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdReportsIndexRoute = TOrgIdReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdSafetyAcknowledgementsRoute =
   TOrgIdSafetyAcknowledgementsRouteImport.update({
     id: '/safety/acknowledgements',
@@ -283,6 +295,8 @@ export interface FileRoutesByFullPath {
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
+  '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
+  '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -319,6 +333,8 @@ export interface FileRoutesByTo {
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan': typeof TOrgIdPlanIndexRoute
+  '/t/$orgId/privacy': typeof TOrgIdPrivacyIndexRoute
+  '/t/$orgId/reports': typeof TOrgIdReportsIndexRoute
   '/t/$orgId/sites': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -361,6 +377,8 @@ export interface FileRoutesById {
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
+  '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
+  '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -404,6 +422,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
+    | '/t/$orgId/privacy/'
+    | '/t/$orgId/reports/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -440,6 +460,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/docks'
     | '/t/$orgId/gate'
     | '/t/$orgId/plan'
+    | '/t/$orgId/privacy'
+    | '/t/$orgId/reports'
     | '/t/$orgId/sites'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -481,6 +503,8 @@ export interface FileRouteTypes {
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
     | '/t/$orgId/plan/'
+    | '/t/$orgId/privacy/'
+    | '/t/$orgId/reports/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -723,6 +747,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdPlanIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/privacy/': {
+      id: '/t/$orgId/privacy/'
+      path: '/privacy'
+      fullPath: '/t/$orgId/privacy/'
+      preLoaderRoute: typeof TOrgIdPrivacyIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/reports/': {
+      id: '/t/$orgId/reports/'
+      path: '/reports'
+      fullPath: '/t/$orgId/reports/'
+      preLoaderRoute: typeof TOrgIdReportsIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/safety/acknowledgements': {
       id: '/t/$orgId/safety/acknowledgements'
       path: '/safety/acknowledgements'
@@ -865,6 +903,8 @@ interface TOrgIdRouteRouteChildren {
   TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
   TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
   TOrgIdPlanIndexRoute: typeof TOrgIdPlanIndexRoute
+  TOrgIdPrivacyIndexRoute: typeof TOrgIdPrivacyIndexRoute
+  TOrgIdReportsIndexRoute: typeof TOrgIdReportsIndexRoute
   TOrgIdSitesIndexRoute: typeof TOrgIdSitesIndexRoute
   TOrgIdSafetyBriefingsInstructionIdRoute: typeof TOrgIdSafetyBriefingsInstructionIdRoute
   TOrgIdSafetyBriefingsIndexRoute: typeof TOrgIdSafetyBriefingsIndexRoute
@@ -879,6 +919,8 @@ const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
   TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
   TOrgIdPlanIndexRoute: TOrgIdPlanIndexRoute,
+  TOrgIdPrivacyIndexRoute: TOrgIdPrivacyIndexRoute,
+  TOrgIdReportsIndexRoute: TOrgIdReportsIndexRoute,
   TOrgIdSitesIndexRoute: TOrgIdSitesIndexRoute,
   TOrgIdSafetyBriefingsInstructionIdRoute:
     TOrgIdSafetyBriefingsInstructionIdRoute,

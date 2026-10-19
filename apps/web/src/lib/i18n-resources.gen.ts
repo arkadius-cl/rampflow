@@ -23,12 +23,18 @@ import type driver_app from '@rampflow/i18n/locales/en/driver/app.json';
 import type driver_briefing from '@rampflow/i18n/locales/en/driver/briefing.json';
 import type driver_link_email from '@rampflow/i18n/locales/en/driver/link-email.json';
 import type i18n_settings from '@rampflow/i18n/locales/en/i18n/settings.json';
+import type notify_email from '@rampflow/i18n/locales/en/notify/email.json';
 import type notify_entitlements from '@rampflow/i18n/locales/en/notify/entitlements.json';
 import type notify_settings from '@rampflow/i18n/locales/en/notify/settings.json';
+import type privacy_email from '@rampflow/i18n/locales/en/privacy/email.json';
 import type privacy_nav from '@rampflow/i18n/locales/en/privacy/nav.json';
+import type privacy_requests from '@rampflow/i18n/locales/en/privacy/requests.json';
 import type privacy_settings from '@rampflow/i18n/locales/en/privacy/settings.json';
 import type report_entitlements from '@rampflow/i18n/locales/en/report/entitlements.json';
+import type report_kpi from '@rampflow/i18n/locales/en/report/kpi.json';
 import type report_nav from '@rampflow/i18n/locales/en/report/nav.json';
+import type report_screen from '@rampflow/i18n/locales/en/report/screen.json';
+import type report_visits from '@rampflow/i18n/locales/en/report/visits.json';
 import type safety_briefings from '@rampflow/i18n/locales/en/safety/briefings.json';
 import type safety_editor from '@rampflow/i18n/locales/en/safety/editor.json';
 import type safety_entitlements from '@rampflow/i18n/locales/en/safety/entitlements.json';
@@ -79,16 +85,22 @@ export interface Resources {
     settings: typeof i18n_settings;
   };
   notify: {
+    email: typeof notify_email;
     entitlements: typeof notify_entitlements;
     settings: typeof notify_settings;
   };
   privacy: {
+    email: typeof privacy_email;
     nav: typeof privacy_nav;
+    requests: typeof privacy_requests;
     settings: typeof privacy_settings;
   };
   report: {
     entitlements: typeof report_entitlements;
+    kpi: typeof report_kpi;
     nav: typeof report_nav;
+    screen: typeof report_screen;
+    visits: typeof report_visits;
   };
   safety: {
     briefings: typeof safety_briefings;
