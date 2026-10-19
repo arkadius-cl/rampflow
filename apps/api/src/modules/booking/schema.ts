@@ -1,3 +1,10 @@
+import {
+  BOOKING_STATUSES,
+  type BookingStatus,
+  DOCK_HOLDING_STATUSES,
+  LOAD_STATUSES,
+  TURN_AWAY_REASONS,
+} from '@rampflow/shared/modules/booking/lifecycle';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -35,41 +42,13 @@ import {
   type ResourceId,
 } from './schema.resources.ts';
 
-export const BOOKING_STATUSES = [
-  'requested',
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-  'departed',
-  'cancelled',
-  'no_show',
-  'turned_away',
-] as const;
-export type BookingStatus = (typeof BOOKING_STATUSES)[number];
-
-/** Statuses that count against capacity (booking lifecycle, "States"). */
-export const LOAD_STATUSES = [
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-] as const satisfies readonly BookingStatus[];
-export const DOCK_HOLDING_STATUSES = ['called', 'at_dock', 'loading'] as const;
-
-export const TURN_AWAY_REASONS = [
-  'safety_not_completed',
-  'no_capacity',
-  'too_late',
-  'documents_missing',
-  'wrong_load',
-  'damaged',
-  'other',
-] as const;
+export {
+  BOOKING_STATUSES,
+  type BookingStatus,
+  DOCK_HOLDING_STATUSES,
+  LOAD_STATUSES,
+  TURN_AWAY_REASONS,
+};
 
 const inStatuses = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(', '));
 
