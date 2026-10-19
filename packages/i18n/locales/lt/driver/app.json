@@ -1,0 +1,71 @@
+{
+  "language": "Kalba",
+  "machine_badge": "auto",
+  "machine_hint": "Ši kalba išversta automatiškai.",
+  "loading": "Kraunamas jūsų užsakymas…",
+  "offline_banner": "Neprisijungta. Būsena nuo {{time}}.",
+  "invalid": {
+    "title": "Ši nuoroda nebegalioja",
+    "body": "Paprašyk naujos iš dispečerio."
+  },
+  "offline_link": {
+    "title": "Nėra ryšio",
+    "body": "Prisijunk prie interneto ir vėl atidaryk nuorodą."
+  },
+  "booking": {
+    "slot": "Tavo laikas",
+    "map": "Atidaryti žemėlapyje",
+    "show_at_gate": "Parodyk prie vartų",
+    "qr": "Užsakymo {{code}} QR kodas"
+  },
+  "safety": {
+    "required_title": "Reikalingas saugos instruktažas",
+    "required_body": "Prieš atvykdamas perskaityk teritorijos taisykles. Be instruktažo vartai tavęs neįleis.",
+    "start": "Pradėti saugos instruktažą",
+    "valid_until": "Saugos instruktažas galioja iki {{date}}",
+    "valid_visit": "Saugos instruktažas atliktas šiam apsilankymui"
+  },
+  "privacy": {
+    "note": "Šiame puslapyje asmens duomenų nerodoma. Tavo vardas išsaugomas tik su instruktažo patvirtinimu.",
+    "link": "Privatumo pranešimas"
+  },
+  "waiting": {
+    "title": "Palauk",
+    "body": "Esi užregistruotas. Šiame puslapyje pakviesime tave prie rampos. Laikyk jį atidarytą.",
+    "checked_in": "Užregistruota",
+    "waited": "Laukiama",
+    "minutes": "{{minutes}} min."
+  },
+  "called": {
+    "go": "Važiuok prie rampos",
+    "instruction": "Važiuok prie rampos {{dock}}, salė {{hall}}",
+    "called_at": "Pakviesta {{time}}",
+    "vibrated": "Telefonas vibruos, kai būsi pakviestas. Laikyk puslapį atidarytą."
+  },
+  "done": {
+    "title": "Pakrovimas baigtas",
+    "body": "Važiuok prie vartų. Vartai užregistruos tavo išvykimą."
+  },
+  "closed": {
+    "departed": "Palikai teritoriją. Saugios kelionės!",
+    "cancelled": "Šis užsakymas atšauktas.",
+    "no_show": "Šis užsakymas pažymėtas kaip neatvykus. Paskambink į teritoriją.",
+    "turned_away": "Šis apsilankymas vartuose atmestas. Paskambink į teritoriją."
+  },
+  "link_expiry": "Ši nuoroda nustos veikti {{date}}.",
+  "call_site": "Skambinti į teritoriją",
+  "gate_device": "Instruktažas vartų įrenginyje. Baigęs grąžink jį vartų darbuotojui.",
+  "status": {
+    "requested": "Pateikta",
+    "confirmed": "Patvirtinta",
+    "checked_in": "Užregistruota",
+    "called": "Pakviesta",
+    "at_dock": "Prie rampos",
+    "loading": "Pakraunama",
+    "done": "Baigta",
+    "departed": "Išvyko",
+    "cancelled": "Atšaukta",
+    "no_show": "Neatvyko",
+    "turned_away": "Atmesta"
+  }
+}

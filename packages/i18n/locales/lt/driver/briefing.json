@@ -1,0 +1,40 @@
+{
+  "loading": "Kraunamos teritorijos taisyklės…",
+  "title": "Teritorijos taisyklės",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Instruktažo eiga",
+  "back": "Atgal",
+  "next": "Kita taisyklė",
+  "close": "Uždaryti",
+  "to_quiz": "Perskaičiau. Į testą",
+  "to_confirm": "Perskaičiau",
+  "machine": "Šis instruktažas išverstas automatiškai.",
+  "error": "Kažkas nepavyko. Patikrink ryšį ir bandyk dar kartą.",
+  "retry": "Bandyti dar kartą",
+  "quiz": {
+    "title": "Greitas patikrinimas",
+    "hint": "Atsakyk į visus klausimus. Gali bandyti iš naujo.",
+    "question": "{{n}} klausimas",
+    "check": "Tikrinti atsakymus",
+    "failed": "Kai kurie atsakymai neteisingi. Dar kartą perskaityk taisykles ir bandyk iš naujo."
+  },
+  "confirm": {
+    "title": "Patvirtink instruktažą",
+    "name": "Tavo vardas",
+    "name_placeholder": "Vardas ir pavardė",
+    "name_error": "Įvesk vardą ir pavardę.",
+    "statement_error": "Pažymėk langelį, kad patvirtintum.",
+    "submit": "Patvirtinti instruktažą"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Dėvėk šviesą atspindinčią liemenę",
+    "safety_shoes": "Avėk darbo batus",
+    "speed_limit_10": "Greičio riba 10 km/h",
+    "forklift_traffic": "Eismas su krautuvais",
+    "wheel_chock": "Naudok ratų atramas",
+    "no_smoking": "Rūkyti draudžiama",
+    "no_phone": "Telefonu naudotis draudžiama",
+    "assembly_point": "Susirinkimo vieta",
+    "first_aid": "Pirmoji pagalba"
+  }
+}

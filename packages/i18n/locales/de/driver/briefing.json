@@ -1,0 +1,40 @@
+{
+  "loading": "Die Standortregeln werden geladen…",
+  "title": "Standortregeln",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Fortschritt der Unterweisung",
+  "back": "Zurück",
+  "next": "Nächste Regel",
+  "close": "Schließen",
+  "to_quiz": "Gelesen. Weiter zum Quiz",
+  "to_confirm": "Gelesen",
+  "machine": "Diese Unterweisung wurde automatisch übersetzt.",
+  "error": "Etwas ist schiefgegangen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+  "retry": "Erneut versuchen",
+  "quiz": {
+    "title": "Kurze Prüfung",
+    "hint": "Beantworten Sie jede Frage. Sie können es wiederholen.",
+    "question": "Frage {{n}}",
+    "check": "Antworten prüfen",
+    "failed": "Einige Antworten waren nicht richtig. Lesen Sie die Regeln noch einmal und versuchen Sie es erneut."
+  },
+  "confirm": {
+    "title": "Unterweisung bestätigen",
+    "name": "Ihr Name",
+    "name_placeholder": "Vor- und Nachname",
+    "name_error": "Geben Sie Vor- und Nachnamen ein.",
+    "statement_error": "Setzen Sie zur Bestätigung den Haken.",
+    "submit": "Unterweisung bestätigen"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Warnweste tragen",
+    "safety_shoes": "Sicherheitsschuhe tragen",
+    "speed_limit_10": "Höchstgeschwindigkeit 10 km/h",
+    "forklift_traffic": "Staplerverkehr",
+    "wheel_chock": "Unterlegkeile verwenden",
+    "no_smoking": "Rauchen verboten",
+    "no_phone": "Telefonieren verboten",
+    "assembly_point": "Sammelplatz",
+    "first_aid": "Erste Hilfe"
+  }
+}

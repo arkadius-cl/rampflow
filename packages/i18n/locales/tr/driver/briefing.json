@@ -1,0 +1,40 @@
+{
+  "loading": "Saha kuralları yükleniyor…",
+  "title": "Saha kuralları",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Eğitim ilerlemesi",
+  "back": "Geri",
+  "next": "Sonraki kural",
+  "close": "Kapat",
+  "to_quiz": "Okudum. Teste geç",
+  "to_confirm": "Okudum",
+  "machine": "Bu eğitim otomatik olarak çevrildi.",
+  "error": "Bir şeyler ters gitti. Bağlantını kontrol edip tekrar dene.",
+  "retry": "Tekrar dene",
+  "quiz": {
+    "title": "Hızlı kontrol",
+    "hint": "Tüm soruları yanıtla. Tekrar deneyebilirsin.",
+    "question": "{{n}}. soru",
+    "check": "Cevapları kontrol et",
+    "failed": "Bazı cevaplar doğru değildi. Kuralları tekrar oku, sonra yeniden dene."
+  },
+  "confirm": {
+    "title": "Eğitimi onayla",
+    "name": "Adın",
+    "name_placeholder": "Ad ve soyad",
+    "name_error": "Ad ve soyadını gir.",
+    "statement_error": "Onaylamak için kutuyu işaretle.",
+    "submit": "Eğitimi onayla"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Reflektörlü yelek giy",
+    "safety_shoes": "Güvenlik ayakkabısı giy",
+    "speed_limit_10": "Hız sınırı 10 km/h",
+    "forklift_traffic": "Forklift trafiği",
+    "wheel_chock": "Teker takozu kullan",
+    "no_smoking": "Sigara içmek yasak",
+    "no_phone": "Telefon kullanmak yasak",
+    "assembly_point": "Toplanma noktası",
+    "first_aid": "İlk yardım"
+  }
+}

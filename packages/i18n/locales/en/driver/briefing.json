@@ -1,0 +1,40 @@
+{
+  "loading": "Loading the site rules…",
+  "title": "Site rules",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Briefing progress",
+  "back": "Back",
+  "next": "Next rule",
+  "close": "Close",
+  "to_quiz": "I have read this. Go to the quiz",
+  "to_confirm": "I have read this",
+  "machine": "This briefing was translated automatically.",
+  "error": "Something went wrong. Check your connection and try again.",
+  "retry": "Try again",
+  "quiz": {
+    "title": "Quick check",
+    "hint": "Answer every question. You can retry.",
+    "question": "Question {{n}}",
+    "check": "Check answers",
+    "failed": "Some answers were not correct. Read the rules again, then retry."
+  },
+  "confirm": {
+    "title": "Confirm the briefing",
+    "name": "Your name",
+    "name_placeholder": "First and last name",
+    "name_error": "Enter your first and last name.",
+    "statement_error": "Tick the box to confirm.",
+    "submit": "Confirm briefing"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Wear a high-visibility vest",
+    "safety_shoes": "Wear safety shoes",
+    "speed_limit_10": "Speed limit 10 km/h",
+    "forklift_traffic": "Forklift traffic",
+    "wheel_chock": "Use wheel chocks",
+    "no_smoking": "No smoking",
+    "no_phone": "No phone use",
+    "assembly_point": "Assembly point",
+    "first_aid": "First aid"
+  }
+}

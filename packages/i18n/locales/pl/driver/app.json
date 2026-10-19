@@ -1,0 +1,71 @@
+{
+  "language": "Język",
+  "machine_badge": "auto",
+  "machine_hint": "Ten język został przetłumaczony automatycznie.",
+  "loading": "Wczytywanie rezerwacji…",
+  "offline_banner": "Offline. Stan z {{time}}.",
+  "invalid": {
+    "title": "Ten link jest już nieważny",
+    "body": "Poproś dyspozytora o nowy."
+  },
+  "offline_link": {
+    "title": "Jesteś offline",
+    "body": "Połącz się z internetem i otwórz link ponownie."
+  },
+  "booking": {
+    "slot": "Twoje okno czasowe",
+    "map": "Otwórz w mapach",
+    "show_at_gate": "Pokaż przy bramie",
+    "qr": "Kod QR rezerwacji {{code}}"
+  },
+  "safety": {
+    "required_title": "Wymagane szkolenie BHP",
+    "required_body": "Przeczytaj zasady obowiązujące na terenie przed przyjazdem. Bez szkolenia brama nie może cię wpuścić.",
+    "start": "Rozpocznij szkolenie BHP",
+    "valid_until": "Szkolenie BHP ważne do {{date}}",
+    "valid_visit": "Szkolenie BHP ukończone dla tej wizyty"
+  },
+  "privacy": {
+    "note": "Ta strona nie pokazuje danych osobowych. Twoje imię i nazwisko jest zapisywane tylko z potwierdzeniem szkolenia.",
+    "link": "Informacja o ochronie danych"
+  },
+  "waiting": {
+    "title": "Proszę czekać",
+    "body": "Jesteś zameldowany. Wezwiemy cię do rampy na tej stronie. Nie zamykaj jej.",
+    "checked_in": "Zameldowanie",
+    "waited": "Czekasz",
+    "minutes": "{{minutes}} min"
+  },
+  "called": {
+    "go": "Jedź do rampy",
+    "instruction": "Jedź do rampy {{dock}}, hala {{hall}}",
+    "called_at": "Wezwano {{time}}",
+    "vibrated": "Telefon zawibruje przy wezwaniu. Nie zamykaj tej strony."
+  },
+  "done": {
+    "title": "Załadunek zakończony",
+    "body": "Jedź do bramy. Brama zarejestruje twój wyjazd."
+  },
+  "closed": {
+    "departed": "Opuściłeś teren. Szerokiej drogi.",
+    "cancelled": "Ta rezerwacja została anulowana.",
+    "no_show": "Ta rezerwacja została oznaczona jako niestawienie się. Zadzwoń do zakładu.",
+    "turned_away": "Ta wizyta została odrzucona przy bramie. Zadzwoń do zakładu."
+  },
+  "link_expiry": "Ten link działa do {{date}}.",
+  "call_site": "Zadzwoń do zakładu",
+  "gate_device": "Szkolenie na urządzeniu bramy. Po zakończeniu oddaj je obsłudze bramy.",
+  "status": {
+    "requested": "Zgłoszona",
+    "confirmed": "Potwierdzona",
+    "checked_in": "Zameldowany",
+    "called": "Wezwany",
+    "at_dock": "Przy rampie",
+    "loading": "Załadunek",
+    "done": "Gotowe",
+    "departed": "Wyjechał",
+    "cancelled": "Anulowana",
+    "no_show": "Niestawienie się",
+    "turned_away": "Odrzucony"
+  }
+}

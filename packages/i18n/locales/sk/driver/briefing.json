@@ -1,0 +1,40 @@
+{
+  "loading": "Načítavajú sa pravidlá areálu…",
+  "title": "Pravidlá areálu",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Priebeh školenia",
+  "back": "Späť",
+  "next": "Ďalšie pravidlo",
+  "close": "Zavrieť",
+  "to_quiz": "Prečítal som. K testu",
+  "to_confirm": "Prečítal som",
+  "machine": "Toto školenie bolo preložené automaticky.",
+  "error": "Niečo sa nepodarilo. Skontroluj pripojenie a skús to znova.",
+  "retry": "Skúsiť znova",
+  "quiz": {
+    "title": "Rýchla kontrola",
+    "hint": "Odpovedz na všetky otázky. Môžeš to skúsiť znova.",
+    "question": "Otázka {{n}}",
+    "check": "Skontrolovať odpovede",
+    "failed": "Niektoré odpovede neboli správne. Prečítaj si pravidlá znova a skús to znova."
+  },
+  "confirm": {
+    "title": "Potvrď školenie",
+    "name": "Tvoje meno",
+    "name_placeholder": "Meno a priezvisko",
+    "name_error": "Zadaj meno a priezvisko.",
+    "statement_error": "Zaškrtni políčko na potvrdenie.",
+    "submit": "Potvrdiť školenie"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Maj reflexnú vestu",
+    "safety_shoes": "Maj bezpečnostnú obuv",
+    "speed_limit_10": "Obmedzenie rýchlosti 10 km/h",
+    "forklift_traffic": "Premávka vysokozdvižných vozíkov",
+    "wheel_chock": "Použi zakladacie kliny",
+    "no_smoking": "Zákaz fajčenia",
+    "no_phone": "Zákaz používania telefónu",
+    "assembly_point": "Zhromaždisko",
+    "first_aid": "Prvá pomoc"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "language": "Language",
+  "machine_badge": "auto",
+  "machine_hint": "This language was translated automatically.",
+  "loading": "Loading your booking…",
+  "offline_banner": "Offline. Showing status from {{time}}.",
+  "invalid": {
+    "title": "This link is no longer valid",
+    "body": "Ask your dispatcher for a new one."
+  },
+  "offline_link": {
+    "title": "You are offline",
+    "body": "Connect to the internet, then open the link again."
+  },
+  "booking": {
+    "slot": "Your slot",
+    "map": "Open in maps",
+    "show_at_gate": "Show at the gate",
+    "qr": "QR code of booking {{code}}"
+  },
+  "safety": {
+    "required_title": "Safety briefing required",
+    "required_body": "Read the site rules before you arrive. Without the briefing the gate cannot let you in.",
+    "start": "Start safety briefing",
+    "valid_until": "Safety briefing valid until {{date}}",
+    "valid_visit": "Safety briefing done for this visit"
+  },
+  "privacy": {
+    "note": "This page shows no personal data. Your name is stored only with the safety acknowledgement.",
+    "link": "Privacy notice"
+  },
+  "waiting": {
+    "title": "Please wait",
+    "body": "You are checked in. We will call you to a dock on this page. Keep it open.",
+    "checked_in": "Checked in",
+    "waited": "Waiting",
+    "minutes": "{{minutes}} min"
+  },
+  "called": {
+    "go": "Go to dock",
+    "instruction": "Go to dock {{dock}}, hall {{hall}}",
+    "called_at": "Called {{time}}",
+    "vibrated": "Your phone vibrates when you are called. Keep this page open."
+  },
+  "done": {
+    "title": "Loading done",
+    "body": "Please drive to the gate. The gate records your departure."
+  },
+  "closed": {
+    "departed": "You have left the site. Safe journey.",
+    "cancelled": "This booking was cancelled.",
+    "no_show": "This booking was marked as not arrived. Please call the site.",
+    "turned_away": "This visit was turned away at the gate. Please call the site."
+  },
+  "link_expiry": "This link stops working on {{date}}.",
+  "call_site": "Call the site",
+  "gate_device": "Briefing on the gate's device. Hand it back to the gate staff when you are done.",
+  "status": {
+    "requested": "Requested",
+    "confirmed": "Confirmed",
+    "checked_in": "Checked in",
+    "called": "Called",
+    "at_dock": "At dock",
+    "loading": "Loading",
+    "done": "Done",
+    "departed": "Departed",
+    "cancelled": "Cancelled",
+    "no_show": "No-show",
+    "turned_away": "Turned away"
+  }
+}

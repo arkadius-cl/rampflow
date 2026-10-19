@@ -1,0 +1,71 @@
+{
+  "language": "Sprache",
+  "machine_badge": "auto",
+  "machine_hint": "Diese Sprache wurde automatisch übersetzt.",
+  "loading": "Ihre Buchung wird geladen…",
+  "offline_banner": "Offline. Stand von {{time}}.",
+  "invalid": {
+    "title": "Dieser Link ist nicht mehr gültig",
+    "body": "Bitten Sie Ihre Disposition um einen neuen."
+  },
+  "offline_link": {
+    "title": "Sie sind offline",
+    "body": "Verbinden Sie sich mit dem Internet und öffnen Sie den Link erneut."
+  },
+  "booking": {
+    "slot": "Ihr Zeitfenster",
+    "map": "In Karten öffnen",
+    "show_at_gate": "Am Tor vorzeigen",
+    "qr": "QR-Code der Buchung {{code}}"
+  },
+  "safety": {
+    "required_title": "Sicherheitsunterweisung erforderlich",
+    "required_body": "Lesen Sie die Standortregeln vor Ihrer Ankunft. Ohne Unterweisung kann das Tor Sie nicht einlassen.",
+    "start": "Sicherheitsunterweisung starten",
+    "valid_until": "Sicherheitsunterweisung gültig bis {{date}}",
+    "valid_visit": "Sicherheitsunterweisung für diesen Besuch erledigt"
+  },
+  "privacy": {
+    "note": "Diese Seite zeigt keine personenbezogenen Daten. Ihr Name wird nur mit der Bestätigung der Unterweisung gespeichert.",
+    "link": "Datenschutzhinweis"
+  },
+  "waiting": {
+    "title": "Bitte warten",
+    "body": "Sie sind eingecheckt. Wir rufen Sie auf dieser Seite an ein Tor. Lassen Sie sie geöffnet.",
+    "checked_in": "Eingecheckt",
+    "waited": "Wartezeit",
+    "minutes": "{{minutes}} Min."
+  },
+  "called": {
+    "go": "Zum Tor",
+    "instruction": "Fahren Sie zu Tor {{dock}}, Halle {{hall}}",
+    "called_at": "Aufgerufen {{time}}",
+    "vibrated": "Ihr Telefon vibriert beim Aufruf. Lassen Sie diese Seite geöffnet."
+  },
+  "done": {
+    "title": "Verladung fertig",
+    "body": "Bitte fahren Sie zum Tor. Dort wird Ihre Abfahrt erfasst."
+  },
+  "closed": {
+    "departed": "Sie haben den Standort verlassen. Gute Fahrt.",
+    "cancelled": "Diese Buchung wurde storniert.",
+    "no_show": "Diese Buchung wurde als nicht erschienen markiert. Bitte rufen Sie den Standort an.",
+    "turned_away": "Dieser Besuch wurde am Tor abgewiesen. Bitte rufen Sie den Standort an."
+  },
+  "link_expiry": "Dieser Link funktioniert bis {{date}}.",
+  "call_site": "Standort anrufen",
+  "gate_device": "Unterweisung auf dem Gerät des Tors. Geben Sie es danach dem Torpersonal zurück.",
+  "status": {
+    "requested": "Angefragt",
+    "confirmed": "Bestätigt",
+    "checked_in": "Eingecheckt",
+    "called": "Aufgerufen",
+    "at_dock": "Am Tor",
+    "loading": "Verladung",
+    "done": "Fertig",
+    "departed": "Abgefahren",
+    "cancelled": "Storniert",
+    "no_show": "Nicht erschienen",
+    "turned_away": "Abgewiesen"
+  }
+}

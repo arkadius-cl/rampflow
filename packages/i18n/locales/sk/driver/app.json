@@ -1,0 +1,71 @@
+{
+  "language": "Jazyk",
+  "machine_badge": "auto",
+  "machine_hint": "Tento jazyk bol preložený automaticky.",
+  "loading": "Načítava sa rezervácia…",
+  "offline_banner": "Offline. Stav z {{time}}.",
+  "invalid": {
+    "title": "Tento odkaz už neplatí",
+    "body": "Požiadaj dispečera o nový."
+  },
+  "offline_link": {
+    "title": "Si offline",
+    "body": "Pripoj sa na internet a otvor odkaz znova."
+  },
+  "booking": {
+    "slot": "Tvoj termín",
+    "map": "Otvoriť v mapách",
+    "show_at_gate": "Ukáž pri bráne",
+    "qr": "QR kód rezervácie {{code}}"
+  },
+  "safety": {
+    "required_title": "Je potrebné bezpečnostné školenie",
+    "required_body": "Prečítaj si pravidlá areálu pred príchodom. Bez školenia ťa brána nepustí.",
+    "start": "Spustiť bezpečnostné školenie",
+    "valid_until": "Bezpečnostné školenie platí do {{date}}",
+    "valid_visit": "Bezpečnostné školenie pre túto návštevu je hotové"
+  },
+  "privacy": {
+    "note": "Táto stránka nezobrazuje osobné údaje. Tvoje meno sa ukladá len s potvrdením školenia.",
+    "link": "Zásady ochrany súkromia"
+  },
+  "waiting": {
+    "title": "Počkaj, prosím",
+    "body": "Si odbavený. Na tejto stránke ťa zavoláme k rampe. Nechaj ju otvorenú.",
+    "checked_in": "Odbavený",
+    "waited": "Čakanie",
+    "minutes": "{{minutes}} min"
+  },
+  "called": {
+    "go": "Choď k rampe",
+    "instruction": "Choď k rampe {{dock}}, hala {{hall}}",
+    "called_at": "Zavolaný o {{time}}",
+    "vibrated": "Telefón zavibruje, keď ťa zavoláme. Nechaj stránku otvorenú."
+  },
+  "done": {
+    "title": "Nakladanie hotové",
+    "body": "Choď k bráne. Brána zaznamená tvoj odchod."
+  },
+  "closed": {
+    "departed": "Opustil si areál. Šťastnú cestu!",
+    "cancelled": "Táto rezervácia bola zrušená.",
+    "no_show": "Rezervácia bola označená ako neúčasť. Zavolaj do areálu.",
+    "turned_away": "Táto návšteva bola pri bráne odmietnutá. Zavolaj do areálu."
+  },
+  "link_expiry": "Tento odkaz prestane fungovať {{date}}.",
+  "call_site": "Zavolať do areálu",
+  "gate_device": "Školenie na zariadení pri bráne. Keď skončíš, vráť ho obsluhe brány.",
+  "status": {
+    "requested": "Požadované",
+    "confirmed": "Potvrdené",
+    "checked_in": "Odbavený",
+    "called": "Zavolaný",
+    "at_dock": "Pri rampe",
+    "loading": "Nakladanie",
+    "done": "Hotovo",
+    "departed": "Odišiel",
+    "cancelled": "Zrušené",
+    "no_show": "Neúčasť",
+    "turned_away": "Odmietnutý"
+  }
+}

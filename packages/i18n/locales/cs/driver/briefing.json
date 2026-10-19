@@ -1,0 +1,40 @@
+{
+  "loading": "Načítání pravidel areálu…",
+  "title": "Pravidla areálu",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Průběh školení",
+  "back": "Zpět",
+  "next": "Další pravidlo",
+  "close": "Zavřít",
+  "to_quiz": "Přečetl jsem. K testu",
+  "to_confirm": "Přečetl jsem",
+  "machine": "Toto školení bylo přeloženo automaticky.",
+  "error": "Něco se nepovedlo. Zkontroluj připojení a zkus to znovu.",
+  "retry": "Zkusit znovu",
+  "quiz": {
+    "title": "Rychlá kontrola",
+    "hint": "Odpověz na všechny otázky. Můžeš to zkusit znovu.",
+    "question": "Otázka {{n}}",
+    "check": "Zkontrolovat odpovědi",
+    "failed": "Některé odpovědi nebyly správně. Přečti si pravidla znovu a zkus to znovu."
+  },
+  "confirm": {
+    "title": "Potvrď školení",
+    "name": "Tvé jméno",
+    "name_placeholder": "Jméno a příjmení",
+    "name_error": "Zadej jméno a příjmení.",
+    "statement_error": "Zaškrtni políčko pro potvrzení.",
+    "submit": "Potvrdit školení"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Měj reflexní vestu",
+    "safety_shoes": "Měj bezpečnostní obuv",
+    "speed_limit_10": "Omezení rychlosti 10 km/h",
+    "forklift_traffic": "Provoz vysokozdvižných vozíků",
+    "wheel_chock": "Použij zakládací klíny",
+    "no_smoking": "Zákaz kouření",
+    "no_phone": "Zákaz používání telefonu",
+    "assembly_point": "Shromaždiště",
+    "first_aid": "První pomoc"
+  }
+}

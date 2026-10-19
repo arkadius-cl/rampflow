@@ -1,0 +1,71 @@
+{
+  "language": "Nyelv",
+  "machine_badge": "auto",
+  "machine_hint": "Ez a nyelv automatikus fordítás.",
+  "loading": "Foglalás betöltése…",
+  "offline_banner": "Offline. Állapot: {{time}}.",
+  "invalid": {
+    "title": "Ez a link már nem érvényes",
+    "body": "Kérj újat a diszpécsertől."
+  },
+  "offline_link": {
+    "title": "Nincs kapcsolat",
+    "body": "Csatlakozz az internetre, majd nyisd meg újra a linket."
+  },
+  "booking": {
+    "slot": "Az időpontod",
+    "map": "Megnyitás térképen",
+    "show_at_gate": "Mutasd meg a kapunál",
+    "qr": "A(z) {{code}} foglalás QR-kódja"
+  },
+  "safety": {
+    "required_title": "Biztonsági oktatás szükséges",
+    "required_body": "Érkezés előtt olvasd el a telephely szabályait. Oktatás nélkül a kapu nem enged be.",
+    "start": "Biztonsági oktatás indítása",
+    "valid_until": "Biztonsági oktatás érvényes eddig: {{date}}",
+    "valid_visit": "A biztonsági oktatás ehhez a látogatáshoz kész"
+  },
+  "privacy": {
+    "note": "Ez az oldal nem mutat személyes adatot. A neved csak az oktatás visszaigazolásával együtt kerül mentésre.",
+    "link": "Adatvédelmi tájékoztató"
+  },
+  "waiting": {
+    "title": "Kérlek, várj",
+    "body": "Be vagy jelentkezve. Ezen az oldalon hívunk majd a rámpához. Hagyd nyitva.",
+    "checked_in": "Bejelentkezve",
+    "waited": "Várakozás",
+    "minutes": "{{minutes}} perc"
+  },
+  "called": {
+    "go": "Menj a rámpához",
+    "instruction": "Menj a(z) {{dock}} rámpához, {{hall}} csarnok",
+    "called_at": "Hívva: {{time}}",
+    "vibrated": "A telefonod rezeg, ha hívnak. Hagyd nyitva az oldalt."
+  },
+  "done": {
+    "title": "A rakodás kész",
+    "body": "Hajts a kapuhoz. A kapu rögzíti a távozásodat."
+  },
+  "closed": {
+    "departed": "Elhagytad a telephelyet. Jó utat!",
+    "cancelled": "Ezt a foglalást törölték.",
+    "no_show": "A foglalás meg nem jelentként lett megjelölve. Hívd a telephelyet.",
+    "turned_away": "Ezt a látogatást a kapunál elutasították. Hívd a telephelyet."
+  },
+  "link_expiry": "Ez a link ekkor szűnik meg: {{date}}.",
+  "call_site": "Telephely hívása",
+  "gate_device": "Oktatás a kapu eszközén. Ha végeztél, add vissza a kapu dolgozójának.",
+  "status": {
+    "requested": "Kérve",
+    "confirmed": "Megerősítve",
+    "checked_in": "Bejelentkezve",
+    "called": "Hívva",
+    "at_dock": "A rámpánál",
+    "loading": "Rakodás",
+    "done": "Kész",
+    "departed": "Távozott",
+    "cancelled": "Törölve",
+    "no_show": "Meg nem jelent",
+    "turned_away": "Elutasítva"
+  }
+}

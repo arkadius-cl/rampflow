@@ -1,0 +1,40 @@
+{
+  "loading": "Telephelyi szabályok betöltése…",
+  "title": "Telephelyi szabályok",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Az oktatás haladása",
+  "back": "Vissza",
+  "next": "Következő szabály",
+  "close": "Bezár",
+  "to_quiz": "Elolvastam. Tovább a kvízre",
+  "to_confirm": "Elolvastam",
+  "machine": "Ez az oktatás automatikus fordítás.",
+  "error": "Hiba történt. Ellenőrizd a kapcsolatot, és próbáld újra.",
+  "retry": "Újra",
+  "quiz": {
+    "title": "Gyors ellenőrzés",
+    "hint": "Válaszolj minden kérdésre. Újra próbálkozhatsz.",
+    "question": "{{n}}. kérdés",
+    "check": "Válaszok ellenőrzése",
+    "failed": "Néhány válasz nem volt helyes. Olvasd el újra a szabályokat, majd próbáld újra."
+  },
+  "confirm": {
+    "title": "Oktatás megerősítése",
+    "name": "A neved",
+    "name_placeholder": "Vezeték- és keresztnév",
+    "name_error": "Add meg a vezeték- és keresztneved.",
+    "statement_error": "Jelöld be a négyzetet a megerősítéshez.",
+    "submit": "Oktatás megerősítése"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Viselj láthatósági mellényt",
+    "safety_shoes": "Viselj védőcipőt",
+    "speed_limit_10": "Sebességkorlát 10 km/h",
+    "forklift_traffic": "Targoncaforgalom",
+    "wheel_chock": "Használj kerékékeket",
+    "no_smoking": "Dohányozni tilos",
+    "no_phone": "Telefonálni tilos",
+    "assembly_point": "Gyülekezőhely",
+    "first_aid": "Elsősegély"
+  }
+}

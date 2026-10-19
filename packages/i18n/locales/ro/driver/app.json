@@ -1,0 +1,71 @@
+{
+  "language": "Limba",
+  "machine_badge": "auto",
+  "machine_hint": "Această limbă a fost tradusă automat.",
+  "loading": "Se încarcă rezervarea…",
+  "offline_banner": "Offline. Stare de la {{time}}.",
+  "invalid": {
+    "title": "Acest link nu mai este valabil",
+    "body": "Cere un link nou de la dispecer."
+  },
+  "offline_link": {
+    "title": "Ești offline",
+    "body": "Conectează-te la internet, apoi deschide din nou linkul."
+  },
+  "booking": {
+    "slot": "Intervalul tău",
+    "map": "Deschide în hărți",
+    "show_at_gate": "Arată la poartă",
+    "qr": "Cod QR al rezervării {{code}}"
+  },
+  "safety": {
+    "required_title": "Instruirea de securitate este obligatorie",
+    "required_body": "Citește regulile locației înainte să ajungi. Fără instruire, poarta nu te poate lăsa să intri.",
+    "start": "Începe instruirea de securitate",
+    "valid_until": "Instruire de securitate valabilă până la {{date}}",
+    "valid_visit": "Instruirea de securitate a fost făcută pentru această vizită"
+  },
+  "privacy": {
+    "note": "Această pagină nu afișează date personale. Numele tău este salvat doar odată cu confirmarea instruirii.",
+    "link": "Notă de confidențialitate"
+  },
+  "waiting": {
+    "title": "Așteaptă, te rugăm",
+    "body": "Ești înregistrat. Te vom chema la o rampă pe această pagină. Ține-o deschisă.",
+    "checked_in": "Înregistrat",
+    "waited": "Aștepți",
+    "minutes": "{{minutes}} min"
+  },
+  "called": {
+    "go": "Mergi la rampa",
+    "instruction": "Mergi la rampa {{dock}}, hala {{hall}}",
+    "called_at": "Chemat la {{time}}",
+    "vibrated": "Telefonul vibrează când ești chemat. Ține pagina deschisă."
+  },
+  "done": {
+    "title": "Încărcare terminată",
+    "body": "Condu la poartă. Poarta înregistrează plecarea ta."
+  },
+  "closed": {
+    "departed": "Ai părăsit locația. Drum bun!",
+    "cancelled": "Această rezervare a fost anulată.",
+    "no_show": "Rezervarea a fost marcată ca neprezentare. Sună la locație.",
+    "turned_away": "Această vizită a fost respinsă la poartă. Sună la locație."
+  },
+  "link_expiry": "Acest link nu mai funcționează după {{date}}.",
+  "call_site": "Sună la locație",
+  "gate_device": "Instruire pe dispozitivul de la poartă. Când termini, înapoiază-l personalului de la poartă.",
+  "status": {
+    "requested": "Solicitat",
+    "confirmed": "Confirmat",
+    "checked_in": "Înregistrat",
+    "called": "Chemat",
+    "at_dock": "La rampă",
+    "loading": "Se încarcă",
+    "done": "Terminat",
+    "departed": "Plecat",
+    "cancelled": "Anulat",
+    "no_show": "Neprezentat",
+    "turned_away": "Respins"
+  }
+}

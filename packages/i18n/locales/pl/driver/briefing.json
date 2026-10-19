@@ -1,0 +1,40 @@
+{
+  "loading": "Wczytywanie zasad…",
+  "title": "Zasady na terenie",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Postęp szkolenia",
+  "back": "Wstecz",
+  "next": "Następna zasada",
+  "close": "Zamknij",
+  "to_quiz": "Przeczytałem. Przejdź do quizu",
+  "to_confirm": "Przeczytałem",
+  "machine": "To szkolenie zostało przetłumaczone automatycznie.",
+  "error": "Coś poszło nie tak. Sprawdź połączenie i spróbuj ponownie.",
+  "retry": "Spróbuj ponownie",
+  "quiz": {
+    "title": "Krótki test",
+    "hint": "Odpowiedz na każde pytanie. Możesz spróbować ponownie.",
+    "question": "Pytanie {{n}}",
+    "check": "Sprawdź odpowiedzi",
+    "failed": "Niektóre odpowiedzi były błędne. Przeczytaj zasady jeszcze raz i spróbuj ponownie."
+  },
+  "confirm": {
+    "title": "Potwierdź szkolenie",
+    "name": "Imię i nazwisko",
+    "name_placeholder": "Imię i nazwisko",
+    "name_error": "Wpisz imię i nazwisko.",
+    "statement_error": "Zaznacz pole, aby potwierdzić.",
+    "submit": "Potwierdź szkolenie"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Noś kamizelkę odblaskową",
+    "safety_shoes": "Noś obuwie ochronne",
+    "speed_limit_10": "Ograniczenie prędkości 10 km/h",
+    "forklift_traffic": "Ruch wózków widłowych",
+    "wheel_chock": "Używaj klinów pod koła",
+    "no_smoking": "Zakaz palenia",
+    "no_phone": "Zakaz używania telefonu",
+    "assembly_point": "Miejsce zbiórki",
+    "first_aid": "Pierwsza pomoc"
+  }
+}

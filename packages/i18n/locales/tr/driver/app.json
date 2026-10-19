@@ -1,0 +1,71 @@
+{
+  "language": "Dil",
+  "machine_badge": "auto",
+  "machine_hint": "Bu dil otomatik olarak çevrildi.",
+  "loading": "Rezervasyonun yükleniyor…",
+  "offline_banner": "Çevrimdışı. {{time}} tarihli durum gösteriliyor.",
+  "invalid": {
+    "title": "Bu bağlantı artık geçerli değil",
+    "body": "Sevkiyatçından yeni bir bağlantı iste."
+  },
+  "offline_link": {
+    "title": "Çevrimdışısın",
+    "body": "İnternete bağlan, sonra bağlantıyı tekrar aç."
+  },
+  "booking": {
+    "slot": "Randevu saatin",
+    "map": "Haritada aç",
+    "show_at_gate": "Kapıda göster",
+    "qr": "{{code}} rezervasyonunun QR kodu"
+  },
+  "safety": {
+    "required_title": "Güvenlik eğitimi gerekli",
+    "required_body": "Gelmeden önce saha kurallarını oku. Eğitim olmadan kapı seni içeri alamaz.",
+    "start": "Güvenlik eğitimini başlat",
+    "valid_until": "Güvenlik eğitimi {{date}} tarihine kadar geçerli",
+    "valid_visit": "Bu ziyaret için güvenlik eğitimi tamamlandı"
+  },
+  "privacy": {
+    "note": "Bu sayfa kişisel veri göstermez. Adın yalnızca güvenlik onayıyla birlikte kaydedilir.",
+    "link": "Gizlilik bildirimi"
+  },
+  "waiting": {
+    "title": "Lütfen bekle",
+    "body": "Giriş yaptın. Bu sayfadan seni bir rampaya çağıracağız. Sayfayı açık tut.",
+    "checked_in": "Giriş yapıldı",
+    "waited": "Bekleme",
+    "minutes": "{{minutes}} dk"
+  },
+  "called": {
+    "go": "Rampaya git",
+    "instruction": "{{dock}} rampasına git, {{hall}} salonu",
+    "called_at": "Çağrıldı: {{time}}",
+    "vibrated": "Çağrıldığında telefonun titrer. Sayfayı açık tut."
+  },
+  "done": {
+    "title": "Yükleme bitti",
+    "body": "Kapıya doğru sür. Kapı çıkışını kaydeder."
+  },
+  "closed": {
+    "departed": "Sahadan ayrıldın. İyi yolculuklar!",
+    "cancelled": "Bu rezervasyon iptal edildi.",
+    "no_show": "Bu rezervasyon gelmedi olarak işaretlendi. Lütfen sahayı ara.",
+    "turned_away": "Bu ziyaret kapıda geri çevrildi. Lütfen sahayı ara."
+  },
+  "link_expiry": "Bu bağlantı {{date}} tarihinde çalışmayı durdurur.",
+  "call_site": "Sahayı ara",
+  "gate_device": "Eğitim kapıdaki cihazda. İşin bitince cihazı kapı görevlisine geri ver.",
+  "status": {
+    "requested": "Talep edildi",
+    "confirmed": "Onaylandı",
+    "checked_in": "Giriş yapıldı",
+    "called": "Çağrıldı",
+    "at_dock": "Rampada",
+    "loading": "Yükleniyor",
+    "done": "Bitti",
+    "departed": "Ayrıldı",
+    "cancelled": "İptal edildi",
+    "no_show": "Gelmedi",
+    "turned_away": "Geri çevrildi"
+  }
+}

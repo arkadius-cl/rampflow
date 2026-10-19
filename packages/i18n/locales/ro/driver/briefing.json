@@ -1,0 +1,40 @@
+{
+  "loading": "Se încarcă regulile locației…",
+  "title": "Regulile locației",
+  "progress": "{{current}} / {{total}}",
+  "progress_label": "Progresul instruirii",
+  "back": "Înapoi",
+  "next": "Regula următoare",
+  "close": "Închide",
+  "to_quiz": "Am citit. Mergi la test",
+  "to_confirm": "Am citit",
+  "machine": "Această instruire a fost tradusă automat.",
+  "error": "Ceva nu a mers bine. Verifică conexiunea și încearcă din nou.",
+  "retry": "Încearcă din nou",
+  "quiz": {
+    "title": "Verificare rapidă",
+    "hint": "Răspunde la toate întrebările. Poți încerca din nou.",
+    "question": "Întrebarea {{n}}",
+    "check": "Verifică răspunsurile",
+    "failed": "Unele răspunsuri nu au fost corecte. Citește din nou regulile, apoi încearcă iar."
+  },
+  "confirm": {
+    "title": "Confirmă instruirea",
+    "name": "Numele tău",
+    "name_placeholder": "Prenume și nume",
+    "name_error": "Introdu prenumele și numele.",
+    "statement_error": "Bifează căsuța pentru a confirma.",
+    "submit": "Confirmă instruirea"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Poartă vestă reflectorizantă",
+    "safety_shoes": "Poartă încălțăminte de protecție",
+    "speed_limit_10": "Viteză maximă 10 km/h",
+    "forklift_traffic": "Circulă stivuitoare",
+    "wheel_chock": "Folosește pene de roată",
+    "no_smoking": "Fumatul interzis",
+    "no_phone": "Telefonul interzis",
+    "assembly_point": "Punct de adunare",
+    "first_aid": "Prim ajutor"
+  }
+}

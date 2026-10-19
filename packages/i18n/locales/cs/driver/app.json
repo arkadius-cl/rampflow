@@ -1,0 +1,71 @@
+{
+  "language": "Jazyk",
+  "machine_badge": "auto",
+  "machine_hint": "Tento jazyk byl přeložen automaticky.",
+  "loading": "Načítání rezervace…",
+  "offline_banner": "Offline. Stav z {{time}}.",
+  "invalid": {
+    "title": "Tento odkaz už neplatí",
+    "body": "Požádej dispečera o nový."
+  },
+  "offline_link": {
+    "title": "Jsi offline",
+    "body": "Připoj se k internetu a otevři odkaz znovu."
+  },
+  "booking": {
+    "slot": "Tvůj termín",
+    "map": "Otevřít v mapách",
+    "show_at_gate": "Ukaž u brány",
+    "qr": "QR kód rezervace {{code}}"
+  },
+  "safety": {
+    "required_title": "Je nutné bezpečnostní školení",
+    "required_body": "Přečti si pravidla areálu před příjezdem. Bez školení tě brána nepustí.",
+    "start": "Zahájit bezpečnostní školení",
+    "valid_until": "Bezpečnostní školení platí do {{date}}",
+    "valid_visit": "Bezpečnostní školení pro tuto návštěvu hotovo"
+  },
+  "privacy": {
+    "note": "Tato stránka nezobrazuje osobní údaje. Tvé jméno se ukládá jen s potvrzením školení.",
+    "link": "Zásady ochrany soukromí"
+  },
+  "waiting": {
+    "title": "Počkej, prosím",
+    "body": "Jsi odbavený. Na této stránce tě zavoláme k rampě. Nech ji otevřenou.",
+    "checked_in": "Odbaven",
+    "waited": "Čekání",
+    "minutes": "{{minutes}} min"
+  },
+  "called": {
+    "go": "Jeď k rampě",
+    "instruction": "Jeď k rampě {{dock}}, hala {{hall}}",
+    "called_at": "Voláno v {{time}}",
+    "vibrated": "Telefon zavibruje, až tě zavoláme. Nech stránku otevřenou."
+  },
+  "done": {
+    "title": "Nakládka hotová",
+    "body": "Jeď k bráně. Brána zaznamená tvůj odjezd."
+  },
+  "closed": {
+    "departed": "Opustil jsi areál. Šťastnou cestu!",
+    "cancelled": "Tato rezervace byla zrušena.",
+    "no_show": "Rezervace byla označena jako nedostavení se. Zavolej do areálu.",
+    "turned_away": "Tato návštěva byla u brány odmítnuta. Zavolej do areálu."
+  },
+  "link_expiry": "Tento odkaz přestane fungovat {{date}}.",
+  "call_site": "Zavolat do areálu",
+  "gate_device": "Školení na zařízení u brány. Až skončíš, vrať ho obsluze brány.",
+  "status": {
+    "requested": "Požadováno",
+    "confirmed": "Potvrzeno",
+    "checked_in": "Odbaven",
+    "called": "Voláno",
+    "at_dock": "U rampy",
+    "loading": "Nakládka",
+    "done": "Hotovo",
+    "departed": "Odjel",
+    "cancelled": "Zrušeno",
+    "no_show": "Nedostavil se",
+    "turned_away": "Odmítnut"
+  }
+}
