@@ -97,7 +97,8 @@ export const PutResourceDocks = z.object({ dockIds: ids.min(1) });
  */
 export const DockBooking = z.discriminatedUnion('as', [
   z.object({ as: z.literal('none') }),
-  z.object({ as: z.literal('single'), directions }),
+  // Without directions a reused single keeps its own and a new one serves both.
+  z.object({ as: z.literal('single'), directions: directions.optional() }),
   z.object({ as: z.literal('pool'), resourceId: z.uuid() }),
 ]);
 export type DockBooking = z.infer<typeof DockBooking>;

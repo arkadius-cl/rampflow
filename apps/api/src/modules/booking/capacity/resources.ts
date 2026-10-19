@@ -11,7 +11,12 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { dock } from '../../core/schema.ts';
 import { requireSite } from '../../core/sites/sites.ts';
 import { conflictOnUnique, invalid, type TenantRequest } from '../../core/sites/tenant.ts';
-import { bookableResource, type ResourceId, resourceDock } from '../schema.resources.ts';
+import {
+  bookableResource,
+  DIRECTIONS,
+  type ResourceId,
+  resourceDock,
+} from '../schema.resources.ts';
 
 type ResourceRow = typeof bookableResource.$inferSelect;
 
@@ -229,7 +234,8 @@ export async function bookDock(
   if (pool) requirePools(req, pool.kind);
 
   if (input.as === 'single' && current?.kind === 'single') {
-    return updateResource(tx, req, current.id, { directions: input.directions, active: true });
+    const directions = input.directions ?? current.directions;
+    return updateResource(tx, req, current.id, { directions, active: true });
   }
   if (pool && current?.id === pool.id) return view(pool, await dockIdsOfOne(tx, pool));
   if (input.as === 'none' && !current) return null;
@@ -252,20 +258,33 @@ export async function bookDock(
     input.as === 'single'
       ? await singleFor(tx, req, { ...target, directions: input.directions })
       : (pool as ResourceRow);
-  const dockIds = [...(await dockIdsOfOne(tx, resource)), dockId];
-  await setDocks(tx, resource, dockIds);
-  return view(resource, dockIds);
+  // One row, never a rewrite of the pool's list: a concurrent move into the same pool keeps its
+  // dock, and the same dock booked twice fails on the primary key.
+  await tx
+    .insert(resourceDock)
+    .values({
+      dockId,
+      resourceId: resource.id,
+      resourceKind: resource.kind,
+      siteId: resource.siteId,
+      tenantId: resource.tenantId,
+    })
+    .catch((e: unknown) => conflictOnUnique(e, 'resource_dock_pkey', 'dock_in_resource'));
+  return view(resource, await dockIdsOfOne(tx, resource));
 }
 
 async function dockIdsOfOne(tx: Tx, resource: ResourceRow): Promise<string[]> {
   return (await dockIdsOf(tx, resource.tenantId, [resource.id])).get(resource.id) ?? [];
 }
 
-/** A dockless single of the dock's site named like the dock, reactivated, or a new one. */
+/**
+ * A dockless single of the dock's site named like the dock, reactivated with its own directions
+ * unless new ones are given, or a new single serving both directions.
+ */
 async function singleFor(
   tx: Tx,
   req: TenantRequest,
-  d: { siteId: SiteId; code: string; directions: ResourceRow['directions'] },
+  d: { siteId: SiteId; code: string; directions: ResourceRow['directions'] | undefined },
 ): Promise<ResourceRow> {
   const [reusable] = await tx
     .select({ id: bookableResource.id })
@@ -281,17 +300,16 @@ async function singleFor(
       ),
     )
     .limit(1);
-  const values = { directions: d.directions, active: true };
   const [row] = reusable
     ? await tx
         .update(bookableResource)
-        .set(values)
+        .set({ active: true, ...(d.directions ? { directions: d.directions } : {}) })
         .where(eq(bookableResource.id, reusable.id))
         .returning()
     : await tx
         .insert(bookableResource)
         .values({
-          ...values,
+          directions: d.directions ?? [...DIRECTIONS],
           tenantId: req.tenantId,
           siteId: d.siteId,
           kind: 'single',

@@ -225,8 +225,10 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
       [single]: { active: false, dockIds: [] },
     });
 
-    const again = await resourceOf(await book(d1, { as: 'single', directions: ['inbound'] }));
-    expect(again?.id).toBe(single);
+    const again = (await (await book(d1, { as: 'single' })).json()) as {
+      resource: { id: string; directions: string[] };
+    };
+    expect(again.resource).toMatchObject({ id: single, directions: ['outbound'] });
 
     const none = await book(d1, { as: 'none' });
     expect(await resourceOf(none)).toBeNull();
@@ -234,6 +236,19 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
       [s.resourceId]: { active: true, dockIds: [d2] },
       [single]: { active: false, dockIds: [] },
     });
+  });
+
+  it('keeps both docks when two admins move docks into the same pool at once', async () => {
+    const s = await capacitySite(w.A.tenantId, { docks: 3, hours: [] });
+    const [d1, d2, d3] = s.dockIds as [DockId, DockId, DockId];
+    await book(d2, { as: 'none' });
+    await book(d3, { as: 'none' });
+    const both = await Promise.all([
+      book(d2, { as: 'pool', resourceId: s.resourceId }),
+      book(d3, { as: 'pool', resourceId: s.resourceId }),
+    ]);
+    expect(both.map((r) => r.status)).toEqual([200, 200]);
+    expect((await holders(s.siteId))[s.resourceId]?.dockIds).toEqual([d1, d2, d3].sort());
   });
 
   it('answers 422 for a pool of another site or a single resource named as the pool', async () => {

@@ -189,7 +189,6 @@ function HoursEditor({
             checked
             onCheckedChange={(on) => {
               if (on) return;
-              setOwnHours(false);
               save.mutate({ rows: [] });
             }}
           />

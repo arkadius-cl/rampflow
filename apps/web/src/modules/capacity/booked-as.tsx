@@ -20,7 +20,7 @@ const choiceOf = (holder: ResourceView | undefined): Choice =>
 
 function bookingOf(choice: Choice): DockBooking {
   if (choice === 'none') return { as: 'none' };
-  if (choice === 'single') return { as: 'single', directions: ['inbound', 'outbound'] };
+  if (choice === 'single') return { as: 'single' };
   return { as: 'pool', resourceId: choice.slice('pool:'.length) };
 }
 

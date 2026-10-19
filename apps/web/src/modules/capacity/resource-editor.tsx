@@ -89,6 +89,8 @@ export function ResourceEditor({
   const [selected, setSelected] = useState<string>(() => listed[0]?.id ?? NEW);
   const resource = listed.find((r) => r.id === selected);
   const editing = resource ?? null;
+  // Remounts when a dock row moves a dock, so the form never saves a stale member list.
+  const formKey = editing ? `${editing.id}:${editing.dockIds.join()}` : NEW;
   const codeOf = (id: string | undefined) => docks.find((d) => d.id === id)?.code ?? '';
   return (
     <Card className="self-start">
@@ -139,7 +141,7 @@ export function ResourceEditor({
         ) : null}
         {editing || poolsOn ? (
           <ResourceDetails
-            key={editing?.id ?? NEW}
+            key={formKey}
             orgId={orgId}
             siteId={siteId}
             resource={editing}
