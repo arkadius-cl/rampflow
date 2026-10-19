@@ -11,7 +11,7 @@ related: [docs/explanation/research/tech-architecture.md, docs/explanation/mvp-s
 
 # ADR-0003: Authentication with scrypt passwords and a session table instead of better-auth
 
-Status: accepted, 2026-10-19. This amends the scope's security line "Passwords use better-auth scrypt": passwords still use scrypt, through `node:crypto`.
+Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: emailed tokens are derived from their row id, a claim is one guarded statement, rate-limit events commit outside the request transaction, and the client address honors `TRUST_PROXY`. This amends the scope's security line "Passwords use better-auth scrypt": passwords still use scrypt, through `node:crypto`.
 
 ## Context
 
@@ -58,13 +58,24 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 
 ### Tokens
 
-- Magic links, password resets and staff invitations: 32 random bytes; the link carries the raw token in the URL fragment (`/auth/magic#<token>`, `/auth/reset#<token>`, `/invite#<token>`). The page posts it to an exchange endpoint, as the driver PWA does, so tokens never appear in request lines, logs or `Referer` headers.
-- Storage is `sha256(token)` only. Lifetimes: magic link 15 minutes, reset 60 minutes, invitation 7 days. Each token is single use; the exchange marks it used in the same transaction that creates the session or membership.
+- Magic links, password resets, staff invitations, carrier invitations, registrations and driver links: `token = base64url(HMAC-SHA256(TOKEN_SECRET, "<purpose>:<row id>"))`, 256 bits (`deriveToken` in `apps/api/src/kernel/tokens.ts`; driver links follow [ADR-0008](ADR-0008-driver-token-pwa-delivery.md) with purpose `driver`). The link carries the raw token in the URL fragment (`/auth/magic#<token>`, `/auth/reset#<token>`, `/invite#<token>`). The page posts it to an exchange endpoint, as the driver PWA does, so tokens never appear in request lines, logs or `Referer` headers.
+- Storage is `sha256(token)` only. Because the token derives from the row id, an outbox payload carries only the row id (`authTokenId`, `invitationId`, ...) and the template derives the link at send time; no table or backup holds a usable token, and the worker empties the payload once the email is sent. `TOKEN_SECRET` is required in production.
+- Lifetimes: magic link 15 minutes, reset 60 minutes, invitation 7 days. Each token is single use. The claim is one guarded statement that only one concurrent exchange can win, never a select followed by an update:
+
+  ```sql
+  update auth_token set used_at = $now
+  where token_hash = $hash and used_at is null and expires_at > $now
+  returning id, user_id, kind
+  ```
+
+  The exchange claims the token and creates the session or membership in the same transaction ([ADR-0002](ADR-0002-tenancy-isolation-rls.md), "Token redemption is one transaction"), switching scope with `asScope` where the second write needs another party.
 - Requesting a magic link or reset always answers 202, whether or not the email exists.
 
 ### Abuse limits
 
 - `rate_limit_event (bucket, key_hash, at)` counts events in Postgres, so a second API instance shares the limits.
+- Rate-limit events commit on their own pool connection (`apps/api/src/kernel/rate-limit.ts`), never through the request transaction: a failed sign-in answers 401, the request transaction rolls back, and the event must still count. `consumeRateLimit` counts and records under a per-key advisory lock, so concurrent attempts cannot both slip under the limit. The kernel test runs five failed sign-ins inside rolled-back requests and gets 429 on the sixth.
+- The key uses the client address from `clientIp(c)`: the socket peer, or with `TRUST_PROXY=1` the last `X-Forwarded-For` entry, the one the reverse proxy appended. Without it, every request behind a proxy would share one address.
 - `login_failed`: 5 per 15 minutes per `sha256(lower(email) + ip)`, then 429 `rate_limited` with `retryAfterSeconds`.
 - `magic_link_request` and `reset_request`: 5 per hour per email hash, then the API silently stops sending.
 - `driver_exchange`: 10 per minute per IP ([ADR-0008](ADR-0008-driver-token-pwa-delivery.md)).

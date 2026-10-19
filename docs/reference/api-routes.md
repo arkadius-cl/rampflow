@@ -333,6 +333,8 @@ Unit U1. `apps/api/src/kernel/test-routes.ts`, only with `ENABLE_TEST_ROUTES=1`.
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/test/seed` | `{ scenario }`; creates a tenant world and returns ids and credentials for Playwright |
-| POST | `/api/test/clock` | `{ now: string \| null }`; pins the API's `Clock` to an instant, `null` returns to the system clock. U1, or U12 if missing |
-| POST | `/api/test/jobs/:name/run` | runs one job tick now |
+| POST | `/api/test/seed` | `{ scenario: 'world' }`; 201 with the `world()` fixture: tenant, site, carrier and booking ids, a session token per role (`rf_session`) and a driver token per booking (`rf_driver`). Seeds as the owner role through `MIGRATION_DATABASE_URL`. Passwords arrive with U2 |
+| POST | `/api/test/clock` | `{ now: string \| null }`; pins the clock of requests and in-process jobs to an instant, `null` returns to the system clock; answers `{ now }` |
+| POST | `/api/test/jobs/:name/run` | runs one job tick now; answers `{ ran, stats }` (`ran: false` when another runner holds the job) |
+
+Test routes sit under the Origin check like every mutating route, so Playwright sends `Origin: APP_ORIGIN`.

@@ -239,9 +239,9 @@ export interface AppEnv {
 }
 
 export interface Access {
-  role: Role | null;                              // null for driver and token scopes
+  role: Role | null;                              // null for driver, token, public, user, system and system actors
   permissions: ReadonlySet<PermissionKey>;
-  entitlements: Entitlements | null;              // the acting tenant's; null for carrier (cross-tenant) and platform
+  entitlements: Entitlements | null;              // the acting tenant's (tenant, carrier_at_tenant, driver, public); null otherwise
   setting<K extends SettingKey>(key: K, siteId: SiteId | null): Promise<ResolvedSetting<SettingValue<K>>>;
 }
 ```
@@ -265,7 +265,8 @@ export async function withinLimit(
   tx: Tx, tenantId: TenantId, entitlements: Entitlements,
   key: HardLimitKey, count: (tx: Tx) => Promise<number>,
 ): Promise<void>;
-// Locks the tenant org row FOR UPDATE, then 409 limit_reached { key, limit } when count + 1 > limit.
+// Takes a transaction-scoped advisory lock on (tenant, key), then 409 limit_reached { key, limit }
+// when count + 1 > limit. The advisory lock needs no UPDATE policy on org (U1 deviation from ADR-0004).
 // Soft limits do not compile here.
 ```
 
@@ -334,14 +335,14 @@ export interface RouteCase {
   entitlement: ImplementedFeatureKey | null;     // beyond the module gate
   params: (world: World) => Record<string, string>;
   body?: (world: World) => unknown;
-  setup?: (world: World, tx: Tx) => Promise<void>; // module fixtures in world A and B
+  setup?: (world: World, db: OwnerDb) => Promise<void>; // module fixtures in worlds A and B, as the owner
   foreign: 'not_found' | 'empty';                // expected result as world B
   siteScoped: boolean;                           // a gate operator of another site gets 404
 }
 export function defineRouteCases(cases: readonly RouteCase[]): readonly RouteCase[];
 ```
 
-The harness seeds worlds A and B (each with two sites) and runs the foreign-tenant, foreign-site, permission and entitlement checks of [ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md). `route-coverage.test.ts` fails for a route without a case.
+The harness (`checkRouteCase`) seeds fresh worlds A and B per case (each with two sites, a carrier and a rival carrier linked to the tenant, and one booking per carrier and site) and runs the foreign-org, rival-carrier, foreign-site, permission, entitlement and control checks of [ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md#leak-tests). `test/route-cases.test.ts` runs every case of every module; `route-coverage.test.ts` fails for a guarded route without a case and for a case that names no route. A case's `as: 'driver'` acts with the link of `A.bookings.own`.
 
 ## Context endpoints
 

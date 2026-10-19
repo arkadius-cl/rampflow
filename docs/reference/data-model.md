@@ -22,17 +22,21 @@ Postgres 18. Schema `public` for tables, schema `app` for the RLS helper functio
 - Enumerations are `text` with a `check` constraint, so adding a value is a generated migration.
 - Every `tenant_id`, `carrier_id`, `site_id` and `booking_id` column has an index, alone or as the leading column of a composite index.
 - Personal data: columns marked **PD** hold personal data and fall under the retention rules in [Retention](#retention).
+- jsonb columns whose value may be JSON `null` (`entitlement_override.value`, `setting_value.value`) store it wrapped as `{ "v": <value> }`, with a check that the key exists. Drizzle writes a JS `null` as SQL NULL, so an unwrapped "unlimited" or "cleared" value would hit `not null`. Repositories wrap with `wrapJson` and read `.v` (`apps/api/src/db/ids.ts`).
+- Implemented by U1: every table below exists in its schema file with its policies. A later unit changes a schema file only for a deviation its report lists.
 
 ## Policy classes
 
-The policy helpers in `apps/api/src/db/rls.ts` generate these. `site-scoped` adds `app.site_allowed(<site column>)` to the tenant policy.
+The policy helpers in `apps/api/src/db/rls.ts` generate these ([ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md)). Every policy is for one party and starts with `(select app.party()) = '<party>' and`, because all parties connect as `rampflow_app` and `driver`, `carrier_at_tenant` and `public` scopes also set `app.tenant_id`. The predicates below omit that prefix. `site-scoped` adds `app.site_allowed(<site column>)` to the tenant policy. A party that needs `select ... for update` without the right to change a row gets a lock-only `update` policy (`with check false`). Every RLS table has an oracle entry in the party matrix test `apps/api/src/db/rls.test.ts`.
 
 | Class | Tenant party | Other parties |
 |---|---|---|
 | `tenant-private` | all commands where `tenant_id = app.tenant_id()` | none |
 | `tenant-reference(readers)` | all commands where `tenant_id = app.tenant_id()` | `select` for each listed reader: `carrier` where `app.linked_tenant(tenant_id)`; `carrier_at_tenant`, `driver` and `public` where `tenant_id = app.tenant_id()` |
-| `booking-family` | all commands, site-scoped | `carrier`: `select` where `carrier_id = app.carrier_id()`. `carrier_at_tenant`: `select` where `tenant_id = app.tenant_id()` (booking) or own carrier (children); `insert`, `update` with check `tenant_id = app.tenant_id() and carrier_id = app.carrier_id()`. `driver`: `select` where `booking_id = app.booking_id()` (`id` on `booking`). |
+| `booking-family` | all commands, site-scoped | `carrier`: `select` where `carrier_id = app.carrier_id()`. `carrier_at_tenant`: `select`, `insert` and `update` where `tenant_id = app.tenant_id() and carrier_id = app.carrier_id()`, on `booking` too: another carrier's bookings reach it only as load through the capacity read of [ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md). `driver`: `select` where `booking_id = app.booking_id()` (`id` on `booking`), except on `avis` and `avis_reference`. |
 | `none` | RLS disabled; imports restricted to the owning directory by Biome | |
+
+SQL functions in schema `app` (baseline migration): the accessors `party()`, `user_id()`, `tenant_id()`, `carrier_id()`, `booking_id()`, `token_hash()`; the predicates `site_allowed(site)` and `linked_tenant(tenant)`; the security definer helpers `shares_org(user)` (the `app_user` policies) and `user_by_email(email)` (sign-in lookups by `anonymous`, `token` and `public`).
 
 ## Tables by module
 
@@ -112,7 +116,7 @@ Every party organisation: the single platform org, tenants and carriers.
 | `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) |
 
 - Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org.
-- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select.
+- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` and `token` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration; ids are generated in the app, because these parties cannot read the new row back).
 
 ### `app_user`
 
@@ -127,7 +131,7 @@ Every party organisation: the single platform org, tenants and carriers.
 | `last_seen_at` | timestamptz | yes | drives `privacy.retention.carrier_inactive_days` |
 | `disabled_at` | timestamptz | yes | |
 
-RLS: none (auth-owned, `core/auth/` only).
+RLS custom: `platform` all; `user` select and update its own row (`id = app.user_id()`); `token` select and update the accepting user's row, and insert; `public` insert (registration); `tenant`, `carrier` and `carrier_at_tenant` select where `app.shares_org(id)`: members of the scope's org and, for a tenant, members of its linked carriers. Lookups by email before sign-in go through `app.user_by_email()`. Modules read names and emails with `userDisplay(tx, ids)` (`kernel/users.ts`).
 
 ### `session`
 
@@ -230,12 +234,12 @@ RLS custom: `platform` all; `tenant`, `carrier_at_tenant`, `driver`, `public` se
 |---|---|---|---|
 | `tenant_id` | uuid | no | FK `org` on delete cascade |
 | `key` | text | no | implemented entitlement key, validated by `parseEntitlementOverride` |
-| `value` | jsonb | no | `true`, `false`, a non-negative integer, or `null` (unlimited) |
+| `value` | jsonb | no | `{ "v": true \| false \| non-negative integer \| null }`; `null` is unlimited |
 | `expires_at` | timestamptz | yes | the override stops applying at this instant |
 | `note` | text | yes | reason, shown in PL-02 |
 | `updated_at`, `updated_by` | timestamptz, uuid | no | |
 
-Primary key `(tenant_id, key)`. RLS: same as `tenant_subscription`.
+Primary key `(tenant_id, key)`. RLS custom: `platform` all; `tenant` select where `tenant_id = app.tenant_id()`. The `note` is internal, so carriers, drivers and the public never read overrides; `loadAccess` resolves their tenant's entitlements as the tenant (actor `system:access`).
 
 ### `setting_value`
 
@@ -245,7 +249,7 @@ Primary key `(tenant_id, key)`. RLS: same as `tenant_subscription`.
 | `tenant_id` | uuid | yes | null for platform rows |
 | `site_id` | uuid | yes | set for site rows; FK `(site_id, tenant_id) → site` on delete cascade |
 | `key` | text | no | setting key, validated by `parseSettingWrite` |
-| `value` | jsonb | no | |
+| `value` | jsonb | no | `{ "v": <value> }`, so a setting can be set to `null` (for example `privacy.notice_url`) |
 | `updated_at`, `updated_by` | timestamptz, uuid | no | |
 
 - `unique nulls not distinct (tenant_id, site_id, key)`; check `site_id is null or tenant_id is not null`.
@@ -357,7 +361,7 @@ Partial index `(next_attempt_at)` where `sent_at is null and failed_at is null`.
 | `sort` | integer | no | order for automatic assignment |
 | `active` | boolean | no | |
 
-Unique `(id, kind)` and `(id, site_id)`. RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped. Carriers need `select ... for update` only under `carrier_at_tenant`, which the read policy plus a matching `update` policy (`using tenant_id = app.tenant_id()`, `with check false`) allow without granting real updates.
+Unique `(id, kind)` and `(id, site_id)`. RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped. Capacity writers lock the site with an advisory lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)), so no party needs a lock policy here.
 
 ### `resource_dock`
 
@@ -454,6 +458,7 @@ The booking and its visit ([Booking lifecycle](booking-lifecycle.md)). No person
 | `actual_load_units` | integer | yes | at `done` |
 | `discrepancy_note` | text | yes | |
 | `cancel_reason`, `departure_reason` | text | yes | |
+| `cancelled_late` | boolean | no | default `false`; stamped by `cancel` after the cutoff, for the late-cancellation KPI |
 | `turn_away_reason` | text | yes | `safety_not_completed`, `no_capacity`, `too_late`, `documents_missing`, `wrong_load`, `damaged`, `other` |
 | `version` | integer | no | optimistic concurrency for edits |
 | `updated_at` | timestamptz | no | |
@@ -466,7 +471,7 @@ Indexes:
 - `(carrier_id, starts_at)`: carrier list (CR-05).
 - `(tenant_id, status, starts_at)` where `status = 'confirmed'`: no-show and reminder jobs.
 
-RLS: `booking-family`.
+Unique `(id, tenant_id)` for the children's composite foreign keys. RLS: `booking-family`; `driver` also has a lock-only `update` policy (`using id = app.booking_id()`, `with check false`), so `transitionBooking` can lock the booking for `link_acknowledgement`.
 
 ### `booking_event`
 
@@ -486,7 +491,7 @@ Append-only.
 | `actor_job` | text | yes | |
 | `data` | jsonb | no | typed per event type |
 
-RLS: `booking-family` without `update`; `delete` only for the `tenant` party (retention).
+FK `(booking_id, tenant_id) → booking(id, tenant_id)`. RLS: `booking-family` without `update`: the tenant selects, inserts and deletes (retention); `driver` also inserts where `booking_id = app.booking_id()` (`safety_linked`). RLS cannot tell a system actor from a user, so "only retention deletes" is a code convention.
 
 ### `carrier_invitation`
 
@@ -565,9 +570,10 @@ One per booking (AV-01). Excludes loading method, customs, SSCC and attachments.
 | `notes` | text | yes | up to 1,000 characters |
 | `plate_seen` | text | yes | **PD**; recorded at check-in (YD-02) |
 | `phone_erased_at`, `pseudonymized_at` | timestamptz | yes | retention markers |
-| `updated_at`, `updated_by` | timestamptz, uuid | no | |
+| `updated_at` | timestamptz | no | |
+| `updated_by` | uuid | yes | null when a job (retention) changed the row last |
 
-RLS: `booking-family` (driver reads the row, but the driver API selects no personal column).
+FK `(booking_id, tenant_id) → booking(id, tenant_id)` on delete cascade. Indexes `(tenant_id, lower(driver_name))`, `(tenant_id, plate)`, `(tenant_id, driver_phone)` for YD-01 and TN-06 searches. RLS: `booking-family` without the `driver` read: the row holds the visit's personal data, and the driver view shows none of it (DR-01).
 
 ### `avis_reference`
 
@@ -581,7 +587,7 @@ RLS: `booking-family` (driver reads the row, but the driver API selects no perso
 | `value` | text | no | 1 to 35 characters |
 | `value_norm` | text | no | uppercase, trimmed; index `(tenant_id, value_norm)` for YD-01 search and `avis.unique_references` |
 
-RLS: `booking-family`.
+RLS: `booking-family` without the `driver` read.
 
 ## driver
 
@@ -590,7 +596,8 @@ RLS: `booking-family`.
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | `id` | uuid | no | input of the HMAC that derives the token |
-| `tenant_id`, `booking_id` | uuid | no | FK `booking` on delete cascade |
+| `tenant_id`, `booking_id` | uuid | no | FK `(booking_id, tenant_id) → booking` on delete cascade |
+| `site_id` | uuid | no | the booking's site, so the tenant policy is site-scoped like its siblings |
 | `carrier_id` | uuid | yes | |
 | `token_hash` | bytea | no | unique, `sha256(token)` |
 | `channel` | text | no | `link`, `staff` |
@@ -742,5 +749,6 @@ The retention job (PL-05) applies these rules per tenant with the resolved `priv
 | `driver_access` | delete rows past `expires_at` | `driver_link_hours` sets the expiry |
 | carrier users without sign-in | email notice 30 days ahead, then delete the user and empty carrier orgs | `carrier_inactive_days` |
 | `rate_limit_event`, used `auth_token` | delete after 24 hours | fixed |
+| `outbox_message` | the worker empties `payload` when it sends; delete sent or failed rows after 7 days | fixed |
 
 TN-06 erase calls the same pseudonymization function for the matched bookings, and sets `restricted_at` on matched acknowledgements that are still under retention.

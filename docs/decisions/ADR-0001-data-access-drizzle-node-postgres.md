@@ -11,7 +11,7 @@ related: [docs/explanation/research/tech-architecture.md, docs/decisions/ADR-000
 
 # ADR-0001: Data access with Drizzle and node-postgres
 
-Status: accepted, 2026-10-19.
+Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: one baseline holds every SQL function, `db:generate` and `db:regen` are one command, and test databases are per checkout.
 
 ## Context
 
@@ -49,15 +49,15 @@ For migrations under parallel work:
 5. **Two database roles.**
    - `MIGRATION_DATABASE_URL` connects as the owner role. It runs migrations and owns every table. In dev this is the compose superuser `rampflow`.
    - `DATABASE_URL` connects as `rampflow_app`: `LOGIN NOBYPASSRLS`, owns nothing, and receives `SELECT, INSERT, UPDATE, DELETE` through default privileges.
-   - `apps/api/scripts/db-setup.ts` creates `rampflow_app` idempotently in dev and test. Production provisions both roles outside the app.
-6. **Baseline migration.** U1 writes `0000_baseline.sql` by hand (`drizzle-kit generate --custom`). It creates the `app` schema, the GUC helper functions from [ADR-0002](ADR-0002-tenancy-isolation-rls.md), the extensions (`btree_gist`, `pgcrypto`, `citext`) and the default privileges for `rampflow_app`. After the generated core tables, U1 adds a second custom migration with `app.linked_tenant()`, because a SQL function body may only reference tables that already exist.
-7. **Everything after the baseline is generated** from the TypeScript schema: tables, checks, partial and composite indexes, composite foreign keys, and RLS policies through `pgPolicy`, built by the helpers in `apps/api/src/db/rls.ts`.
+   - `pnpm db:setup` (`apps/api/scripts/db-setup.ts`) creates or converges `rampflow_app` idempotently in dev and test and creates the checkout's database. Production provisions both roles outside the app. The API refuses to start as a superuser or a role with `rolbypassrls`.
+6. **Baseline migration.** U1 writes `0000_baseline.sql` by hand (`drizzle-kit generate --custom`). It creates the extensions (`btree_gist`, `pgcrypto`, `citext`), the `app` schema with every SQL function a policy calls ([ADR-0002](ADR-0002-tenancy-isolation-rls.md): the GUC accessors, `app.site_allowed`, `app.linked_tenant`, and the security definer helpers `app.shares_org` and `app.user_by_email`), and the default privileges for `rampflow_app`. It sets `check_function_bodies = off`, so `app.linked_tenant()` can name `tenant_carrier_link` before the generated migration creates it; a policy that calls a missing function would fail `CREATE POLICY`. There is no second custom migration. The test run migrates an empty template database every time, which proves a first `db:migrate` passes.
+7. **Everything after the baseline is generated** from the TypeScript schema: tables, checks, partial and composite indexes, composite foreign keys, and RLS policies through `pgPolicy`, built by the helpers in `apps/api/src/db/rls.ts`. U1 lands every table of the data model in its module's `schema*.ts` with its policies; later units change those files only for the deviations their reports list. drizzle-kit 0.31 diffs policy expressions (`ALTER POLICY`), so a changed predicate needs no custom SQL.
 8. **No custom SQL on feature branches.** If a unit needs SQL that the Drizzle schema cannot express, it stops and the coordinator lands that SQL on main first. This keeps `db:regen` mechanical.
 9. **Parallel branches.**
-   - A unit generates its migration with `pnpm db:generate --name <unit-id>` as often as it likes during development.
-   - Before merging, the unit (or the integrator) runs `pnpm db:regen` on a branch rebased onto main. The script deletes every file under `apps/api/drizzle/` that is not on main, checks out main's `meta/` folder, and runs `drizzle-kit generate --name <unit-id>` once.
+   - `pnpm db:generate --name <unit-id>` and `pnpm db:regen --name <unit-id>` run the same script (`apps/api/scripts/db-regen.ts`). It deletes every file under `apps/api/drizzle/` that the merge-base with `main` lacks, checks out that base's `meta/` folder, and runs `drizzle-kit generate --name <unit-id>` once. A branch therefore holds exactly one migration however often the unit generates.
+   - Before merging, the unit (or the integrator) rebases onto main and runs `pnpm db:regen --name <unit-id>`, now against main itself. A rebase conflict in `apps/api/drizzle/meta` needs no hand merge: take main's side (or run the script, which checks out main's `meta/`), regenerate, and continue.
    - The integrator merges units one at a time in wave order and runs `pnpm verify` after each merge. A unit is never merged with more than one migration.
-10. **Tests.** Vitest `globalSetup` migrates a template database `rampflow_tpl` once per run as the owner role. Each worker clones `rampflow_test_<VITEST_POOL_ID>` from it and connects as `rampflow_app`. Tests isolate through fresh tenants, not through rollback, so commit-time behavior (constraint violations, lock waits) stays real.
+10. **Tests.** Vitest `globalSetup` drops and migrates a template database `<checkout db>_tpl` once per run as the owner role and drops the previous run's worker databases. Each worker clones `<checkout db>_test_<VITEST_POOL_ID>` from it on first use. The checkout database name comes from `DATABASE_URL`, which `scripts/checkout-env.mjs` makes unique per worktree (`rampflow` in the main checkout, `rampflow_<slug>` elsewhere), so parallel checkouts never share a test database. The system under test connects as `rampflow_app`; fixtures are written and absence is checked through a second pool on `MIGRATION_DATABASE_URL`. Tests isolate through fresh tenants, not through rollback, so commit-time behavior (constraint violations, lock waits) stays real.
 
 ## Consequences
 
