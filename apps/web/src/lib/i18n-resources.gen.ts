@@ -22,6 +22,8 @@ import type privacy_nav from '@rampflow/i18n/locales/en/privacy/nav.json';
 import type privacy_settings from '@rampflow/i18n/locales/en/privacy/settings.json';
 import type report_entitlements from '@rampflow/i18n/locales/en/report/entitlements.json';
 import type report_nav from '@rampflow/i18n/locales/en/report/nav.json';
+import type safety_briefings from '@rampflow/i18n/locales/en/safety/briefings.json';
+import type safety_editor from '@rampflow/i18n/locales/en/safety/editor.json';
 import type safety_entitlements from '@rampflow/i18n/locales/en/safety/entitlements.json';
 import type safety_nav from '@rampflow/i18n/locales/en/safety/nav.json';
 import type safety_register from '@rampflow/i18n/locales/en/safety/register.json';
@@ -73,6 +75,8 @@ export interface Resources {
     nav: typeof report_nav;
   };
   safety: {
+    briefings: typeof safety_briefings;
+    editor: typeof safety_editor;
     entitlements: typeof safety_entitlements;
     nav: typeof safety_nav;
     register: typeof safety_register;

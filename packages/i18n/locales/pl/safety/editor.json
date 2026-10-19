@@ -1,0 +1,82 @@
+{
+  "back": "Wszystkie instruktaże",
+  "versions": "Wersje",
+  "languages": "Języki",
+  "version": "Wersja {{version}}",
+  "status": {
+    "draft": "Wersja robocza",
+    "published": "Opublikowana",
+    "retired": "Zastąpiona"
+  },
+  "material": "Istotna zmiana",
+  "published_on": "Opublikowano {{date}}",
+  "translation": {
+    "source": "Źródło",
+    "machine": "Tłumaczenie maszynowe",
+    "reviewed": "Sprawdzone"
+  },
+  "questions_count": "Quiz: {{n}}",
+  "new_version": "Edytuj jako nową wersję",
+  "read_only": {
+    "title": "Opublikowanych wersji nie można zmieniać",
+    "description": "Aby zmienić tekst, edytuj nową wersję. Kierowcy widzą tę wersję, dopóki nie opublikujesz nowej."
+  },
+  "retired_note": "Ta wersja została zastąpiona nowszą.",
+  "fields": {
+    "translation": "Status tłumaczenia",
+    "translation_hint": "Oznacz tłumaczenie maszynowe jako sprawdzone, gdy osoba znająca ten język je skontroluje.",
+    "title": "Tytuł",
+    "blocks": "Zasady",
+    "blocks_hint": "Kierowcy widzą jedną zasadę na ekranie. Piktogram pojawia się nad tekstem, który po nim następuje.",
+    "statement": "Oświadczenie",
+    "statement_hint": "Kierowca potwierdza to zdanie, wpisując swoje imię i nazwisko."
+  },
+  "block": {
+    "text": "Tekst",
+    "pictogram": "Piktogram",
+    "add_text": "Dodaj tekst",
+    "add_pictogram": "Dodaj piktogram",
+    "move_up": "W górę",
+    "move_down": "W dół",
+    "remove": "Usuń",
+    "label": "Zasada {{n}}"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Kamizelka odblaskowa",
+    "safety_shoes": "Obuwie ochronne",
+    "speed_limit_10": "Ograniczenie prędkości 10 km/h",
+    "forklift_traffic": "Ruch wózków widłowych",
+    "wheel_chock": "Kliny pod koła",
+    "no_smoking": "Zakaz palenia",
+    "no_phone": "Zakaz używania telefonu",
+    "assembly_point": "Punkt zbiórki",
+    "first_aid": "Pierwsza pomoc"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "hint": "Każdy opublikowany język wymaga od {{min}} do {{max}} pytań z jedną poprawną odpowiedzią.",
+    "question": "Pytanie {{n}}",
+    "prompt": "Pytanie",
+    "option": "Odpowiedź {{n}}",
+    "correct": "Poprawna odpowiedź",
+    "add_question": "Dodaj pytanie",
+    "add_option": "Dodaj odpowiedź",
+    "remove_question": "Usuń pytanie",
+    "remove_option": "Usuń odpowiedź {{n}}",
+    "unavailable": "Quiz nie jest częścią Twojego pakietu. Kierowcy potwierdzają zasady bez pytań."
+  },
+  "save": "Zapisz: {{language}}",
+  "saved": "Zapisano: {{language}}.",
+  "publish": {
+    "action": "Opublikuj",
+    "title": "Opublikuj wersję {{version}}",
+    "description": "Od teraz kierowcy widzą tę wersję. Dotychczas opublikowana wersja zostaje zastąpiona.",
+    "material": "Istotna zmiana",
+    "material_hint": "Kierowcy, którzy potwierdzili wcześniejszą wersję, muszą przeczytać i potwierdzić tę przed kolejną odprawą. Zostaw wyłączone przy poprawkach, które nie zmieniają zasad.",
+    "confirm": "Opublikuj teraz",
+    "cancel": "Anuluj",
+    "incomplete": "Te języki wymagają od {{min}} do {{max}} pytań quizu: {{languages}}.",
+    "done": "Wersja {{version}} jest opublikowana."
+  },
+  "unsaved": "Niezapisane zmiany"
+}

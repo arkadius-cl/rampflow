@@ -23,5 +23,46 @@
   "channel": {
     "link": "Driver link",
     "staff": "Gate device"
+  },
+  "screen": {
+    "title": "Acknowledgements",
+    "description": "Who confirmed which briefing, when, and until when it is valid.",
+    "export": "Export CSV",
+    "filters": {
+      "site": "Site",
+      "all_sites": "All sites",
+      "carrier": "Carrier",
+      "all_carriers": "All carriers",
+      "driver": "Driver name",
+      "driver_placeholder": "Search by name",
+      "instruction": "Briefing",
+      "all_instructions": "All briefings",
+      "version": "Version",
+      "all_versions": "All versions",
+      "status": "Status",
+      "all_statuses": "Any status",
+      "reset": "Reset filters"
+    },
+    "columns": {
+      "completed": "Completed",
+      "driver": "Driver",
+      "carrier": "Carrier",
+      "booking": "Booking",
+      "site": "Site",
+      "instruction": "Briefing",
+      "language": "Language",
+      "score": "Quiz",
+      "status": "Status",
+      "valid_until": "Valid until"
+    },
+    "version": "v{{version}}",
+    "score": "{{score}} %",
+    "no_expiry": "This visit",
+    "no_booking": "Deleted",
+    "more": "Load more",
+    "empty": {
+      "title": "No acknowledgements",
+      "description": "No driver has confirmed a briefing that matches these filters."
+    }
   }
 }

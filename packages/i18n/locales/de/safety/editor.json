@@ -1,0 +1,82 @@
+{
+  "back": "Alle Unterweisungen",
+  "versions": "Versionen",
+  "languages": "Sprachen",
+  "version": "Version {{version}}",
+  "status": {
+    "draft": "Entwurf",
+    "published": "Veröffentlicht",
+    "retired": "Abgelöst"
+  },
+  "material": "Wesentliche Änderung",
+  "published_on": "Veröffentlicht am {{date}}",
+  "translation": {
+    "source": "Quelle",
+    "machine": "Maschinell übersetzt",
+    "reviewed": "Geprüft"
+  },
+  "questions_count": "Quiz: {{n}}",
+  "new_version": "Als neue Version bearbeiten",
+  "read_only": {
+    "title": "Veröffentlichte Versionen sind unveränderlich",
+    "description": "Bearbeiten Sie eine neue Version, um den Text zu ändern. Fahrer sehen diese Version, bis Sie die neue veröffentlichen."
+  },
+  "retired_note": "Diese Version wurde durch eine neuere abgelöst.",
+  "fields": {
+    "translation": "Übersetzungsstatus",
+    "translation_hint": "Markieren Sie eine maschinelle Übersetzung als geprüft, sobald jemand mit dieser Sprache sie kontrolliert hat.",
+    "title": "Titel",
+    "blocks": "Regeln",
+    "blocks_hint": "Fahrer sehen eine Regel pro Bildschirm. Ein Piktogramm erscheint über dem folgenden Text.",
+    "statement": "Bestätigungssatz",
+    "statement_hint": "Der Fahrer bestätigt diesen Satz mit seinem eingetippten Namen."
+  },
+  "block": {
+    "text": "Text",
+    "pictogram": "Piktogramm",
+    "add_text": "Text hinzufügen",
+    "add_pictogram": "Piktogramm hinzufügen",
+    "move_up": "Nach oben",
+    "move_down": "Nach unten",
+    "remove": "Entfernen",
+    "label": "Regel {{n}}"
+  },
+  "pictogram": {
+    "hi_vis_vest": "Warnweste",
+    "safety_shoes": "Sicherheitsschuhe",
+    "speed_limit_10": "Höchstgeschwindigkeit 10 km/h",
+    "forklift_traffic": "Staplerverkehr",
+    "wheel_chock": "Unterlegkeile",
+    "no_smoking": "Rauchen verboten",
+    "no_phone": "Kein Handy",
+    "assembly_point": "Sammelplatz",
+    "first_aid": "Erste Hilfe"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "hint": "Jede veröffentlichte Sprache braucht {{min}} bis {{max}} Fragen mit je einer richtigen Antwort.",
+    "question": "Frage {{n}}",
+    "prompt": "Frage",
+    "option": "Antwort {{n}}",
+    "correct": "Richtige Antwort",
+    "add_question": "Frage hinzufügen",
+    "add_option": "Antwort hinzufügen",
+    "remove_question": "Frage entfernen",
+    "remove_option": "Antwort {{n}} entfernen",
+    "unavailable": "Quiz ist nicht Teil Ihres Pakets. Fahrer bestätigen die Regeln ohne Fragen."
+  },
+  "save": "{{language}} speichern",
+  "saved": "{{language}} gespeichert.",
+  "publish": {
+    "action": "Veröffentlichen",
+    "title": "Version {{version}} veröffentlichen",
+    "description": "Fahrer sehen ab jetzt diese Version. Die bisher veröffentlichte Version wird abgelöst.",
+    "material": "Wesentliche Änderung",
+    "material_hint": "Fahrer, die eine frühere Version bestätigt haben, müssen diese vor dem nächsten Check-in lesen und bestätigen. Für Korrekturen, die die Regeln nicht ändern, ausgeschaltet lassen.",
+    "confirm": "Jetzt veröffentlichen",
+    "cancel": "Abbrechen",
+    "incomplete": "Diese Sprachen brauchen {{min}} bis {{max}} Quizfragen: {{languages}}.",
+    "done": "Version {{version}} ist veröffentlicht."
+  },
+  "unsaved": "Ungespeicherte Änderungen"
+}

@@ -1,0 +1,49 @@
+{
+  "title": "Instruktaże BHP",
+  "description": "Kierowcy czytają i potwierdzają te zasady na telefonie, zanim wjadą na teren zakładu.",
+  "new": "Nowy instruktaż",
+  "show_archived": "Pokaż zarchiwizowane",
+  "usage": "Instruktaże",
+  "usage_value": "{{used}} z {{limit}}",
+  "usage_hint": "Zarchiwizowane instruktaże nie wliczają się do limitu pakietu.",
+  "limit_reached": "Twój pakiet pozwala na {{limit}} instruktaży. Zarchiwizuj jeden, aby dodać kolejny.",
+  "empty": {
+    "title": "Brak instruktaży",
+    "description": "Zacznij od szablonu platformy w 12 językach i dostosuj go do swoich lokalizacji."
+  },
+  "columns": {
+    "name": "Instruktaż",
+    "sites": "Dotyczy",
+    "published": "Opublikowana wersja",
+    "draft": "Wersja robocza",
+    "actions": "Akcje"
+  },
+  "all_sites": "Wszystkie lokalizacje",
+  "not_published": "Jeszcze nieopublikowany",
+  "version": "Wersja {{version}}",
+  "published_on": "od {{date}}",
+  "draft_open": "Wersja {{version}} w przygotowaniu",
+  "archived": "Zarchiwizowany",
+  "menu": {
+    "open": "Akcje dla {{name}}",
+    "edit": "Nazwa i lokalizacje",
+    "archive": "Archiwizuj",
+    "restore": "Przywróć"
+  },
+  "archived_toast": "{{name}} jest zarchiwizowany. Kierowcy już go nie widzą.",
+  "restored_toast": "{{name}} jest znowu aktywny.",
+  "form": {
+    "create_title": "Nowy instruktaż",
+    "create_description": "Pierwsza wersja powstaje z szablonu platformy. Niemiecki i angielski są źródłem; pozostałe języki są tłumaczeniem maszynowym, dopóki ich nie sprawdzisz.",
+    "edit_title": "Nazwa i lokalizacje",
+    "name": "Nazwa",
+    "name_hint": "Pracownicy widzą tę nazwę. Kierowcy widzą tytuł w swoim języku.",
+    "applies_to": "Dotyczy",
+    "all_sites": "Wszystkie lokalizacje, także dodane później",
+    "chosen_sites": "Wybrane lokalizacje",
+    "sites_required": "Wybierz co najmniej jedną lokalizację.",
+    "create": "Utwórz i edytuj",
+    "save": "Zapisz",
+    "cancel": "Anuluj"
+  }
+}

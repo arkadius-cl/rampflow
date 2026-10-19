@@ -23,5 +23,46 @@
   "channel": {
     "link": "Fahrerlink",
     "staff": "Gerät am Tor"
+  },
+  "screen": {
+    "title": "Bestätigungen",
+    "description": "Wer welche Unterweisung wann bestätigt hat und bis wann sie gilt.",
+    "export": "CSV exportieren",
+    "filters": {
+      "site": "Standort",
+      "all_sites": "Alle Standorte",
+      "carrier": "Spediteur",
+      "all_carriers": "Alle Spediteure",
+      "driver": "Fahrername",
+      "driver_placeholder": "Nach Namen suchen",
+      "instruction": "Unterweisung",
+      "all_instructions": "Alle Unterweisungen",
+      "version": "Version",
+      "all_versions": "Alle Versionen",
+      "status": "Status",
+      "all_statuses": "Jeder Status",
+      "reset": "Filter zurücksetzen"
+    },
+    "columns": {
+      "completed": "Abgeschlossen",
+      "driver": "Fahrer",
+      "carrier": "Spediteur",
+      "booking": "Buchung",
+      "site": "Standort",
+      "instruction": "Unterweisung",
+      "language": "Sprache",
+      "score": "Quiz",
+      "status": "Status",
+      "valid_until": "Gültig bis"
+    },
+    "version": "v{{version}}",
+    "score": "{{score}} %",
+    "no_expiry": "Dieser Besuch",
+    "no_booking": "Gelöscht",
+    "more": "Mehr laden",
+    "empty": {
+      "title": "Keine Bestätigungen",
+      "description": "Kein Fahrer hat eine Unterweisung bestätigt, die zu diesen Filtern passt."
+    }
   }
 }

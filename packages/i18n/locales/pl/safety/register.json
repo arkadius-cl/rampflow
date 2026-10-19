@@ -23,5 +23,46 @@
   "channel": {
     "link": "Link kierowcy",
     "staff": "Urządzenie przy bramie"
+  },
+  "screen": {
+    "title": "Potwierdzenia",
+    "description": "Kto potwierdził który instruktaż, kiedy i do kiedy jest ważny.",
+    "export": "Eksportuj CSV",
+    "filters": {
+      "site": "Lokalizacja",
+      "all_sites": "Wszystkie lokalizacje",
+      "carrier": "Przewoźnik",
+      "all_carriers": "Wszyscy przewoźnicy",
+      "driver": "Imię i nazwisko kierowcy",
+      "driver_placeholder": "Szukaj po nazwisku",
+      "instruction": "Instruktaż",
+      "all_instructions": "Wszystkie instruktaże",
+      "version": "Wersja",
+      "all_versions": "Wszystkie wersje",
+      "status": "Status",
+      "all_statuses": "Dowolny status",
+      "reset": "Wyczyść filtry"
+    },
+    "columns": {
+      "completed": "Ukończono",
+      "driver": "Kierowca",
+      "carrier": "Przewoźnik",
+      "booking": "Rezerwacja",
+      "site": "Lokalizacja",
+      "instruction": "Instruktaż",
+      "language": "Język",
+      "score": "Quiz",
+      "status": "Status",
+      "valid_until": "Ważne do"
+    },
+    "version": "v{{version}}",
+    "score": "{{score}} %",
+    "no_expiry": "Ta wizyta",
+    "no_booking": "Usunięta",
+    "more": "Wczytaj więcej",
+    "empty": {
+      "title": "Brak potwierdzeń",
+      "description": "Żaden kierowca nie potwierdził instruktażu pasującego do tych filtrów."
+    }
   }
 }

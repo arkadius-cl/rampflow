@@ -1,0 +1,49 @@
+{
+  "title": "Sicherheitsunterweisungen",
+  "description": "Fahrer lesen und bestätigen diese Regeln auf dem Handy, bevor sie ein Gelände betreten.",
+  "new": "Neue Unterweisung",
+  "show_archived": "Archivierte zeigen",
+  "usage": "Unterweisungen",
+  "usage_value": "{{used}} von {{limit}}",
+  "usage_hint": "Archivierte Unterweisungen zählen nicht zum Limit Ihres Pakets.",
+  "limit_reached": "Ihr Paket erlaubt {{limit}} Unterweisungen. Archivieren Sie eine, um eine weitere anzulegen.",
+  "empty": {
+    "title": "Noch keine Unterweisungen",
+    "description": "Starten Sie mit der Plattformvorlage in 12 Sprachen und passen Sie sie an Ihre Standorte an."
+  },
+  "columns": {
+    "name": "Unterweisung",
+    "sites": "Gilt für",
+    "published": "Veröffentlichte Version",
+    "draft": "Entwurf",
+    "actions": "Aktionen"
+  },
+  "all_sites": "Alle Standorte",
+  "not_published": "Noch nicht veröffentlicht",
+  "version": "Version {{version}}",
+  "published_on": "seit {{date}}",
+  "draft_open": "Version {{version}} in Arbeit",
+  "archived": "Archiviert",
+  "menu": {
+    "open": "Aktionen für {{name}}",
+    "edit": "Name und Standorte",
+    "archive": "Archivieren",
+    "restore": "Wiederherstellen"
+  },
+  "archived_toast": "{{name}} ist archiviert. Fahrer sehen sie nicht mehr.",
+  "restored_toast": "{{name}} ist wieder aktiv.",
+  "form": {
+    "create_title": "Neue Unterweisung",
+    "create_description": "Die erste Version startet mit der Plattformvorlage. Deutsch und Englisch sind die Quelle; die anderen Sprachen sind maschinell übersetzt, bis Sie sie prüfen.",
+    "edit_title": "Name und Standorte",
+    "name": "Name",
+    "name_hint": "Mitarbeitende sehen diesen Namen. Fahrer sehen den Titel jeder Sprache.",
+    "applies_to": "Gilt für",
+    "all_sites": "Alle Standorte, auch später angelegte",
+    "chosen_sites": "Ausgewählte Standorte",
+    "sites_required": "Wählen Sie mindestens einen Standort.",
+    "create": "Anlegen und bearbeiten",
+    "save": "Speichern",
+    "cancel": "Abbrechen"
+  }
+}

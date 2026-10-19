@@ -1,0 +1,49 @@
+{
+  "title": "Safety briefings",
+  "description": "Drivers read and confirm these rules on their phone before they enter a site.",
+  "new": "New briefing",
+  "show_archived": "Show archived",
+  "usage": "Briefings",
+  "usage_value": "{{used}} of {{limit}}",
+  "usage_hint": "Archived briefings do not count against the limit of your package.",
+  "limit_reached": "Your package allows {{limit}} briefings. Archive one to add another.",
+  "empty": {
+    "title": "No briefings yet",
+    "description": "Start from the platform template in 12 languages and adapt it to your sites."
+  },
+  "columns": {
+    "name": "Briefing",
+    "sites": "Applies to",
+    "published": "Published version",
+    "draft": "Draft",
+    "actions": "Actions"
+  },
+  "all_sites": "All sites",
+  "not_published": "Not published yet",
+  "version": "Version {{version}}",
+  "published_on": "since {{date}}",
+  "draft_open": "Version {{version}} in progress",
+  "archived": "Archived",
+  "menu": {
+    "open": "Actions for {{name}}",
+    "edit": "Name and sites",
+    "archive": "Archive",
+    "restore": "Restore"
+  },
+  "archived_toast": "{{name}} is archived. Drivers no longer see it.",
+  "restored_toast": "{{name}} is active again.",
+  "form": {
+    "create_title": "New briefing",
+    "create_description": "The first version starts from the platform template. German and English are the source; the other languages are machine translations until you review them.",
+    "edit_title": "Name and sites",
+    "name": "Name",
+    "name_hint": "Staff see this name. Drivers see the title of each language.",
+    "applies_to": "Applies to",
+    "all_sites": "All sites, including sites you add later",
+    "chosen_sites": "Chosen sites",
+    "sites_required": "Choose at least one site.",
+    "create": "Create and edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "back": "All briefings",
+  "versions": "Versions",
+  "languages": "Languages",
+  "version": "Version {{version}}",
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "retired": "Retired"
+  },
+  "material": "Material change",
+  "published_on": "Published {{date}}",
+  "translation": {
+    "source": "Source",
+    "machine": "Machine translation",
+    "reviewed": "Reviewed"
+  },
+  "questions_count": "Quiz: {{n}}",
+  "new_version": "Edit as new version",
+  "read_only": {
+    "title": "Published versions cannot be changed",
+    "description": "Edit as new version to change the text. Drivers keep seeing this version until you publish the new one."
+  },
+  "retired_note": "This version was replaced by a newer one.",
+  "fields": {
+    "translation": "Translation status",
+    "translation_hint": "Mark a machine translation as reviewed once a speaker of the language has checked it.",
+    "title": "Title",
+    "blocks": "Rules",
+    "blocks_hint": "Drivers see one rule per screen. A pictogram shows above the text that follows it.",
+    "statement": "Confirmation statement",
+    "statement_hint": "The driver confirms this sentence with their typed name."
+  },
+  "block": {
+    "text": "Text",
+    "pictogram": "Pictogram",
+    "add_text": "Add text",
+    "add_pictogram": "Add pictogram",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "remove": "Remove",
+    "label": "Rule {{n}}"
+  },
+  "pictogram": {
+    "hi_vis_vest": "High-visibility vest",
+    "safety_shoes": "Safety shoes",
+    "speed_limit_10": "Speed limit 10 km/h",
+    "forklift_traffic": "Forklift traffic",
+    "wheel_chock": "Wheel chocks",
+    "no_smoking": "No smoking",
+    "no_phone": "No phone use",
+    "assembly_point": "Assembly point",
+    "first_aid": "First aid"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "hint": "Each published language needs {{min}} to {{max}} questions with one correct answer.",
+    "question": "Question {{n}}",
+    "prompt": "Question",
+    "option": "Answer {{n}}",
+    "correct": "Correct answer",
+    "add_question": "Add question",
+    "add_option": "Add answer",
+    "remove_question": "Remove question",
+    "remove_option": "Remove answer {{n}}",
+    "unavailable": "Quizzes are not part of your package. Drivers confirm the rules without questions."
+  },
+  "save": "Save {{language}}",
+  "saved": "{{language}} saved.",
+  "publish": {
+    "action": "Publish",
+    "title": "Publish version {{version}}",
+    "description": "Drivers see this version from now on. The current published version is retired.",
+    "material": "Material change",
+    "material_hint": "Drivers who confirmed an earlier version must read and confirm this one before their next check-in. Leave it off for corrections that do not change the rules.",
+    "confirm": "Publish now",
+    "cancel": "Cancel",
+    "incomplete": "These languages need {{min}} to {{max}} quiz questions: {{languages}}.",
+    "done": "Version {{version}} is published."
+  },
+  "unsaved": "Unsaved changes"
+}
