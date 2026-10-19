@@ -31,6 +31,7 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm i18n:derive --check",
     "bench": "BENCH=1 pnpm --filter @rampflow/api test bench.test",
     "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs",
+    "docs:screens": "node scripts/checkout-env.mjs run -- sh -c 'podman run --rm --network host --ipc host -e APP_ORIGIN -e DOCS_SCREENS_OUT -v \"$PWD\":/work:z -w /work mcr.microsoft.com/playwright:v1.64.1-noble node scripts/docs-screens.mjs'",
     "retention:run": "pnpm --filter @rampflow/api retention:run"
   },
   "devDependencies": {
