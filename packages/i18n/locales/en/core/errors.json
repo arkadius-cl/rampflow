@@ -25,7 +25,8 @@
     "safety_missing": "The driver has no valid safety briefing yet.",
     "acknowledgement_invalid": "This safety acknowledgement is not valid for this visit.",
     "dock_inactive": "This dock is not active.",
-    "not_due": "This step is not due yet."
+    "not_due": "This step is not due yet.",
+    "quiz_not_passed": "The quiz was not passed. Read the rules again and retry."
   },
   "limit_reached": "Your package limit is reached.",
   "validation_failed": "Some fields need your attention.",

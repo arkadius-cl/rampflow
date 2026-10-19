@@ -25,7 +25,8 @@
     "safety_missing": "Für den Fahrer liegt noch keine gültige Sicherheitsunterweisung vor.",
     "acknowledgement_invalid": "Dieser Unterweisungsnachweis gilt nicht für diesen Besuch.",
     "dock_inactive": "Diese Rampe ist nicht aktiv.",
-    "not_due": "Dieser Schritt ist noch nicht fällig."
+    "not_due": "Dieser Schritt ist noch nicht fällig.",
+    "quiz_not_passed": "Das Quiz wurde nicht bestanden. Bitte die Regeln erneut lesen und wiederholen."
   },
   "limit_reached": "Das Limit Ihres Pakets ist erreicht.",
   "validation_failed": "Einige Felder brauchen Ihre Aufmerksamkeit.",

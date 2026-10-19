@@ -57,6 +57,10 @@ test.describe('DR-02 Language', () => {
 
     await page.getByRole('combobox').selectOption('pl');
     await expect(page.getByText(slotLabel('pl'))).toBeVisible();
+    await expect(page.getByTestId('machine-badge')).toContainText('auto');
+
+    await page.getByRole('combobox').selectOption('de');
+    await expect(page.getByText(slotLabel('de'))).toBeVisible();
     await expect(page.getByTestId('machine-badge')).toHaveCount(0);
   });
 });

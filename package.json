@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,magenta \"pnpm --filter @rampflow/api dev\" \"pnpm --filter @rampflow/web dev\"",
+    "dev": "concurrently -n api,web,driver -c blue,magenta,green \"pnpm --filter @rampflow/api dev\" \"pnpm --filter @rampflow/web dev\" \"pnpm --filter @rampflow/driver dev\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "lint": "biome check .",
