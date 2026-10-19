@@ -14,7 +14,7 @@ import type { Hono } from 'hono';
 import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
 import { entitlementOverride } from '../src/modules/core/schema.ts';
 import { type OwnerDb, ownerDb } from './db.ts';
-import { type Actor, as } from './http.ts';
+import { type Actor, as, type RawBody } from './http.ts';
 import { world as seedWorld, type World, type WorldSide } from './world.ts';
 
 // The leak harness of ADR-0002. Every route under /api/t, /api/c, /api/platform and /api/driver
@@ -37,6 +37,8 @@ export interface RouteCase {
   /** Query parameters from world A, sent unchanged with every check. */
   query?: (world: World) => Record<string, string>;
   body?: (world: World) => unknown;
+  /** A non-JSON body (an image upload), sent instead of `body`. */
+  raw?: (world: World) => RawBody;
   /** Module fixtures in worlds A and B, written as the owner. */
   setup?: (world: World, db: OwnerDb) => Promise<void>;
   /** What world B (or a rival carrier, or a foreign site) gets: 404, or 2xx without A's data. */
@@ -265,9 +267,10 @@ export async function checkRouteCase(
   const problems: Problem[] = [];
   const params = rc.params(w);
   const body = rc.body?.(w);
+  const raw = rc.raw?.(w);
   const query = rc.query ? `?${new URLSearchParams(rc.query(w))}` : '';
   const call = (actor: Actor, p: Record<string, string>) =>
-    as(app, actor).request(rc.method, `${fill(rc.path, p)}${query}`, { body });
+    as(app, actor).request(rc.method, `${fill(rc.path, p)}${query}`, { body, raw });
   const secretsA = secretsOf(A);
   const role = rc.as;
   const party =

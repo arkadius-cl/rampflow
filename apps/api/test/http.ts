@@ -8,8 +8,15 @@ export const TEST_ORIGIN = process.env.APP_ORIGIN ?? 'http://rampflow.test';
 /** A signed-in user, a driver holding a booking's link, or nobody. */
 export type Actor = WorldUser | Pick<WorldBooking, 'driverToken'> | null;
 
+export interface RawBody {
+  type: string;
+  bytes: Uint8Array;
+}
+
 export interface RequestOptions {
   body?: unknown;
+  /** A non-JSON body, for example an image upload. */
+  raw?: RawBody;
   /** `null` sends no Origin header. */
   origin?: string | null;
   headers?: Record<string, string>;
@@ -29,6 +36,10 @@ export function as(app: Pick<Hono, 'request'>, actor: Actor) {
     if (cookie) headers.Cookie = cookie;
     const origin = o.origin === undefined ? TEST_ORIGIN : o.origin;
     if (origin !== null) headers.Origin = origin;
+    if (o.raw) {
+      headers['Content-Type'] = o.raw.type;
+      return app.request(path, { method, headers, body: new Uint8Array(o.raw.bytes) });
+    }
     if (o.body !== undefined) headers['Content-Type'] = 'application/json';
     return app.request(path, {
       method,
