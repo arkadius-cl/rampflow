@@ -4,6 +4,9 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+// Ports come from the environment so parallel checkouts do not collide (scripts/checkout-env.mjs).
+const port = (name: string, fallback: number) => Number(process.env[name] ?? fallback);
+
 export default defineConfig({
   plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react(), tailwindcss()],
   resolve: {
@@ -12,10 +15,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: port('WEB_PORT', 5173),
     strictPort: true,
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': `http://localhost:${port('API_PORT', 3000)}`,
+      '/d': `http://localhost:${port('DRIVER_PORT', 5174)}`,
     },
   },
 });
