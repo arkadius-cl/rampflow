@@ -11,6 +11,8 @@ export interface StaticRoots {
 }
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
+/** ADR-0008: no third-party scripts, images or connections in the driver PWA. */
+export const DRIVER_CSP = "default-src 'self'; img-src 'self' data:; connect-src 'self'";
 
 /**
  * Serves the built SPAs in production: files as they are, every other path gets the app's
@@ -25,6 +27,7 @@ export function staticFiles(roots: StaticRoots): Hono {
     c.res.headers.set('Cache-Control', c.req.path.includes('/assets/') ? IMMUTABLE : 'no-cache');
     if (c.req.path === '/d' || c.req.path.startsWith('/d/')) {
       c.res.headers.set('Referrer-Policy', 'no-referrer');
+      c.res.headers.set('Content-Security-Policy', DRIVER_CSP);
     }
   });
   const spa = (prefix: '/d' | '', root: string) => {

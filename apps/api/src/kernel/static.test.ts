@@ -30,10 +30,15 @@ describe('static serving of the built SPAs', () => {
     expect(res.headers.get('Cache-Control')).toContain('immutable');
   });
 
-  it('serves the driver PWA under /d without a referrer', async () => {
-    const res = await app.request('/d/anything');
-    expect(await res.text()).toBe('<html>driver</html>');
-    expect(res.headers.get('Referrer-Policy')).toBe('no-referrer');
+  it('serves the driver PWA under /d without a referrer and with its CSP', async () => {
+    for (const path of ['/d', '/d/anything']) {
+      const res = await app.request(path);
+      expect(await res.text()).toBe('<html>driver</html>');
+      expect(res.headers.get('Referrer-Policy')).toBe('no-referrer');
+      expect(res.headers.get('Content-Security-Policy')).toBe(
+        "default-src 'self'; img-src 'self' data:; connect-src 'self'",
+      );
+    }
     expect(await (await app.request('/d/assets/main-abc123.js')).text()).toBe(
       "console.log('driver')",
     );
