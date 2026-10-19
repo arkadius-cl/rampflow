@@ -1,0 +1,13 @@
+{
+  "email": {
+    "footer": "rampflow · zarządzanie rampami i placem · bezpłatnie dla przewoźników",
+    "invitation": {
+      "subject": "{{tenant}} zaprasza {{company}} do rezerwacji okien czasowych w rampflow",
+      "intro": "{{tenant}} zaprasza {{company}} do rezerwacji okien załadunku i rozładunku online.",
+      "intro_by": "{{inviter}} z {{tenant}} zaprasza {{company}} do rezerwacji okien załadunku i rozładunku online.",
+      "free": "Rezerwacja jest bezpłatna dla przewoźników. Wybierasz okno czasowe, wysyłasz awizację i udostępniasz kierowcy jeden link.",
+      "action": "Przyjmij zaproszenie",
+      "expiry": "Link działa raz i przez 7 dni."
+    }
+  }
+}

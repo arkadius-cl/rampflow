@@ -1,0 +1,162 @@
+import {
+  defineAccountCases,
+  defineRouteCases,
+  type RouteCase,
+} from '../../../../test/route-cases.ts';
+import type { World } from '../../../../test/world.ts';
+import { authTokenFor } from '../../core/auth/fixtures.ts';
+import { carrierInvitationFor, registrationFor, unique } from './fixtures.ts';
+
+const P = '/api/t/:orgId/carriers';
+
+/** Rows the setup wrote in world A, by world. */
+const fixtures = new WeakMap<World, { invitationId: string; registrationId: string }>();
+const of = (w: World) => {
+  const f = fixtures.get(w);
+  if (!f) throw new Error('setup did not run');
+  return f;
+};
+
+const base = {
+  as: 'dispatcher',
+  permission: 'booking.manage_carriers',
+  entitlement: null,
+  foreign: 'not_found',
+  siteScoped: false,
+  setup: async (w, db) => {
+    const invitation = await carrierInvitationFor(db, {
+      tenantId: w.A.tenantId,
+      invitedBy: w.A.users.dispatcher.id,
+    });
+    const registration = await registrationFor(db, {
+      tenantId: w.A.tenantId,
+      siteId: w.A.sites[0].id,
+      status: 'pending_approval',
+      carrierId: w.A.rivalCarrierId,
+    });
+    fixtures.set(w, { invitationId: invitation.id, registrationId: registration.id });
+  },
+} as const satisfies Partial<RouteCase>;
+
+const org = (w: World) => ({ orgId: w.A.tenantId });
+
+export const cases = defineRouteCases([
+  { ...base, method: 'GET', path: P, params: org, foreign: 'empty' },
+  {
+    ...base,
+    method: 'POST',
+    path: `${P}/invitations`,
+    entitlement: 'booking.carrier_portal',
+    params: org,
+    body: () => ({ companyName: 'Baltic Freight UAB', email: unique('case') }),
+    foreign: 'empty',
+  },
+  {
+    ...base,
+    method: 'DELETE',
+    path: `${P}/invitations/:invitationId`,
+    params: (w) => ({ ...org(w), invitationId: of(w).invitationId }),
+    // Deleting answers 204 even when nothing matched; B's revoke must leave A's invitation alone.
+    foreign: 'empty',
+  },
+  {
+    ...base,
+    method: 'PATCH',
+    path: `${P}/:carrierId`,
+    params: (w) => ({ ...org(w), carrierId: w.A.carrierId }),
+    body: () => ({ status: 'deactivated' }),
+  },
+  {
+    ...base,
+    method: 'GET',
+    path: `${P}/registrations`,
+    entitlement: 'booking.public_link',
+    params: org,
+    foreign: 'empty',
+  },
+  {
+    ...base,
+    method: 'POST',
+    path: `${P}/registrations/:registrationId/approve`,
+    entitlement: 'booking.public_link',
+    params: (w) => ({ ...org(w), registrationId: of(w).registrationId }),
+  },
+  {
+    ...base,
+    method: 'POST',
+    path: `${P}/registrations/:registrationId/reject`,
+    entitlement: 'booking.public_link',
+    params: (w) => ({ ...org(w), registrationId: of(w).registrationId }),
+    body: () => ({ reason: 'No ADR approval' }),
+  },
+  {
+    ...base,
+    method: 'GET',
+    path: `${P}/public-links`,
+    entitlement: 'booking.public_link',
+    params: org,
+    foreign: 'empty',
+  },
+  {
+    ...base,
+    method: 'POST',
+    path: `${P}/public-links`,
+    entitlement: 'booking.public_link',
+    params: org,
+    body: (w) => ({ siteId: w.A.sites[0].id }),
+  },
+  {
+    ...base,
+    method: 'POST',
+    path: `${P}/public-links/:siteId/regenerate`,
+    entitlement: 'booking.public_link',
+    params: (w) => ({ ...org(w), siteId: w.A.sites[0].id }),
+  },
+  {
+    method: 'GET',
+    path: '/api/c/:orgId/tenants',
+    as: 'carrier_user',
+    permission: 'member',
+    entitlement: null,
+    params: (w) => ({ orgId: w.A.carrierId }),
+    foreign: 'empty',
+    siteScoped: false,
+  },
+]);
+
+export const accountCases = defineAccountCases([
+  {
+    method: 'POST',
+    path: '/api/public/carrier-invitations/inspect',
+    credential: 'token',
+    singleUse: false,
+    arrange: async (w, db) => {
+      const inv = await carrierInvitationFor(db, {
+        tenantId: w.A.tenantId,
+        invitedBy: w.A.users.dispatcher.id,
+      });
+      return {
+        actor: null,
+        body: { token: inv.token },
+        otherToken: await authTokenFor(db, 'magic_link', w.A.users.carrier_admin.id),
+      };
+    },
+  },
+  {
+    method: 'POST',
+    path: '/api/public/carrier-invitations/accept',
+    credential: 'token',
+    arrange: async (w, db) => {
+      const inv = await carrierInvitationFor(db, {
+        tenantId: w.A.tenantId,
+        invitedBy: w.A.users.dispatcher.id,
+      });
+      return {
+        actor: null,
+        body: { token: inv.token, name: 'Piotr Nowak', password: 'carrier password 2026' },
+        otherToken: (await registrationFor(db, { tenantId: w.A.tenantId, siteId: w.A.sites[0].id }))
+          .token,
+      };
+    },
+  },
+]);

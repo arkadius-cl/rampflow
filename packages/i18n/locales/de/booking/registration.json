@@ -1,0 +1,26 @@
+{
+  "email": {
+    "expiry": "Der Link funktioniert einmal und 24 Stunden lang.",
+    "ignore": "Wenn Sie sich nicht registriert haben, ignorieren Sie diese E-Mail.",
+    "verify": {
+      "subject": "Bestätigen Sie Ihre Registrierung bei {{tenant}}",
+      "intro": "Sie haben sich registriert, um Zeitfenster bei {{tenant}}, {{site}} zu buchen. Bestätigen Sie Ihre E-Mail-Adresse, um abzuschließen.",
+      "action": "E-Mail-Adresse bestätigen"
+    },
+    "known": {
+      "subject": "Melden Sie sich an, um Ihre Registrierung bei {{tenant}} abzuschließen",
+      "intro": "Jemand hat diese E-Mail-Adresse registriert, um Zeitfenster bei {{tenant}}, {{site}} zu buchen. Sie haben bereits ein rampflow-Konto. Melden Sie sich an und bestätigen Sie, dann gilt die Anfrage für Ihr Unternehmen.",
+      "action": "Anmelden und bestätigen"
+    },
+    "approved": {
+      "subject": "{{tenant}} hat Ihre Registrierung freigegeben",
+      "intro": "Sie können jetzt Zeitfenster bei {{tenant}}, {{site}} buchen.",
+      "action": "Zeitfenster buchen"
+    },
+    "rejected": {
+      "subject": "{{tenant}} hat Ihre Registrierung abgelehnt",
+      "intro": "{{tenant}} hat Ihre Registrierung für {{site}} abgelehnt.",
+      "reason": "Begründung: {{reason}}"
+    }
+  }
+}

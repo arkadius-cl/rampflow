@@ -1,0 +1,13 @@
+{
+  "email": {
+    "footer": "rampflow · dock and yard management · free for carriers",
+    "invitation": {
+      "subject": "{{tenant}} invites {{company}} to book slots on rampflow",
+      "intro": "{{tenant}} invites {{company}} to book loading and unloading slots online.",
+      "intro_by": "{{inviter}} of {{tenant}} invites {{company}} to book loading and unloading slots online.",
+      "free": "Booking is free for carriers. You choose a slot, send the advance notice, and share one link with your driver.",
+      "action": "Accept the invitation",
+      "expiry": "The link works once and for 7 days."
+    }
+  }
+}

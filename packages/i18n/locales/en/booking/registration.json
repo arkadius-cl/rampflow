@@ -1,0 +1,26 @@
+{
+  "email": {
+    "expiry": "The link works once and for 24 hours.",
+    "ignore": "If you did not register, ignore this email.",
+    "verify": {
+      "subject": "Confirm your registration with {{tenant}}",
+      "intro": "You registered to book slots at {{tenant}}, {{site}}. Confirm your email address to finish.",
+      "action": "Confirm email address"
+    },
+    "known": {
+      "subject": "Sign in to finish your registration with {{tenant}}",
+      "intro": "Someone registered this email address to book slots at {{tenant}}, {{site}}. You already have a rampflow account. Sign in and confirm, and the request joins your company.",
+      "action": "Sign in and confirm"
+    },
+    "approved": {
+      "subject": "{{tenant}} approved your registration",
+      "intro": "You can now book slots at {{tenant}}, {{site}}.",
+      "action": "Book a slot"
+    },
+    "rejected": {
+      "subject": "{{tenant}} declined your registration",
+      "intro": "{{tenant}} declined your registration for {{site}}.",
+      "reason": "Reason: {{reason}}"
+    }
+  }
+}

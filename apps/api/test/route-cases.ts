@@ -71,11 +71,17 @@ export interface AccountRouteCase {
    * case acts as a user of world A, so the harness can call as their counterpart in world B.
    * A token case also returns `otherToken`: a valid token of another purpose for the same
    * person (a reset token for a magic-link route, ...), which the route must refuse.
+   * `params` fills path parameters, for example the `:slug` of a public link.
    */
   arrange: (
     world: World,
     db: OwnerDb,
-  ) => Promise<{ actor: Actor; body?: unknown; otherToken?: string }>;
+  ) => Promise<{
+    actor: Actor;
+    body?: unknown;
+    otherToken?: string;
+    params?: Record<string, string>;
+  }>;
 }
 
 export function defineAccountCases(
@@ -388,13 +394,13 @@ export async function checkAccountCase(
   ac: AccountRouteCase,
 ): Promise<AccountProblem[]> {
   const w = await seedWorld();
-  const { actor, body, otherToken } = await ac.arrange(w, ownerDb());
+  const { actor, body, otherToken, params } = await ac.arrange(w, ownerDb());
   const problems: AccountProblem[] = [];
   const report = (check: AccountProblem['check'], detail: string | null) => {
     if (detail) problems.push({ check, detail });
   };
   const call = (who: Actor, b: unknown = body) =>
-    as(app, who).request(ac.method, ac.path, { body: b });
+    as(app, who).request(ac.method, fill(ac.path, params ?? {}), { body: b });
 
   if (ac.credential === 'session') {
     report('anonymous', await expectError(await call(null), 401, 'unauthorized'));

@@ -4,10 +4,12 @@ import type avis_entitlements from '@rampflow/i18n/locales/en/avis/entitlements.
 import type avis_settings from '@rampflow/i18n/locales/en/avis/settings.json';
 import type booking_booking from '@rampflow/i18n/locales/en/booking/booking.json';
 import type booking_capacity from '@rampflow/i18n/locales/en/booking/capacity.json';
+import type booking_carriers from '@rampflow/i18n/locales/en/booking/carriers.json';
 import type booking_entitlements from '@rampflow/i18n/locales/en/booking/entitlements.json';
 import type booking_lifecycle from '@rampflow/i18n/locales/en/booking/lifecycle.json';
 import type booking_nav from '@rampflow/i18n/locales/en/booking/nav.json';
 import type booking_plan from '@rampflow/i18n/locales/en/booking/plan.json';
+import type booking_registration from '@rampflow/i18n/locales/en/booking/registration.json';
 import type booking_settings from '@rampflow/i18n/locales/en/booking/settings.json';
 import type brand_entitlements from '@rampflow/i18n/locales/en/brand/entitlements.json';
 import type brand_nav from '@rampflow/i18n/locales/en/brand/nav.json';
@@ -48,10 +50,12 @@ export interface Resources {
   booking: {
     booking: typeof booking_booking;
     capacity: typeof booking_capacity;
+    carriers: typeof booking_carriers;
     entitlements: typeof booking_entitlements;
     lifecycle: typeof booking_lifecycle;
     nav: typeof booking_nav;
     plan: typeof booking_plan;
+    registration: typeof booking_registration;
     settings: typeof booking_settings;
   };
   brand: {

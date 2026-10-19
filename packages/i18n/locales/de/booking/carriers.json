@@ -1,0 +1,13 @@
+{
+  "email": {
+    "footer": "rampflow · Rampen- und Hofmanagement · kostenlos für Spediteure",
+    "invitation": {
+      "subject": "{{tenant}} lädt {{company}} zur Zeitfensterbuchung bei rampflow ein",
+      "intro": "{{tenant}} lädt {{company}} ein, Lade- und Entladezeitfenster online zu buchen.",
+      "intro_by": "{{inviter}} von {{tenant}} lädt {{company}} ein, Lade- und Entladezeitfenster online zu buchen.",
+      "free": "Für Spediteure ist die Buchung kostenlos. Sie wählen ein Zeitfenster, senden das Avis mit und teilen einen Link mit Ihrem Fahrer.",
+      "action": "Einladung annehmen",
+      "expiry": "Der Link funktioniert einmal und 7 Tage lang."
+    }
+  }
+}

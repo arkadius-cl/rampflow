@@ -1,0 +1,26 @@
+{
+  "email": {
+    "expiry": "Link działa raz i przez 24 godziny.",
+    "ignore": "Jeśli to nie Ty się rejestrowałeś, zignoruj tę wiadomość.",
+    "verify": {
+      "subject": "Potwierdź rejestrację w {{tenant}}",
+      "intro": "Zarejestrowałeś się, aby rezerwować okna czasowe w {{tenant}}, {{site}}. Potwierdź adres e-mail, aby zakończyć.",
+      "action": "Potwierdź adres e-mail"
+    },
+    "known": {
+      "subject": "Zaloguj się, aby zakończyć rejestrację w {{tenant}}",
+      "intro": "Ktoś zarejestrował ten adres e-mail, aby rezerwować okna czasowe w {{tenant}}, {{site}}. Masz już konto rampflow. Zaloguj się i potwierdź, a zgłoszenie zostanie przypisane do Twojej firmy.",
+      "action": "Zaloguj się i potwierdź"
+    },
+    "approved": {
+      "subject": "{{tenant}} zatwierdził Twoją rejestrację",
+      "intro": "Możesz teraz rezerwować okna czasowe w {{tenant}}, {{site}}.",
+      "action": "Zarezerwuj okno"
+    },
+    "rejected": {
+      "subject": "{{tenant}} odrzucił Twoją rejestrację",
+      "intro": "{{tenant}} odrzucił Twoją rejestrację dla {{site}}.",
+      "reason": "Powód: {{reason}}"
+    }
+  }
+}
