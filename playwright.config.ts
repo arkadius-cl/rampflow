@@ -4,6 +4,7 @@ const reuseExistingServer = !process.env.CI;
 // Ports come from the environment so parallel checkouts do not collide (scripts/checkout-env.mjs).
 const apiPort = Number(process.env.API_PORT ?? 3000);
 const webPort = Number(process.env.WEB_PORT ?? 5173);
+const driverPort = Number(process.env.DRIVER_PORT ?? 5174);
 
 export default defineConfig({
   testDir: './e2e',
@@ -16,16 +17,20 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    // Office and station screens of staff and carriers (U2). U10 adds the Pixel 7 driver project.
+    // Office and station screens of staff and carriers (U2).
     { name: 'staff', testIgnore: /driver\//, use: { ...devices['Desktop Chrome'] } },
+    // The driver PWA on a phone (U10), through the web dev server's /d proxy.
+    { name: 'driver', testMatch: /driver\//, use: { ...devices['Pixel 7'] } },
   ],
   webServer: [
     {
       // Test routes seed worlds; the job runner sends the outbox to Mailpit every 5 seconds.
+      // TRUST_PROXY: each driver spec sends its own X-Forwarded-For, so the exchange limit of
+      // 10 per minute and address holds per spec, not for the whole run.
       command: 'node --import tsx src/server.ts',
       cwd: 'apps/api',
       url: `http://localhost:${apiPort}/api/health`,
-      env: { ENABLE_TEST_ROUTES: '1', ENABLE_JOBS: '1' },
+      env: { ENABLE_TEST_ROUTES: '1', ENABLE_JOBS: '1', TRUST_PROXY: '1' },
       reuseExistingServer,
     },
     {
@@ -34,6 +39,20 @@ export default defineConfig({
       cwd: 'apps/web',
       url: `http://localhost:${webPort}`,
       reuseExistingServer,
+    },
+    {
+      command: 'node_modules/.bin/vite --mode e2e',
+      cwd: 'apps/driver',
+      url: `http://localhost:${driverPort}/d/`,
+      reuseExistingServer,
+    },
+    {
+      // The production build of the PWA with the /d headers, for budget and first render.
+      command: 'node_modules/.bin/vite build --logLevel warn && node_modules/.bin/vite preview',
+      cwd: 'apps/driver',
+      url: `http://localhost:${driverPort + 1}/d/`,
+      reuseExistingServer,
+      timeout: 120_000,
     },
   ],
 });
