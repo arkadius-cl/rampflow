@@ -14,8 +14,9 @@ import { linkCarrier } from './links.ts';
 // transaction under the token scope of the emailed token (ADR-0002, "Token redemption is one
 // transaction") and switch scope only to write what the token party cannot.
 
-const signInRequired = () =>
-  new ApiError('unauthorized', 'Sign in to continue', { reason: 'sign_in_required' });
+/** The token holder proved access to `email`, so the answer names it for the sign-in form. */
+const signInRequired = (email: string) =>
+  new ApiError('unauthorized', 'Sign in to continue', { reason: 'sign_in_required', email });
 
 export interface NewAccount {
   name: string;
@@ -45,7 +46,7 @@ export async function redeemingUser(
       .where(eq(appUser.id, o.signedIn));
     if (me?.email.toLowerCase() === o.email.toLowerCase()) return o.signedIn;
   }
-  if (await accountByEmail(tx, o.email)) throw signInRequired();
+  if (await accountByEmail(tx, o.email)) throw signInRequired(o.email);
   const account = o.newAccount();
   const id = randomUUID() as UserId;
   // The token party inserts users but reads back only its own, so the id is generated here; a
@@ -61,7 +62,7 @@ export async function redeemingUser(
       emailVerifiedAt: o.now,
     })
     .onConflictDoNothing();
-  if (inserted.rowCount !== 1) throw signInRequired();
+  if (inserted.rowCount !== 1) throw signInRequired(o.email);
   return id;
 }
 

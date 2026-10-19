@@ -233,7 +233,7 @@ describe('CR-02 register through a public link', () => {
     const anonymous = await anon.post('/api/public/registrations/verify', { body: { token } });
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({
-      error: { details: { reason: 'sign_in_required' } },
+      error: { details: { reason: 'sign_in_required', email: known.email } },
     });
 
     const orgsBefore = (await ownerDb().select({ id: org.id }).from(org)).length;
