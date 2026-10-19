@@ -68,4 +68,43 @@ test.describe('CR-06 Share the driver link', () => {
     expect(current?.revoked_at).toBeNull();
     expect(old?.revoked_at).not.toBeNull();
   });
+
+  test('an email typed while the booking page loads survives until Send', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    const site = await planSite(w);
+    const booking = await carrierBooking(request, w.A, site, {
+      startsAt: at('10:00', berlinDay(2)),
+    });
+    // A slow connection: the booking page's code arrives only after the driver's email is typed.
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(
+      /\/routes\/c\/(\$|%24)orgId\/bookings\/(\$|%24)bookingId\.tsx\?tsr-split/,
+      async (r) => {
+        await held;
+        await r.continue();
+      },
+    );
+    await signInAs(context, w.A.users.carrier_user);
+    await page.goto(`/c/${w.A.carrierId}/book?step=done&booking=${booking.id}`);
+    await expect(page.getByLabel('Link for the driver')).toHaveValue(/\/d#[\w-]{43}$/);
+
+    await page.getByRole('link', { name: 'Open booking' }).click();
+    await expect(page).toHaveURL(new RegExp(`/c/${w.A.carrierId}/bookings/${booking.id}$`));
+    const driver = uniqueEmail('driver');
+    await page.getByLabel('Email to driver').fill(driver);
+    await page.getByLabel("Driver's language").selectOption('pl');
+    release();
+    await expect(page.getByRole('link', { name: 'All bookings' })).toBeVisible();
+    await expect(page.getByLabel('Email to driver')).toHaveValue(driver);
+    await expect(page.getByLabel("Driver's language")).toHaveValue('pl');
+    await page.getByRole('button', { name: 'Send' }).click();
+    await expect(page.getByText(`Link sent to ${driver}`)).toBeVisible();
+  });
 });
