@@ -12,6 +12,8 @@ import { ApiError } from './errors.ts';
 /** ADR-0003, "Abuse limits". The retention job deletes events older than 24 hours. */
 export const RATE_LIMITS = {
   login_failed: { limit: 5, windowSeconds: 15 * 60 },
+  // Failed sign-ins per client address, whatever the email: each costs a scrypt hash.
+  login_ip: { limit: 30, windowSeconds: 15 * 60 },
   magic_link_request: { limit: 5, windowSeconds: 60 * 60 },
   reset_request: { limit: 5, windowSeconds: 60 * 60 },
   driver_exchange: { limit: 10, windowSeconds: 60 },
@@ -24,7 +26,8 @@ export type RateLimitState = { limited: false } | { limited: true; retryAfterSec
 
 const keyHash = (key: string) => createHash('sha256').update(key).digest();
 
-async function lockAndCount(
+/** Locks the key until `tx` ends and says whether it is at the bucket's limit. Records nothing. */
+export async function lockAndCount(
   tx: Tx,
   bucket: RateLimitBucket,
   hash: Buffer,

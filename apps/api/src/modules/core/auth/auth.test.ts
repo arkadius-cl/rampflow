@@ -138,6 +138,19 @@ describe('password sign-in (CR-03)', () => {
     expect((await login(a.email, a.password, '203.0.113.9')).status).toBe(200);
   });
 
+  it('answers 429 after thirty failures from one address, whatever the emails', async () => {
+    const { login } = harness();
+    const a = await account(ownerDb());
+    const ip = '198.51.100.31';
+    for (let i = 0; i < 30; i++) {
+      expect((await login(`rotating-${i}@auth.test`, 'wrong password', ip)).status).toBe(401);
+    }
+    const blocked = await login(a.email, a.password, ip);
+    expect(blocked.status).toBe(429);
+    expect(await blocked.json()).toMatchObject({ error: { code: 'rate_limited' } });
+    expect((await login(a.email, a.password, '203.0.113.31')).status).toBe(200);
+  });
+
   it('counts a burst larger than the connection pool exactly, without starving the pool', async () => {
     const { login } = harness();
     const a = await account(ownerDb());

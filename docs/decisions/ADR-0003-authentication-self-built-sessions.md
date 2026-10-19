@@ -77,6 +77,7 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 - Rate-limit events commit on their own pool connection (`apps/api/src/kernel/rate-limit.ts`), never through the request transaction: a failed sign-in answers 401, the request transaction rolls back, and the event must still count. `consumeRateLimit` counts and records under a per-key advisory lock, so concurrent attempts cannot both slip under the limit. The kernel test runs five failed sign-ins inside rolled-back requests and gets 429 on the sixth.
 - The key uses the client address from `clientIp(c)`: the socket peer, or with `TRUST_PROXY=1` the last `X-Forwarded-For` entry, the one the reverse proxy appended. Without it, every request behind a proxy would share one address.
 - `login_failed`: 5 per 15 minutes per `sha256(lower(email) + ip)`, then 429 `rate_limited` with `retryAfterSeconds`.
+- `login_ip`: 30 failed sign-ins per 15 minutes per `sha256(ip)`, whatever the email, then the same 429. A client rotating emails would otherwise never hit `login_failed` and could keep the scrypt threadpool busy. Both keys are locked, counted and recorded in the sign-in transaction, address first.
 - `magic_link_request` and `reset_request`: 5 per hour per email hash, then the API silently stops sending.
 - `driver_exchange`: 10 per minute per IP ([ADR-0008](ADR-0008-driver-token-pwa-delivery.md)).
 - The retention job deletes events older than 24 hours.

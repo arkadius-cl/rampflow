@@ -171,6 +171,7 @@ export const authToken = pgTable(
 
 export const RATE_LIMIT_BUCKETS = [
   'login_failed',
+  'login_ip',
   'magic_link_request',
   'reset_request',
   'driver_exchange',

@@ -15,7 +15,7 @@ import { clientIp, consumeRateLimit } from '../../../kernel/rate-limit.ts';
 import { scoped } from '../../../kernel/scoped.ts';
 import { anonymousScope, userScope } from '../../../kernel/scopes.ts';
 import { onInvalid } from '../../../kernel/validate.ts';
-import { lockLoginKey, loginKey, recordLoginFailure } from './login-limit.ts';
+import { lockLoginKeys, loginKeys, recordLoginFailure } from './login-limit.ts';
 import { accountByEmail } from './lookup.ts';
 import { inspectMagicLink } from './magic-link.redeem.ts';
 import { dummyHash, verifyPassword } from './password.ts';
@@ -75,16 +75,16 @@ export const anonymous = new Hono<AppEnv>()
   .post('/login', zValidator('json', LoginBody, onInvalid), async (c) => {
     const { email, password } = c.req.valid('json');
     const now = c.var.clock.now();
-    const key = loginKey(email, clientIp(c));
+    const keys = loginKeys(email, clientIp(c));
     // One transaction locks the key, counts, verifies and records a failure, and commits even
     // for a wrong password, so a burst for one key is serialized and every failure counts.
     const outcome = await withScope({ party: 'anonymous' }, async (tx) => {
-      const limit = await lockLoginKey(tx, key, now);
+      const limit = await lockLoginKeys(tx, keys, now);
       if (limit.limited) return limit;
       const account = await accountByEmail(tx, email);
       const matches = await verifyPassword(password, account?.passwordHash ?? (await dummyHash()));
       if (!account || !matches || !account.emailVerifiedAt || account.disabledAt) {
-        await recordLoginFailure(tx, key, now);
+        await recordLoginFailure(tx, keys, now);
         return { failed: true } as const;
       }
       await startSession(c, tx, account.id, now);
