@@ -22,19 +22,24 @@
     "db:reset": "pnpm --filter @rampflow/api db:reset",
     "db:generate": "pnpm --filter @rampflow/api db:generate",
     "db:regen": "pnpm --filter @rampflow/api db:regen",
+    "db:seed": "pnpm --filter @rampflow/api db:seed",
     "admin:create": "pnpm --filter @rampflow/api admin:create",
     "checkout:env": "node scripts/checkout-env.mjs",
     "docs:index": "node scripts/docs.mjs index",
     "docs:check": "node scripts/docs.mjs check",
+    "i18n:derive": "node scripts/i18n-derive.ts",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
     "bench": "BENCH=1 pnpm --filter @rampflow/api test bench.test",
     "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@biomejs/biome": "2.5.15",
     "@playwright/test": "1.64.1",
     "@types/node": "^26.6.5",
+    "@types/pg": "8.15.6",
     "concurrently": "10.0.6",
+    "pg": "8.23.1",
     "typescript": "7.0.2"
   }
 }
