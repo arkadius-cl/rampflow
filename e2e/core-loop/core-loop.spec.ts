@@ -11,6 +11,7 @@ import {
   acceptWithNewAccount,
   nextSiteDayAt,
   openEmailedLink,
+  siteInstant,
   Timeline,
 } from '../support/u12.ts';
 
@@ -21,18 +22,12 @@ const SITE = 'Lager Garching';
 
 type SettingRow = ReturnType<Page['getByTestId']>;
 
-/**
- * One site setting on /t/$orgId/settings. The row offers "Save" only when the value differs from
- * what the site has; an equal inherited value already pins it.
- */
+/** Saves one setting on /t/$orgId/settings at the site level. */
 async function setSiteValue(page: Page, key: string, set: (row: SettingRow) => Promise<void>) {
   const row = page.getByTestId(`setting-${key}`);
   await set(row);
-  const save = row.getByRole('button', { name: 'Save' });
-  if (await save.isVisible()) {
-    await save.click();
-    await expect(row).toContainText('Set here (Site)');
-  }
+  await row.getByRole('button', { name: 'Save' }).click();
+  await expect(row).toContainText('Set here (Site)');
 }
 
 /** The wizard names each site with its zone abbreviation, which depends on the date. */
@@ -63,7 +58,7 @@ test.describe('Core loop', () => {
     test.setTimeout(600_000);
     const w = await seedWorld(request);
     const { day, at } = nextSiteDayAt(ZONE, '09:50');
-    const time = (hhmm: string) => nextSiteDayAt(ZONE, hhmm).at;
+    const time = (hhmm: string) => siteInstant(day, hhmm, ZONE);
     const timeline = new Timeline(browser, request, at);
     await timeline.start();
     const tenantName = `Acme ${Date.now().toString(36)}`;
@@ -175,10 +170,15 @@ test.describe('Core loop', () => {
         await setSiteValue(page, 'booking.min_lead_minutes', (r) =>
           r.getByRole('spinbutton').fill('0'),
         );
-        await setSiteValue(page, 'booking.horizon_days', async (r) => {
-          await r.getByRole('spinbutton').fill('30');
-          await expect(r.getByRole('spinbutton')).toHaveValue('30');
-        });
+        // The row offers "Save" only for a changed value; an inherited 30 already pins it.
+        const horizon = page.getByTestId('setting-booking.horizon_days').getByRole('spinbutton');
+        await expect(horizon).not.toHaveValue('');
+        if ((await horizon.inputValue()) !== '30') {
+          await setSiteValue(page, 'booking.horizon_days', (r) =>
+            r.getByRole('spinbutton').fill('30'),
+          );
+        }
+        await expect(horizon).toHaveValue('30');
         await setSiteValue(page, 'booking.slot_grid_minutes', async (r) => {
           await r.getByRole('combobox').selectOption('15');
         });

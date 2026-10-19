@@ -22,10 +22,14 @@ import { latestEmailTo, linkIn } from './mailpit.ts';
 
 const APP_ORIGIN = process.env.APP_ORIGIN ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 
+/** A site-local wall time on `day` as an instant. */
+export const siteInstant = (day: LocalDate, wallTime: string, zone: string): Date =>
+  firstInstantFrom(day, wallTime as LocalTime, zone as TimeZone);
+
 /** `wallTime` on the site-local day after today, as an instant, so the slot always lies ahead. */
 export function nextSiteDayAt(zone: string, wallTime: string): { day: LocalDate; at: Date } {
   const day = addDays(siteDay(new Date(), zone as TimeZone), 1);
-  return { day, at: firstInstantFrom(day, wallTime as LocalTime, zone as TimeZone) };
+  return { day, at: siteInstant(day, wallTime, zone) };
 }
 
 /** Pins the API clock (requests and jobs); `null` hands it back to the wall clock. */
