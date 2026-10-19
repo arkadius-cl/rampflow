@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
-import type { World } from '../../../../test/world.ts';
+import { WORLD_NOW, type World } from '../../../../test/world.ts';
 import { tenantCarrierLink } from '../../core/schema.ts';
 import { avisInput, bookableSite } from '../lifecycle/fixtures.ts';
 
@@ -31,12 +31,8 @@ async function withoutRivalLink(w: World, db: OwnerDb): Promise<void> {
 const atA = (w: World) => ({ orgId: w.A.carrierId, tenantId: w.A.tenantId });
 const own = (w: World) => ({ ...atA(w), bookingId: w.A.bookings.own.id });
 
-/** An offered start: two days ahead on the hour, inside the default lead time and horizon. */
-function offeredStart(): string {
-  const at = new Date(Date.now() + 2 * 86_400_000);
-  at.setUTCMinutes(0, 0, 0);
-  return at.toISOString();
-}
+/** An offered start: two days after the route cases' clock, inside the default lead time and horizon. */
+const offeredStart = () => new Date(WORLD_NOW.getTime() + 2 * 86_400_000).toISOString();
 
 const carrierCase = {
   as: 'carrier_user',
