@@ -1,10 +1,9 @@
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { eq } from 'drizzle-orm';
+import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
 import type { OwnerDb } from '../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../test/route-cases.ts';
 import type { World, WorldSide } from '../../../test/world.ts';
-import { avisInput, bookableSite } from '../booking/lifecycle/fixtures.ts';
-import { booking } from '../booking/schema.ts';
+import { asStaff, avisInput, bookableSite } from '../booking/lifecycle/fixtures.ts';
+import { transitionBooking } from '../booking/lifecycle/transition.ts';
 import { briefingOf, seedBriefing } from '../safety/authoring/fixtures.ts';
 
 // Every yard route is site-scoped: operators of the tenant's other site get 404 (TN-01).
@@ -13,20 +12,23 @@ const own = (w: World) => ({ orgId: w.A.tenantId, bookingId: w.A.bookings.own.id
 const site = (w: World) => ({ siteId: w.A.sites[0].id });
 const org = (w: World) => ({ orgId: w.A.tenantId });
 
-/** Puts both worlds' `bookings.own` into `status`, on dock 0 of site 0 when it holds a dock. */
-const ownIn = (status: BookingStatus) => async (w: World, db: OwnerDb) => {
-  const at = new Date();
+const STEPS = {
+  checked_in: ['check_in'],
+  called: ['check_in', 'call'],
+  loading: ['check_in', 'call', 'start_loading'],
+} as const;
+
+/** Moves both worlds' `bookings.own` into `status` through the lifecycle, onto dock 0 of site 0. */
+const ownIn = (status: keyof typeof STEPS) => async (w: World) => {
   for (const side of [w.A, w.B] as WorldSide[]) {
-    const holds = status === 'called' || status === 'at_dock' || status === 'loading';
-    await db
-      .update(booking)
-      .set({
-        status,
-        checkedInAt: at,
-        calledAt: holds ? at : null,
-        dockId: holds ? side.sites[0].dockIds[0] : null,
-      })
-      .where(eq(booking.id, side.bookings.own.id));
+    await asStaff(side, side.users.tenant_admin, new Date(), async (ctx) => {
+      for (const type of STEPS[status]) {
+        const dockId = side.sites[0].dockIds[0];
+        const command: CommandInput =
+          type === 'check_in' ? { type, plateSeen: null } : { type, dockId };
+        await transitionBooking(ctx, side.bookings.own.id, command);
+      }
+    });
   }
 };
 
