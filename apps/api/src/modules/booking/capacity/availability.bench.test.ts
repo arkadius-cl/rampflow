@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -23,6 +22,8 @@ let w: World;
 let bench: CapacitySite;
 let resourceIds: string[];
 
+let codes = 0;
+
 async function insertBookings(
   s: CapacitySite,
   resources: string[],
@@ -42,7 +43,8 @@ async function insertBookings(
           resourceId: resourceId as never,
           loadTypeId: s.loadTypeId,
           carrierName: 'Bench',
-          code: randomBytes(4).toString('hex').toUpperCase(),
+          // Unique per tenant (booking_tenant_code_key); random codes collide at this volume.
+          code: `B${String(codes++).padStart(7, '0')}`,
           status: 'confirmed' as const,
           direction: 'inbound' as const,
           startsAt,
