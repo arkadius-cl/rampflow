@@ -1,5 +1,5 @@
 {
-  "id": "ef8fbda2-b427-46ad-b5e1-d83420dde89e",
+  "id": "280d1c19-4e4a-4c0a-a71d-fea7fb378314",
   "prevId": "fd67c808-7736-412c-94b6-2ab21f40a892",
   "version": "7",
   "dialect": "postgresql",
@@ -735,6 +735,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "public_link_slug": {
+          "name": "public_link_slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "locale": {
           "name": "locale",
           "type": "text",
@@ -857,6 +863,15 @@
         }
       },
       "foreignKeys": {
+        "carrier_registration_public_link_slug_public_link_slug_fk": {
+          "name": "carrier_registration_public_link_slug_public_link_slug_fk",
+          "tableFrom": "carrier_registration",
+          "tableTo": "public_link",
+          "columnsFrom": ["public_link_slug"],
+          "columnsTo": ["slug"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "carrier_registration_user_id_app_user_id_fk": {
           "name": "carrier_registration_user_id_app_user_id_fk",
           "tableFrom": "carrier_registration",

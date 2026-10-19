@@ -60,6 +60,7 @@ export async function submitRegistration(
   tx: Tx,
   o: {
     link: PublicLinkTarget;
+    slug: string;
     info: PublicLinkInfo;
     body: RegistrationBody;
     entitlements: Entitlements | null;
@@ -77,6 +78,7 @@ export async function submitRegistration(
     country: body.country,
     contactName: body.contactName,
     email: body.email,
+    publicLinkSlug: o.slug,
     locale: body.locale ?? null,
     status: 'pending_email',
     tokenHash: tokenHashFor('registration', id),

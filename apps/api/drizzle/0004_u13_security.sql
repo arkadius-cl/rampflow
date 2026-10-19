@@ -1,3 +1,5 @@
 ALTER TABLE "rate_limit_event" DROP CONSTRAINT "rate_limit_event_bucket_check";--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD COLUMN "public_link_slug" text;--> statement-breakpoint
+ALTER TABLE "carrier_registration" ADD CONSTRAINT "carrier_registration_public_link_slug_public_link_slug_fk" FOREIGN KEY ("public_link_slug") REFERENCES "public"."public_link"("slug") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "rate_limit_event" ADD CONSTRAINT "rate_limit_event_bucket_check" CHECK ("rate_limit_event"."bucket" in ('login_failed', 'login_ip', 'magic_link_request', 'reset_request', 'driver_exchange', 'registration_request', 'registration_ip'));--> statement-breakpoint
 ALTER POLICY "tenant_select" ON "org" TO public USING (((select app.party()) = 'tenant') and ("org"."id" = (select app.tenant_id()) or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = "org"."id") or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = "org"."id")));

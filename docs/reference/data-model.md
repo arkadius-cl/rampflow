@@ -533,6 +533,7 @@ CR-02.
 | `country` | char(2) | no | |
 | `contact_name` | text | no | **PD** |
 | `email` | citext | no | **PD** |
+| `public_link_slug` | text | yes | FK `public_link` on delete set null: the slug the form came through; verification refuses it once revoked |
 | `locale` | text | yes | `de`, `en`, `pl`: the form's language; the carrier's emails use it |
 | `token_hash` | bytea | yes | unique; `sha256` of the emailed `registration` token |
 | `expires_at` | timestamptz | yes | 24 hours after the registration |

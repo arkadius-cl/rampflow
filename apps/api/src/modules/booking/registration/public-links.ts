@@ -143,6 +143,33 @@ export async function resolveSlug(slug: string): Promise<PublicLinkTarget> {
 export const publicScope = (link: PublicLinkTarget): Scope => ({ party: 'public', ...link });
 
 /**
+ * 404 unless the link a registration came through still takes registrations: its slug is not
+ * revoked (when the registration recorded one) and `openPublicLink` still opens the site.
+ * Inside the public scope of `link`.
+ */
+export async function assertLinkOpen(
+  tx: Tx,
+  link: PublicLinkTarget,
+  slug: string | null,
+  clock: Clock,
+): Promise<void> {
+  if (slug) {
+    const [row] = await tx
+      .select({ slug: publicLink.slug })
+      .from(publicLink)
+      .where(
+        and(
+          eq(publicLink.slug, slug),
+          eq(publicLink.tenantId, link.tenantId),
+          isNull(publicLink.revokedAt),
+        ),
+      );
+    if (!row) throw new ApiError('not_found');
+  }
+  await openPublicLink(tx, link, clock);
+}
+
+/**
  * What the registration page shows, inside `withScope(publicScope(link))`. 404 while the
  * feature `booking.public_link` or the site's `booking.public_link_enabled` is off, or the site
  * is inactive: a visitor cannot tell these apart from an unknown slug.

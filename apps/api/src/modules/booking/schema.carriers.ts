@@ -82,6 +82,10 @@ export const carrierRegistration = pgTable(
     country: char('country', { length: 2 }).notNull(),
     contactName: text('contact_name').notNull(),
     email: citext('email').notNull(),
+    /** The slug the registration came through; verification refuses it once revoked (TN-04). */
+    publicLinkSlug: text('public_link_slug').references(() => publicLink.slug, {
+      onDelete: 'set null',
+    }),
     /** The language of the registration form; the carrier's emails use it. */
     locale: text('locale', { enum: STAFF_LOCALES }),
     /** `sha256` of the emailed `registration` token; claimed once while `pending_email`. */

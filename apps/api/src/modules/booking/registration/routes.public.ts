@@ -31,7 +31,8 @@ export const publicApi = new Hono<AppEnv>()
     zValidator('param', SlugParam, onInvalid),
     zValidator('json', RegistrationBody, onInvalid),
     async (c) => {
-      const link = await resolveSlug(c.req.valid('param').slug);
+      const { slug } = c.req.valid('param');
+      const link = await resolveSlug(slug);
       const body = c.req.valid('json');
       const now = c.var.clock.now();
       const { info, entitlements } = await withScope(publicScope(link), async (tx) => {
@@ -40,7 +41,7 @@ export const publicApi = new Hono<AppEnv>()
       });
       if (await registrationAllowed(body.email, clientIp(c), now)) {
         await withScope(publicScope(link), (tx) =>
-          submitRegistration(tx, { link, info, body, entitlements, now }),
+          submitRegistration(tx, { link, slug, info, body, entitlements, now }),
         );
       }
       return c.body(null, 202);

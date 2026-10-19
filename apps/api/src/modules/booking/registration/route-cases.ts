@@ -47,10 +47,9 @@ export const accountCases = defineAccountCases([
     path: '/api/public/registrations/verify',
     credential: 'token',
     arrange: async (w, db) => {
-      const registration = await registrationFor(db, {
-        tenantId: w.A.tenantId,
-        siteId: w.A.sites[0].id,
-      });
+      const target = { tenantId: w.A.tenantId, siteId: w.A.sites[0].id };
+      await openLinkFor(db, { ...target, by: w.A.users.tenant_admin.id });
+      const registration = await registrationFor(db, target);
       const invitation = await carrierInvitationFor(db, {
         tenantId: w.A.tenantId,
         invitedBy: w.A.users.dispatcher.id,

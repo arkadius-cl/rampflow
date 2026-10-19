@@ -7,7 +7,7 @@ import type { Clock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { carrierOfUser, linkAsTenant, redeemingUser } from '../carriers/carrier-org.redeem.ts';
 import { carrierRegistration } from '../schema.carriers.ts';
-import { publicScope } from './public-links.ts';
+import { assertLinkOpen, publicScope } from './public-links.ts';
 
 // CR-02: /carrier-registration#<token>. Verifies the email, signs the carrier in, and applies
 // `booking.public_registration_mode` of the registration's site. Runs under the token scope of
@@ -24,7 +24,8 @@ const pendingWhere = (token: string, now: Date) =>
  * A new email gets a verified account without password (it signs in by magic link) and a new
  * carrier company. A known email must be signed in (401 `sign_in_required` otherwise), and the
  * request attaches to that user's carrier org. With `auto_approve` the link is active at once;
- * with `approval_required` the registration waits for the tenant. Single use, 24 hours.
+ * with `approval_required` the registration waits for the tenant. Single use, 24 hours, and only
+ * while the link it came through is still on and its slug not regenerated.
  */
 export async function verifyRegistration(
   tx: Tx,
@@ -34,6 +35,18 @@ export async function verifyRegistration(
   const now = clock.now();
   const [reg] = await tx.select().from(carrierRegistration).where(pendingWhere(input.token, now));
   if (!reg) throw new ApiError('unauthorized', 'Invalid or expired link');
+  const link = { tenantId: reg.tenantId, siteId: reg.siteId };
+  // A link switched off or regenerated after the form was sent takes no more carriers.
+  try {
+    await asScope(tx, publicScope(link), (inner) =>
+      assertLinkOpen(inner, link, reg.publicLinkSlug, clock),
+    );
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'not_found') {
+      throw new ApiError('unauthorized', 'Invalid or expired link');
+    }
+    throw e;
+  }
 
   const userId = await redeemingUser(tx, {
     email: reg.email,
@@ -45,7 +58,6 @@ export async function verifyRegistration(
     name: reg.companyName,
     country: reg.country,
   });
-  const link = { tenantId: reg.tenantId, siteId: reg.siteId };
   const mode = await asScope(tx, publicScope(link), async (inner) => {
     const access = await loadAccess(inner, publicScope(link), clock);
     return (await access.setting('booking.public_registration_mode', reg.siteId)).value;

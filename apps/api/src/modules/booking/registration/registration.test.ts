@@ -308,6 +308,46 @@ describe('CR-02 register through a public link', () => {
   });
 });
 
+describe('CR-02 verification re-checks the public link', () => {
+  const unverified = async (email: string) => {
+    const { row } = await registered(email);
+    const [after] = await ownerDb()
+      .select({ status: carrierRegistration.status, carrierId: carrierRegistration.carrierId })
+      .from(carrierRegistration)
+      .where(eq(carrierRegistration.id, row.id));
+    return after;
+  };
+
+  it('answers 401 once the site switched the link off, and creates nothing', async () => {
+    const slug = await open('auto_approve');
+    const email = unique('switched-off');
+    await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
+    const { token } = await registered(email);
+    const off = { tenantId: w.A.tenantId, siteId: site, by: admin.id };
+    await setSiteSetting(ownerDb(), { ...off, key: 'booking.public_link_enabled', value: false });
+    try {
+      const res = await anon.post('/api/public/registrations/verify', { body: { token } });
+      expect(res.status).toBe(401);
+      expect(sessionOf(res)).toBeNull();
+      expect(await unverified(email)).toEqual({ status: 'pending_email', carrierId: null });
+      expect(await ownerDb().select().from(appUser).where(eq(appUser.email, email))).toEqual([]);
+    } finally {
+      await setSiteSetting(ownerDb(), { ...off, key: 'booking.public_link_enabled', value: true });
+    }
+  });
+
+  it('answers 401 once the slug it came through was regenerated', async () => {
+    const slug = await open('auto_approve');
+    const email = unique('leaked-slug');
+    await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
+    const { token } = await registered(email);
+    await open('auto_approve');
+    const res = await anon.post('/api/public/registrations/verify', { body: { token } });
+    expect(res.status).toBe(401);
+    expect(await unverified(email)).toEqual({ status: 'pending_email', carrierId: null });
+  });
+});
+
 describe('CR-02 only a carrier admin binds an existing company', () => {
   it('a carrier_user gets 403 and the registration stays unverified', async () => {
     const other = await world();
