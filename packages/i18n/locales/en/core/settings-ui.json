@@ -1,0 +1,56 @@
+{
+  "title": "Settings",
+  "description": "Each value shows where it comes from. A site value overrides the tenant, which overrides the platform default.",
+  "platform_title": "Platform defaults",
+  "platform_description": "Defaults for every tenant. A tenant or site value overrides them, and existing overrides stay.",
+  "tenant_tab": "All sites",
+  "scope_tabs": "Settings level",
+  "empty": "No settings at this level.",
+  "save": "Save",
+  "saved": "Saved.",
+  "reset_done": "Reset to the inherited value.",
+  "clear": "Clear the link",
+  "set_here": "Set here ({{source}})",
+  "inherited_from": "Inherited from {{source}}",
+  "reset": "Reset to inherited",
+  "reset_to": "Reset to inherited ({{value}})",
+  "source": {
+    "default": "Default",
+    "platform": "Platform",
+    "tenant": "Tenant",
+    "site": "Site"
+  },
+  "sections": {
+    "avis": "Avis",
+    "booking": "Booking rules",
+    "i18n": "Language",
+    "notify": "Notifications",
+    "privacy": "Privacy and retention",
+    "safety": "Safety briefings",
+    "yard": "Yard"
+  },
+  "values": {
+    "on": "On",
+    "off": "Off",
+    "none": "None",
+    "public_registration_mode": {
+      "auto_approve": "Approve automatically",
+      "approval_required": "Approval required"
+    },
+    "reference_type": {
+      "purchase_order": "Purchase order",
+      "delivery_note": "Delivery note",
+      "shipment": "Shipment number",
+      "transport_order": "Transport order",
+      "customer_ref": "Customer reference",
+      "container": "Container number",
+      "other": "Other"
+    }
+  },
+  "validation": {
+    "number_range": "Enter a whole number from {{min}} to {{max}}.",
+    "url": "Enter a link that starts with https:// or http://.",
+    "duplicate": "Each type may appear only once.",
+    "invalid": "This value is not allowed."
+  }
+}

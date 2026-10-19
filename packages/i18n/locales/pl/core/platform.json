@@ -1,0 +1,100 @@
+{
+  "unlimited": "bez limitu",
+  "unlimited_option": "Bez limitu",
+  "soft": "miękki",
+  "percent": "{{percent}} %",
+  "over_soft": "{{percent}} %, przekroczony miękki limit",
+  "over_hard": "{{percent}} %, ponad limit",
+  "meter_label": "{{label}}: wykorzystano {{percent}} procent limitu",
+  "save": "Zapisz",
+  "cancel": "Anuluj",
+  "values": {
+    "on": "Wł.",
+    "off": "Wył."
+  },
+  "usage": {
+    "sites": "Lokalizacje",
+    "docks": "Rampy",
+    "users": "Użytkownicy wewnętrzni",
+    "bookings": "Rezerwacje w tym miesiącu"
+  },
+  "tenants": {
+    "title": "Klienci",
+    "description": "Wykorzystanie limitów pakietu w tym miesiącu. Miękkie limity powyżej 100 % są oznaczane i niczego nie blokują.",
+    "create": "Utwórz klienta",
+    "create_description": "Administrator otrzyma zaproszenie e-mailem, aby dołączyć jako administrator klienta.",
+    "create_submit": "Utwórz i zaproś",
+    "created": "Utworzono {{name}}. Zaproszenie zostało wysłane.",
+    "tenant": "Klient",
+    "name": "Nazwa firmy",
+    "package": "Pakiet",
+    "admin_email": "E-mail administratora",
+    "empty": "Brak klientów."
+  },
+  "packages": {
+    "title": "Pakiety",
+    "description": "Co zawiera każdy pakiet. Pakiety są tylko do odczytu; pojedynczego klienta zmienisz nadpisaniem.",
+    "start": "Start",
+    "pro": "Pro",
+    "enterprise": "Enterprise"
+  },
+  "tenant": {
+    "back": "Wszyscy klienci",
+    "description": "Pakiet, nadpisania i zaproszenie administratora tego klienta.",
+    "settings_title": "Nazwa i pakiet",
+    "saved": "Zapisano klienta."
+  },
+  "columns": {
+    "entitlement": "Uprawnienie",
+    "value": "Obowiązująca wartość",
+    "package_value": "Pakiet",
+    "source": "Źródło",
+    "override": "Nadpisanie",
+    "expires": "Wygasa (Twój czas)",
+    "note": "Notatka",
+    "actions": "Działania"
+  },
+  "sources": {
+    "default": "Domyślne",
+    "package": "Pakiet",
+    "override": "Nadpisanie",
+    "reserved": "Zarezerwowane",
+    "module_off": "Moduł wyłączony"
+  },
+  "entitlements": {
+    "title": "Uprawnienia",
+    "description": "Co ten klient otrzymuje teraz i skąd pochodzi każda wartość."
+  },
+  "overrides": {
+    "title": "Nadpisania",
+    "description": "Nadpisanie ma pierwszeństwo przed pakietem w obu kierunkach, działa od następnego żądania i wygasa w ustalonym terminie.",
+    "empty": "Brak nadpisań. Obowiązuje pakiet bez zmian.",
+    "higher": "wyżej",
+    "lower": "niżej",
+    "never": "nigdy",
+    "lapsed": "Wygasło",
+    "remove": "Usuń nadpisanie {{key}}",
+    "removed": "Usunięto nadpisanie.",
+    "saved": "Zapisano nadpisanie.",
+    "add_title": "Dodaj nadpisanie",
+    "add_description": "Nowe nadpisanie klucza zastępuje istniejące.",
+    "key": "Uprawnienie",
+    "reserved_hint": "Zarezerwowane klucze nie są tu wyświetlane.",
+    "value": "Wartość",
+    "whole_number": "Wpisz liczbę całkowitą od 0 lub wybierz bez limitu.",
+    "expires": "Wygasa o (Twój czas)",
+    "expires_hint": "Pozostaw puste dla stałego nadpisania.",
+    "note": "Notatka",
+    "invalid": "Ta wartość jest niedozwolona.",
+    "add": "Dodaj nadpisanie"
+  },
+  "invitations": {
+    "title": "Zaproszenia administratora",
+    "description": "Oczekujące zaproszenia do roli administratora klienta. Nowe zaproszenie na ten sam e-mail zastępuje stary link.",
+    "empty": "Brak oczekujących zaproszeń.",
+    "expires": "Ważne do {{at}} (Twój czas)",
+    "email": "E-mail administratora",
+    "reinvite": "Zaproś administratora ponownie",
+    "sent": "Wysłano zaproszenie do {{email}}."
+  }
+}

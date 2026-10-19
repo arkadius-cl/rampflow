@@ -1,0 +1,100 @@
+{
+  "unlimited": "unlimited",
+  "unlimited_option": "Unlimited",
+  "soft": "soft",
+  "percent": "{{percent}} %",
+  "over_soft": "{{percent}} %, soft limit exceeded",
+  "over_hard": "{{percent}} %, over the limit",
+  "meter_label": "{{label}}: {{percent}} percent of the limit used",
+  "save": "Save",
+  "cancel": "Cancel",
+  "values": {
+    "on": "On",
+    "off": "Off"
+  },
+  "usage": {
+    "sites": "Sites",
+    "docks": "Docks",
+    "users": "Internal users",
+    "bookings": "Bookings this month"
+  },
+  "tenants": {
+    "title": "Tenants",
+    "description": "Usage against package limits this month. Soft limits above 100 % are flagged and block nothing.",
+    "create": "Create tenant",
+    "create_description": "The admin gets an email invitation to join as tenant admin.",
+    "create_submit": "Create and invite",
+    "created": "{{name}} created. The invitation is on its way.",
+    "tenant": "Tenant",
+    "name": "Company name",
+    "package": "Package",
+    "admin_email": "Admin email",
+    "empty": "No tenants yet."
+  },
+  "packages": {
+    "title": "Packages",
+    "description": "What each package includes. Packages are read-only; change a single tenant with an override.",
+    "start": "Start",
+    "pro": "Pro",
+    "enterprise": "Enterprise"
+  },
+  "tenant": {
+    "back": "All tenants",
+    "description": "Package, overrides and the admin invitation of this tenant.",
+    "settings_title": "Name and package",
+    "saved": "Tenant saved."
+  },
+  "columns": {
+    "entitlement": "Entitlement",
+    "value": "Effective value",
+    "package_value": "Package",
+    "source": "Source",
+    "override": "Override",
+    "expires": "Expires (your time)",
+    "note": "Note",
+    "actions": "Actions"
+  },
+  "sources": {
+    "default": "Default",
+    "package": "Package",
+    "override": "Override",
+    "reserved": "Reserved",
+    "module_off": "Module off"
+  },
+  "entitlements": {
+    "title": "Entitlements",
+    "description": "What this tenant gets now, and where each value comes from."
+  },
+  "overrides": {
+    "title": "Overrides",
+    "description": "An override beats the package in both directions, applies on the next request and lapses at its expiry.",
+    "empty": "No overrides. The package applies as it is.",
+    "higher": "higher",
+    "lower": "lower",
+    "never": "never",
+    "lapsed": "Lapsed",
+    "remove": "Remove the override of {{key}}",
+    "removed": "Override removed.",
+    "saved": "Override saved.",
+    "add_title": "Add override",
+    "add_description": "An override of a key that already has one replaces it.",
+    "key": "Entitlement",
+    "reserved_hint": "Reserved keys do not appear here.",
+    "value": "Value",
+    "whole_number": "Enter a whole number of 0 or more, or choose unlimited.",
+    "expires": "Expires at (your time)",
+    "expires_hint": "Leave empty for a permanent override.",
+    "note": "Note",
+    "invalid": "This value is not allowed.",
+    "add": "Add override"
+  },
+  "invitations": {
+    "title": "Admin invitations",
+    "description": "Pending invitations to join as tenant admin. A new invitation to the same email replaces the old link.",
+    "empty": "No pending invitations.",
+    "expires": "Expires {{at}} (your time)",
+    "email": "Admin email",
+    "reinvite": "Invite admin again",
+    "sent": "Invitation sent to {{email}}."
+  }
+}

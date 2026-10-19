@@ -1,0 +1,20 @@
+{
+  "title": "Logo",
+  "description": "Your logo appears on carrier booking pages, in emails and in the driver app.",
+  "current": "Current logo",
+  "current_description": "Carriers and drivers see this logo next to your company name.",
+  "none": "No logo yet. Carriers and drivers see your company name only.",
+  "preview_alt": "Your current logo",
+  "details": "Uploaded {{at}} (your time), {{size}} KB",
+  "delete": "Delete logo",
+  "delete_title": "Delete the logo?",
+  "delete_description": "Carrier pages, emails and the driver app show your company name without a logo.",
+  "deleted": "Logo deleted.",
+  "upload_title": "Upload a new logo",
+  "file": "Image file",
+  "hint": "PNG or JPEG, up to 256 KB. A wide logo on a transparent or white background works best.",
+  "upload": "Upload logo",
+  "uploaded": "Logo uploaded.",
+  "wrong_type": "Choose a PNG or JPEG image. Other formats such as SVG are not accepted.",
+  "too_big": "The image is larger than 256 KB. Choose a smaller file."
+}

@@ -1,0 +1,56 @@
+{
+  "title": "Einstellungen",
+  "description": "Jeder Wert zeigt, woher er stammt. Ein Standortwert überschreibt den Mandanten, der Mandant den Plattform-Standard.",
+  "platform_title": "Plattform-Standards",
+  "platform_description": "Standards für alle Mandanten. Werte eines Mandanten oder Standorts haben Vorrang und bleiben bei Änderungen erhalten.",
+  "tenant_tab": "Alle Standorte",
+  "scope_tabs": "Einstellungsebene",
+  "empty": "Auf dieser Ebene gibt es keine Einstellungen.",
+  "save": "Speichern",
+  "saved": "Gespeichert.",
+  "reset_done": "Auf den geerbten Wert zurückgesetzt.",
+  "clear": "Link entfernen",
+  "set_here": "Hier gesetzt ({{source}})",
+  "inherited_from": "Geerbt von {{source}}",
+  "reset": "Auf geerbten Wert zurücksetzen",
+  "reset_to": "Auf geerbten Wert zurücksetzen ({{value}})",
+  "source": {
+    "default": "Standard",
+    "platform": "Plattform",
+    "tenant": "Mandant",
+    "site": "Standort"
+  },
+  "sections": {
+    "avis": "Avis",
+    "booking": "Buchungsregeln",
+    "i18n": "Sprache",
+    "notify": "Benachrichtigungen",
+    "privacy": "Datenschutz und Aufbewahrung",
+    "safety": "Sicherheitsunterweisungen",
+    "yard": "Hof"
+  },
+  "values": {
+    "on": "An",
+    "off": "Aus",
+    "none": "Keine",
+    "public_registration_mode": {
+      "auto_approve": "Automatisch freigeben",
+      "approval_required": "Freigabe erforderlich"
+    },
+    "reference_type": {
+      "purchase_order": "Bestellnummer",
+      "delivery_note": "Lieferschein",
+      "shipment": "Sendungsnummer",
+      "transport_order": "Transportauftrag",
+      "customer_ref": "Kundenreferenz",
+      "container": "Containernummer",
+      "other": "Sonstige"
+    }
+  },
+  "validation": {
+    "number_range": "Geben Sie eine ganze Zahl von {{min}} bis {{max}} ein.",
+    "url": "Geben Sie einen Link ein, der mit https:// oder http:// beginnt.",
+    "duplicate": "Jeder Typ darf nur einmal vorkommen.",
+    "invalid": "Dieser Wert ist nicht zulässig."
+  }
+}

@@ -13,13 +13,17 @@ import type booking_portal from '@rampflow/i18n/locales/en/booking/portal.json';
 import type booking_registration from '@rampflow/i18n/locales/en/booking/registration.json';
 import type booking_settings from '@rampflow/i18n/locales/en/booking/settings.json';
 import type brand_entitlements from '@rampflow/i18n/locales/en/brand/entitlements.json';
+import type brand_logo from '@rampflow/i18n/locales/en/brand/logo.json';
 import type brand_nav from '@rampflow/i18n/locales/en/brand/nav.json';
 import type core_auth from '@rampflow/i18n/locales/en/core/auth.json';
 import type core_entitlements from '@rampflow/i18n/locales/en/core/entitlements.json';
 import type core_errors from '@rampflow/i18n/locales/en/core/errors.json';
 import type core_nav from '@rampflow/i18n/locales/en/core/nav.json';
+import type core_platform from '@rampflow/i18n/locales/en/core/platform.json';
+import type core_settings_ui from '@rampflow/i18n/locales/en/core/settings-ui.json';
 import type core_shell from '@rampflow/i18n/locales/en/core/shell.json';
 import type core_sites from '@rampflow/i18n/locales/en/core/sites.json';
+import type core_staff from '@rampflow/i18n/locales/en/core/staff.json';
 import type driver_app from '@rampflow/i18n/locales/en/driver/app.json';
 import type driver_briefing from '@rampflow/i18n/locales/en/driver/briefing.json';
 import type driver_link_email from '@rampflow/i18n/locales/en/driver/link-email.json';
@@ -68,6 +72,7 @@ export interface Resources {
   };
   brand: {
     entitlements: typeof brand_entitlements;
+    logo: typeof brand_logo;
     nav: typeof brand_nav;
   };
   core: {
@@ -75,8 +80,11 @@ export interface Resources {
     entitlements: typeof core_entitlements;
     errors: typeof core_errors;
     nav: typeof core_nav;
+    platform: typeof core_platform;
+    'settings-ui': typeof core_settings_ui;
     shell: typeof core_shell;
     sites: typeof core_sites;
+    staff: typeof core_staff;
   };
   driver: {
     app: typeof driver_app;

@@ -1,0 +1,20 @@
+{
+  "title": "Logo",
+  "description": "Twoje logo pojawia się na stronach rezerwacji przewoźników, w e-mailach i w aplikacji kierowcy.",
+  "current": "Bieżące logo",
+  "current_description": "Przewoźnicy i kierowcy widzą to logo obok nazwy Twojej firmy.",
+  "none": "Brak logo. Przewoźnicy i kierowcy widzą tylko nazwę Twojej firmy.",
+  "preview_alt": "Twoje bieżące logo",
+  "details": "Przesłano {{at}} (Twój czas), {{size}} KB",
+  "delete": "Usuń logo",
+  "delete_title": "Usunąć logo?",
+  "delete_description": "Strony rezerwacji, e-maile i aplikacja kierowcy pokażą nazwę Twojej firmy bez logo.",
+  "deleted": "Usunięto logo.",
+  "upload_title": "Prześlij nowe logo",
+  "file": "Plik obrazu",
+  "hint": "PNG lub JPEG, do 256 KB. Najlepiej sprawdza się szerokie logo na przezroczystym lub białym tle.",
+  "upload": "Prześlij logo",
+  "uploaded": "Przesłano logo.",
+  "wrong_type": "Wybierz obraz PNG lub JPEG. Inne formaty, takie jak SVG, nie są akceptowane.",
+  "too_big": "Obraz jest większy niż 256 KB. Wybierz mniejszy plik."
+}

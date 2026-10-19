@@ -1,0 +1,100 @@
+{
+  "unlimited": "unbegrenzt",
+  "unlimited_option": "Unbegrenzt",
+  "soft": "weich",
+  "percent": "{{percent}} %",
+  "over_soft": "{{percent}} %, weiches Limit überschritten",
+  "over_hard": "{{percent}} %, über dem Limit",
+  "meter_label": "{{label}}: {{percent}} Prozent des Limits genutzt",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "values": {
+    "on": "An",
+    "off": "Aus"
+  },
+  "usage": {
+    "sites": "Standorte",
+    "docks": "Rampen",
+    "users": "Interne Nutzer",
+    "bookings": "Buchungen diesen Monat"
+  },
+  "tenants": {
+    "title": "Mandanten",
+    "description": "Nutzung gegenüber den Paketlimits in diesem Monat. Weiche Limits über 100 % werden markiert und blockieren nichts.",
+    "create": "Mandant anlegen",
+    "create_description": "Die Admin-Person erhält eine Einladung per E-Mail und tritt als Mandanten-Admin bei.",
+    "create_submit": "Anlegen und einladen",
+    "created": "{{name}} angelegt. Die Einladung ist unterwegs.",
+    "tenant": "Mandant",
+    "name": "Firmenname",
+    "package": "Paket",
+    "admin_email": "E-Mail der Admin-Person",
+    "empty": "Noch keine Mandanten."
+  },
+  "packages": {
+    "title": "Pakete",
+    "description": "Was jedes Paket enthält. Pakete sind schreibgeschützt; einzelne Mandanten ändern Sie mit einer Übersteuerung.",
+    "start": "Start",
+    "pro": "Pro",
+    "enterprise": "Enterprise"
+  },
+  "tenant": {
+    "back": "Alle Mandanten",
+    "description": "Paket, Übersteuerungen und Admin-Einladung dieses Mandanten.",
+    "settings_title": "Name und Paket",
+    "saved": "Mandant gespeichert."
+  },
+  "columns": {
+    "entitlement": "Berechtigung",
+    "value": "Wirksamer Wert",
+    "package_value": "Paket",
+    "source": "Quelle",
+    "override": "Übersteuerung",
+    "expires": "Läuft ab (Ihre Zeit)",
+    "note": "Notiz",
+    "actions": "Aktionen"
+  },
+  "sources": {
+    "default": "Standard",
+    "package": "Paket",
+    "override": "Übersteuerung",
+    "reserved": "Reserviert",
+    "module_off": "Modul aus"
+  },
+  "entitlements": {
+    "title": "Berechtigungen",
+    "description": "Was dieser Mandant jetzt erhält und woher jeder Wert stammt."
+  },
+  "overrides": {
+    "title": "Übersteuerungen",
+    "description": "Eine Übersteuerung schlägt das Paket in beide Richtungen, gilt ab der nächsten Anfrage und endet mit ihrem Ablauf.",
+    "empty": "Keine Übersteuerungen. Das Paket gilt unverändert.",
+    "higher": "höher",
+    "lower": "niedriger",
+    "never": "nie",
+    "lapsed": "Abgelaufen",
+    "remove": "Übersteuerung von {{key}} entfernen",
+    "removed": "Übersteuerung entfernt.",
+    "saved": "Übersteuerung gespeichert.",
+    "add_title": "Übersteuerung hinzufügen",
+    "add_description": "Eine neue Übersteuerung eines Schlüssels ersetzt die bestehende.",
+    "key": "Berechtigung",
+    "reserved_hint": "Reservierte Schlüssel erscheinen hier nicht.",
+    "value": "Wert",
+    "whole_number": "Geben Sie eine ganze Zahl ab 0 ein oder wählen Sie unbegrenzt.",
+    "expires": "Läuft ab um (Ihre Zeit)",
+    "expires_hint": "Leer lassen für eine dauerhafte Übersteuerung.",
+    "note": "Notiz",
+    "invalid": "Dieser Wert ist nicht zulässig.",
+    "add": "Übersteuerung hinzufügen"
+  },
+  "invitations": {
+    "title": "Admin-Einladungen",
+    "description": "Offene Einladungen als Mandanten-Admin. Eine neue Einladung an dieselbe E-Mail ersetzt den alten Link.",
+    "empty": "Keine offenen Einladungen.",
+    "expires": "Gültig bis {{at}} (Ihre Zeit)",
+    "email": "E-Mail der Admin-Person",
+    "reinvite": "Admin erneut einladen",
+    "sent": "Einladung an {{email}} gesendet."
+  }
+}

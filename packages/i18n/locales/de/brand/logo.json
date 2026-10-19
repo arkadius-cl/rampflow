@@ -1,0 +1,20 @@
+{
+  "title": "Logo",
+  "description": "Ihr Logo erscheint auf den Buchungsseiten der Spediteure, in E-Mails und in der Fahrer-App.",
+  "current": "Aktuelles Logo",
+  "current_description": "Spediteure und Fahrer sehen dieses Logo neben Ihrem Firmennamen.",
+  "none": "Noch kein Logo. Spediteure und Fahrer sehen nur Ihren Firmennamen.",
+  "preview_alt": "Ihr aktuelles Logo",
+  "details": "Hochgeladen {{at}} (Ihre Zeit), {{size}} KB",
+  "delete": "Logo löschen",
+  "delete_title": "Logo löschen?",
+  "delete_description": "Buchungsseiten, E-Mails und die Fahrer-App zeigen Ihren Firmennamen dann ohne Logo.",
+  "deleted": "Logo gelöscht.",
+  "upload_title": "Neues Logo hochladen",
+  "file": "Bilddatei",
+  "hint": "PNG oder JPEG, bis 256 KB. Am besten wirkt ein breites Logo auf transparentem oder weißem Hintergrund.",
+  "upload": "Logo hochladen",
+  "uploaded": "Logo hochgeladen.",
+  "wrong_type": "Wählen Sie ein PNG- oder JPEG-Bild. Andere Formate wie SVG werden nicht angenommen.",
+  "too_big": "Das Bild ist größer als 256 KB. Wählen Sie eine kleinere Datei."
+}
