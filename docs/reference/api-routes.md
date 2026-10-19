@@ -261,23 +261,25 @@ Unit U7. Router files in `apps/api/src/modules/booking/{carriers,registration}/`
 
 ## Carrier booking portal
 
-Unit U8. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/bookings`; writes in `booking/portal/routes.carrier-at-tenant.ts` at `/api/c/:orgId/at/:tenantId`. Every `at` route needs an active link (else 403 `forbidden`, reason `link_inactive`), except `cancel`, which a deactivated link still allows.
+Unit U8, built. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/bookings` (party `carrier`, every tenant the carrier has bookings at); writes and the wizard's reads in `booking/portal/routes.carrier-at-tenant.ts` at `/api/c/:orgId/at/:tenantId` (party `carrier_at_tenant`). Request schemas and response shapes live in `packages/shared/src/modules/booking/api.portal.ts`. Every `at` route needs an active link (else 403 `forbidden`, reason `link_inactive`), except `cancel`, which a deactivated link still allows. Another carrier's booking, at the same tenant or not, answers 404.
+
+Bookings answer `PortalBookingView`: the summary (tenant, site, slot with `timeZone`, load type, load units, plate, first reference, `checkedInAt`, `departedAt`, `cutoffAt`, `version`) plus the site's address and phone, `linkActive`, dock code, the visit timestamps, the avis, the safety status, the driver link state and the events without actors. `cutoffAt` is `startsAt - booking.cancel_cutoff_minutes` of the booking's site. Offers answer `PortalOffers`: the site's offered starts of one day with `durationMinutes`, without the resources, which stay internal; a 409 with `offers` carries the same shape.
 
 | Method | Path | Permission | Entitlement (tenant's) | Story | Notes |
 |---|---|---|---|---|---|
-| GET | `/api/c/:orgId/bookings` | `booking.view` | | CR-05 | all linked tenants; `?tenantId&siteId&from&to&status&cursor` |
-| GET | `/api/c/:orgId/bookings/:bookingId` | `booking.view` | | CR-05 | timeline gate-in to gate-out, events without actors |
-| GET | `/api/c/:orgId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | `{ url }` |
-| GET | `/api/c/:orgId/bookings/:bookingId/rebook` | `booking.book` | | BK-06 | prefill: site, load type, avis without references, date and driver |
-| GET | `/api/c/:orgId/at/:tenantId/sites` | `booking.book` | `booking.carrier_portal` | BK-04 | address, phone, zone |
-| GET | `/api/c/:orgId/at/:tenantId/load-types` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId=`; carrier-bookable only |
-| GET | `/api/c/:orgId/at/:tenantId/availability` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId&loadTypeId&date&loadUnits`; offered starts |
-| POST | `/api/c/:orgId/at/:tenantId/bookings` | `booking.book` | `booking.carrier_portal` | BK-04, AV-01 | `{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 409 with `offers` when the last unit went elsewhere |
-| PATCH | `/api/c/:orgId/at/:tenantId/bookings/:bookingId` | `booking.book` | `booking.carrier_portal` | BK-05 | `{ startsAt, version }`; before the cutoff |
-| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/cancel` | `booking.book` | `booking.carrier_portal` | BK-05 | before the cutoff |
-| PUT | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/avis` | `booking.book` | `avis.basic` | AV-02 | before the cutoff |
-| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | regenerate |
-| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link/email` | `booking.book` | `notify.email` | CR-06 | `{ email, locale }` |
+| GET | `/api/c/:orgId/bookings` | `booking.view` | | CR-05 | all tenants; `?tenantId&siteId&from&to&status&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }` |
+| GET | `/api/c/:orgId/bookings/:bookingId` | `booking.view` | | CR-05 | `PortalBookingView` |
+| GET | `/api/c/:orgId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | `{ url, expiresAt }`; 404 without an active link |
+| GET | `/api/c/:orgId/bookings/:bookingId/rebook` | `booking.book` | | BK-06 | `{ tenantId, siteId, loadTypeId, avis }`: the avis without references and driver; no date |
+| GET | `/api/c/:orgId/at/:tenantId/sites` | `booking.book` | `booking.carrier_portal` | BK-04 | `{ items }`: active sites with address, phone, `timeZone`, `cutoffMinutes`, `leadMinutes`, `horizonDays` and `avisRules` |
+| GET | `/api/c/:orgId/at/:tenantId/load-types` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId=`; active, carrier-bookable only: `{ items: [{ id, name, direction }] }` |
+| GET | `/api/c/:orgId/at/:tenantId/availability` | `booking.book` | `booking.carrier_portal` | BK-04 | `?siteId&loadTypeId&date&loadUnits`; `PortalOffers` with lead time and horizon applied; 404 for a load type carriers cannot book |
+| POST | `/api/c/:orgId/at/:tenantId/bookings` | `booking.book` | `booking.carrier_portal` | BK-04, AV-01 | `{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 201 `PortalBookingView`, 200 for a repeated `clientRequestId`; 409 with `offers` when the last unit went elsewhere |
+| PATCH | `/api/c/:orgId/at/:tenantId/bookings/:bookingId` | `booking.book` | `booking.carrier_portal` | BK-05 | `{ startsAt, version }`; before the cutoff, else 409 `cutoff_passed` |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/cancel` | `booking.book` | `booking.carrier_portal` | BK-05 | `{ reason? }`; before the cutoff; revokes the driver link |
+| PUT | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/avis` | `booking.book` | `avis.basic` | AV-02 | `{ avis, version }`; before the cutoff; 409 when the new duration does not fit, and the avis stays |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | regenerate; `{ url, expiresAt }` |
+| POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link/email` | `booking.book` | `notify.email` | CR-06 | `{ email, locale }` with one of the 12 driver locales; 202 |
 
 ## Yard
 
