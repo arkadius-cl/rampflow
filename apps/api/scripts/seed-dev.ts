@@ -12,6 +12,16 @@ import type { SeedContext } from './seed/context.ts';
 /** Add one line per module, after the modules whose data it uses. */
 const SEEDS = ['core', 'sites', 'safety', 'booking', 'carriers', 'portal'] as const;
 
+// The demo accounts share a published password, one of them a platform admin. An unset NODE_ENV
+// counts as production, as in apps/api/src/kernel/env.ts; `pnpm db:seed` sets development.
+const nodeEnv = process.env.NODE_ENV ?? 'production';
+if (nodeEnv !== 'development' && nodeEnv !== 'test') {
+  console.error(
+    `db:seed refuses to run with NODE_ENV=${nodeEnv}: the demo data signs in a platform admin with the published password from docs/how-to/run-locally.md. Seed only development databases.`,
+  );
+  process.exit(1);
+}
+
 const pool = new pg.Pool({ connectionString: requireUrl('MIGRATION_DATABASE_URL').toString() });
 try {
   const db = drizzle(pool);

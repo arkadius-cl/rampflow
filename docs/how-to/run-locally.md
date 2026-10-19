@@ -66,7 +66,7 @@ related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/dec
    pnpm db:seed
    ```
 
-   `db:seed` runs as the owner role and is idempotent: a second run converges to the same data and resets the demo passwords. It runs the seed modules listed in `apps/api/scripts/seed-dev.ts`, one file per module under `apps/api/scripts/seed/`. Every demo account uses the password `rampflow-demo`.
+   `db:seed` runs as the owner role and is idempotent: a second run converges to the same data and resets the demo passwords. It runs the seed modules listed in `apps/api/scripts/seed-dev.ts`, one file per module under `apps/api/scripts/seed/`. Every demo account uses the password `rampflow-demo`, so `db:seed` refuses to run unless `NODE_ENV` is `development` or `test` (the checkout env sets `development`; unset counts as production).
 
    | Email | Org | Role |
    |---|---|---|
