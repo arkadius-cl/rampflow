@@ -1,0 +1,98 @@
+{
+  "search": {
+    "label": "Find booking",
+    "placeholder": "Scan QR or type code, plate, reference, carrier",
+    "results": "Search results for “{{q}}”",
+    "none": "No booking found for “{{q}}”.",
+    "clear": "Clear search"
+  },
+  "tab": {
+    "expected": "Expected",
+    "onsite": "On site",
+    "departed": "Departed"
+  },
+  "list": {
+    "expected": "Expected trucks",
+    "onsite": "Trucks on site",
+    "departed": "Departed and turned away"
+  },
+  "empty": {
+    "expected": "No more trucks expected today.",
+    "onsite": "No trucks on site.",
+    "departed": "No departures yet today."
+  },
+  "row": {
+    "no_plate": "no plate",
+    "units": "{{count}} units",
+    "on_site": "On site {{minutes}} min",
+    "waiting": "Waiting {{minutes}} min",
+    "standgeld": "Detention: over {{minutes}} min",
+    "dock": "Dock {{dock}}, {{hall}}",
+    "walk_in": "Walk-in"
+  },
+  "punctuality": {
+    "early": "Early {{minutes}} min",
+    "on_time": "On time",
+    "late": "Late {{minutes}} min"
+  },
+  "safety": {
+    "valid": "Briefing valid",
+    "missing": "Briefing missing",
+    "not_required": "No briefing needed"
+  },
+  "action": {
+    "check_in": "Check in",
+    "check_out": "Check out",
+    "walk_in": "Walk-in",
+    "turn_away": "Turn away"
+  },
+  "as_of": "As of",
+  "offline": "Offline: every action is disabled until the connection returns. Nothing is queued.",
+  "check_in": {
+    "title": "Check in {{carrier}}",
+    "slot": "Slot",
+    "plate_seen": "Plate as seen",
+    "arrival": "Arrival",
+    "tolerance": "Early tolerance {{early}} min, grace {{grace}} min.",
+    "walk_in_no_slot": "Walk-in: no slot to be punctual for.",
+    "safety_title": "Safety briefing",
+    "safety_valid": "Every briefing of this site is linked and valid.",
+    "safety_blocked": "This site requires a valid briefing before check-in. Link one the driver already did, or run it on this device.",
+    "safety_warn": "No valid briefing is linked. You can still check in.",
+    "driver_name": "Find by driver name",
+    "find": "Find",
+    "no_candidates": "No valid briefing found for this name.",
+    "candidate": "{{instruction}}, done {{date}}",
+    "link": "Link",
+    "start_briefing": "Start briefing here",
+    "briefing_opened": "The briefing opened in a new tab. Hand the tablet to the driver, then refresh the status.",
+    "refresh": "Refresh status",
+    "turn_away_title": "Turn away instead",
+    "choose_reason": "Choose a reason",
+    "cancel": "Cancel",
+    "check_in_now": "Check in now",
+    "blocked": "Check-in is disabled until a valid briefing is linked.",
+    "done": "{{carrier}} is checked in.",
+    "turned_away": "{{carrier}} was turned away."
+  },
+  "walk_in": {
+    "title": "Walk-in: truck without a booking",
+    "description": "Hours and capacity never block a truck at the gate. The plan board shows it over capacity.",
+    "carrier": "Carrier",
+    "load_type": "Load type",
+    "reference_type": "Reference type",
+    "load_type_unavailable": "No resource of this site takes this load type.",
+    "choose": "Choose…",
+    "check_in_now": "Check in now",
+    "turn_away": "Turn away",
+    "safety_missing": "Briefing missing: the truck stays on the expected list until a briefing is linked.",
+    "done": "Walk-in {{carrier}} recorded."
+  },
+  "check_out": {
+    "title": "Check out {{carrier}}",
+    "description": "The driver link expires a few hours after departure.",
+    "reason": "Reason for leaving before loading is done",
+    "confirm": "Check out",
+    "done": "{{carrier}} has left."
+  }
+}

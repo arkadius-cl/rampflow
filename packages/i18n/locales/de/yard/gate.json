@@ -1,0 +1,98 @@
+{
+  "search": {
+    "label": "Buchung finden",
+    "placeholder": "QR scannen oder Code, Kennzeichen, Referenz, Spedition eingeben",
+    "results": "Suchergebnisse für „{{q}}“",
+    "none": "Keine Buchung für „{{q}}“ gefunden.",
+    "clear": "Suche leeren"
+  },
+  "tab": {
+    "expected": "Erwartet",
+    "onsite": "Auf dem Hof",
+    "departed": "Abgefahren"
+  },
+  "list": {
+    "expected": "Erwartete Lkw",
+    "onsite": "Lkw auf dem Hof",
+    "departed": "Abgefahren und abgewiesen"
+  },
+  "empty": {
+    "expected": "Heute werden keine Lkw mehr erwartet.",
+    "onsite": "Keine Lkw auf dem Hof.",
+    "departed": "Heute ist noch kein Lkw abgefahren."
+  },
+  "row": {
+    "no_plate": "kein Kennzeichen",
+    "units": "{{count}} Ladeeinheiten",
+    "on_site": "Auf dem Hof seit {{minutes}} Min.",
+    "waiting": "Wartet {{minutes}} Min.",
+    "standgeld": "Standgeld: über {{minutes}} Min.",
+    "dock": "Rampe {{dock}}, {{hall}}",
+    "walk_in": "Ohne Buchung"
+  },
+  "punctuality": {
+    "early": "{{minutes}} Min. zu früh",
+    "on_time": "Pünktlich",
+    "late": "{{minutes}} Min. zu spät"
+  },
+  "safety": {
+    "valid": "Unterweisung gültig",
+    "missing": "Unterweisung fehlt",
+    "not_required": "Keine Unterweisung nötig"
+  },
+  "action": {
+    "check_in": "Einchecken",
+    "check_out": "Auschecken",
+    "walk_in": "Ohne Buchung",
+    "turn_away": "Abweisen"
+  },
+  "as_of": "Stand",
+  "offline": "Offline: Alle Aktionen sind gesperrt, bis die Verbindung zurück ist. Nichts wird zwischengespeichert.",
+  "check_in": {
+    "title": "{{carrier}} einchecken",
+    "slot": "Zeitfenster",
+    "plate_seen": "Kennzeichen laut Sichtprüfung",
+    "arrival": "Ankunft",
+    "tolerance": "Früh-Toleranz {{early}} Min., Kulanz {{grace}} Min.",
+    "walk_in_no_slot": "Ohne Buchung: kein Zeitfenster für die Pünktlichkeit.",
+    "safety_title": "Sicherheitsunterweisung",
+    "safety_valid": "Alle Unterweisungen dieses Standorts sind verknüpft und gültig.",
+    "safety_blocked": "Dieser Standort verlangt vor dem Einchecken eine gültige Unterweisung. Verknüpfen Sie eine, die der Fahrer schon gemacht hat, oder führen Sie sie auf diesem Gerät durch.",
+    "safety_warn": "Keine gültige Unterweisung verknüpft. Einchecken ist trotzdem möglich.",
+    "driver_name": "Nach Fahrername suchen",
+    "find": "Suchen",
+    "no_candidates": "Keine gültige Unterweisung für diesen Namen gefunden.",
+    "candidate": "{{instruction}}, erledigt am {{date}}",
+    "link": "Verknüpfen",
+    "start_briefing": "Unterweisung hier starten",
+    "briefing_opened": "Die Unterweisung ist in einem neuen Tab geöffnet. Geben Sie das Tablet dem Fahrer und aktualisieren Sie danach den Status.",
+    "refresh": "Status aktualisieren",
+    "turn_away_title": "Stattdessen abweisen",
+    "choose_reason": "Grund wählen",
+    "cancel": "Abbrechen",
+    "check_in_now": "Jetzt einchecken",
+    "blocked": "Einchecken ist gesperrt, bis eine gültige Unterweisung verknüpft ist.",
+    "done": "{{carrier}} ist eingecheckt.",
+    "turned_away": "{{carrier}} wurde abgewiesen."
+  },
+  "walk_in": {
+    "title": "Lkw ohne Buchung",
+    "description": "Öffnungszeiten und Kapazität halten einen Lkw am Tor nie auf. Die Plantafel zeigt ihn als Überbuchung.",
+    "carrier": "Spedition",
+    "load_type": "Ladungsart",
+    "reference_type": "Referenzart",
+    "load_type_unavailable": "Keine Ressource dieses Standorts nimmt diese Ladungsart an.",
+    "choose": "Auswählen…",
+    "check_in_now": "Jetzt einchecken",
+    "turn_away": "Abweisen",
+    "safety_missing": "Unterweisung fehlt: Der Lkw bleibt in der Liste der erwarteten Lkw, bis eine Unterweisung verknüpft ist.",
+    "done": "Lkw ohne Buchung {{carrier}} erfasst."
+  },
+  "check_out": {
+    "title": "{{carrier}} auschecken",
+    "description": "Der Fahrerlink läuft einige Stunden nach der Abfahrt ab.",
+    "reason": "Grund für die Abfahrt vor Ladeende",
+    "confirm": "Auschecken",
+    "done": "{{carrier}} ist abgefahren."
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "queue": {
+    "title": "Waiting in the yard",
+    "empty": "No trucks waiting.",
+    "waiting": "{{minutes}} min",
+    "waiting_label": "waiting",
+    "slot": "Slot"
+  },
+  "dock": {
+    "free": "Free",
+    "maintenance": "Maintenance",
+    "since": "since",
+    "zone": {
+      "ambient": "Ambient",
+      "chilled": "Chilled",
+      "frozen": "Frozen"
+    },
+    "adr": "ADR",
+    "call_driver": "Call driver {{phone}}"
+  },
+  "progress": {
+    "at_dock": "At dock",
+    "loading": "Loading",
+    "done": "Done",
+    "uncall": "Cancel call"
+  },
+  "call": {
+    "title": "Call {{carrier}} to a dock",
+    "pool": "Pool booking on {{resource}}. Free member docks are suggested.",
+    "single": "Single-dock booking on {{resource}}.",
+    "docks": "Dock",
+    "suggested": "suggested",
+    "other": "other",
+    "outside": "{{dock}} is not in {{resource}}. The call still works.",
+    "cancel": "Cancel",
+    "confirm": "Call to {{dock}}",
+    "confirm_none": "Call to dock",
+    "done": "{{carrier}} called to {{dock}}."
+  },
+  "complete": {
+    "title": "Loading done: {{carrier}}",
+    "actual_units": "Actual load units",
+    "announced": "Announced: {{count}}",
+    "note": "Discrepancy note",
+    "confirm": "Done"
+  },
+  "empty": "This site has no docks yet."
+}

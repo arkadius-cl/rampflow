@@ -1,0 +1,48 @@
+{
+  "queue": {
+    "title": "Czekają na placu",
+    "empty": "Żadna ciężarówka nie czeka.",
+    "waiting": "{{minutes}} min",
+    "waiting_label": "oczekiwania",
+    "slot": "Okno czasowe"
+  },
+  "dock": {
+    "free": "Wolna",
+    "maintenance": "Konserwacja",
+    "since": "od",
+    "zone": {
+      "ambient": "Temperatura otoczenia",
+      "chilled": "Chłodnia",
+      "frozen": "Mroźnia"
+    },
+    "adr": "ADR",
+    "call_driver": "Zadzwoń do kierowcy: {{phone}}"
+  },
+  "progress": {
+    "at_dock": "Przy rampie",
+    "loading": "Załadunek",
+    "done": "Gotowe",
+    "uncall": "Cofnij wezwanie"
+  },
+  "call": {
+    "title": "Wezwij {{carrier}} do rampy",
+    "pool": "Rezerwacja w puli {{resource}}. Proponowane są wolne rampy z puli.",
+    "single": "Rezerwacja na pojedynczą rampę {{resource}}.",
+    "docks": "Rampa",
+    "suggested": "proponowana",
+    "other": "inna",
+    "outside": "{{dock}} nie należy do {{resource}}. Wezwanie i tak zadziała.",
+    "cancel": "Anuluj",
+    "confirm": "Wezwij do {{dock}}",
+    "confirm_none": "Wezwij do rampy",
+    "done": "{{carrier}} wezwany do {{dock}}."
+  },
+  "complete": {
+    "title": "Załadunek zakończony: {{carrier}}",
+    "actual_units": "Rzeczywista liczba jednostek ładunkowych",
+    "announced": "Awizowano: {{count}}",
+    "note": "Opis rozbieżności",
+    "confirm": "Gotowe"
+  },
+  "empty": "Ta lokalizacja nie ma jeszcze ramp."
+}

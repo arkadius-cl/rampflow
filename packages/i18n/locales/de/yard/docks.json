@@ -1,0 +1,48 @@
+{
+  "queue": {
+    "title": "Wartend auf dem Hof",
+    "empty": "Kein Lkw wartet.",
+    "waiting": "{{minutes}} Min.",
+    "waiting_label": "Wartezeit",
+    "slot": "Zeitfenster"
+  },
+  "dock": {
+    "free": "Frei",
+    "maintenance": "Wartung",
+    "since": "seit",
+    "zone": {
+      "ambient": "Normaltemperatur",
+      "chilled": "Kühl",
+      "frozen": "Tiefkühl"
+    },
+    "adr": "ADR",
+    "call_driver": "Fahrer anrufen: {{phone}}"
+  },
+  "progress": {
+    "at_dock": "An der Rampe",
+    "loading": "Ladung läuft",
+    "done": "Fertig",
+    "uncall": "Aufruf zurücknehmen"
+  },
+  "call": {
+    "title": "{{carrier}} an eine Rampe rufen",
+    "pool": "Pool-Buchung auf {{resource}}. Freie Rampen des Pools sind vorgeschlagen.",
+    "single": "Buchung auf die Einzelrampe {{resource}}.",
+    "docks": "Rampe",
+    "suggested": "vorgeschlagen",
+    "other": "andere",
+    "outside": "{{dock}} gehört nicht zu {{resource}}. Der Aufruf funktioniert trotzdem.",
+    "cancel": "Abbrechen",
+    "confirm": "An {{dock}} rufen",
+    "confirm_none": "An Rampe rufen",
+    "done": "{{carrier}} an {{dock}} gerufen."
+  },
+  "complete": {
+    "title": "Ladung fertig: {{carrier}}",
+    "actual_units": "Tatsächliche Ladeeinheiten",
+    "announced": "Avisiert: {{count}}",
+    "note": "Abweichung",
+    "confirm": "Fertig"
+  },
+  "empty": "Dieser Standort hat noch keine Rampen."
+}

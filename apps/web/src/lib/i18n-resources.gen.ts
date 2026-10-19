@@ -32,7 +32,9 @@ import type safety_entitlements from '@rampflow/i18n/locales/en/safety/entitleme
 import type safety_nav from '@rampflow/i18n/locales/en/safety/nav.json';
 import type safety_register from '@rampflow/i18n/locales/en/safety/register.json';
 import type safety_settings from '@rampflow/i18n/locales/en/safety/settings.json';
+import type yard_docks from '@rampflow/i18n/locales/en/yard/docks.json';
 import type yard_entitlements from '@rampflow/i18n/locales/en/yard/entitlements.json';
+import type yard_gate from '@rampflow/i18n/locales/en/yard/gate.json';
 import type yard_nav from '@rampflow/i18n/locales/en/yard/nav.json';
 import type yard_settings from '@rampflow/i18n/locales/en/yard/settings.json';
 
@@ -91,7 +93,9 @@ export interface Resources {
     settings: typeof safety_settings;
   };
   yard: {
+    docks: typeof yard_docks;
     entitlements: typeof yard_entitlements;
+    gate: typeof yard_gate;
     nav: typeof yard_nav;
     settings: typeof yard_settings;
   };

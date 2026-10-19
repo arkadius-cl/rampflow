@@ -1,0 +1,98 @@
+{
+  "search": {
+    "label": "Znajdź rezerwację",
+    "placeholder": "Zeskanuj QR albo wpisz kod, numer rejestracyjny, referencję, przewoźnika",
+    "results": "Wyniki wyszukiwania dla „{{q}}”",
+    "none": "Nie znaleziono rezerwacji dla „{{q}}”.",
+    "clear": "Wyczyść wyszukiwanie"
+  },
+  "tab": {
+    "expected": "Oczekiwane",
+    "onsite": "Na placu",
+    "departed": "Odjechały"
+  },
+  "list": {
+    "expected": "Oczekiwane ciężarówki",
+    "onsite": "Ciężarówki na placu",
+    "departed": "Odjechały i odprawione"
+  },
+  "empty": {
+    "expected": "Dziś nie oczekuje się już ciężarówek.",
+    "onsite": "Brak ciężarówek na placu.",
+    "departed": "Dziś jeszcze nikt nie odjechał."
+  },
+  "row": {
+    "no_plate": "brak numeru",
+    "units": "Jednostki ładunkowe: {{count}}",
+    "on_site": "Na placu {{minutes}} min",
+    "waiting": "Czeka {{minutes}} min",
+    "standgeld": "Przestój: ponad {{minutes}} min",
+    "dock": "Rampa {{dock}}, {{hall}}",
+    "walk_in": "Bez rezerwacji"
+  },
+  "punctuality": {
+    "early": "Za wcześnie {{minutes}} min",
+    "on_time": "Punktualnie",
+    "late": "Spóźnienie {{minutes}} min"
+  },
+  "safety": {
+    "valid": "Instruktaż ważny",
+    "missing": "Brak instruktażu",
+    "not_required": "Instruktaż niewymagany"
+  },
+  "action": {
+    "check_in": "Zamelduj",
+    "check_out": "Wymelduj",
+    "walk_in": "Bez rezerwacji",
+    "turn_away": "Odpraw"
+  },
+  "as_of": "Stan na",
+  "offline": "Offline: wszystkie akcje są zablokowane do powrotu połączenia. Nic nie jest kolejkowane.",
+  "check_in": {
+    "title": "Zamelduj {{carrier}}",
+    "slot": "Okno czasowe",
+    "plate_seen": "Numer rejestracyjny według kontroli",
+    "arrival": "Przyjazd",
+    "tolerance": "Tolerancja przyjazdu przed czasem {{early}} min, karencja {{grace}} min.",
+    "walk_in_no_slot": "Bez rezerwacji: brak okna czasowego do oceny punktualności.",
+    "safety_title": "Instruktaż bezpieczeństwa",
+    "safety_valid": "Wszystkie instruktaże tej lokalizacji są powiązane i ważne.",
+    "safety_blocked": "Ta lokalizacja wymaga ważnego instruktażu przed zameldowaniem. Powiąż instruktaż, który kierowca już przeszedł, albo przeprowadź go na tym urządzeniu.",
+    "safety_warn": "Brak powiązanego ważnego instruktażu. Zameldowanie jest nadal możliwe.",
+    "driver_name": "Szukaj po nazwisku kierowcy",
+    "find": "Szukaj",
+    "no_candidates": "Nie znaleziono ważnego instruktażu dla tego nazwiska.",
+    "candidate": "{{instruction}}, ukończono {{date}}",
+    "link": "Powiąż",
+    "start_briefing": "Rozpocznij instruktaż tutaj",
+    "briefing_opened": "Instruktaż otworzył się w nowej karcie. Przekaż tablet kierowcy, a potem odśwież status.",
+    "refresh": "Odśwież status",
+    "turn_away_title": "Zamiast tego odpraw",
+    "choose_reason": "Wybierz powód",
+    "cancel": "Anuluj",
+    "check_in_now": "Zamelduj teraz",
+    "blocked": "Zameldowanie jest zablokowane do czasu powiązania ważnego instruktażu.",
+    "done": "{{carrier}} zameldowany.",
+    "turned_away": "{{carrier}} został odprawiony."
+  },
+  "walk_in": {
+    "title": "Ciężarówka bez rezerwacji",
+    "description": "Godziny otwarcia i przepustowość nigdy nie zatrzymują ciężarówki przy bramie. Plan pokazuje ją jako przekroczenie przepustowości.",
+    "carrier": "Przewoźnik",
+    "load_type": "Rodzaj ładunku",
+    "reference_type": "Rodzaj referencji",
+    "load_type_unavailable": "Żaden zasób tej lokalizacji nie przyjmuje tego rodzaju ładunku.",
+    "choose": "Wybierz…",
+    "check_in_now": "Zamelduj teraz",
+    "turn_away": "Odpraw",
+    "safety_missing": "Brak instruktażu: ciężarówka zostaje na liście oczekiwanych, dopóki instruktaż nie zostanie powiązany.",
+    "done": "Zarejestrowano ciężarówkę bez rezerwacji {{carrier}}."
+  },
+  "check_out": {
+    "title": "Wymelduj {{carrier}}",
+    "description": "Link dla kierowcy wygasa kilka godzin po odjeździe.",
+    "reason": "Powód odjazdu przed zakończeniem załadunku",
+    "confirm": "Wymelduj",
+    "done": "{{carrier}} odjechał."
+  }
+}
