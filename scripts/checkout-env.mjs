@@ -10,9 +10,14 @@
 // A worktree gets rampflow_<slug> and port block n: 3000+10n, 5173+10n, 5174+10n.
 // The e2e profile derives from the dev env: database <db>_e2e and every port +5, so e2e runs
 // never write to the dev database and never reuse a running `pnpm dev`.
+//
+// The dev profile serves the app on the LAN: APP_ORIGIN is http://<DEV_HOST>:<WEB_PORT>, where
+// DEV_HOST is the machine's LAN address unless set, and APP_EXTRA_ORIGINS lists its other
+// addresses. Both are computed on every run, never written, so a new DHCP lease needs no rewrite.
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
@@ -25,7 +30,6 @@ const CHECKOUT_KEYS = [
   'API_PORT',
   'WEB_PORT',
   'DRIVER_PORT',
-  'APP_ORIGIN',
   'DATABASE_URL',
   'MIGRATION_DATABASE_URL',
 ];
@@ -65,13 +69,10 @@ function databaseName(dir) {
 
 function envFor(dir, block) {
   const db = databaseName(dir);
-  const api = 3000 + 10 * block;
-  const web = 5173 + 10 * block;
   return {
-    API_PORT: String(api),
-    WEB_PORT: String(web),
+    API_PORT: String(3000 + 10 * block),
+    WEB_PORT: String(5173 + 10 * block),
     DRIVER_PORT: String(5174 + 10 * block),
-    APP_ORIGIN: `http://localhost:${web}`,
     DATABASE_URL: `postgres://${PG.app}@${PG.host}:${PG.port}/${db}`,
     MIGRATION_DATABASE_URL: `postgres://${PG.owner}@${PG.host}:${PG.port}/${db}`,
   };
@@ -118,16 +119,41 @@ function pickFreeBlock() {
   throw new Error('No free port block left; remove stale worktrees.');
 }
 
-/** process env, then `.env`, then the example file, then the checkout defaults. */
+/** Keys the dev profile computes on every run. Printed, never written to `.env`. */
+const RUNTIME_KEYS = ['DEV_HOST', 'APP_ORIGIN', 'APP_EXTRA_ORIGINS'];
+
+const PRIVATE_IPV4 = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
+
+function lanAddresses() {
+  return Object.values(networkInterfaces())
+    .flat()
+    .filter((a) => a?.family === 'IPv4' && !a.internal)
+    .map((a) => a.address);
+}
+
+/** The app's origin on the LAN, and every other address of this machine the browser may use. */
+function lanOrigins(env) {
+  const addresses = lanAddresses();
+  const host =
+    env.DEV_HOST || addresses.find((a) => PRIVATE_IPV4.test(a)) || addresses[0] || 'localhost';
+  const at = (h) => `http://${h}:${env.WEB_PORT}`;
+  const origin = process.env.APP_ORIGIN || at(host);
+  const extras = new Set(['localhost', '127.0.0.1', ...addresses].map(at));
+  extras.delete(origin);
+  return { DEV_HOST: host, APP_ORIGIN: origin, APP_EXTRA_ORIGINS: [...extras].join(',') };
+}
+
+/** process env, then the LAN origins, then `.env`, then the checkout defaults, then the example file. */
 function resolvedEnv() {
   const file = readEnvFile(envPath);
   const block = blockOf(file) ?? defaultBlock(root);
-  return {
+  const env = {
     ...readEnvFile(join(root, '.env.example')),
     ...envFor(root, block),
     ...file,
     ...process.env,
   };
+  return { ...env, ...lanOrigins(env), ...process.env };
 }
 
 const E2E_PORT_OFFSET = 5;
@@ -141,30 +167,37 @@ function e2eEnv(env) {
     return url.toString();
   };
   const web = shift('WEB_PORT');
+  const { DEV_HOST: _, ...rest } = env;
   return {
-    ...env,
+    ...rest,
     API_PORT: shift('API_PORT'),
     WEB_PORT: web,
     DRIVER_PORT: shift('DRIVER_PORT'),
     APP_ORIGIN: `http://localhost:${web}`,
+    APP_EXTRA_ORIGINS: '',
     DATABASE_URL: suffixed('DATABASE_URL'),
     MIGRATION_DATABASE_URL: suffixed('MIGRATION_DATABASE_URL'),
   };
 }
 
 function format(env) {
-  return CHECKOUT_KEYS.map((k) => `${k}=${env[k]}`).join('\n');
+  return [...CHECKOUT_KEYS, ...RUNTIME_KEYS]
+    .filter((k) => env[k] !== undefined)
+    .map((k) => `${k}=${env[k]}`)
+    .join('\n');
 }
 
 function write() {
   const file = readEnvFile(envPath);
   const block = blockOf(file) ?? pickFreeBlock();
   const merged = { ...readEnvFile(join(root, '.env.example')), ...file, ...envFor(root, block) };
-  const body = Object.entries(merged)
+  // An APP_ORIGIN from an older write would pin the browser origin to localhost.
+  const { APP_ORIGIN: _, APP_EXTRA_ORIGINS: __, ...kept } = merged;
+  const body = Object.entries(kept)
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
   writeFileSync(envPath, `# Written by scripts/checkout-env.mjs for ${basename(root)}.\n${body}\n`);
-  console.log(`Wrote ${envPath} (port block ${block})\n${format(merged)}`);
+  console.log(`Wrote ${envPath} (port block ${block})\n${format(resolvedEnv())}`);
 }
 
 function run(env, argv) {

@@ -1,4 +1,5 @@
 import type { ServerResponse } from 'node:http';
+import { isIP } from 'node:net';
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -9,6 +10,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 // the PWA and /api share one origin; production serves dist/ from the API at /d/.
 const port = (name: string, fallback: number) => Number(process.env[name] ?? fallback);
 const driverPort = port('DRIVER_PORT', 5174);
+// Dev listens on every interface so phones in the LAN can open it. Vite accepts IP addresses and
+// localhost; a DEV_HOST name (scripts/checkout-env.mjs) must be allowed by name.
+const devHost = process.env.DEV_HOST;
+const allowedHosts = devHost && !isIP(devHost) ? [devHost] : [];
 
 /** Links are `/d#<token>`; Vite serves only under `/d/`. The browser keeps the fragment. */
 const slashRedirect: Plugin = {
@@ -69,6 +74,8 @@ export default defineConfig({
     alias: [{ find: '@', replacement: path.resolve(import.meta.dirname, './src') }],
   },
   server: {
+    host: true,
+    allowedHosts,
     port: driverPort,
     strictPort: true,
     // The page runs on the web dev server's origin; hot reload talks to this server directly.
