@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectAccessible, seedWorld, signInWithPassword } from '../support/auth.ts';
+import { APP_ORIGIN, expectAccessible, seedWorld, signInWithPassword } from '../support/auth.ts';
 import { setPassword } from '../support/db.ts';
 import { latestEmailTo, linkIn } from '../support/mailpit.ts';
 
@@ -26,7 +26,11 @@ test.describe('CR-03 Sign in', () => {
     await expectAccessible(page);
   });
 
-  test('a magic link signs in once', async ({ page, request, browser }) => {
+  test('a magic link signs in once, after the holder confirms the account', async ({
+    page,
+    request,
+    browser,
+  }) => {
     const w = await seedWorld(request);
     const user = w.A.users.carrier_admin;
 
@@ -44,6 +48,11 @@ test.describe('CR-03 Sign in', () => {
     const fresh = await browser.newContext();
     const tab = await fresh.newPage();
     await tab.goto(path);
+    const proceed = tab.getByRole('button', { name: `Continue as ${user.email}` });
+    await expect(proceed).toBeVisible();
+    expect((await fresh.request.get('/api/me')).status()).toBe(401);
+    await expectAccessible(tab);
+    await proceed.click();
     await expect(tab).toHaveURL(new RegExp(`/c/${w.A.carrierId}(/|$)`));
     await fresh.close();
 
@@ -52,6 +61,31 @@ test.describe('CR-03 Sign in', () => {
     await second.goto(path);
     await expect(second.getByText('This link no longer works')).toBeVisible();
     await again.close();
+  });
+
+  test("opening another account's magic link leaves the signed-in session alone", async ({
+    page,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    const victim = w.A.users.dispatcher;
+    const attacker = w.A.users.carrier_admin;
+    await setPassword(victim.id, 'victim password 1');
+    await signInWithPassword(page, victim.email, 'victim password 1');
+    await expect(page).toHaveURL(new RegExp(`/t/${w.A.tenantId}`));
+
+    const sent = await request.post('/api/auth/magic-link', {
+      data: { email: attacker.email },
+      headers: { Origin: APP_ORIGIN },
+    });
+    expect(sent.status()).toBe(202);
+    const link = linkIn((await latestEmailTo(attacker.email)).text, '/auth/magic#');
+    await page.goto(new URL(link).pathname + new URL(link).hash);
+    await expect(page.getByRole('button', { name: `Continue as ${attacker.email}` })).toBeVisible();
+
+    const me = await page.request.get('/api/me');
+    expect(me.status()).toBe(200);
+    expect(((await me.json()) as { user: { email: string } }).user.email).toBe(victim.email);
   });
 
   test('a password reset sets the new password and ends every other session', async ({

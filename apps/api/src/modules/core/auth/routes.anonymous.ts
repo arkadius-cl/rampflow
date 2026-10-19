@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator';
 import {
   EmailLinkBody,
   LoginBody,
+  type MagicLinkInspect,
   ResetConfirmBody,
   TokenBody,
 } from '@rampflow/shared/modules/core/api.auth';
@@ -16,6 +17,7 @@ import { anonymousScope, userScope } from '../../../kernel/scopes.ts';
 import { onInvalid } from '../../../kernel/validate.ts';
 import { lockLoginKey, loginKey, recordLoginFailure } from './login-limit.ts';
 import { accountByEmail } from './lookup.ts';
+import { inspectMagicLink } from './magic-link.redeem.ts';
 import { dummyHash, verifyPassword } from './password.ts';
 import { redeemPasswordReset } from './password-reset.redeem.ts';
 import { endSession, startSession } from './sessions.ts';
@@ -104,6 +106,16 @@ export const anonymous = new Hono<AppEnv>()
     await sendLinkEmail('magic_link', c.req.valid('json'), c.var.clock.now());
     return c.body(null, 202);
   })
+  .post(
+    '/magic-link/inspect',
+    scoped(anonymousScope),
+    zValidator('json', TokenBody, onInvalid),
+    async (c) => {
+      const email = await inspectMagicLink(c.var.db, c.req.valid('json').token, c.var.clock.now());
+      if (!email) throw new ApiError('unauthorized', 'Invalid or expired link');
+      return c.json({ email } satisfies MagicLinkInspect, 200);
+    },
+  )
   .post(
     '/magic-link/exchange',
     scoped(anonymousScope),

@@ -186,6 +186,27 @@ describe('magic link (CR-03)', () => {
     expect(again.status).toBe(401);
   });
 
+  it('inspect names the account without signing in or using up the link', async () => {
+    const { request } = harness();
+    const a = await account(ownerDb());
+    await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
+    const token = await linkTokenTo(a.email, 'magic_link');
+    const seen = await request('POST', '/api/auth/magic-link/inspect', { body: { token } });
+    expect(seen.status).toBe(200);
+    expect(await seen.json()).toEqual({ email: a.email });
+    expect(sessionOf(seen)).toBeNull();
+    expect(await sessionsOf(a.id)).toBe(0);
+    const unknown = await request('POST', '/api/auth/magic-link/inspect', {
+      body: { token: 'x'.repeat(43) },
+    });
+    expect(unknown.status).toBe(401);
+    expect(
+      (await request('POST', '/api/auth/magic-link/exchange', { body: { token } })).status,
+    ).toBe(200);
+    const used = await request('POST', '/api/auth/magic-link/inspect', { body: { token } });
+    expect(used.status).toBe(401);
+  });
+
   it('expires after 15 minutes', async () => {
     const { request, clock } = harness();
     const a = await account(ownerDb());

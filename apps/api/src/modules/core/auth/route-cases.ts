@@ -38,6 +38,20 @@ export const accountCases = defineAccountCases([
   },
   {
     method: 'POST',
+    path: '/api/auth/magic-link/inspect',
+    credential: 'token',
+    singleUse: false,
+    arrange: async (_w, db) => {
+      const a = await account(db);
+      return {
+        actor: null,
+        body: { token: await authTokenFor(db, 'magic_link', a.id) },
+        otherToken: await authTokenFor(db, 'password_reset', a.id),
+      };
+    },
+  },
+  {
+    method: 'POST',
     path: '/api/auth/password-reset',
     credential: 'none',
     arrange: async (_w, db) => ({ actor: null, body: { email: (await account(db)).email } }),

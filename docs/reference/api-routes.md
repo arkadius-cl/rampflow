@@ -110,6 +110,7 @@ Unit U2. Router files in `apps/api/src/modules/core/`.
 | POST | `/api/auth/login` | anonymous | none | CR-03 | `{ email, password }` → 200 `{ ok }`; sets `rf_session`. A wrong password, an unknown, unverified or disabled email all answer the same 401; 429 `rate_limited` after 5 failures in 15 minutes for the email and client address |
 | POST | `/api/auth/logout` | user | member | CR-03 | 204; deletes the session and clears the cookie |
 | POST | `/api/auth/magic-link` | anonymous | none | CR-03 | `{ email, locale? }`; 202. Sends only to verified, enabled accounts, in `locale` (the page's language, default `de`); stops sending after 5 per hour per email |
+| POST | `/api/auth/magic-link/inspect` | anonymous | token | CR-03 | `{ token }` → 200 `{ email }` of the account the link signs in to, without using the link; 401 for an unknown, used or expired link. `/auth/magic` shows it and exchanges only after the holder clicks "Continue as" (login CSRF) |
 | POST | `/api/auth/magic-link/exchange` | anonymous | token | CR-03 | `{ token }` → 200 `{ ok }`; sets `rf_session`; single use, 15 minutes |
 | POST | `/api/auth/password-reset` | anonymous | none | CR-03 | `{ email, locale? }`; 202, as for the magic link (unverified accounts included) |
 | POST | `/api/auth/password-reset/confirm` | anonymous | token | CR-03 | `{ token, password }` → 200 `{ ok }`; sets the password, verifies the email, deletes every session of the user and signs this browser in; single use, 60 minutes |

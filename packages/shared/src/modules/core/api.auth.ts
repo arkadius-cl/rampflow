@@ -24,6 +24,11 @@ export type EmailLinkBody = z.infer<typeof EmailLinkBody>;
 export const TokenBody = z.object({ token: EmailToken });
 export type TokenBody = z.infer<typeof TokenBody>;
 
+/** The account a magic link signs in to, shown before the holder confirms (login CSRF). */
+export interface MagicLinkInspect {
+  email: string;
+}
+
 export const ResetConfirmBody = z.object({ token: EmailToken, password: Password });
 export type ResetConfirmBody = z.infer<typeof ResetConfirmBody>;
 

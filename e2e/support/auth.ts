@@ -4,7 +4,8 @@ import { type APIRequestContext, type BrowserContext, expect, type Page } from '
 // Seeding, sign-in and accessibility helpers shared by every staff spec. Units add their own
 // helpers in e2e/support/<unit>.ts.
 
-const APP_ORIGIN = process.env.APP_ORIGIN ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
+export const APP_ORIGIN =
+  process.env.APP_ORIGIN ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 
 export interface WorldUser {
   id: string;
