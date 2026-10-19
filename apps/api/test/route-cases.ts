@@ -9,7 +9,7 @@ import {
   permissionsFor,
   type Role,
 } from '@rampflow/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
 import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
 import { entitlementOverride } from '../src/modules/core/schema.ts';
@@ -236,22 +236,41 @@ async function expectError(res: Response, status: number, code: string): Promise
   return body.error?.code === code ? null : `expected code ${code}, got ${text.slice(0, 200)}`;
 }
 
-async function withOverride<T>(
+async function withFeaturesOff<T>(
   tenantId: TenantId,
-  key: string,
+  keys: readonly string[],
   updatedBy: UserId,
   fn: () => Promise<T>,
 ): Promise<T> {
+  if (keys.length === 0) return fn();
   const o = ownerDb();
-  await o.insert(entitlementOverride).values({ tenantId, key, value: wrapJson(false), updatedBy });
+  await o
+    .insert(entitlementOverride)
+    .values(keys.map((key) => ({ tenantId, key, value: wrapJson(false), updatedBy })));
   try {
     return await fn();
   } finally {
     await o
       .delete(entitlementOverride)
-      .where(and(eq(entitlementOverride.tenantId, tenantId), eq(entitlementOverride.key, key)));
+      .where(
+        and(eq(entitlementOverride.tenantId, tenantId), inArray(entitlementOverride.key, keys)),
+      );
   }
 }
+
+/** The feature named by a 403 `entitlement_required` body, or `null` for any other 403. */
+function requiredFeature(text: string): string | null {
+  const { error } = JSON.parse(text) as { error?: { code?: string; details?: { key?: string } } };
+  return error?.code === 'entitlement_required' ? (error.details?.key ?? 'a feature') : null;
+}
+
+const MODULE_FEATURES = new Set<string>(catalog.flatMap((m) => m.enabledBy ?? []));
+/** Implemented features that gate a route, not a whole module (`requireEntitlement`). */
+const ROUTE_FEATURES = catalog.flatMap((m) =>
+  Object.entries(m.entitlements)
+    .filter(([key, d]) => d.kind === 'feature' && !('reserved' in d) && !MODULE_FEATURES.has(key))
+    .map(([key]) => key),
+);
 
 /**
  * Runs the checks of ADR-0002 for one case and returns what failed. The control call as A's
@@ -354,17 +373,28 @@ export async function checkRouteCase(
   const features = [rc.entitlement, module?.enabledBy ?? null].filter((f) => f !== null);
   if (party !== 'platform') {
     for (const feature of features) {
-      const res = await withOverride(A.tenantId, feature, w.platformAdmin.id, () =>
+      const res = await withFeaturesOff(A.tenantId, [feature], w.platformAdmin.id, () =>
         call(actorOf(A, w, role), params),
       );
       report('entitlement', await expectError(res, 403, 'entitlement_required'));
     }
   }
 
-  // Control: the case's own actor reaches the handler.
-  const res = await call(actorOf(A, w, role), params);
-  if (res.status >= 400)
-    report('control', `${role} got ${res.status} ${(await res.text()).slice(0, 200)}`);
+  // Control: the case's own actor reaches the handler with every route feature off except the
+  // declared one, so a gate the case leaves out answers 403 here instead of passing unseen.
+  const undeclared = party === 'platform' ? [] : ROUTE_FEATURES.filter((f) => f !== rc.entitlement);
+  const res = await withFeaturesOff(A.tenantId, undeclared, w.platformAdmin.id, () =>
+    call(actorOf(A, w, role), params),
+  );
+  const text = await res.text();
+  const gate = res.status === 403 ? requiredFeature(text) : null;
+  if (gate) {
+    report(
+      'entitlement',
+      `answers 403 entitlement_required for ${gate}, but the case declares entitlement: ${rc.entitlement}`,
+    );
+  } else if (res.status >= 400)
+    report('control', `${role} got ${res.status} ${text.slice(0, 200)}`);
   return problems;
 }
 

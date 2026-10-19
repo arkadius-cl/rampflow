@@ -215,6 +215,16 @@ describe('the harness', () => {
     expect(await checks('no_entitlement', dockCase)).toEqual(['entitlement']);
   });
 
+  it('fails a case that leaves out the entitlement its route requires', async () => {
+    const undeclared = { ...dockCase, entitlement: null };
+    expect(await checkRouteCase(toyApp('none'), undeclared)).toEqual([
+      {
+        check: 'entitlement',
+        detail: expect.stringContaining('yard.call_to_dock'),
+      },
+    ]);
+  });
+
   it('fails a case whose actor never reaches the handler', async () => {
     const wrongActor = { ...dockCase, as: 'carrier_user' as const };
     expect(await checks('none', wrongActor)).toContain('control');

@@ -65,6 +65,8 @@ export const cases = defineRouteCases([
     ...base,
     method: 'POST',
     path: `${P}/versions/:versionId/publish`,
+    // The draft fixture has quiz questions, which only publish with safety.quiz on.
+    entitlement: 'safety.quiz',
     params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId }),
     body: () => ({ materialChange: false }),
   },

@@ -96,6 +96,7 @@ Every route in the tables below under `/api/t`, `/api/c`, `/api/platform` and `/
 2. **Foreign site**: for routes that take a site, hall, dock, resource, load type or booking, a gate operator limited to another site of the same tenant gets 404 (TN-01).
 3. **Missing permission**: 403 `forbidden`.
 4. **Entitlement off**: 403 `entitlement_required`.
+5. **Undeclared entitlement**: the control call runs with every implemented feature that gates routes rather than modules turned off, except the one the case declares. A 403 `entitlement_required` there means the route checks a feature its case leaves out, so a gate cannot exist without its entitlement test.
 
 Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has an account case (`defineAccountCases` in the same `route-cases.ts`, exported as `accountCases`) with its credential: `session`, `token` or `none`. The harness checks that a session route answers 401 without a session and with a driver cookie, and shows the same role in world B nothing of world A; that a token route answers 401 for an unknown token, a driver token and a token of another purpose, even with a session, and for a single-use token the second time; and that every control answer shows nothing of world B. `route-coverage.test.ts` fails for a route under these prefixes without an account case.
 
