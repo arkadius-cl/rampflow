@@ -20,7 +20,12 @@
     "quiz_incomplete": "Jede veröffentlichte Sprache braucht die vorgeschriebene Zahl an Quizfragen.",
     "duplicate_code": "Dieser Code wird an diesem Standort bereits verwendet.",
     "holiday_closure": "Dieser Tag ist als Feiertag geschlossen.",
-    "manual_closure": "Eine Schließung deckt diese Zeit bereits ab."
+    "manual_closure": "Eine Schließung deckt diese Zeit bereits ab.",
+    "not_offered": "Diese Startzeit wird nicht angeboten. Bitte eine der angezeigten Zeiten wählen.",
+    "safety_missing": "Für den Fahrer liegt noch keine gültige Sicherheitsunterweisung vor.",
+    "acknowledgement_invalid": "Dieser Unterweisungsnachweis gilt nicht für diesen Besuch.",
+    "dock_inactive": "Diese Rampe ist nicht aktiv.",
+    "not_due": "Dieser Schritt ist noch nicht fällig."
   },
   "limit_reached": "Das Limit Ihres Pakets ist erreicht.",
   "validation_failed": "Einige Felder brauchen Ihre Aufmerksamkeit.",
