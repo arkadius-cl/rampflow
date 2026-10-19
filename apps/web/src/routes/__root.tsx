@@ -6,7 +6,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 const Devtools = import.meta.env.DEV ? lazy(() => import('@/devtools')) : () => null;
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export interface RootContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RootContext>()({
   component: RootLayout,
 });
 
@@ -17,7 +21,7 @@ function RootLayout() {
     <TooltipProvider>
       <Outlet />
       <Toaster />
-      {isDesign ? null : (
+      {isDesign || import.meta.env.MODE === 'e2e' ? null : (
         <Suspense>
           <Devtools />
         </Suspense>

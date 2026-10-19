@@ -11,6 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DesignRouteRouteImport } from './routes/design/route'
+import { Route as InviteRouteImport } from './routes/invite'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlatformRouteRouteImport } from './routes/platform/route'
+import { Route as AuthMagicRouteImport } from './routes/auth/magic'
+import { Route as AuthResetRouteImport } from './routes/auth/reset'
+import { Route as COrgIdRouteRouteImport } from './routes/c/$orgId/route'
 import { Route as DesignIndexRouteImport } from './routes/design/index'
 import { Route as DesignBookingWizardRouteImport } from './routes/design/booking-wizard'
 import { Route as DesignCarrierBookingsRouteImport } from './routes/design/carrier-bookings'
@@ -21,6 +27,10 @@ import { Route as DesignMasterDataRouteImport } from './routes/design/master-dat
 import { Route as DesignPlanBoardRouteImport } from './routes/design/plan-board'
 import { Route as DesignPlatformAdminRouteImport } from './routes/design/platform-admin'
 import { Route as DesignSettingsRouteImport } from './routes/design/settings'
+import { Route as PlatformIndexRouteImport } from './routes/platform/index'
+import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
+import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
+import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -30,6 +40,36 @@ const IndexRoute = IndexRouteImport.update({
 const DesignRouteRoute = DesignRouteRouteImport.update({
   id: '/design',
   path: '/design',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformRouteRoute = PlatformRouteRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthMagicRoute = AuthMagicRouteImport.update({
+  id: '/auth/magic',
+  path: '/auth/magic',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const COrgIdRouteRoute = COrgIdRouteRouteImport.update({
+  id: '/c/$orgId',
+  path: '/c/$orgId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesignIndexRoute = DesignIndexRouteImport.update({
@@ -82,10 +122,37 @@ const DesignSettingsRoute = DesignSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => DesignRouteRoute,
 } as any)
+const PlatformIndexRoute = PlatformIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlatformRouteRoute,
+} as any)
+const TOrgIdRouteRoute = TOrgIdRouteRouteImport.update({
+  id: '/t/$orgId',
+  path: '/t/$orgId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const COrgIdIndexRoute = COrgIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => COrgIdRouteRoute,
+} as any)
+const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/design': typeof DesignRouteRouteWithChildren
+  '/platform': typeof PlatformRouteRouteWithChildren
+  '/invite': typeof InviteRoute
+  '/login': typeof LoginRoute
+  '/c/$orgId': typeof COrgIdRouteRouteWithChildren
+  '/t/$orgId': typeof TOrgIdRouteRouteWithChildren
+  '/auth/magic': typeof AuthMagicRoute
+  '/auth/reset': typeof AuthResetRoute
   '/design/booking-wizard': typeof DesignBookingWizardRoute
   '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
   '/design/dock': typeof DesignDockRoute
@@ -96,9 +163,16 @@ export interface FileRoutesByFullPath {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/design/': typeof DesignIndexRoute
+  '/platform/': typeof PlatformIndexRoute
+  '/c/$orgId/': typeof COrgIdIndexRoute
+  '/t/$orgId/': typeof TOrgIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
+  '/login': typeof LoginRoute
+  '/auth/magic': typeof AuthMagicRoute
+  '/auth/reset': typeof AuthResetRoute
   '/design/booking-wizard': typeof DesignBookingWizardRoute
   '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
   '/design/dock': typeof DesignDockRoute
@@ -109,11 +183,21 @@ export interface FileRoutesByTo {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/design': typeof DesignIndexRoute
+  '/platform': typeof PlatformIndexRoute
+  '/c/$orgId': typeof COrgIdIndexRoute
+  '/t/$orgId': typeof TOrgIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/design': typeof DesignRouteRouteWithChildren
+  '/platform': typeof PlatformRouteRouteWithChildren
+  '/invite': typeof InviteRoute
+  '/login': typeof LoginRoute
+  '/c/$orgId': typeof COrgIdRouteRouteWithChildren
+  '/t/$orgId': typeof TOrgIdRouteRouteWithChildren
+  '/auth/magic': typeof AuthMagicRoute
+  '/auth/reset': typeof AuthResetRoute
   '/design/booking-wizard': typeof DesignBookingWizardRoute
   '/design/carrier-bookings': typeof DesignCarrierBookingsRoute
   '/design/dock': typeof DesignDockRoute
@@ -124,12 +208,22 @@ export interface FileRoutesById {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/design/': typeof DesignIndexRoute
+  '/platform/': typeof PlatformIndexRoute
+  '/c/$orgId/': typeof COrgIdIndexRoute
+  '/t/$orgId/': typeof TOrgIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/design'
+    | '/platform'
+    | '/invite'
+    | '/login'
+    | '/c/$orgId'
+    | '/t/$orgId'
+    | '/auth/magic'
+    | '/auth/reset'
     | '/design/booking-wizard'
     | '/design/carrier-bookings'
     | '/design/dock'
@@ -140,9 +234,16 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/design/'
+    | '/platform/'
+    | '/c/$orgId/'
+    | '/t/$orgId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invite'
+    | '/login'
+    | '/auth/magic'
+    | '/auth/reset'
     | '/design/booking-wizard'
     | '/design/carrier-bookings'
     | '/design/dock'
@@ -153,10 +254,20 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/design'
+    | '/platform'
+    | '/c/$orgId'
+    | '/t/$orgId'
   id:
     | '__root__'
     | '/'
     | '/design'
+    | '/platform'
+    | '/invite'
+    | '/login'
+    | '/c/$orgId'
+    | '/t/$orgId'
+    | '/auth/magic'
+    | '/auth/reset'
     | '/design/booking-wizard'
     | '/design/carrier-bookings'
     | '/design/dock'
@@ -167,11 +278,21 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/design/'
+    | '/platform/'
+    | '/c/$orgId/'
+    | '/t/$orgId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DesignRouteRoute: typeof DesignRouteRouteWithChildren
+  PlatformRouteRoute: typeof PlatformRouteRouteWithChildren
+  InviteRoute: typeof InviteRoute
+  LoginRoute: typeof LoginRoute
+  COrgIdRouteRoute: typeof COrgIdRouteRouteWithChildren
+  TOrgIdRouteRoute: typeof TOrgIdRouteRouteWithChildren
+  AuthMagicRoute: typeof AuthMagicRoute
+  AuthResetRoute: typeof AuthResetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -188,6 +309,48 @@ declare module '@tanstack/react-router' {
       path: '/design'
       fullPath: '/design'
       preLoaderRoute: typeof DesignRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/magic': {
+      id: '/auth/magic'
+      path: '/auth/magic'
+      fullPath: '/auth/magic'
+      preLoaderRoute: typeof AuthMagicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset': {
+      id: '/auth/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$orgId': {
+      id: '/c/$orgId'
+      path: '/c/$orgId'
+      fullPath: '/c/$orgId'
+      preLoaderRoute: typeof COrgIdRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/design/': {
@@ -260,6 +423,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignSettingsRouteImport
       parentRoute: typeof DesignRouteRoute
     }
+    '/platform/': {
+      id: '/platform/'
+      path: '/'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof PlatformIndexRouteImport
+      parentRoute: typeof PlatformRouteRoute
+    }
+    '/t/$orgId': {
+      id: '/t/$orgId'
+      path: '/t/$orgId'
+      fullPath: '/t/$orgId'
+      preLoaderRoute: typeof TOrgIdRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$orgId/': {
+      id: '/c/$orgId/'
+      path: '/'
+      fullPath: '/c/$orgId/'
+      preLoaderRoute: typeof COrgIdIndexRouteImport
+      parentRoute: typeof COrgIdRouteRoute
+    }
+    '/t/$orgId/': {
+      id: '/t/$orgId/'
+      path: '/'
+      fullPath: '/t/$orgId/'
+      preLoaderRoute: typeof TOrgIdIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
   }
 }
 
@@ -293,9 +484,52 @@ const DesignRouteRouteWithChildren = DesignRouteRoute._addFileChildren(
   DesignRouteRouteChildren,
 )
 
+interface PlatformRouteRouteChildren {
+  PlatformIndexRoute: typeof PlatformIndexRoute
+}
+
+const PlatformRouteRouteChildren: PlatformRouteRouteChildren = {
+  PlatformIndexRoute: PlatformIndexRoute,
+}
+
+const PlatformRouteRouteWithChildren = PlatformRouteRoute._addFileChildren(
+  PlatformRouteRouteChildren,
+)
+
+interface COrgIdRouteRouteChildren {
+  COrgIdIndexRoute: typeof COrgIdIndexRoute
+}
+
+const COrgIdRouteRouteChildren: COrgIdRouteRouteChildren = {
+  COrgIdIndexRoute: COrgIdIndexRoute,
+}
+
+const COrgIdRouteRouteWithChildren = COrgIdRouteRoute._addFileChildren(
+  COrgIdRouteRouteChildren,
+)
+
+interface TOrgIdRouteRouteChildren {
+  TOrgIdIndexRoute: typeof TOrgIdIndexRoute
+}
+
+const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
+  TOrgIdIndexRoute: TOrgIdIndexRoute,
+}
+
+const TOrgIdRouteRouteWithChildren = TOrgIdRouteRoute._addFileChildren(
+  TOrgIdRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DesignRouteRoute: DesignRouteRouteWithChildren,
+  PlatformRouteRoute: PlatformRouteRouteWithChildren,
+  InviteRoute: InviteRoute,
+  LoginRoute: LoginRoute,
+  COrgIdRouteRoute: COrgIdRouteRouteWithChildren,
+  TOrgIdRouteRoute: TOrgIdRouteRouteWithChildren,
+  AuthMagicRoute: AuthMagicRoute,
+  AuthResetRoute: AuthResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

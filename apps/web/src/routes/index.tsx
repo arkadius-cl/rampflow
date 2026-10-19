@@ -1,72 +1,102 @@
-import { APP_NAME } from '@rampflow/shared';
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { BuildingIcon, ChevronRightIcon, TruckIcon, WrenchIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { AuthLayout } from '@/components/app-shell/auth-layout';
+import { homeOf } from '@/components/app-shell/nav';
+import { useSignOut, useSyncLocale } from '@/components/app-shell/user-menu';
+import { NavLink } from '@/components/shells/office-shell';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
+import { meQuery, requireMe } from '@/lib/access';
 
-const healthQuery = queryOptions({
-  queryKey: ['health'],
-  queryFn: async () => (await api.api.health.$get()).json(),
-  refetchInterval: 10_000,
-});
+// The org picker (ADR-0011): every membership of the signed-in user. With exactly one it goes
+// straight there. The org last opened on this device comes first.
+
+const LAST_ORG_KEY = 'rf_last_org';
+
+export const rememberOrg = (orgId: string) => localStorage.setItem(LAST_ORG_KEY, orgId);
+
+const KIND_ICON = { tenant: BuildingIcon, carrier: TruckIcon, platform: WrenchIcon } as const;
 
 export const Route = createFileRoute('/')({
-  component: HomePage,
+  beforeLoad: async ({ context, location }) => {
+    const me = await requireMe(context.queryClient, location.href);
+    const [only, ...more] = me.memberships;
+    if (only && more.length === 0) throw redirect({ href: homeOf(only), replace: true });
+  },
+  component: OrgPicker,
 });
 
-function HomePage() {
-  const health = useQuery(healthQuery);
-
-  return (
-    <main className="flex min-h-svh items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{APP_NAME}</CardTitle>
-          <CardDescription>Dock and yard management</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
-            <dt className="text-muted-foreground">API</dt>
-            <dd>
-              {health.isPending ? (
-                <Skeleton className="h-5 w-12" />
-              ) : (
-                <StatusBadge testId="api-status" ok={health.isSuccess}>
-                  {health.isSuccess ? 'ok' : 'unreachable'}
-                </StatusBadge>
-              )}
-            </dd>
-            <dt className="text-muted-foreground">Database</dt>
-            <dd>
-              {health.isPending ? (
-                <Skeleton className="h-5 w-12" />
-              ) : (
-                <StatusBadge testId="db-status" ok={health.data?.db === 'ok'}>
-                  {health.data?.db ?? 'unknown'}
-                </StatusBadge>
-              )}
-            </dd>
-          </dl>
-        </CardContent>
-      </Card>
-    </main>
-  );
+function ordered(memberships: MeResponse['memberships']) {
+  const last = localStorage.getItem(LAST_ORG_KEY);
+  return [...memberships].sort((a, b) => Number(b.orgId === last) - Number(a.orgId === last));
 }
 
-function StatusBadge({
-  ok,
-  testId,
-  children,
-}: {
-  ok: boolean;
-  testId: string;
-  children: React.ReactNode;
-}) {
+function OrgPicker() {
+  const { t } = useTranslation();
+  const { data: me } = useSuspenseQuery(meQuery);
+  const signOut = useSignOut();
+  useSyncLocale(me);
+  const last = localStorage.getItem(LAST_ORG_KEY);
   return (
-    <Badge data-testid={testId} variant={ok ? 'secondary' : 'destructive'}>
-      {children}
-    </Badge>
+    <AuthLayout
+      signedIn
+      title={t(($) => $.shell.picker.title)}
+      description={t(($) => $.shell.picker.signed_in_as, { name: me.user.name })}
+    >
+      {me.memberships.length === 0 ? (
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyTitle>{t(($) => $.shell.picker.none_title)}</EmptyTitle>
+            <EmptyDescription>{t(($) => $.shell.picker.none_description)}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {ordered(me.memberships).map((m) => {
+            const Icon = KIND_ICON[m.orgKind];
+            return (
+              <Item
+                key={m.orgId}
+                variant="outline"
+                render={<NavLink href={homeOf(m)} onClick={() => rememberOrg(m.orgId)} />}
+              >
+                <ItemMedia variant="icon">
+                  <Icon />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{m.orgName}</ItemTitle>
+                  <ItemDescription>
+                    {t(($) => $.shell.org_kind[m.orgKind])} · {t(($) => $.shell.roles[m.role])}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  {m.orgId === last ? (
+                    <Badge variant="secondary">{t(($) => $.shell.picker.last_used)}</Badge>
+                  ) : null}
+                  <ChevronRightIcon className="size-4" />
+                </ItemActions>
+              </Item>
+            );
+          })}
+        </div>
+      )}
+      <div className="mt-6 flex justify-end">
+        <Button variant="ghost" size="sm" onClick={() => signOut.mutate()}>
+          {t(($) => $.shell.sign_out)}
+        </Button>
+      </div>
+    </AuthLayout>
   );
 }

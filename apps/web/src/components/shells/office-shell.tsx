@@ -1,12 +1,7 @@
-import {
-  BuildingIcon,
-  CheckIcon,
-  ChevronsUpDownIcon,
-  LockIcon,
-  type LucideIcon,
-  SearchIcon,
-} from 'lucide-react';
-import { Fragment } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { BuildingIcon, CheckIcon, ChevronsUpDownIcon, LockIcon, SearchIcon } from 'lucide-react';
+import { type ComponentType, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Breadcrumb,
@@ -22,7 +17,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Kbd } from '@/components/ui/kbd';
@@ -54,11 +48,13 @@ export interface Membership {
   name: string;
   kind: OrgKind;
   role: string;
+  /** Where the org switcher goes for this org. */
+  href?: string;
 }
 
 export interface NavItem {
   label: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   href: string;
   active?: boolean;
   badge?: string;
@@ -80,16 +76,31 @@ export interface OfficeShellProps {
   /** Right side of the top bar: site picker, date, primary action. */
   toolbar?: React.ReactNode;
   user: { name: string; initials: string };
+  /** Items of the user menu in the sidebar footer (language, sign out). */
+  userMenu?: React.ReactNode;
+  /** The search button of the prototype; the MVP has no global search yet. */
+  search?: boolean;
   children: React.ReactNode;
   /** Remove the content padding for full-bleed screens such as the plan board. */
   flush?: boolean;
 }
 
-const orgKindLabel: Record<OrgKind, string> = {
-  tenant: 'Warehouse',
-  carrier: 'Carrier',
-  platform: 'Platform',
-};
+/** An anchor that navigates inside the SPA on a plain click and behaves like a link otherwise. */
+export function NavLink({ href, ...props }: React.ComponentProps<'a'> & { href: string }) {
+  const navigate = useNavigate();
+  return (
+    <a
+      href={href}
+      {...props}
+      onClick={(e) => {
+        props.onClick?.(e);
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        e.preventDefault();
+        void navigate({ href });
+      }}
+    />
+  );
+}
 
 export function OfficeShell({
   org,
@@ -98,9 +109,12 @@ export function OfficeShell({
   breadcrumbs,
   toolbar,
   user,
+  userMenu,
+  search = true,
   children,
   flush,
 }: OfficeShellProps) {
+  const { t } = useTranslation();
   return (
     <SidebarProvider data-density="compact" className="bg-canvas" defaultOpen={!flush}>
       <Sidebar collapsible="icon">
@@ -116,7 +130,7 @@ export function OfficeShell({
                   {group.items
                     .filter((item) => item.entitlement !== 'off')
                     .map((item) => (
-                      <NavEntry key={item.label} item={item} />
+                      <NavEntry key={item.href + item.label} item={item} />
                     ))}
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -126,18 +140,7 @@ export function OfficeShell({
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="group-data-[collapsible=icon]:p-0!">
-                <Avatar size="sm" className="rounded-md">
-                  <AvatarFallback className="rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                    {user.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left leading-tight">
-                  <span className="truncate text-sm font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-sidebar-foreground/70">{org.role}</span>
-                </div>
-                <ChevronsUpDownIcon className="ml-auto size-4 opacity-60" />
-              </SidebarMenuButton>
+              <UserButton user={user} role={org.role} menu={userMenu} />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -166,15 +169,17 @@ export function OfficeShell({
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-52 justify-start text-muted-foreground"
-            >
-              <SearchIcon />
-              Search
-              <Kbd className="ml-auto">⌘K</Kbd>
-            </Button>
+            {search ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-52 justify-start text-muted-foreground"
+              >
+                <SearchIcon />
+                {t(($) => $.shell.search)}
+                <Kbd className="ml-auto">⌘K</Kbd>
+              </Button>
+            ) : null}
             {toolbar}
           </div>
         </header>
@@ -186,7 +191,58 @@ export function OfficeShell({
   );
 }
 
+function UserButton({
+  user,
+  role,
+  menu,
+}: {
+  user: OfficeShellProps['user'];
+  role: string;
+  menu: React.ReactNode;
+}) {
+  const content = (
+    <>
+      <Avatar size="sm" className="rounded-md">
+        <AvatarFallback className="rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+          {user.initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="grid flex-1 text-left leading-tight">
+        <span className="truncate text-sm font-medium">{user.name}</span>
+        <span className="truncate text-xs text-sidebar-foreground/70">{role}</span>
+      </div>
+      <ChevronsUpDownIcon className="ml-auto size-4 opacity-60" />
+    </>
+  );
+  if (!menu) {
+    return (
+      <SidebarMenuButton size="lg" className="group-data-[collapsible=icon]:p-0!">
+        {content}
+      </SidebarMenuButton>
+    );
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <SidebarMenuButton
+            size="lg"
+            data-testid="user-menu"
+            className="group-data-[collapsible=icon]:p-0! data-[popup-open]:bg-sidebar-accent"
+          />
+        }
+      >
+        {content}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-60" align="start" side="top" sideOffset={4}>
+        {menu}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function NavEntry({ item }: { item: NavItem }) {
+  const { t } = useTranslation();
   const Icon = item.icon;
   if (item.entitlement === 'upsell') {
     return (
@@ -204,7 +260,9 @@ function NavEntry({ item }: { item: NavItem }) {
             <span>{item.label}</span>
             <LockIcon className="ml-auto size-3.5" />
           </TooltipTrigger>
-          <TooltipContent side="right">{item.upsellHint ?? 'Not in your package'}</TooltipContent>
+          <TooltipContent side="right">
+            {item.upsellHint ?? t(($) => $.shell.not_in_package)}
+          </TooltipContent>
         </Tooltip>
       </SidebarMenuItem>
     );
@@ -214,7 +272,7 @@ function NavEntry({ item }: { item: NavItem }) {
       <SidebarMenuButton
         isActive={item.active}
         tooltip={item.label}
-        render={<a href={item.href} aria-current={item.active ? 'page' : undefined} />}
+        render={<NavLink href={item.href} aria-current={item.active ? 'page' : undefined} />}
       >
         <Icon />
         <span>{item.label}</span>
@@ -225,6 +283,8 @@ function NavEntry({ item }: { item: NavItem }) {
 }
 
 function OrgSwitcher({ org, memberships }: { org: Membership; memberships: Membership[] }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -233,6 +293,7 @@ function OrgSwitcher({ org, memberships }: { org: Membership; memberships: Membe
             render={
               <SidebarMenuButton
                 size="lg"
+                data-testid="org-switcher"
                 className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
               />
             }
@@ -243,35 +304,35 @@ function OrgSwitcher({ org, memberships }: { org: Membership; memberships: Membe
             <div className="grid flex-1 text-left leading-tight">
               <span className="truncate text-sm font-semibold">{org.name}</span>
               <span className="truncate text-xs text-sidebar-foreground/70">
-                {orgKindLabel[org.kind]}
+                {t(($) => $.shell.org_kind[org.kind])}
               </span>
             </div>
             <ChevronsUpDownIcon className="ml-auto size-4 opacity-60" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64" align="start" side="bottom" sideOffset={4}>
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Your organisations
-            </DropdownMenuLabel>
             <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {t(($) => $.shell.your_orgs)}
+              </DropdownMenuLabel>
               {memberships.map((m) => (
-                <DropdownMenuItem key={m.id} className="gap-2">
+                <DropdownMenuItem
+                  key={m.id}
+                  className="gap-2"
+                  onClick={() => (m.href ? void navigate({ href: m.href }) : undefined)}
+                >
                   <div className="flex size-6 items-center justify-center rounded-sm border">
                     <BuildingIcon className="size-3.5" />
                   </div>
                   <div className="grid flex-1 leading-tight">
                     <span className="truncate text-sm">{m.name}</span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {orgKindLabel[m.kind]} · {m.role}
+                      {t(($) => $.shell.org_kind[m.kind])} · {m.role}
                     </span>
                   </div>
                   {m.id === org.id ? <CheckIcon className="size-4" /> : null}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-muted-foreground">
-              Sign out everywhere
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

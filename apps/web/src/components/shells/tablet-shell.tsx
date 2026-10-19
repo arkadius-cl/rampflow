@@ -1,16 +1,22 @@
 import { type LucideIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
+import type { ComponentType } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export interface TabletShellProps {
   /** Station label, for example "Gate" or "Docks". */
   station: string;
-  stationIcon: LucideIcon;
+  stationIcon: LucideIcon | ComponentType<{ className?: string }>;
   siteName: string;
+  /** Replaces the site name with a site picker. */
+  siteMenu?: React.ReactNode;
   /** Site-local clock and zone, for example "10:42" and "CET". */
   clock: string;
   zone: string;
   operator: string;
+  /** Replaces the operator button with a menu (other stations, language, sign out). */
+  userMenu?: React.ReactNode;
   online?: boolean;
   /** Tabs or filters rendered under the title row. */
   toolbar?: React.ReactNode;
@@ -28,14 +34,17 @@ export function TabletShell({
   station,
   stationIcon: StationIcon,
   siteName,
+  siteMenu,
   clock,
   zone,
   operator,
+  userMenu,
   online = true,
   toolbar,
   children,
   className,
 }: TabletShellProps) {
+  const { t } = useTranslation();
   return (
     <div
       data-density="touch"
@@ -48,7 +57,7 @@ export function TabletShell({
           </div>
           <div className="leading-tight">
             <div className="text-lg font-semibold">{station}</div>
-            <div className="text-sm text-muted-foreground">{siteName}</div>
+            {siteMenu ?? <div className="text-sm text-muted-foreground">{siteName}</div>}
           </div>
         </div>
         <div className="ml-auto flex items-center gap-5">
@@ -56,9 +65,10 @@ export function TabletShell({
             <div className="text-2xl font-semibold tabular-nums">
               {clock} <span className="text-base font-medium text-muted-foreground">{zone}</span>
             </div>
-            <div className="text-xs text-muted-foreground">Site time</div>
+            <div className="text-xs text-muted-foreground">{t(($) => $.shell.site_time)}</div>
           </div>
           <div
+            role="status"
             className={cn(
               'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium',
               online
@@ -67,11 +77,13 @@ export function TabletShell({
             )}
           >
             {online ? <WifiIcon className="size-4" /> : <WifiOffIcon className="size-4" />}
-            {online ? 'Live' : 'Offline'}
+            {online ? t(($) => $.shell.live) : t(($) => $.shell.offline)}
           </div>
-          <Button variant="outline" size="lg">
-            {operator}
-          </Button>
+          {userMenu ?? (
+            <Button variant="outline" size="lg">
+              {operator}
+            </Button>
+          )}
         </div>
       </header>
       {toolbar ? (
@@ -79,7 +91,7 @@ export function TabletShell({
           {toolbar}
         </div>
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 p-5">{children}</div>
+      <main className="flex min-h-0 flex-1 flex-col gap-4 p-5">{children}</main>
     </div>
   );
 }
