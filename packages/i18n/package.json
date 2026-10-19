@@ -1,0 +1,26 @@
+{
+  "name": "@rampflow/i18n",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./src/server.ts",
+    "./browser": "./src/browser.ts",
+    "./check": "./src/check.ts",
+    "./locales/*": "./locales/*"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rampflow/shared": "workspace:*",
+    "i18next": "26.5.2",
+    "i18next-resources-to-backend": "1.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}
