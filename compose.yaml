@@ -1,0 +1,33 @@
+name: rampflow
+
+services:
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_DB: rampflow
+      POSTGRES_USER: rampflow
+      POSTGRES_PASSWORD: rampflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rampflow -d rampflow"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.31.6
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:
