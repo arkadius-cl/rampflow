@@ -344,6 +344,20 @@ export function defineRouteCases(cases: readonly RouteCase[]): readonly RouteCas
 
 The harness (`checkRouteCase`) seeds fresh worlds A and B per case (each with two sites, a carrier and a rival carrier linked to the tenant, and one booking per carrier and site) and runs the foreign-org, rival-carrier, foreign-site, permission, entitlement and control checks of [ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md#leak-tests). `test/route-cases.test.ts` runs every case of every module; `route-coverage.test.ts` fails for a guarded route without a case and for a case that names no route. A case's `as: 'driver'` acts with the link of `A.bookings.own`.
 
+Routes under `/api/me`, `/api/auth` and `/api/public` export `accountCases` from the same file instead:
+
+```ts
+export interface AccountRouteCase {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+  credential: 'session' | 'token' | 'none';       // rf_session, a `token` in the body, or open
+  arrange: (world: World, db: OwnerDb) => Promise<{ actor: Actor; body?: unknown }>; // the control call
+}
+export function defineAccountCases(cases: readonly AccountRouteCase[]): readonly AccountRouteCase[];
+```
+
+`checkAccountCase` runs the anonymous, wrong-party and foreign-world checks of [API routes](api-routes.md#leak-permission-and-entitlement-tests); `route-coverage.test.ts` requires an account case for every route under those prefixes.
+
 ## Context endpoints
 
 | Endpoint | Body |
@@ -360,16 +374,35 @@ The response schemas live in `packages/shared/src/modules/core/api.context.ts` (
 ```ts
 // apps/web/src/lib/access.ts (U2)
 export function guard(req: { permission: PermissionKey; entitlement?: ImplementedFeatureKey }):
-  (opts: { context: RouterContext; params: { orgId?: string } }) => void;
-// Redirects to the area's "no access" page when the permission is missing, when the module of
-// the permission's prefix is off, or when the entitlement is off.
+  (opts: { context: Partial<AreaRouteContext> }) => void;
+// Renders the area's "no access" page in place of the screen (the URL stays) when the permission
+// is missing, when the module of the permission's prefix is off, or when the entitlement is off.
+// The area layout's beforeLoad puts { me, access } into the router context of every child route.
 
 export function useAccess(): {
+  area: 'tenant' | 'carrier' | 'platform';
+  orgId: string | null;
   can(permission: PermissionKey): boolean;
   has(feature: ImplementedFeatureKey): boolean;
   setting<K extends SettingKey>(key: K, siteId: string): SettingValue<K>;
 };
+
+// Query options of the context requests, and of GET /api/me.
+export const meQuery, tenantContextQuery(orgId), carrierContextQuery(orgId), platformContextQuery;
 ```
+
+Other pieces of the web shell (U2):
+
+| Piece | Where | Use |
+| --- | --- | --- |
+| `api`, `call()`, `ApiFailure` | `lib/api.ts` | `call(api.t[':orgId'].sites.$get({ param }))` returns the JSON body or throws `ApiFailure` with `code`, `reason`, `issues`. Failed queries and mutations toast `core:errors.<code>` (or `core:errors.conflict.<reason>`) unless `meta: { silent: true }`; a 401 goes to `/login?redirect=`. |
+| `queryKeys` | `lib/query-keys.ts` | Keys start with `[area, orgId]`: `['tenant', orgId, '<module>', ...]`. |
+| `siteTime`, `useSiteTime()` | `lib/time.ts` | `<SiteTime {...siteTime(instant, site.timeZone, locale)} />`: site wall clock with zone label, plus the viewer's time when it differs. Delegates to `formatSiteTime` once U4's time module lands. |
+| `useLocale()`, `applyLocale()` | `lib/i18n.ts` | UI language: the user's `locale`, else the tenant's `i18n.default_locale`, else this device's choice, else the browser's, else `de`. Keys are typed: `t(($) => $.auth.login.title)`. |
+| `useFragmentToken()`, `useExchangeOnce()` | `hooks/use-fragment-token.ts` | Token pages read `location.hash` once, strip it, and post the token exactly once. |
+| `applyServerIssues()`, `useFieldMessage()`, `errorText()` | `components/app-shell/form-errors.ts` | Puts 422 zod issues on form fields; field messages by zod issue code. |
+| `AuthLayout`, `AppShell`, `StationShell`, `NoAccess` | `components/app-shell/` | Area layouts render them; screens do not. |
+| `staticData.shell` | route option | `'station'` renders the tablet station layout: no sidebar, `?site=` (written from this device's last site or the first allowed one), site clock, live or offline pill. |
 
 ```ts
 // apps/web/src/routes/t/$orgId/gate/index.tsx (U9)

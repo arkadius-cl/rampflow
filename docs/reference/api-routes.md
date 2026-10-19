@@ -90,12 +90,14 @@ Lists that grow without bound (bookings, visits, acknowledgements, events) are c
 
 ### Leak, permission and entitlement tests
 
-Every route in the tables below except `/api/health`, `/api/auth/*` and `/api/test/*` has a route case ([Module contract](module-contract.md)). The harness checks:
+Every route in the tables below under `/api/t`, `/api/c`, `/api/platform` and `/api/driver` has a route case ([Module contract](module-contract.md)). The harness checks:
 
 1. **Foreign tenant, carrier or booking**: 404 or an empty list.
 2. **Foreign site**: for routes that take a site, hall, dock, resource, load type or booking, a gate operator limited to another site of the same tenant gets 404 (TN-01).
 3. **Missing permission**: 403 `forbidden`.
 4. **Entitlement off**: 403 `entitlement_required`.
+
+Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has an account case (`defineAccountCases` in the same `route-cases.ts`, exported as `accountCases`) with its credential: `session`, `token` or `none`. The harness checks that a session route answers 401 without a session and with a driver cookie, and shows the same role in world B nothing of world A; that a token route answers 401 for an unknown token and for a driver token, even with a session; and that every control answer shows nothing of world B. `route-coverage.test.ts` fails for a route under these prefixes without an account case.
 
 ## Auth, me and invitations
 
@@ -104,16 +106,16 @@ Unit U2. Router files in `apps/api/src/modules/core/`.
 | Method | Path | Party | Permission | Story | Notes |
 |---|---|---|---|---|---|
 | GET | `/api/health` | none | none | | U1 |
-| POST | `/api/auth/login` | anonymous | none | CR-03 | `{ email, password }`; sets `rf_session`; 429 after 5 failures |
-| POST | `/api/auth/logout` | user | member | CR-03 | |
-| POST | `/api/auth/magic-link` | anonymous | none | CR-03 | `{ email }`; 202 |
-| POST | `/api/auth/magic-link/exchange` | token | token | CR-03 | `{ token }`; sets `rf_session` |
-| POST | `/api/auth/password-reset` | anonymous | none | CR-03 | `{ email }`; 202 |
-| POST | `/api/auth/password-reset/confirm` | token | token | CR-03 | `{ token, password }`; revokes all sessions |
-| GET | `/api/me` | user | member | | memberships for the org picker |
-| PATCH | `/api/me` | user | member | | `{ name?, locale? }` |
-| POST | `/api/public/invitations/inspect` | token | token | PL-01, TN-01, CR-01, CR-04 | `{ token }` → org name, role, whether the email has an account |
-| POST | `/api/public/invitations/accept` | token, then user | token | PL-01, TN-01, CR-01, CR-04 | `{ token, name?, password? }`; a new user sets name and password, a signed-in user with the invited email just accepts |
+| POST | `/api/auth/login` | anonymous | none | CR-03 | `{ email, password }` → 200 `{ ok }`; sets `rf_session`. A wrong password, an unknown, unverified or disabled email all answer the same 401; 429 `rate_limited` after 5 failures in 15 minutes for the email and client address |
+| POST | `/api/auth/logout` | user | member | CR-03 | 204; deletes the session and clears the cookie |
+| POST | `/api/auth/magic-link` | anonymous | none | CR-03 | `{ email, locale? }`; 202. Sends only to verified, enabled accounts, in `locale` (the page's language, default `de`); stops sending after 5 per hour per email |
+| POST | `/api/auth/magic-link/exchange` | anonymous | token | CR-03 | `{ token }` → 200 `{ ok }`; sets `rf_session`; single use, 15 minutes |
+| POST | `/api/auth/password-reset` | anonymous | none | CR-03 | `{ email, locale? }`; 202, as for the magic link (unverified accounts included) |
+| POST | `/api/auth/password-reset/confirm` | anonymous | token | CR-03 | `{ token, password }` → 200 `{ ok }`; sets the password, verifies the email, deletes every session of the user and signs this browser in; single use, 60 minutes |
+| GET | `/api/me` | user | member | | `{ user, memberships }` for the org picker ([Module contract](module-contract.md#context-endpoints)) |
+| PATCH | `/api/me` | user | member | | `{ name?, locale? }`; answers like GET |
+| POST | `/api/public/invitations/inspect` | token | token | PL-01, TN-01, CR-01, CR-04 | `{ token }` → `{ orgKind, orgName, role, email, hasAccount }`; 401 when unknown, used, revoked or expired |
+| POST | `/api/public/invitations/accept` | token, then the org | token | PL-01, TN-01, CR-01, CR-04 | `{ token, name?, password?, locale? }` → `{ orgId, orgKind }`. A user signed in with the invited email just joins. Otherwise an email with an account answers 401 with `reason: 'sign_in_required'`; a new user needs `name` and `password` (422 without) and gets a verified account and a session. Gate and dock site lists become `membership_site` rows. 409 `already_member` leaves the invitation pending. Service: `acceptInvitation` in `core/invitations/accept.redeem.ts` |
 | GET | `/api/t/:orgId/context` | tenant | member | | `core/context/routes.tenant.ts` |
 | GET | `/api/c/:orgId/context` | carrier | member | | `core/context/routes.carrier.ts` |
 | GET | `/api/platform/context` | platform | member | | `core/context/routes.platform.ts` |

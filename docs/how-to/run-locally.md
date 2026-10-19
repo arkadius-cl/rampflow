@@ -60,13 +60,30 @@ related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/dec
    - `db:migrate` applies `apps/api/drizzle/` as the owner role (`MIGRATION_DATABASE_URL`).
    - `db:reset` drops and recreates this checkout's development database and migrates it. It never touches another checkout's database.
 
-4. Create the first platform admin. There is no sign-up; this is the only way in.
+4. Load the demo data, or create only a platform admin.
+
+   ```sh
+   pnpm db:seed
+   ```
+
+   `db:seed` runs as the owner role and is idempotent: a second run converges to the same data and resets the demo passwords. It runs the seed modules listed in `apps/api/scripts/seed-dev.ts`, one file per module under `apps/api/scripts/seed/`. Every demo account uses the password `rampflow-demo`.
+
+   | Email | Org | Role |
+   |---|---|---|
+   | `admin@rampflow.local` | platform | `platform_admin` |
+   | `admin@acme.local` | Acme Logistics (tenant, package pro) | `tenant_admin` |
+   | `dispatch@acme.local` | Acme Logistics | `dispatcher` |
+   | `gate@acme.local` | Acme Logistics | `gate_operator` (all sites) |
+   | `dock@acme.local` | Acme Logistics | `dock_operator` (all sites) |
+   | `admin@trans-pol.local` | Trans-Pol Sp. z o.o. (carrier, linked to Acme) | `carrier_admin` |
+
+   For a real installation, create only the first platform admin. There is no sign-up; this is the only way in.
 
    ```sh
    pnpm admin:create --email ops@example.com --name "Ops"
    ```
 
-   The command runs as the owner role and is idempotent. The user signs in by magic link once U2 ships sign-in.
+   The user has no password and signs in by magic link from `/login` ("Email me a sign-in link"); the email lands in Mailpit in development.
 
 ## Run the apps
 
@@ -93,7 +110,8 @@ curl http://localhost:5173/api/health
 | `pnpm typecheck` | `tsc -b` in every package, plus the e2e folder. |
 | `pnpm test` | Vitest in every package. The API tests need Postgres and Mailpit. |
 | `pnpm docs:check` | Doc frontmatter, `docs/INDEX.md` and catalog table freshness. |
-| `pnpm verify` | `lint`, `typecheck`, `test` and `docs:check` in order. |
+| `pnpm i18n:derive` | Writes the derived label parts (`<module>/{nav,entitlements,settings}.json`) from the manifests and the typed i18n resources of `apps/web`. Run it after a manifest change or a new part file, then translate new labels. `--check` only reports. |
+| `pnpm verify` | `lint`, `typecheck`, `test`, `docs:check` and `i18n:derive --check` in order. |
 
 The API tests never touch the development database. Each run migrates a template database `<checkout database>_tpl`, and each Vitest worker clones it into `<checkout database>_test_<worker>`. Fixtures are written as the owner role; everything the system under test does, and every assertion about what a party sees, runs as `rampflow_app`.
 
@@ -103,7 +121,9 @@ The API tests never touch the development database. Each run migrates a template
 pnpm test:e2e
 ```
 
-This runs Playwright 1.64.1 inside the `mcr.microsoft.com/playwright:v1.64.1-noble` container with host networking and passes the checkout's ports and database URLs into it. Playwright starts the API and the web app itself, or reuses them if `pnpm dev` already runs. Pass spec paths to narrow the run.
+This runs Playwright 1.64.1 inside the `mcr.microsoft.com/playwright:v1.64.1-noble` container with host networking and passes the checkout's ports and database URLs into it. Playwright starts the API (with `ENABLE_TEST_ROUTES=1` and the job runner) and the web app (`vite --mode e2e`, without the dev tools overlay) itself. It reuses servers that already listen on the checkout's ports, so stop `pnpm dev` first unless it runs with `ENABLE_TEST_ROUTES=1`: the specs seed their data through `/api/test/seed`. Pass spec paths to narrow the run.
+
+Helpers live in `e2e/support/`: `seedWorld`, `signInAs` (sets a seeded user's session cookie), `signInWithPassword`, `expectAccessible` (axe, no serious or critical violation), `latestEmailTo` and `linkIn` (Mailpit), and owner-role fixtures in `db.ts`. A unit adds its own helpers in `e2e/support/<unit>.ts`.
 
 If Chromium runs on your host, you can run Playwright directly:
 
