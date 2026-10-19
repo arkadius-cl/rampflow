@@ -1,11 +1,12 @@
+import {
+  LOGO_MAX_BYTES,
+  LOGO_CONTENT_TYPES as LOGO_TYPES,
+} from '@rampflow/shared/modules/brand/api';
 import { sql } from 'drizzle-orm';
 import { check, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { bytea, createdAt, instant, type TenantId, type UserId } from '../../db/ids.ts';
 import { tenantPolicies } from '../../db/rls.ts';
 import { appUser, org } from '../core/schema.ts';
-
-export const LOGO_TYPES = ['image/png', 'image/jpeg'] as const;
-export const LOGO_MAX_BYTES = 262_144;
 
 /** The tenant's logo (TN-05), served under `/api/public/logos/:tenantId/:sha`. */
 export const tenantLogo = pgTable(
