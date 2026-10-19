@@ -756,6 +756,13 @@ The retention job (PL-05) applies these rules per tenant with the resolved `priv
 | `rate_limit_event`, used `auth_token` | delete after 24 hours | fixed |
 | `outbox_message` | the worker empties `payload` when it sends; delete sent or failed rows after 7 days | fixed |
 
+Interpretations as built (U11):
+
+- The visit rule deletes bookings by `starts_at` older than `privacy.retention.visit_days`, in any status.
+- Pseudonymized acknowledgements keep the row with `driver_name = ''`, because the column is `not null`.
+- A carrier user who is still the creator of a booking is anonymized and disabled instead of deleted. A carrier org still referenced by bookings or tenant links is kept without members.
+- Inactive carrier accounts get a `privacy.inactive-notice` email 30 days before deletion.
+
 TN-06 erase calls the same pseudonymization function for the matched bookings, and sets `restricted_at` on matched acknowledgements that are still under retention.
 
 As built (U11), in `apps/api/src/modules/privacy/retention/rules.ts` and `privacy/jobs/retention.ts`:

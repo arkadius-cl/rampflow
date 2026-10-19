@@ -64,7 +64,7 @@ Status: accepted, 2026-10-19.
 |---|---|---|---|
 | `outbox` | `notify/jobs/outbox.ts` | 5 s | Claims with `skip locked`; sent rows are skipped |
 | `no_show` | `booking/jobs/no-show.ts` | 60 s | Transitions only `confirmed` bookings past `starts_at + yard.no_show_after_minutes`, through `transitionBooking`; runs only for tenants whose `yard` module is on |
-| `reminders` | `notify/jobs/reminders.ts` | 5 min | `dedupe_key = reminder:<booking id>:<starts_at>`; a reschedule creates a new key. Only bookings created before `starts_at - notify.reminder_hours_before` get one, so a booking made inside the window gets no reminder right after its confirmation |
+| `reminders` | `notify/jobs/reminders.ts` | 5 min | `dedupe_key = reminder:<booking id>:<starts_at>:<hash of the recipient address>` (as built in U11: without the recipient hash only one of several carrier admins of a staff booking would get the reminder); a reschedule creates a new key. Only bookings created before `starts_at - notify.reminder_hours_before` get one, so a booking made inside the window gets no reminder right after its confirmation |
 | `holiday_import` | `booking/jobs/holiday-import.ts` | daily, and on site create or subdivision change | Upserts on `(site_id, holiday_date)` and never resurrects a reopened date |
 | `retention` | `privacy/jobs/retention.ts` | not scheduled in process | Each rule is a set-based update or delete on rows past their limit; a second run finds none |
 
