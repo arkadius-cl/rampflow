@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+coverage/
+playwright-report/
+test-results/
+.turbo/
+.vite/
+todo.md
+.DS_Store
