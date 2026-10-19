@@ -1,0 +1,172 @@
+{
+  "title": "Plantafel",
+  "toolbar": {
+    "site": "Standort",
+    "previous_day": "Vorheriger Tag",
+    "next_day": "Nächster Tag",
+    "choose_day": "Tag wählen, angezeigt: {{day}}",
+    "today": "Heute",
+    "view": "Ansicht",
+    "board": "Tafel",
+    "list": "Liste",
+    "legend": "Legende der Status",
+    "walk_in": "Ohne Buchung erfassen",
+    "new": "Neue Buchung"
+  },
+  "board": {
+    "pool": "Pool · bis {{n}} je Slot",
+    "single": "Einzelne Rampe",
+    "daily_cap": "max. {{n}} pro Tag",
+    "slot_load": "{{booked}} von {{capacity}} gebucht",
+    "units": "Einheiten: {{n}}",
+    "updated": "Plantafel aktualisiert",
+    "error": "Die Plantafel konnte nicht geladen werden."
+  },
+  "list": {
+    "caption": "Buchungen in {{site}} am {{day}}",
+    "slot": "Slot",
+    "carrier": "Spediteur",
+    "code": "Code",
+    "resource": "Ressource",
+    "units": "Einheiten",
+    "status": "Status",
+    "flags": "Hinweise",
+    "more": "Mehr anzeigen"
+  },
+  "empty": {
+    "no_sites_title": "Noch kein Standort",
+    "no_sites": "Ein Admin legt unter Standorte den ersten Standort an. Dann zeigt die Plantafel seinen Tag.",
+    "no_resources_title": "An diesem Standort ist nichts buchbar",
+    "no_resources": "Ein Admin legt zuerst Rampen und Pools für diesen Standort an.",
+    "closed_title": "An diesem Tag geschlossen",
+    "closed": "Der Standort hat an diesem Tag keine Öffnungszeiten und keine Buchungen.",
+    "no_bookings": "Keine Buchungen an diesem Tag."
+  },
+  "safety": {
+    "valid": "Unterweisung gültig",
+    "missing": "Unterweisung fehlt",
+    "not_required": "Keine Unterweisung nötig"
+  },
+  "punctuality_minutes": "{{label}} {{minutes}} Min.",
+  "actions": {
+    "open": "Buchung öffnen",
+    "reschedule": "Umbuchen",
+    "cancel": "Buchung stornieren",
+    "close": "Schließen",
+    "retry": "Erneut versuchen"
+  },
+  "detail": {
+    "label": "Buchungsdetails",
+    "slot": "Slot",
+    "to": "bis",
+    "resource": "Ressource",
+    "load": "Ladung",
+    "booked_by": "Gebucht von",
+    "party": {
+      "carrier": "Spediteur",
+      "staff": "Disposition"
+    },
+    "safety": "Sicherheitsunterweisung",
+    "safety_enforced": "Der Check-in wartet an diesem Standort auf eine gültige Unterweisung.",
+    "over_capacity": "Über Kapazität: Dieser Slot ist stärker belegt, als die Ressource erlaubt. Buchen Sie um oder behalten Sie die Buchung.",
+    "locked_on_site": "Nach dem Check-in sind Änderungen gesperrt. Es geht an den Tor- und Rampen-Bildschirmen weiter.",
+    "locked_closed": "Diese Buchung ist {{status}} und kann nicht mehr geändert werden.",
+    "timeline": "Verlauf",
+    "reason": "Grund: {{reason}}",
+    "moved_from": "Verschoben von",
+    "back": "Plantafel"
+  },
+  "sheet": {
+    "title": "Neue Buchung",
+    "description": "Buchen Sie einen Slot für einen Spediteur. Die Kapazität gilt, Vorlaufzeit und Buchungshorizont nicht.",
+    "carrier": "Spediteur",
+    "linked_carrier": "Verknüpfter Spediteur",
+    "other_carrier": "Andere Firma",
+    "carrier_name": "Name des Spediteurs",
+    "choose_carrier": "Spediteur wählen",
+    "other_carrier_hint": "Für einen Spediteur ohne Konto. Niemand erhält eine E-Mail.",
+    "load_type": "Ladungsart",
+    "date": "Datum",
+    "resource": "Ressource",
+    "any_resource": "Beliebige freie Ressource",
+    "start_time": "Startzeit",
+    "time_hint": "Startzeiten in {{zone}} · dauert {{minutes}} Minuten",
+    "choose_time": "Wählen Sie eine Startzeit.",
+    "force_title": "Diese Zeit ist voll",
+    "force_description": "Sie können über die Kapazität hinaus buchen. Der Grund steht im Verlauf.",
+    "force_denied": "Nur Nutzer mit dem Recht, über Kapazität zu buchen, können diese Zeit wählen.",
+    "force_reason": "Grund für die Buchung über Kapazität",
+    "force_reason_required": "Geben Sie einen Grund für die Buchung über Kapazität an.",
+    "avis": "Avis",
+    "submit": "Buchen",
+    "submit_force": "Über Kapazität buchen",
+    "created": "Buchung {{code}} angelegt"
+  },
+  "time": {
+    "full": "voll",
+    "closed_day": "An diesem Tag gibt es keine Startzeiten: Standort oder Ressource sind geschlossen."
+  },
+  "reschedule": {
+    "title": "{{code}} umbuchen",
+    "description": "Wählen Sie einen neuen Start. Die Kapazität wird ohne diese Buchung neu geprüft.",
+    "email_hint": "Der Spediteur erhält eine E-Mail zur Änderung.",
+    "submit": "Umbuchen",
+    "submit_force": "Über Kapazität umbuchen",
+    "done": "Buchung umgebucht"
+  },
+  "cancel": {
+    "title": "Buchung {{code}} stornieren?",
+    "description": "Der Slot ist sofort wieder frei. Der Spediteur erhält eine E-Mail.",
+    "reason": "Grund (optional)",
+    "keep": "Buchung behalten",
+    "confirm": "Buchung stornieren",
+    "done": "Buchung {{code}} storniert"
+  },
+  "avis": {
+    "edit": "Bearbeiten",
+    "save": "Avis speichern",
+    "discard": "Änderungen verwerfen",
+    "saved": "Avis gespeichert",
+    "unchanged": "Das gespeicherte Avis ist unverändert.",
+    "stale": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen, und bearbeiten Sie dann erneut.",
+    "none": "Kein Avis erfasst.",
+    "required_here": "An diesem Standort Pflicht",
+    "required_types": "Dieser Standort verlangt: {{types}}",
+    "reference_type": "Art der Referenz {{n}}",
+    "reference_value": "Referenz {{n}}",
+    "remove_reference": "Referenz {{n}} entfernen",
+    "add_reference": "Referenz hinzufügen",
+    "unit_type": "Art der Ladeeinheit {{n}}",
+    "unit_quantity": "Anzahl der Ladeeinheit {{n}}",
+    "unit_label": "Beschreibung der Ladeeinheit {{n}}",
+    "remove_unit": "Ladeeinheit {{n}} entfernen",
+    "add_unit": "Ladeeinheit hinzufügen",
+    "total_units": "Einheiten gesamt: {{n}}",
+    "vehicle": "Fahrzeug",
+    "country_hint": "Zwei Buchstaben, zum Beispiel PL für {{example}}",
+    "driver": "Fahrer",
+    "remove_dangerous_goods": "Gefahrgutzeile {{n}} entfernen",
+    "add_dangerous_goods": "Gefahrgutzeile hinzufügen",
+    "unknown": "Keine Angabe",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "driver_link": {
+    "title": "Fahrerlink",
+    "expires": "Gültig bis {{day}}",
+    "copy": "Link kopieren",
+    "copied": "Fahrerlink kopiert",
+    "regenerated": "Neuer Fahrerlink erzeugt; der alte funktioniert nicht mehr"
+  },
+  "validation": {
+    "required": "Pflichtfeld",
+    "required_here": "An diesem Standort Pflicht",
+    "reference_type": "Fügen Sie eine Referenz jeder Art hinzu, die dieser Standort verlangt.",
+    "plate": "Nur Buchstaben und Ziffern, 2 bis 15",
+    "country": "Zwei Großbuchstaben, zum Beispiel PL",
+    "number": "Geben Sie eine Zahl ein",
+    "positive": "Mindestens 1",
+    "too_big": "Zu lang oder zu groß",
+    "temperature_order": "Das Minimum ist höchstens das Maximum"
+  }
+}

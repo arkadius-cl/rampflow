@@ -7,6 +7,7 @@ import type booking_capacity from '@rampflow/i18n/locales/en/booking/capacity.js
 import type booking_entitlements from '@rampflow/i18n/locales/en/booking/entitlements.json';
 import type booking_lifecycle from '@rampflow/i18n/locales/en/booking/lifecycle.json';
 import type booking_nav from '@rampflow/i18n/locales/en/booking/nav.json';
+import type booking_plan from '@rampflow/i18n/locales/en/booking/plan.json';
 import type booking_settings from '@rampflow/i18n/locales/en/booking/settings.json';
 import type brand_entitlements from '@rampflow/i18n/locales/en/brand/entitlements.json';
 import type brand_nav from '@rampflow/i18n/locales/en/brand/nav.json';
@@ -50,6 +51,7 @@ export interface Resources {
     entitlements: typeof booking_entitlements;
     lifecycle: typeof booking_lifecycle;
     nav: typeof booking_nav;
+    plan: typeof booking_plan;
     settings: typeof booking_settings;
   };
   brand: {

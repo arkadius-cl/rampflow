@@ -31,8 +31,10 @@ import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
+import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
 import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
 import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
+import { Route as TOrgIdPlanIndexRouteImport } from './routes/t/$orgId/plan/index'
 import { Route as TOrgIdSafetyAcknowledgementsRouteImport } from './routes/t/$orgId/safety/acknowledgements'
 import { Route as TOrgIdSitesIndexRouteImport } from './routes/t/$orgId/sites/index'
 import { Route as TOrgIdSitesSiteIdRouteRouteImport } from './routes/t/$orgId/sites/$siteId/route'
@@ -152,6 +154,11 @@ const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const TOrgIdBookingsBookingIdRoute = TOrgIdBookingsBookingIdRouteImport.update({
+  id: '/bookings/$bookingId',
+  path: '/bookings/$bookingId',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdDocksIndexRoute = TOrgIdDocksIndexRouteImport.update({
   id: '/docks/',
   path: '/docks/',
@@ -160,6 +167,11 @@ const TOrgIdDocksIndexRoute = TOrgIdDocksIndexRouteImport.update({
 const TOrgIdGateIndexRoute = TOrgIdGateIndexRouteImport.update({
   id: '/gate/',
   path: '/gate/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
+const TOrgIdPlanIndexRoute = TOrgIdPlanIndexRouteImport.update({
+  id: '/plan/',
+  path: '/plan/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
 const TOrgIdSafetyAcknowledgementsRoute =
@@ -231,9 +243,11 @@ export interface FileRoutesByFullPath {
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
+  '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -260,9 +274,11 @@ export interface FileRoutesByTo {
   '/platform': typeof PlatformIndexRoute
   '/c/$orgId': typeof COrgIdIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
+  '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/plan': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/sites': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -295,9 +311,11 @@ export interface FileRoutesById {
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
+  '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/sites/': typeof TOrgIdSitesIndexRoute
   '/t/$orgId/safety/briefings/$instructionId': typeof TOrgIdSafetyBriefingsInstructionIdRoute
   '/t/$orgId/sites/$siteId/hours': typeof TOrgIdSitesSiteIdHoursRoute
@@ -331,9 +349,11 @@ export interface FileRouteTypes {
     | '/c/$orgId/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
+    | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
+    | '/t/$orgId/plan/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -360,9 +380,11 @@ export interface FileRouteTypes {
     | '/platform'
     | '/c/$orgId'
     | '/t/$orgId'
+    | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/docks'
     | '/t/$orgId/gate'
+    | '/t/$orgId/plan'
     | '/t/$orgId/sites'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -394,9 +416,11 @@ export interface FileRouteTypes {
     | '/c/$orgId/'
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
+    | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
+    | '/t/$orgId/plan/'
     | '/t/$orgId/sites/'
     | '/t/$orgId/safety/briefings/$instructionId'
     | '/t/$orgId/sites/$siteId/hours'
@@ -573,6 +597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/bookings/$bookingId': {
+      id: '/t/$orgId/bookings/$bookingId'
+      path: '/bookings/$bookingId'
+      fullPath: '/t/$orgId/bookings/$bookingId'
+      preLoaderRoute: typeof TOrgIdBookingsBookingIdRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/docks/': {
       id: '/t/$orgId/docks/'
       path: '/docks'
@@ -585,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/gate'
       fullPath: '/t/$orgId/gate/'
       preLoaderRoute: typeof TOrgIdGateIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
+    '/t/$orgId/plan/': {
+      id: '/t/$orgId/plan/'
+      path: '/plan'
+      fullPath: '/t/$orgId/plan/'
+      preLoaderRoute: typeof TOrgIdPlanIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
     '/t/$orgId/safety/acknowledgements': {
@@ -721,9 +759,11 @@ const TOrgIdSitesSiteIdRouteRouteWithChildren =
 interface TOrgIdRouteRouteChildren {
   TOrgIdIndexRoute: typeof TOrgIdIndexRoute
   TOrgIdSitesSiteIdRouteRoute: typeof TOrgIdSitesSiteIdRouteRouteWithChildren
+  TOrgIdBookingsBookingIdRoute: typeof TOrgIdBookingsBookingIdRoute
   TOrgIdSafetyAcknowledgementsRoute: typeof TOrgIdSafetyAcknowledgementsRoute
   TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
   TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
+  TOrgIdPlanIndexRoute: typeof TOrgIdPlanIndexRoute
   TOrgIdSitesIndexRoute: typeof TOrgIdSitesIndexRoute
   TOrgIdSafetyBriefingsInstructionIdRoute: typeof TOrgIdSafetyBriefingsInstructionIdRoute
   TOrgIdSafetyBriefingsIndexRoute: typeof TOrgIdSafetyBriefingsIndexRoute
@@ -732,9 +772,11 @@ interface TOrgIdRouteRouteChildren {
 const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdIndexRoute: TOrgIdIndexRoute,
   TOrgIdSitesSiteIdRouteRoute: TOrgIdSitesSiteIdRouteRouteWithChildren,
+  TOrgIdBookingsBookingIdRoute: TOrgIdBookingsBookingIdRoute,
   TOrgIdSafetyAcknowledgementsRoute: TOrgIdSafetyAcknowledgementsRoute,
   TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
   TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
+  TOrgIdPlanIndexRoute: TOrgIdPlanIndexRoute,
   TOrgIdSitesIndexRoute: TOrgIdSitesIndexRoute,
   TOrgIdSafetyBriefingsInstructionIdRoute:
     TOrgIdSafetyBriefingsInstructionIdRoute,

@@ -1,0 +1,172 @@
+{
+  "title": "Plan board",
+  "toolbar": {
+    "site": "Site",
+    "previous_day": "Previous day",
+    "next_day": "Next day",
+    "choose_day": "Choose a day, shown: {{day}}",
+    "today": "Today",
+    "view": "View",
+    "board": "Board",
+    "list": "List",
+    "legend": "Status legend",
+    "walk_in": "Walk-in now",
+    "new": "New booking"
+  },
+  "board": {
+    "pool": "Pool · up to {{n}} per slot",
+    "single": "Single dock",
+    "daily_cap": "cap {{n}} per day",
+    "slot_load": "{{booked}} of {{capacity}} booked",
+    "units": "Units: {{n}}",
+    "updated": "Board updated",
+    "error": "The board could not be loaded."
+  },
+  "list": {
+    "caption": "Bookings at {{site}} on {{day}}",
+    "slot": "Slot",
+    "carrier": "Carrier",
+    "code": "Code",
+    "resource": "Resource",
+    "units": "Units",
+    "status": "Status",
+    "flags": "Notes",
+    "more": "Show more"
+  },
+  "empty": {
+    "no_sites_title": "No site yet",
+    "no_sites": "An admin adds the first site under Sites. Then the plan board shows its day.",
+    "no_resources_title": "Nothing to book at this site",
+    "no_resources": "An admin adds docks and pools to this site first.",
+    "closed_title": "Closed on this day",
+    "closed": "The site has no opening hours and no bookings on this day.",
+    "no_bookings": "No bookings on this day."
+  },
+  "safety": {
+    "valid": "Briefing valid",
+    "missing": "Briefing missing",
+    "not_required": "No briefing required"
+  },
+  "punctuality_minutes": "{{label}} {{minutes}} min",
+  "actions": {
+    "open": "Open booking",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel booking",
+    "close": "Close",
+    "retry": "Try again"
+  },
+  "detail": {
+    "label": "Booking detail",
+    "slot": "Slot",
+    "to": "to",
+    "resource": "Resource",
+    "load": "Load",
+    "booked_by": "Booked by",
+    "party": {
+      "carrier": "Carrier",
+      "staff": "Staff"
+    },
+    "safety": "Safety briefing",
+    "safety_enforced": "Check-in waits for a valid briefing at this site.",
+    "over_capacity": "Over capacity: this slot holds more than the resource allows. Reschedule the booking or keep it.",
+    "locked_on_site": "Changes are locked after check-in. Yard actions continue on the gate and dock screens.",
+    "locked_closed": "This booking is {{status}} and cannot change any more.",
+    "timeline": "Timeline",
+    "reason": "Reason: {{reason}}",
+    "moved_from": "Moved from",
+    "back": "Plan board"
+  },
+  "sheet": {
+    "title": "New booking",
+    "description": "Book a slot for a carrier. Capacity applies; lead time and booking horizon do not.",
+    "carrier": "Carrier",
+    "linked_carrier": "Linked carrier",
+    "other_carrier": "Other company",
+    "carrier_name": "Carrier name",
+    "choose_carrier": "Choose a carrier",
+    "other_carrier_hint": "For a carrier without an account. Nobody gets an email.",
+    "load_type": "Load type",
+    "date": "Date",
+    "resource": "Resource",
+    "any_resource": "Any free resource",
+    "start_time": "Start time",
+    "time_hint": "Start times in {{zone}} · takes {{minutes}} minutes",
+    "choose_time": "Choose a start time.",
+    "force_title": "This time is full",
+    "force_description": "You can book over capacity. The reason goes into the event log.",
+    "force_denied": "Only users allowed to book over capacity can choose this time.",
+    "force_reason": "Reason for booking over capacity",
+    "force_reason_required": "Give a reason for booking over capacity.",
+    "avis": "Shipment details",
+    "submit": "Book",
+    "submit_force": "Book over capacity",
+    "created": "Booking {{code}} created"
+  },
+  "time": {
+    "full": "full",
+    "closed_day": "No start times on this day: the site or resource is closed."
+  },
+  "reschedule": {
+    "title": "Reschedule {{code}}",
+    "description": "Choose a new start. Capacity is checked again without counting this booking.",
+    "email_hint": "The carrier gets an email about the change.",
+    "submit": "Reschedule",
+    "submit_force": "Reschedule over capacity",
+    "done": "Booking rescheduled"
+  },
+  "cancel": {
+    "title": "Cancel booking {{code}}?",
+    "description": "The slot is free again at once. The carrier gets an email.",
+    "reason": "Reason (optional)",
+    "keep": "Keep booking",
+    "confirm": "Cancel booking",
+    "done": "Booking {{code}} cancelled"
+  },
+  "avis": {
+    "edit": "Edit",
+    "save": "Save shipment details",
+    "discard": "Discard changes",
+    "saved": "Shipment details saved",
+    "unchanged": "The stored shipment details are unchanged.",
+    "stale": "Reload the page to see the latest details, then edit again.",
+    "none": "No shipment details recorded.",
+    "required_here": "Required at this site",
+    "required_types": "This site requires: {{types}}",
+    "reference_type": "Reference {{n}} type",
+    "reference_value": "Reference {{n}}",
+    "remove_reference": "Remove reference {{n}}",
+    "add_reference": "Add reference",
+    "unit_type": "Load unit {{n}} type",
+    "unit_quantity": "Load unit {{n}} quantity",
+    "unit_label": "Load unit {{n}} description",
+    "remove_unit": "Remove load unit {{n}}",
+    "add_unit": "Add load unit",
+    "total_units": "Total units: {{n}}",
+    "vehicle": "Vehicle",
+    "country_hint": "Two letters, for example PL for {{example}}",
+    "driver": "Driver",
+    "remove_dangerous_goods": "Remove dangerous goods line {{n}}",
+    "add_dangerous_goods": "Add dangerous goods line",
+    "unknown": "Not specified",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "driver_link": {
+    "title": "Driver link",
+    "expires": "Valid until {{day}}",
+    "copy": "Copy link",
+    "copied": "Driver link copied",
+    "regenerated": "New driver link created; the old one no longer works"
+  },
+  "validation": {
+    "required": "Required",
+    "required_here": "Required at this site",
+    "reference_type": "Add a reference of each type this site requires.",
+    "plate": "Letters and digits only, 2 to 15",
+    "country": "Two capital letters, for example PL",
+    "number": "Enter a number",
+    "positive": "Enter at least 1",
+    "too_big": "Too long or too large",
+    "temperature_order": "The minimum is at most the maximum"
+  }
+}

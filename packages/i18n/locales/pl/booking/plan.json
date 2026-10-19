@@ -1,0 +1,172 @@
+{
+  "title": "Tablica planu",
+  "toolbar": {
+    "site": "Lokalizacja",
+    "previous_day": "Poprzedni dzień",
+    "next_day": "Następny dzień",
+    "choose_day": "Wybierz dzień, wyświetlany: {{day}}",
+    "today": "Dziś",
+    "view": "Widok",
+    "board": "Tablica",
+    "list": "Lista",
+    "legend": "Legenda statusów",
+    "walk_in": "Przyjmij bez rezerwacji",
+    "new": "Nowa rezerwacja"
+  },
+  "board": {
+    "pool": "Pula · do {{n}} na slot",
+    "single": "Pojedyncza rampa",
+    "daily_cap": "limit {{n}} dziennie",
+    "slot_load": "Zarezerwowano {{booked}} z {{capacity}}",
+    "units": "Jednostki: {{n}}",
+    "updated": "Tablica zaktualizowana",
+    "error": "Nie udało się wczytać tablicy."
+  },
+  "list": {
+    "caption": "Rezerwacje w {{site}}, {{day}}",
+    "slot": "Slot",
+    "carrier": "Przewoźnik",
+    "code": "Kod",
+    "resource": "Zasób",
+    "units": "Jednostki",
+    "status": "Status",
+    "flags": "Uwagi",
+    "more": "Pokaż więcej"
+  },
+  "empty": {
+    "no_sites_title": "Brak lokalizacji",
+    "no_sites": "Administrator dodaje pierwszą lokalizację w zakładce Lokalizacje. Potem tablica pokaże jej dzień.",
+    "no_resources_title": "W tej lokalizacji nie ma czego rezerwować",
+    "no_resources": "Administrator najpierw dodaje rampy i pule dla tej lokalizacji.",
+    "closed_title": "Zamknięte w tym dniu",
+    "closed": "Lokalizacja nie ma w tym dniu godzin otwarcia ani rezerwacji.",
+    "no_bookings": "Brak rezerwacji w tym dniu."
+  },
+  "safety": {
+    "valid": "Instruktaż ważny",
+    "missing": "Brak instruktażu",
+    "not_required": "Instruktaż niewymagany"
+  },
+  "punctuality_minutes": "{{label}} {{minutes}} min",
+  "actions": {
+    "open": "Otwórz rezerwację",
+    "reschedule": "Przełóż",
+    "cancel": "Anuluj rezerwację",
+    "close": "Zamknij",
+    "retry": "Spróbuj ponownie"
+  },
+  "detail": {
+    "label": "Szczegóły rezerwacji",
+    "slot": "Slot",
+    "to": "do",
+    "resource": "Zasób",
+    "load": "Ładunek",
+    "booked_by": "Zarezerwował(a)",
+    "party": {
+      "carrier": "Przewoźnik",
+      "staff": "Dyspozytor"
+    },
+    "safety": "Instruktaż bezpieczeństwa",
+    "safety_enforced": "W tej lokalizacji zameldowanie czeka na ważny instruktaż.",
+    "over_capacity": "Ponad przepustowość: ten slot ma więcej rezerwacji, niż pozwala zasób. Przełóż rezerwację albo ją zachowaj.",
+    "locked_on_site": "Po zameldowaniu zmiany są zablokowane. Dalsze kroki odbywają się na ekranach bramy i ramp.",
+    "locked_closed": "Ta rezerwacja ma status {{status}} i nie można jej już zmienić.",
+    "timeline": "Historia",
+    "reason": "Powód: {{reason}}",
+    "moved_from": "Przeniesiono z",
+    "back": "Tablica planu"
+  },
+  "sheet": {
+    "title": "Nowa rezerwacja",
+    "description": "Zarezerwuj slot dla przewoźnika. Obowiązuje przepustowość, nie obowiązują wyprzedzenie ani horyzont rezerwacji.",
+    "carrier": "Przewoźnik",
+    "linked_carrier": "Powiązany przewoźnik",
+    "other_carrier": "Inna firma",
+    "carrier_name": "Nazwa przewoźnika",
+    "choose_carrier": "Wybierz przewoźnika",
+    "other_carrier_hint": "Dla przewoźnika bez konta. Nikt nie dostanie e-maila.",
+    "load_type": "Rodzaj ładunku",
+    "date": "Data",
+    "resource": "Zasób",
+    "any_resource": "Dowolny wolny zasób",
+    "start_time": "Godzina rozpoczęcia",
+    "time_hint": "Godziny w strefie {{zone}} · trwa {{minutes}} minut",
+    "choose_time": "Wybierz godzinę rozpoczęcia.",
+    "force_title": "Ta godzina jest pełna",
+    "force_description": "Możesz zarezerwować ponad przepustowość. Powód trafi do historii.",
+    "force_denied": "Tę godzinę mogą wybrać tylko użytkownicy z prawem rezerwacji ponad przepustowość.",
+    "force_reason": "Powód rezerwacji ponad przepustowość",
+    "force_reason_required": "Podaj powód rezerwacji ponad przepustowość.",
+    "avis": "Awizacja",
+    "submit": "Zarezerwuj",
+    "submit_force": "Zarezerwuj ponad przepustowość",
+    "created": "Utworzono rezerwację {{code}}"
+  },
+  "time": {
+    "full": "pełne",
+    "closed_day": "Brak godzin w tym dniu: lokalizacja lub zasób są zamknięte."
+  },
+  "reschedule": {
+    "title": "Przełóż {{code}}",
+    "description": "Wybierz nowy termin. Przepustowość jest sprawdzana ponownie bez tej rezerwacji.",
+    "email_hint": "Przewoźnik dostanie e-mail o zmianie.",
+    "submit": "Przełóż",
+    "submit_force": "Przełóż ponad przepustowość",
+    "done": "Rezerwacja przełożona"
+  },
+  "cancel": {
+    "title": "Anulować rezerwację {{code}}?",
+    "description": "Slot od razu jest znowu wolny. Przewoźnik dostanie e-mail.",
+    "reason": "Powód (opcjonalnie)",
+    "keep": "Zachowaj rezerwację",
+    "confirm": "Anuluj rezerwację",
+    "done": "Anulowano rezerwację {{code}}"
+  },
+  "avis": {
+    "edit": "Edytuj",
+    "save": "Zapisz awizację",
+    "discard": "Odrzuć zmiany",
+    "saved": "Awizacja zapisana",
+    "unchanged": "Zapisana awizacja pozostała bez zmian.",
+    "stale": "Odśwież stronę, aby zobaczyć aktualne dane, i edytuj ponownie.",
+    "none": "Brak awizacji.",
+    "required_here": "Wymagane w tej lokalizacji",
+    "required_types": "Ta lokalizacja wymaga: {{types}}",
+    "reference_type": "Rodzaj referencji {{n}}",
+    "reference_value": "Referencja {{n}}",
+    "remove_reference": "Usuń referencję {{n}}",
+    "add_reference": "Dodaj referencję",
+    "unit_type": "Rodzaj jednostki ładunkowej {{n}}",
+    "unit_quantity": "Liczba jednostek ładunkowych {{n}}",
+    "unit_label": "Opis jednostki ładunkowej {{n}}",
+    "remove_unit": "Usuń jednostkę ładunkową {{n}}",
+    "add_unit": "Dodaj jednostkę ładunkową",
+    "total_units": "Jednostki łącznie: {{n}}",
+    "vehicle": "Pojazd",
+    "country_hint": "Dwie litery, na przykład PL dla kraju {{example}}",
+    "driver": "Kierowca",
+    "remove_dangerous_goods": "Usuń pozycję towarów niebezpiecznych {{n}}",
+    "add_dangerous_goods": "Dodaj pozycję towarów niebezpiecznych",
+    "unknown": "Nie podano",
+    "yes": "Tak",
+    "no": "Nie"
+  },
+  "driver_link": {
+    "title": "Link dla kierowcy",
+    "expires": "Ważny do {{day}}",
+    "copy": "Kopiuj link",
+    "copied": "Skopiowano link dla kierowcy",
+    "regenerated": "Utworzono nowy link dla kierowcy; stary już nie działa"
+  },
+  "validation": {
+    "required": "Pole wymagane",
+    "required_here": "Wymagane w tej lokalizacji",
+    "reference_type": "Dodaj referencję każdego rodzaju wymaganego w tej lokalizacji.",
+    "plate": "Tylko litery i cyfry, od 2 do 15",
+    "country": "Dwie wielkie litery, na przykład PL",
+    "number": "Wpisz liczbę",
+    "positive": "Co najmniej 1",
+    "too_big": "Za długie lub za duże",
+    "temperature_order": "Minimum nie może być większe niż maksimum"
+  }
+}
