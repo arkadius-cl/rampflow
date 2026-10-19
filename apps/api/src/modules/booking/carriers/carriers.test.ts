@@ -122,6 +122,7 @@ describe('CR-01 accept a carrier invitation', () => {
     });
     expect(await seen.json()).toEqual({
       tenantName: expect.stringMatching(/^Tenant A /),
+      logoUrl: null,
       companyName: 'Invited Spedition',
       email: inv.email,
       hasAccount: false,

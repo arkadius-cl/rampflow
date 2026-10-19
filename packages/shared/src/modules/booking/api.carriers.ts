@@ -156,10 +156,14 @@ export interface PublicLinkInfo {
   siteName: string;
   city: string;
   country: string;
+  /** The tenant's logo while `brand.logo` is on (TN-05). */
+  logoUrl: string | null;
 }
 
 export interface CarrierInvitationInspect {
   tenantName: string;
+  /** The tenant's logo while `brand.logo` is on (TN-05). */
+  logoUrl: string | null;
   companyName: string;
   email: string;
   /** An account with this email exists: the holder signs in, then accepts. */

@@ -6,6 +6,7 @@ import { type Scope, type Tx, withScope } from '../../../db/scope.ts';
 import { type Access, loadAccess } from '../../../kernel/access.ts';
 import type { Clock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
+import { currentLogoUrl } from '../../brand/logo/logo.ts';
 import { org, site } from '../../core/schema.ts';
 import { publicLink } from '../schema.carriers.ts';
 
@@ -160,7 +161,9 @@ export async function openPublicLink(
     .from(site)
     .where(and(eq(site.id, link.siteId), eq(site.tenantId, link.tenantId)));
   const [tenant] = await tx.select({ name: org.name }).from(org).where(eq(org.id, link.tenantId));
-  if (!enabled || !found?.active || !tenant) throw new ApiError('not_found');
+  if (!enabled || !found?.active || !tenant || !access.entitlements) {
+    throw new ApiError('not_found');
+  }
   return {
     access,
     info: {
@@ -168,6 +171,7 @@ export async function openPublicLink(
       siteName: found.name,
       city: found.city,
       country: found.country,
+      logoUrl: await currentLogoUrl(tx, link.tenantId, access.entitlements, ''),
     },
   };
 }

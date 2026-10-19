@@ -8,7 +8,13 @@ import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { accountByEmail } from '../../core/auth/lookup.ts';
 import { carrierInvitation } from '../schema.carriers.ts';
-import { carrierOfUser, linkAsTenant, redeemingUser, tenantName } from './carrier-org.redeem.ts';
+import {
+  carrierOfUser,
+  linkAsTenant,
+  redeemingUser,
+  tenantLogoUrl,
+  tenantName,
+} from './carrier-org.redeem.ts';
 
 // TN-03 and CR-01, the carrier side: /carrier-invite#<token>. Runs under the token scope of the
 // presented token; the claim is one guarded update (ADR-0002).
@@ -38,6 +44,7 @@ export async function inspectCarrierInvitation(
   const inv = await pending(tx, token, now);
   return {
     tenantName: await tenantName(tx, 'carrier_invitation', inv.tenantId),
+    logoUrl: await tenantLogoUrl(tx, 'carrier_invitation', inv.tenantId, now),
     companyName: inv.companyName,
     email: inv.email,
     hasAccount: (await accountByEmail(tx, inv.email)) !== null,

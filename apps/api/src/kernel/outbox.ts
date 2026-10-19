@@ -6,10 +6,15 @@ import type { TFunction } from 'i18next';
 import type { ReactElement } from 'react';
 import type { TenantId } from '../db/ids.ts';
 import { asScope, type Tx } from '../db/scope.ts';
+import { currentLogoUrl } from '../modules/brand/logo/logo.ts';
+import { org } from '../modules/core/schema.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
+import { loadEntitlements } from './access.ts';
 import type { Clock } from './clock.ts';
+import { type EmailBrand, withBrand } from './email-layout.tsx';
+import { env } from './env.ts';
 import type { Mailer } from './mailer.ts';
-import { systemScope } from './system.ts';
+import { systemActor, systemScope } from './system.ts';
 
 /**
  * Payload type per template id `<module>.<name>`. Each template file adds its entry:
@@ -116,6 +121,21 @@ export interface DeliverOptions {
 }
 
 /**
+ * The tenant's name and absolute logo URL while `brand.logo` is on (TN-05), read as the tenant:
+ * the system scope sees no logo or entitlements.
+ */
+function emailBrand(tx: Tx, tenantId: TenantId, now: Date): Promise<EmailBrand | null> {
+  const scope = { party: 'tenant', tenantId, siteIds: [], actor: systemActor('outbox') } as const;
+  return asScope(tx, scope, async (inner) => {
+    const entitlements = await loadEntitlements(inner, tenantId, now);
+    const logoUrl = await currentLogoUrl(inner, tenantId, entitlements, env.APP_ORIGIN);
+    if (!logoUrl) return null;
+    const [tenant] = await inner.select({ name: org.name }).from(org).where(eq(org.id, tenantId));
+    return { tenantName: tenant?.name ?? '', logoUrl };
+  });
+}
+
+/**
  * One worker tick (ADR-0010) inside the job's transaction: claim due rows with `skip locked`,
  * render, send, mark. A sent row keeps no payload.
  */
@@ -148,12 +168,16 @@ export function deliverOutbox({
         const template = await loadTemplate(row.template);
         const i18n = await createServerI18n(row.locale);
         const ns = row.template.split('.')[0] ?? 'core';
-        const { subject, body } = template.render(row.payload, i18n.getFixedT(row.locale, ns));
+        const rendered = template.render(row.payload, i18n.getFixedT(row.locale, ns));
+        const body = withBrand(
+          rendered.body,
+          row.tenantId ? await emailBrand(tx, row.tenantId, now) : null,
+        );
         const [html, text] = await Promise.all([
           renderEmail(body),
           renderEmail(body, { plainText: true }),
         ]);
-        await mailer.send({ to: row.toEmail, subject, html, text });
+        await mailer.send({ to: row.toEmail, subject: rendered.subject, html, text });
         await tx
           .update(outboxMessage)
           .set({ sentAt: now, attempts, lastError: null, payload: {} })

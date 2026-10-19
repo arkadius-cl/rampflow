@@ -3,8 +3,10 @@ import type { StaffLocale } from '@rampflow/shared';
 import { and, asc, eq } from 'drizzle-orm';
 import type { CarrierId, MembershipId, TenantId, UserId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
+import { loadEntitlements } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { systemActor } from '../../../kernel/system.ts';
+import { currentLogoUrl } from '../../brand/logo/logo.ts';
 import { accountByEmail } from '../../core/auth/lookup.ts';
 import { hashPassword } from '../../core/auth/password.ts';
 import { appUser, membership, org } from '../../core/schema.ts';
@@ -119,16 +121,27 @@ export function linkAsTenant(
   );
 }
 
+type RedeemJob = 'carrier_invitation' | 'registration';
+
+const asTenant = <T>(tx: Tx, job: RedeemJob, tenantId: TenantId, fn: (inner: Tx) => Promise<T>) =>
+  asScope(tx, { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) }, fn);
+
 /** The tenant's name, read as the tenant: the token party sees no org. */
-export async function tenantName(
-  tx: Tx,
-  job: 'carrier_invitation' | 'registration',
-  tenantId: TenantId,
-): Promise<string> {
-  const [row] = await asScope(
-    tx,
-    { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) },
-    (inner) => inner.select({ name: org.name }).from(org).where(eq(org.id, tenantId)),
+export async function tenantName(tx: Tx, job: RedeemJob, tenantId: TenantId): Promise<string> {
+  const [row] = await asTenant(tx, job, tenantId, (inner) =>
+    inner.select({ name: org.name }).from(org).where(eq(org.id, tenantId)),
   );
   return row?.name ?? '';
+}
+
+/** The tenant's logo while `brand.logo` is on (TN-05), read as the tenant like its name. */
+export function tenantLogoUrl(
+  tx: Tx,
+  job: RedeemJob,
+  tenantId: TenantId,
+  now: Date,
+): Promise<string | null> {
+  return asTenant(tx, job, tenantId, async (inner) =>
+    currentLogoUrl(inner, tenantId, await loadEntitlements(inner, tenantId, now), ''),
+  );
 }

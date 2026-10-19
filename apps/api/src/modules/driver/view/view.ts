@@ -6,7 +6,7 @@ import type { Tx } from '../../../db/scope.ts';
 import type { Access } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { booking } from '../../booking/schema.ts';
-import { tenantLogo } from '../../brand/schema.ts';
+import { currentLogoUrl } from '../../brand/logo/logo.ts';
 import { dock, hall, org, site } from '../../core/schema.ts';
 import { driverSafety } from '../../safety/driver/safety_pass.redeem.ts';
 import { driverAccess } from '../schema.ts';
@@ -77,12 +77,9 @@ export async function loadDriverView(r: ViewRequest): Promise<DriverBookingView>
           .where(and(eq(dock.id, row.dockId), eq(dock.tenantId, tenantId)))
       : [];
 
-  const [logo] = r.access.entitlements?.modules.brand
-    ? await tx
-        .select({ sha: tenantLogo.sha256 })
-        .from(tenantLogo)
-        .where(eq(tenantLogo.tenantId, tenantId))
-    : [];
+  const logoUrl = r.access.entitlements
+    ? await currentLogoUrl(tx, tenantId, r.access.entitlements, '')
+    : null;
 
   const safety = await driverSafety(
     tx,
@@ -108,10 +105,7 @@ export async function loadDriverView(r: ViewRequest): Promise<DriverBookingView>
   return {
     asOf: now.toISOString(),
     channel: r.channel,
-    tenant: {
-      name: row.tenantName,
-      logoUrl: logo ? `/api/public/logos/${tenantId}/${logo.sha.toString('hex')}` : null,
-    },
+    tenant: { name: row.tenantName, logoUrl },
     site: {
       name: s.name,
       addressLines,
