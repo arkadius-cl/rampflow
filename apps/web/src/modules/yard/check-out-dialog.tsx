@@ -42,7 +42,7 @@ export function CheckOutDialog({
     },
   );
   return (
-    <DialogContent className="sm:max-w-lg" data-density="touch">
+    <DialogContent className="sm:max-w-lg" data-density="touch" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.gate.check_out.title, { carrier: truck.carrierName })}

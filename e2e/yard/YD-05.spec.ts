@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, seedVisit, siteOf } from '../support/u9.ts';
+import { bookingStatus, openStation, seedVisit, siteOf } from '../support/u9.ts';
 
 test.describe('YD-05 Check out', () => {
   test('leaving before done needs a reason; after done it does not', async ({
@@ -22,7 +22,7 @@ test.describe('YD-05 Check out', () => {
       status: 'done',
     });
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);
 
     await page
       .getByTestId('gate-row')

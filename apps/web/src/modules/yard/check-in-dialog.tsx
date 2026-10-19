@@ -84,7 +84,11 @@ export function CheckInDialog({
   });
 
   return (
-    <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-2xl" data-density="touch">
+    <DialogContent
+      className="max-h-[95svh] overflow-y-auto sm:max-w-2xl"
+      data-density="touch"
+      showCloseButton={false}
+    >
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.gate.check_in.title, { carrier: truck.carrierName })}

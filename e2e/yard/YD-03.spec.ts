@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { poolDocks, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, poolDocks, siteOf } from '../support/u9.ts';
 
 test.describe('YD-03 Walk-in', () => {
   test('a gate operator walks in an unbooked truck at a closed site and checks it in', async ({
@@ -12,11 +12,12 @@ test.describe('YD-03 Walk-in', () => {
     const w = await seedWorld(request);
     await poolDocks(w);
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}`);
     await page.getByRole('button', { name: 'Walk-in' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Walk-in: truck without a booking' });
     await expectAccessible(page);
+    await expectTouchTargets(page);
     await dialog.getByRole('button', { name: 'Check in now' }).click();
     await expect(dialog.getByText('Fill in this field.').first()).toBeVisible();
 
@@ -39,7 +40,7 @@ test.describe('YD-03 Walk-in', () => {
     const w = await seedWorld(request);
     await poolDocks(w);
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&walkin=1`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&walkin=1`);
     const dialog = page.getByRole('dialog', { name: 'Walk-in: truck without a booking' });
     await dialog.getByLabel('Carrier').fill('Fremdspedition Kowalski');
     await dialog.getByLabel('Plate seen at the gate').fill('PO 99');

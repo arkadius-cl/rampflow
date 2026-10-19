@@ -57,7 +57,7 @@ export function CallDialog({
   );
 
   return (
-    <DialogContent className="sm:max-w-2xl" data-density="touch">
+    <DialogContent className="sm:max-w-2xl" data-density="touch" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.docks.call.title, { carrier: truck.carrierName })}

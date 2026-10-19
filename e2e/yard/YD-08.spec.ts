@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
+import { bookingStatus, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
 
 test.describe('YD-08 Dock progress', () => {
   test('one tap each sets at dock, loading and done; done takes actual units and frees the dock', async ({
@@ -19,7 +19,7 @@ test.describe('YD-08 Dock progress', () => {
       dockId: s.dockIds[1],
     });
     await signInAs(context, w.A.users.dock_operator);
-    await page.goto(`/t/${w.A.tenantId}/docks?site=${s.id}`);
+    await openStation(page, `/t/${w.A.tenantId}/docks?site=${s.id}`);
 
     const dock = page.getByTestId('dock-D-02');
     await dock.getByRole('button', { name: 'At dock' }).click();

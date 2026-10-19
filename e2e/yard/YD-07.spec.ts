@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
+import {
+  bookingStatus,
+  expectTouchTargets,
+  openStation,
+  poolDocks,
+  seedVisit,
+  siteOf,
+} from '../support/u9.ts';
 
 test.describe('YD-07 Assign and call', () => {
   test('the call dialog suggests a free pool dock; "Cancel call" returns the truck to the queue', async ({
@@ -26,7 +33,7 @@ test.describe('YD-07 Assign and call', () => {
       phone: '+48600111222',
     });
     await signInAs(context, w.A.users.dock_operator);
-    await page.goto(`/t/${w.A.tenantId}/docks?site=${s.id}`);
+    await openStation(page, `/t/${w.A.tenantId}/docks?site=${s.id}`);
 
     await page.getByTestId('queue-item').getByRole('button', { name: 'Call to dock' }).click();
     const dialog = page.getByRole('dialog', { name: 'Call Wartend GmbH to a dock' });
@@ -38,6 +45,7 @@ test.describe('YD-07 Assign and call', () => {
     await expect(dialog.getByRole('button', { name: /^D-02/ })).toContainText('suggested');
     await expect(dialog.locator('a[href^="tel:"]')).toHaveAttribute('href', 'tel:+48600111222');
     await expectAccessible(page);
+    await expectTouchTargets(page);
     await dialog.getByRole('button', { name: 'Call to D-02' }).click();
     await expect(page.getByText('Wartend GmbH called to D-02.')).toBeVisible();
     expect(await bookingStatus(waiting.id)).toBe('called');
@@ -62,7 +70,7 @@ test.describe('YD-07 Assign and call', () => {
       status: 'checked_in',
     });
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);
     await page.getByRole('button', { name: 'Call to dock' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Call to D-01' }).click();
     await expect(page.getByText('Torruf KG called to D-01.')).toBeVisible();

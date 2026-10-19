@@ -221,7 +221,11 @@ export function WalkInDialog({
   const choose = { value: '', label: t(($) => $.gate.walk_in.choose) };
 
   return (
-    <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-3xl" data-density="touch">
+    <DialogContent
+      className="max-h-[95svh] overflow-y-auto sm:max-w-3xl"
+      data-density="touch"
+      showCloseButton={false}
+    >
       <DialogHeader>
         <DialogTitle className="text-xl">{t(($) => $.gate.walk_in.title)}</DialogTitle>
         <DialogDescription>{t(($) => $.gate.walk_in.description)}</DialogDescription>

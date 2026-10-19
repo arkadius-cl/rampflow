@@ -129,21 +129,28 @@ export async function bookingStatus(id: string): Promise<string> {
   return rows[0]?.status ?? 'missing';
 }
 
-/** Every visible button, button link, input and tab of a station screen is at least 44 CSS px tall and wide. */
+/**
+ * Opens a station screen and waits for its site clock, so the first assertion does not race a
+ * cold dev server on a busy machine.
+ */
+export async function openStation(page: Page, path: string): Promise<void> {
+  await page.goto(path);
+  await expect(page.getByText('Site time')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('main')).not.toBeEmpty({ timeout: 30_000 });
+}
+
+/** Buttons, button links, inputs, selects and tabs of a station screen and its dialogs: 44 CSS px. */
 export async function expectTouchTargets(page: Page): Promise<void> {
-  const small = await page.evaluate(() =>
-    [
-      ...document.querySelectorAll<HTMLElement>(
-        'main button, main a[data-slot="button"], main input, main [role="tab"]',
-      ),
-    ]
-      .filter((el) => el.offsetParent !== null)
-      .map((el) => ({ el, box: el.getBoundingClientRect() }))
-      .filter(({ box }) => box.height < 44 || box.width < 44)
-      .map(
-        ({ el, box }) =>
-          `${el.tagName} "${el.textContent?.trim().slice(0, 30)}" ${box.width}x${box.height}`,
-      ),
+  const targets = page.locator(
+    ':is(main, [role="dialog"]) :is(button, a[data-slot="button"], input, select, [role="tab"])',
   );
+  const small: string[] = [];
+  for (const target of await targets.all()) {
+    const box = await target.boundingBox();
+    if (box && (box.height < 44 || box.width < 44)) {
+      const name = (await target.getAttribute('aria-label')) ?? (await target.textContent()) ?? '';
+      small.push(`"${name.trim().slice(0, 30)}" ${box.width}x${box.height}`);
+    }
+  }
   expect(small).toEqual([]);
 }

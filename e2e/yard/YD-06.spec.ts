@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
 
 test.describe('YD-06 Dock overview', () => {
   test('docks by hall show their truck; the queue lists checked-in trucks by slot start', async ({
@@ -34,7 +34,7 @@ test.describe('YD-06 Dock overview', () => {
       checkedIn: -15,
     });
     await signInAs(context, w.A.users.dock_operator);
-    await page.goto(`/t/${w.A.tenantId}/docks?site=${s.id}`);
+    await openStation(page, `/t/${w.A.tenantId}/docks?site=${s.id}`);
 
     await expect(page.getByRole('heading', { name: 'Hall 1' })).toBeVisible();
     const busy = page.getByTestId('dock-D-01');

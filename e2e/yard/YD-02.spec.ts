@@ -3,6 +3,7 @@ import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
   bookingStatus,
   expectTouchTargets,
+  openStation,
   publishBriefing,
   seedVisit,
   siteOf,
@@ -21,7 +22,7 @@ test.describe('YD-02 Check in', () => {
       start: 5,
     });
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&checkin=${visit.id}`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&checkin=${visit.id}`);
 
     const dialog = page.getByRole('dialog', { name: 'Check in Nordfrost Transport' });
     await expect(dialog.getByText('Early tolerance 30 min, grace 15 min.')).toBeVisible();
@@ -48,7 +49,7 @@ test.describe('YD-02 Check in', () => {
     await publishBriefing(w);
     const visit = await seedVisit(w, { carrier: 'Romtrans SRL', plate: 'B44RTR', start: 0 });
     await signInAs(context, w.A.users.gate_operator);
-    await page.goto(`/t/${w.A.tenantId}/gate?site=${siteOf(w).id}`);
+    await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}`);
     await expect(page.getByTestId('gate-row')).toContainText('Briefing missing');
     await page.getByRole('button', { name: 'Check in' }).click();
 

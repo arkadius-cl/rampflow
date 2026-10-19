@@ -346,7 +346,7 @@ function CompleteDialog({
     },
   );
   return (
-    <DialogContent className="sm:max-w-lg" data-density="touch">
+    <DialogContent className="sm:max-w-lg" data-density="touch" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.docks.complete.title, { carrier: truck.carrierName })}
