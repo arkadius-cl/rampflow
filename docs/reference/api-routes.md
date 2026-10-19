@@ -302,17 +302,19 @@ Unit U9. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (
 
 ## Driver
 
-Unit U10.
+Unit U10, built. Response shapes and request schemas live in `packages/shared/src/modules/driver/api.ts` (`ExchangeBody`, `DriverBookingView`) and `packages/shared/src/modules/safety/api.driver.ts` (briefing list, content, attempt and acknowledgement). No answer of these routes carries the driver's name, phone or plate, and none carries a token ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)).
 
 | Method | Path | Party | Entitlement | Story | Router |
 |---|---|---|---|---|---|
-| POST | `/api/public/driver-session` | token | | DR-01 | `driver/session/routes.public.ts`; `{ token }`; sets `rf_driver` with `Path=/api/driver`; 10 per minute per IP |
-| DELETE | `/api/driver/session` | driver | | DR-01 | `driver/session/routes.driver.ts`; clears the cookie |
-| GET | `/api/driver/booking` | driver | | DR-01, DR-03, SF-04 | `driver/view/routes.driver.ts`; polled every 15 s; read-only, safety status from `booking_acknowledgement` |
-| GET | `/api/driver/briefings` | driver | module `safety` | SF-04 | `safety/driver/routes.driver.ts` at `/briefings`; first redeems this phone's valid safety passes for the booking (idempotent upsert, [ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)), then lists applicable instructions with status and locales |
-| GET | `/api/driver/briefings/:instructionId` | driver | module `safety` | SF-04, DR-02 | `?locale=`; content and questions without answers |
-| POST | `/api/driver/briefings/:instructionId/attempts` | driver | `safety.quiz` | SF-04, SF-02 | `{ locale, answers }`; score, pass, attempt count |
-| POST | `/api/driver/briefings/:instructionId/acknowledgement` | driver | module `safety` | SF-04 | `{ locale, name, confirmed: true }`; needs a passed quiz when one exists; sets the safety pass unless the session channel is `staff` |
+| POST | `/api/public/driver-session` | token | | DR-01 | `driver/session/routes.public.ts`; `{ token }`; 204 and `rf_driver=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/driver; Max-Age=<seconds to the link's expiry>`; unknown, expired and revoked tokens answer the same 401 `unauthorized`; every call counts against `driver_exchange` (10 per minute per IP, 429 `rate_limited`); sets `driver_access.last_used_at` |
+| DELETE | `/api/driver/session` | driver | | DR-01 | `driver/session/routes.driver.ts`; 204, clears the cookie |
+| GET | `/api/driver/booking` | driver | | DR-01, DR-03, SF-04 | `driver/view/routes.driver.ts`; `DriverBookingView`: `asOf`, `channel`, tenant name and logo URL, site name, address lines, map link, zone and phone, code, status, slot and check-in and call instants, `dock` (`{ code, hall }` while called, at the dock or loading), safety `{ status, validUntil }`, `privacyNoticeUrl`, `linkExpiresAt`; polled every 15 s; writes nothing |
+| GET | `/api/driver/briefings` | driver | module `safety` | SF-04 | `safety/driver/routes.driver.ts` at `/briefings`; on a `link` session with an `rf_device` cookie it first links this phone's valid passes at the tenant to the booking (`link_acknowledgement` via `pass`) for instructions still missing; then `{ items: [{ instructionId, name, status, expiresAt, quiz, locales }] }` |
+| GET | `/api/driver/briefings/:instructionId` | driver | module `safety` | SF-04, DR-02 | `?locale=`; the published version in that locale, else en, else its first locale; `{ instructionId, version, locale, translation, title, blocks, questions, statement }`; questions without answers, and none while `safety.quiz` is off; 404 for an instruction that does not apply to the booking's site |
+| POST | `/api/driver/briefings/:instructionId/attempts` | driver | `safety.quiz` | SF-04, SF-02 | `{ locale, answers: { <questionId>: <option index> } }` → `{ score, passed, attempts, wrong }`; passes at `safety.quiz_pass_percent`; counts every attempt in `safety_attempt` per booking and version; the latest attempt decides |
+| POST | `/api/driver/briefings/:instructionId/acknowledgement` | driver | module `safety` | SF-04 | `{ locale, name, confirmed: true }` → 201 `{ expiresAt }`; with a quiz and `safety.quiz` on, 409 `conflict` reason `quiz_not_passed` until the latest attempt passed; stores the acknowledgement through `recordAcknowledgement` with the session's channel, links it (`link_acknowledgement` via `completed`); on a `link` session with an expiry it sets `rf_device` (one year, `Path=/api/driver`) when absent and upserts the `safety_pass`; a `staff` session (gate device, YD-02) never does |
+
+The exchange has an account case with credential `none`: the harness's `token` credential refuses a driver token as a wrong party, which is this route's only valid token. `driver/session/session.test.ts` covers unknown, expired and revoked tokens and the limit.
 
 ## Reports
 
