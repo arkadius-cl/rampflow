@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Role } from '@rampflow/shared';
+import type { OrgKind } from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import {
   type AnyOrgId,
@@ -9,7 +10,7 @@ import {
   type UserId,
 } from '../../../db/ids.ts';
 import { deriveToken } from '../../../kernel/tokens.ts';
-import { invitation, type OrgKind } from '../schema.ts';
+import { invitation } from '../schema.ts';
 
 // Pending invitations written as the owner, as U3's staff and carrier-user screens will create
 // them. Returns the raw token of the /invite#<token> link.

@@ -4,6 +4,8 @@ import {
   type LoadTypeDuration,
   RESOURCE_KINDS,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { ClosureSource } from '@rampflow/shared/modules/booking/values';
+import { values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -135,8 +137,6 @@ export const openingHours = pgTable(
   ],
 );
 
-export const CLOSURE_SOURCES = ['manual', 'holiday'] as const;
-
 export const closure = pgTable(
   'closure',
   {
@@ -148,7 +148,7 @@ export const closure = pgTable(
     startsLocal: timestamp('starts_local', { mode: 'string' }).notNull(),
     endsLocal: timestamp('ends_local', { mode: 'string' }).notNull(),
     reason: text('reason'),
-    source: text('source', { enum: CLOSURE_SOURCES }).notNull(),
+    source: text('source', { enum: values(ClosureSource) }).notNull(),
     holidayDate: date('holiday_date', { mode: 'string' }),
     holidayName: text('holiday_name'),
     reopenedAt: instant('reopened_at'),
@@ -168,7 +168,7 @@ export const closure = pgTable(
     index('closure_tenant_id_idx').on(t.tenantId),
     index('closure_resource_id_idx').on(t.resourceId),
     check('closure_kind_check', oneOf(t.kind, CLOSURE_KINDS)),
-    check('closure_source_check', oneOf(t.source, CLOSURE_SOURCES)),
+    check('closure_source_check', oneOf(t.source, values(ClosureSource))),
     check('closure_window_check', sql`${t.startsLocal} < ${t.endsLocal}`),
     check(
       'closure_holiday_date_check',

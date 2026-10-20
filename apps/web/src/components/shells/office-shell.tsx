@@ -1,3 +1,4 @@
+import type { OrgKind } from '@rampflow/shared/values';
 import { useNavigate } from '@tanstack/react-router';
 import { BuildingIcon, CheckIcon, ChevronsUpDownIcon, LockIcon, SearchIcon } from 'lucide-react';
 import { type ComponentType, Fragment } from 'react';
@@ -40,8 +41,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { EntitlementState } from '@/lib/domain';
 import { cn } from '@/lib/utils';
-
-export type OrgKind = 'tenant' | 'carrier' | 'platform';
 
 export interface Membership {
   id: string;

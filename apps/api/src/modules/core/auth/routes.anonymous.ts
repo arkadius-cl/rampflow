@@ -5,6 +5,7 @@ import {
   ResetConfirmBody,
   TokenBody,
 } from '@rampflow/shared/modules/core/api.auth';
+import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { noBody, op } from '../../../kernel/describe.ts';
@@ -21,7 +22,7 @@ import { inspectMagicLink } from './magic-link.redeem.ts';
 import { dummyHash, verifyPassword } from './password.ts';
 import { redeemPasswordReset } from './password-reset.redeem.ts';
 import { endSession, startSession } from './sessions.ts';
-import { type AuthTokenKind, claimAuthToken, issueAuthToken } from './tokens.ts';
+import { claimAuthToken, issueAuthToken } from './tokens.ts';
 
 // Mounted at /api/auth (ADR-0003, CR-03). No route holds a pool connection while it waits for
 // another: sign-in and link requests open their transaction themselves, after or around the

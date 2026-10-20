@@ -1,12 +1,12 @@
 import type { Role, StaffLocale } from '@rampflow/shared';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import type { OrgKind } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
 import { hashPassword, verifyPassword } from '../../src/modules/core/auth/password.ts';
 import {
   appUser,
   membership,
-  type OrgKind,
   org,
   tenantCarrierLink,
   tenantSubscription,

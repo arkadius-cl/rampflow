@@ -7,13 +7,15 @@ import {
   type TimeZone,
 } from '../../time/index.ts';
 import { AvisInput, type AvisView } from '../avis/avis.ts';
-import type { BookingEventData, BookingEventType } from './events.ts';
+import type { InstructionSafety as InstructionSafetySet, SafetyStatus } from '../safety/values.ts';
+import type { BookingEventData } from './events.ts';
 import {
   BOOKING_STATUSES,
   type BookingStatus,
   type Punctuality,
   type TurnAwayReason,
 } from './lifecycle.ts';
+import type { ActorParty, BookingEventType } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/bookings (BK-01, BK-02, BK-03, AV-01,
 // AV-02, CR-06, YD-08).
@@ -146,11 +148,12 @@ export interface BoardView {
   resources: BoardResource[];
 }
 
-export type InstructionSafety = 'valid' | 'missing';
+// An alias of its own, so the API description keeps its `InstructionSafety` component: the
+// converter names a type alias, and a value set's name also declares its object.
+export type InstructionSafety = Extract<InstructionSafetySet, string>;
 
 export interface BookingSafety {
-  /** `not_required`: no published instruction applies to the site, or the module is off. */
-  status: 'valid' | 'missing' | 'not_required';
+  status: SafetyStatus;
   /** Whether check-in refuses a missing acknowledgement (`safety.gate_enforcement`). */
   enforced: boolean;
   instructions: {
@@ -202,7 +205,7 @@ export interface BookingEventView {
   toStatus: BookingStatus | null;
   data: Omit<BookingEventData, 'type'>;
   actor?: {
-    party: 'carrier' | 'tenant' | 'driver' | 'system';
+    party: ActorParty;
     userId: string | null;
     name: string | null;
     job: string | null;

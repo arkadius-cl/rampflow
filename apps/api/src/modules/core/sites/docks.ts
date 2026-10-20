@@ -2,11 +2,8 @@ import {
   COUNTED_DOCK_STATUSES,
   type CreateDock,
   type CreateHall,
-  type DOCK_STATUSES,
-  type DOOR_TYPES,
   type DockView,
   type HallView,
-  type TEMPERATURE_ZONES,
   type UpdateDock,
   type UpdateHall,
 } from '@rampflow/shared/modules/core/api.sites';
@@ -16,16 +13,9 @@ import type { Tx } from '../../../db/scope.ts';
 import { withinLimit } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { resourceDock } from '../../booking/schema.resources.ts';
-import type * as schema from '../schema.ts';
 import { dock, hall } from '../schema.ts';
 import { requireSite } from './sites.ts';
 import { conflictOnUnique, invalid, type TenantRequest } from './tenant.ts';
-
-// The API contract and the table must name the same enumeration values.
-type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-true satisfies Same<(typeof DOOR_TYPES)[number], (typeof schema.DOOR_TYPES)[number]>;
-true satisfies Same<(typeof TEMPERATURE_ZONES)[number], (typeof schema.TEMPERATURE_ZONES)[number]>;
-true satisfies Same<(typeof DOCK_STATUSES)[number], (typeof schema.DOCK_STATUSES)[number]>;
 
 type HallRow = typeof hall.$inferSelect;
 type DockRow = typeof dock.$inferSelect;

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../db/ids.ts';
 import { hashToken } from '../../db/ids.ts';
@@ -11,7 +12,6 @@ import { driverAccess } from './schema.ts';
 // only its hash, and an authorized caller recomputes the link from the row id on demand.
 
 export type DriverAccessId = typeof driverAccess.$inferSelect.id;
-export type DriverChannel = 'link' | 'staff';
 
 const DAY_MS = 86_400_000;
 /** A link stays valid until a week after the slot unless departure or a turn-away shortens it. */

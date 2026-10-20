@@ -32,10 +32,10 @@ export const SiteLimitedRole = {
 } as const;
 export type SiteLimitedRole = ValueOf<typeof SiteLimitedRole>;
 
-/** The kind of org a membership belongs to. Drivers are not an org party; they hold a booking token. */
-export const OrgParty = {
+/** `org.kind`, also the party of a membership. Drivers are not an org party; they hold a booking token. */
+export const OrgKind = {
   platform: 'platform',
   tenant: 'tenant',
   carrier: 'carrier',
 } as const;
-export type OrgParty = ValueOf<typeof OrgParty>;
+export type OrgKind = ValueOf<typeof OrgKind>;

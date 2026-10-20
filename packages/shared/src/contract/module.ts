@@ -1,10 +1,10 @@
 import type * as z from 'zod';
 import { values } from '../values/define.ts';
 import { LocaleSet } from '../values/locales.ts';
-import { OrgParty, Role } from '../values/roles.ts';
+import { OrgKind, Role } from '../values/roles.ts';
 import { SettingScope } from '../values/settings.ts';
 
-export { LocaleSet, OrgParty, Role, SettingScope };
+export { LocaleSet, OrgKind, Role, SettingScope };
 export const ROLES = values(Role);
 
 export const ROLE_PARTY = {
@@ -15,7 +15,7 @@ export const ROLE_PARTY = {
   dock_operator: 'tenant',
   carrier_admin: 'carrier',
   carrier_user: 'carrier',
-} as const satisfies Record<Role, OrgParty>;
+} as const satisfies Record<Role, OrgKind>;
 
 /**
  * A role holds every permission granted to the roles it includes, transitively.

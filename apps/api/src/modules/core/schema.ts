@@ -1,4 +1,13 @@
 import { PACKAGE_IDS, ROLE_PARTY, STAFF_LOCALES } from '@rampflow/shared';
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  AuthTokenKind,
+  DockStatus,
+  DoorType,
+  RateLimitBucket,
+  TemperatureZone,
+} from '@rampflow/shared/modules/core/values';
+import { OrgKind, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -48,9 +57,6 @@ import {
   userIs,
 } from '../../db/rls.ts';
 
-export const ORG_KINDS = ['platform', 'tenant', 'carrier'] as const;
-export type OrgKind = (typeof ORG_KINDS)[number];
-
 const rolesOf = (kind: OrgKind) =>
   Object.entries(ROLE_PARTY)
     .filter(([, party]) => party === kind)
@@ -61,7 +67,7 @@ export const org = pgTable(
   'org',
   {
     id: uuid('id').$type<AnyOrgId>().primaryKey().default(sql`uuidv7()`),
-    kind: text('kind', { enum: ORG_KINDS }).notNull(),
+    kind: text('kind', { enum: values(OrgKind) }).notNull(),
     name: text('name').notNull(),
     country: char('country', { length: 2 }),
     createdAt: createdAt(),
@@ -69,7 +75,7 @@ export const org = pgTable(
   (t) => [
     unique('org_id_kind_key').on(t.id, t.kind),
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
-    check('org_kind_check', oneOf(t.kind, ORG_KINDS)),
+    check('org_kind_check', oneOf(t.kind, values(OrgKind))),
     check('org_name_length', sql`char_length(${t.name}) between 1 and 120`),
     allow('platform', 'all', always),
     allow(
@@ -150,13 +156,11 @@ export const session = pgTable(
   (t) => [index('session_user_id_idx').on(t.userId)],
 );
 
-export const AUTH_TOKEN_KINDS = ['magic_link', 'password_reset'] as const;
-
 export const authToken = pgTable(
   'auth_token',
   {
     id: primaryId<'auth_token'>(),
-    kind: text('kind', { enum: AUTH_TOKEN_KINDS }).notNull(),
+    kind: text('kind', { enum: values(AuthTokenKind) }).notNull(),
     userId: uuid('user_id')
       .$type<UserId>()
       .notNull()
@@ -168,38 +172,27 @@ export const authToken = pgTable(
   },
   (t) => [
     index('auth_token_user_id_idx').on(t.userId),
-    check('auth_token_kind_check', oneOf(t.kind, AUTH_TOKEN_KINDS)),
+    check('auth_token_kind_check', oneOf(t.kind, values(AuthTokenKind))),
   ],
 );
-
-export const RATE_LIMIT_BUCKETS = [
-  'login_failed',
-  'login_ip',
-  'magic_link_request',
-  'reset_request',
-  'driver_exchange',
-  'registration_request',
-  'registration_ip',
-] as const;
-export type RateLimitBucket = (typeof RATE_LIMIT_BUCKETS)[number];
 
 export const rateLimitEvent = pgTable(
   'rate_limit_event',
   {
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-    bucket: text('bucket', { enum: RATE_LIMIT_BUCKETS }).notNull(),
+    bucket: text('bucket', { enum: values(RateLimitBucket) }).notNull(),
     keyHash: bytea('key_hash').notNull(),
     at: instant('at').notNull(),
   },
   (t) => [
     index('rate_limit_event_lookup_idx').on(t.bucket, t.keyHash, t.at),
-    check('rate_limit_event_bucket_check', oneOf(t.bucket, RATE_LIMIT_BUCKETS)),
+    check('rate_limit_event_bucket_check', oneOf(t.bucket, values(RateLimitBucket))),
   ],
 );
 
 const membershipRoleCheck = (orgKind: AnyPgColumn, role: AnyPgColumn) =>
   sql.join(
-    ORG_KINDS.map(
+    values(OrgKind).map(
       (kind) => sql`(${orgKind} = ${sql.raw(`'${kind}'`)} and ${oneOf(role, rolesOf(kind))})`,
     ),
     sql` or `,
@@ -214,7 +207,7 @@ export const membership = pgTable(
       .notNull()
       .references(() => appUser.id, { onDelete: 'cascade' }),
     orgId: uuid('org_id').$type<AnyOrgId>().notNull(),
-    orgKind: text('org_kind', { enum: ORG_KINDS }).notNull(),
+    orgKind: text('org_kind', { enum: values(OrgKind) }).notNull(),
     role: text('role').notNull(),
     createdBy: uuid('created_by')
       .$type<UserId>()
@@ -365,7 +358,7 @@ export const invitation = pgTable(
   {
     id: primaryId<'invitation'>(),
     orgId: uuid('org_id').$type<AnyOrgId>().notNull(),
-    orgKind: text('org_kind', { enum: ORG_KINDS }).notNull(),
+    orgKind: text('org_kind', { enum: values(OrgKind) }).notNull(),
     email: citext('email').notNull(),
     role: text('role').notNull(),
     siteIds: uuid('site_ids').$type<SiteId>().array().notNull().default(sql`'{}'::uuid[]`),
@@ -460,10 +453,6 @@ export const hall = pgTable(
   ],
 );
 
-export const DOOR_TYPES = ['dock_leveler', 'ground_level', 'side_loading', 'yard_open'] as const;
-export const TEMPERATURE_ZONES = ['ambient', 'chilled', 'frozen'] as const;
-export const DOCK_STATUSES = ['active', 'maintenance', 'inactive'] as const;
-
 export const dock = pgTable(
   'dock',
   {
@@ -472,10 +461,10 @@ export const dock = pgTable(
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     hallId: uuid('hall_id').notNull(),
     code: text('code').notNull(),
-    doorType: text('door_type', { enum: DOOR_TYPES }).notNull(),
-    temperatureZone: text('temperature_zone', { enum: TEMPERATURE_ZONES }).notNull(),
+    doorType: text('door_type', { enum: values(DoorType) }).notNull(),
+    temperatureZone: text('temperature_zone', { enum: values(TemperatureZone) }).notNull(),
     adrAllowed: boolean('adr_allowed').notNull().default(false),
-    status: text('status', { enum: DOCK_STATUSES }).notNull(),
+    status: text('status', { enum: values(DockStatus) }).notNull(),
     sort: integer('sort').notNull().default(0),
     createdAt: createdAt(),
   },
@@ -487,15 +476,12 @@ export const dock = pgTable(
     index('dock_tenant_id_idx').on(t.tenantId),
     index('dock_hall_id_idx').on(t.hallId),
     check('dock_code_length', sql`char_length(${t.code}) between 1 and 16`),
-    check('dock_door_type_check', oneOf(t.doorType, DOOR_TYPES)),
-    check('dock_temperature_zone_check', oneOf(t.temperatureZone, TEMPERATURE_ZONES)),
-    check('dock_status_check', oneOf(t.status, DOCK_STATUSES)),
+    check('dock_door_type_check', oneOf(t.doorType, values(DoorType))),
+    check('dock_temperature_zone_check', oneOf(t.temperatureZone, values(TemperatureZone))),
+    check('dock_status_check', oneOf(t.status, values(DockStatus))),
     ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
   ],
 );
-
-export const LINK_STATUSES = ['active', 'deactivated'] as const;
-export const LINK_SOURCES = ['invitation', 'public_link'] as const;
 
 export const tenantCarrierLink = pgTable(
   'tenant_carrier_link',
@@ -508,16 +494,16 @@ export const tenantCarrierLink = pgTable(
       .$type<CarrierId>()
       .notNull()
       .references(() => org.id),
-    status: text('status', { enum: LINK_STATUSES }).notNull(),
-    source: text('source', { enum: LINK_SOURCES }).notNull(),
+    status: text('status', { enum: values(CarrierLinkStatus) }).notNull(),
+    source: text('source', { enum: values(CarrierLinkSource) }).notNull(),
     deactivatedAt: instant('deactivated_at'),
     createdAt: createdAt(),
   },
   (t) => [
     primaryKey({ columns: [t.tenantId, t.carrierId] }),
     index('tenant_carrier_link_carrier_id_idx').on(t.carrierId),
-    check('tenant_carrier_link_status_check', oneOf(t.status, LINK_STATUSES)),
-    check('tenant_carrier_link_source_check', oneOf(t.source, LINK_SOURCES)),
+    check('tenant_carrier_link_status_check', oneOf(t.status, values(CarrierLinkStatus))),
+    check('tenant_carrier_link_source_check', oneOf(t.source, values(CarrierLinkSource))),
     allow('tenant', 'all', tenantIs(t.tenantId)),
     allow('carrier', 'select', carrierIs(t.carrierId)),
     allow('carrier_at_tenant', 'select', and(tenantIs(t.tenantId), carrierIs(t.carrierId))),

@@ -38,9 +38,18 @@ export const AckStatus = {
 } as const;
 export type AckStatus = ValueOf<typeof AckStatus>;
 
-/** How a driver acknowledged: through the driver link, or at the gate with staff. */
-export const AckChannel = {
-  link: 'link',
-  staff: 'staff',
+/** Whether a visit's driver holds every briefing the site requires. */
+export const SafetyStatus = {
+  valid: 'valid',
+  missing: 'missing',
+  /** No published instruction applies to the site, or the module is off. */
+  not_required: 'not_required',
 } as const;
-export type AckChannel = ValueOf<typeof AckChannel>;
+export type SafetyStatus = ValueOf<typeof SafetyStatus>;
+
+/** The state of one required briefing for a visit. */
+export const InstructionSafety = {
+  valid: SafetyStatus.valid,
+  missing: SafetyStatus.missing,
+} as const;
+export type InstructionSafety = ValueOf<typeof InstructionSafety>;

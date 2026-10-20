@@ -1,6 +1,6 @@
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 import { type BookingEmailPayload, BookingFacts, CodeQr } from '../lifecycle/email-parts.tsx';
 
 declare module '../../../kernel/outbox.ts' {
@@ -12,7 +12,7 @@ declare module '../../../kernel/outbox.ts' {
 export const category = 'booking';
 
 /** BK-02, BK-04: code, QR code, address and slot in site time, to the booking contact. */
-export const render: EmailTemplate<BookingEmailPayload>['render'] = (p, t) => ({
+export const render: EmailTemplateModule<BookingEmailPayload>['render'] = (p, t) => ({
   subject: t('booking.email.confirmed.subject', { code: p.code, site: p.site.name }),
   body: (
     <EmailLayout

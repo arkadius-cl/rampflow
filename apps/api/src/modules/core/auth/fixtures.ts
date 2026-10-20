@@ -1,10 +1,10 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { hashToken, type Id, type UserId } from '../../../db/ids.ts';
 import { deriveToken } from '../../../kernel/tokens.ts';
 import { appUser, authToken } from '../schema.ts';
 import { hashPassword } from './password.ts';
-import type { AuthTokenKind } from './tokens.ts';
 
 // Test fixtures for accounts and emailed auth tokens, written as the owner.
 

@@ -13,7 +13,7 @@ import { type World, world } from '../../../../test/world.ts';
 import { app, createApp } from '../../../app.ts';
 import { hashToken } from '../../../db/ids.ts';
 import { systemClock, testClock } from '../../../kernel/clock.ts';
-import { type Job, runJobTick } from '../../../kernel/jobs.ts';
+import { type RunnableJob, runJobTick } from '../../../kernel/jobs.ts';
 import { smtpMailer } from '../../../kernel/mailer.ts';
 import { deliverOutbox } from '../../../kernel/outbox.ts';
 import { driverAccess } from '../../driver/schema.ts';
@@ -331,7 +331,7 @@ describe('the driver link (CR-06, issuing half)', () => {
 });
 
 const MAILPIT = `http://${process.env.SMTP_HOST ?? 'localhost'}:8025`;
-const deliverAll: Job = {
+const deliverAll: RunnableJob = {
   name: `booking-mail-${randomUUID()}`,
   everySeconds: null,
   run: (ctx) => deliverOutbox({ ...ctx, mailer: smtpMailer() }),

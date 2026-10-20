@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { ROLES } from '../../contract/module.ts';
 import { STAFF_LOCALES } from '../../locales.ts';
+import { OrgKind } from '../../values/roles.ts';
 import { UiPrefs } from './ui-prefs.ts';
 
 // Request and response bodies of /api/auth, /api/me and /api/public/invitations (U2).
@@ -33,9 +34,6 @@ export interface MagicLinkInspect {
 export const ResetConfirmBody = z.object({ token: EmailToken, password: Password });
 export type ResetConfirmBody = z.infer<typeof ResetConfirmBody>;
 
-export const OrgKind = z.enum(['platform', 'tenant', 'carrier']);
-export type OrgKind = z.infer<typeof OrgKind>;
-
 export const MeResponse = z.object({
   user: z.object({
     id: z.uuid(),
@@ -44,7 +42,12 @@ export const MeResponse = z.object({
     locale: StaffLocale.nullable(),
   }),
   memberships: z.array(
-    z.object({ orgId: z.uuid(), orgKind: OrgKind, orgName: z.string(), role: z.enum(ROLES) }),
+    z.object({
+      orgId: z.uuid(),
+      orgKind: z.enum(OrgKind),
+      orgName: z.string(),
+      role: z.enum(ROLES),
+    }),
   ),
   /** Stored UI state: known, valid keys only (ADR-0014). */
   uiPrefs: UiPrefs,
@@ -57,7 +60,7 @@ export const MePatchBody = z
 export type MePatchBody = z.infer<typeof MePatchBody>;
 
 export const InvitationInspectResponse = z.object({
-  orgKind: OrgKind,
+  orgKind: z.enum(OrgKind),
   orgName: z.string(),
   role: z.enum(ROLES),
   email: z.string(),
@@ -75,5 +78,5 @@ export const InvitationAcceptBody = z.object({
 });
 export type InvitationAcceptBody = z.infer<typeof InvitationAcceptBody>;
 
-export const InvitationAcceptResponse = z.object({ orgId: z.uuid(), orgKind: OrgKind });
+export const InvitationAcceptResponse = z.object({ orgId: z.uuid(), orgKind: z.enum(OrgKind) });
 export type InvitationAcceptResponse = z.infer<typeof InvitationAcceptResponse>;

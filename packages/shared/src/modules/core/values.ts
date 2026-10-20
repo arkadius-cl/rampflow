@@ -1,5 +1,6 @@
 import type { ImplementedLimitKey } from '../../registry.ts';
 import type { ValueOf } from '../../values/define.ts';
+import { TokenPurpose } from '../../values/tokens.ts';
 
 export const DoorType = {
   dock_leveler: 'dock_leveler',
@@ -38,3 +39,22 @@ export const UsageKey = {
   max_bookings_per_month: 'booking.max_bookings_per_month',
 } as const satisfies Record<string, ImplementedLimitKey>;
 export type UsageKey = ValueOf<typeof UsageKey>;
+
+/** `auth_token.kind`: the tokens the core module emails to a user without a session. */
+export const AuthTokenKind = {
+  magic_link: TokenPurpose.magic_link,
+  password_reset: TokenPurpose.password_reset,
+} as const;
+export type AuthTokenKind = ValueOf<typeof AuthTokenKind>;
+
+/** The abuse limits of ADR-0003, "Abuse limits"; `RATE_LIMITS` in the API sets each one. */
+export const RateLimitBucket = {
+  login_failed: 'login_failed',
+  login_ip: 'login_ip',
+  magic_link_request: 'magic_link_request',
+  reset_request: 'reset_request',
+  driver_exchange: 'driver_exchange',
+  registration_request: 'registration_request',
+  registration_ip: 'registration_ip',
+} as const;
+export type RateLimitBucket = ValueOf<typeof RateLimitBucket>;

@@ -1,5 +1,5 @@
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
-import type { BookingEventType } from '@rampflow/shared/modules/booking/events';
+import type { BookingEventType } from '@rampflow/shared/modules/booking/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
 import {
   BanIcon,

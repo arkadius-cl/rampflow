@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { EmailTemplate } from '@rampflow/shared/values';
 import { Text } from '@react-email/components';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -6,32 +7,26 @@ import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
 import { type TenantId, wrapJson } from '../db/ids.ts';
 import { type Scope, withScope } from '../db/scope.ts';
+import { example as confirmedExample } from '../modules/booking/emails/confirmed.tsx';
 import { entitlementOverride } from '../modules/core/schema.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
 import { loadAccess } from './access.ts';
 import { systemClock } from './clock.ts';
 import { EmailLayout } from './email-layout.tsx';
-import { type Job, runJobTick } from './jobs.ts';
+import { type RunnableJob, runJobTick } from './jobs.ts';
 import { type Mailer, smtpMailer } from './mailer.ts';
 import {
   deliverOutbox,
-  type EmailTemplate,
+  type EmailTemplateModule,
   enqueueEmail,
   retryDelayMs,
   type TemplateLoader,
 } from './outbox.ts';
 import { deriveToken } from './tokens.ts';
 
-declare module './outbox.ts' {
-  interface EmailTemplates {
-    'core.probe': { authTokenId: string };
-    'booking.probe': { bookingId: string };
-  }
-}
-
 const MAILPIT = `http://${process.env.SMTP_HOST ?? 'localhost'}:8025`;
 
-const probe: EmailTemplate<{ authTokenId: string }> = {
+const probe: EmailTemplateModule<{ authTokenId: string }> = {
   category: 'account',
   render: (payload) => ({
     subject: 'Your sign-in link',
@@ -43,14 +38,14 @@ const probe: EmailTemplate<{ authTokenId: string }> = {
   }),
   example: { authTokenId: '00000000-0000-0000-0000-000000000000' },
 };
-const bookingProbe: EmailTemplate<{ bookingId: string }> = {
+const bookingProbe: EmailTemplateModule<{ bookingId: string }> = {
   category: 'booking',
   render: (p) => ({ subject: `Booking ${p.bookingId}`, body: <Text>{p.bookingId}</Text> }),
   example: { bookingId: '00000000-0000-0000-0000-000000000000' },
 };
 const templates: TemplateLoader = async (id) => {
-  if (id === 'core.probe') return probe as EmailTemplate<unknown>;
-  if (id === 'booking.probe') return bookingProbe as EmailTemplate<unknown>;
+  if (id === EmailTemplate.core_magic_link) return probe as EmailTemplateModule<unknown>;
+  if (id === EmailTemplate.booking_confirmed) return bookingProbe as EmailTemplateModule<unknown>;
   throw new Error(`no template ${id}`);
 };
 
@@ -69,7 +64,7 @@ const tenantScope = (): Scope => ({
 const rowsTo = (to: string) =>
   ownerDb().select().from(outboxMessage).where(eq(outboxMessage.toEmail, to));
 
-function outboxJob(mailer: Mailer): Job {
+function outboxJob(mailer: Mailer): RunnableJob {
   return {
     name: `outbox-test-${randomUUID()}`,
     everySeconds: null,
@@ -88,7 +83,7 @@ const enqueueProbe = (to: string, tenantId: TenantId | null, extra: { dedupeKey?
     enqueueEmail(
       tx,
       {
-        template: 'core.probe',
+        template: EmailTemplate.core_magic_link,
         to,
         locale: 'en',
         payload: { authTokenId: randomUUID() },
@@ -108,7 +103,7 @@ describe('enqueueEmail', () => {
         await enqueueEmail(
           tx,
           {
-            template: 'core.probe',
+            template: EmailTemplate.core_magic_link,
             to,
             locale: 'en',
             payload: { authTokenId: randomUUID() },
@@ -140,10 +135,10 @@ describe('enqueueEmail', () => {
           enqueueEmail(
             tx,
             {
-              template: 'booking.probe',
+              template: EmailTemplate.booking_confirmed,
               to,
               locale: 'de',
-              payload: { bookingId: w.A.bookings.own.id },
+              payload: { ...confirmedExample, bookingId: w.A.bookings.own.id },
               tenantId: w.A.tenantId,
             },
             entitlements,
@@ -152,7 +147,7 @@ describe('enqueueEmail', () => {
           enqueueEmail(
             tx,
             {
-              template: 'core.probe',
+              template: EmailTemplate.core_magic_link,
               to,
               locale: 'de',
               payload: { authTokenId: randomUUID() },
@@ -184,7 +179,13 @@ describe('enqueueEmail', () => {
     await withScope({ party: 'anonymous' }, (tx) =>
       enqueueEmail(
         tx,
-        { template: 'core.probe', to, locale: 'en', payload: { authTokenId }, tenantId: null },
+        {
+          template: EmailTemplate.core_magic_link,
+          to,
+          locale: 'en',
+          payload: { authTokenId },
+          tenantId: null,
+        },
         null,
         templates,
       ),
@@ -214,7 +215,13 @@ describe('outbox worker', () => {
     await withScope({ party: 'anonymous' }, (tx) =>
       enqueueEmail(
         tx,
-        { template: 'core.probe', to, locale: 'en', payload: { authTokenId }, tenantId: null },
+        {
+          template: EmailTemplate.core_magic_link,
+          to,
+          locale: 'en',
+          payload: { authTokenId },
+          tenantId: null,
+        },
         null,
         templates,
       ),

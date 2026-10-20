@@ -1,6 +1,6 @@
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 import { type BookingEmailPayload, BookingFacts, formatSlot } from '../lifecycle/email-parts.tsx';
 import { example as confirmed } from './confirmed.tsx';
 
@@ -19,7 +19,7 @@ declare module '../../../kernel/outbox.ts' {
 export const category = 'booking';
 
 /** BK-03, AV-02: staff changed the slot or the avis. */
-export const render: EmailTemplate<BookingChangedPayload>['render'] = (p, t) => ({
+export const render: EmailTemplateModule<BookingChangedPayload>['render'] = (p, t) => ({
   subject: t('booking.email.changed.subject', { code: p.code }),
   body: (
     <EmailLayout

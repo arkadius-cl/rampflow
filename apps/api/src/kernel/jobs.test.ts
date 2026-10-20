@@ -1,11 +1,18 @@
 import { randomUUID } from 'node:crypto';
+import { JobName } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
 import { hall, jobRun } from '../modules/core/schema.ts';
 import { systemClock } from './clock.ts';
-import { discoverJobs, forEachTenant, type Job, type JobStats, runJobTick } from './jobs.ts';
+import {
+  discoverJobs,
+  forEachTenant,
+  type JobStats,
+  type RunnableJob,
+  runJobTick,
+} from './jobs.ts';
 import type { Mailer } from './mailer.ts';
 
 const mailer: Mailer = { send: async () => undefined };
@@ -26,7 +33,7 @@ describe('job runner', () => {
 
   it('runs one tick when two runners start together', async () => {
     let runs = 0;
-    const job: Job = {
+    const job: RunnableJob = {
       name: `singleton-${randomUUID()}`,
       everySeconds: 60,
       run: async () => {
@@ -43,11 +50,11 @@ describe('job runner', () => {
 
   it('runs each tenant in its own scope; one failing tenant does not roll back another', async () => {
     const name = `halls-${randomUUID()}`;
-    const job: Job = {
+    const job: RunnableJob = {
       name,
       everySeconds: null,
       run: (jobCtx) =>
-        forEachTenant(jobCtx, name, async (tx, tenantId): Promise<JobStats> => {
+        forEachTenant(jobCtx, JobName.reminders, async (tx, tenantId): Promise<JobStats> => {
           const side = tenantId === w.A.tenantId ? w.A : tenantId === w.B.tenantId ? w.B : null;
           if (!side) return {};
           await tx.insert(hall).values({ tenantId, siteId: side.sites[0].id, name });

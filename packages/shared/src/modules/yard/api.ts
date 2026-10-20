@@ -3,6 +3,7 @@ import { type LocalDate, localDateSchema, type TimeZone } from '../../time/index
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import { CarrierRef } from '../booking/api.staff.ts';
 import { type BookingStatus, type Punctuality, TURN_AWAY_REASONS } from '../booking/lifecycle.ts';
+import type { SafetyStatus } from '../safety/values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/yard (YD-01 to YD-08, BK-02 walk-in).
 // Commands run through transitionBooking; these routes only pick the command and the read model.
@@ -83,7 +84,7 @@ export interface YardTruck {
   endsAt: string;
   timeZone: TimeZone;
   walkIn: boolean;
-  safety: { status: 'valid' | 'missing' | 'not_required'; enforced: boolean };
+  safety: { status: SafetyStatus; enforced: boolean };
   /** Stored at check-in; before it, what a check-in now would record (YD-01). */
   punctuality: Punctuality | null;
   punctualityMinutes: number | null;
@@ -159,7 +160,7 @@ export interface CallResult {
 export interface WalkInResult {
   truck: YardTruck;
   /** `missing`: enforcement kept the truck `confirmed` until a briefing is linked. */
-  safety: 'valid' | 'missing' | 'not_required' | null;
+  safety: SafetyStatus | null;
 }
 
 /** YD-02: a valid acknowledgement of the tenant that the gate can link to the booking. */

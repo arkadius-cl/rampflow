@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { type LocalDate, localDateSchema } from '../../time/index.ts';
 import { BOOKING_STATUSES, PUNCTUALITY } from '../booking/lifecycle.ts';
+import type { KpiUnit } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
 // definitions are binding in docs/reference/booking-lifecycle.md, "KPIs".
@@ -46,8 +47,6 @@ export const VisitQuery = z
   })
   .superRefine(checkPeriod);
 export type VisitQuery = z.infer<typeof VisitQuery>;
-
-export type KpiUnit = 'count' | 'percent' | 'minutes';
 
 /**
  * The KPI table of RP-01 in display order: the dashboard, the API and the CSV all walk it.

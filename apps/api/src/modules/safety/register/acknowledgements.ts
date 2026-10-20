@@ -1,3 +1,4 @@
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   RegisterFilter,
@@ -50,7 +51,7 @@ export interface RecordAcknowledgementInput {
   instructionId: InstructionId;
   locale: SafetyLocale;
   driverName: string;
-  channel: 'link' | 'staff';
+  channel: DriverChannel;
   /** Percent of the last quiz attempt; `null` without a quiz. */
   score: number | null;
   attempts: number;

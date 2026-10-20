@@ -4,6 +4,7 @@ import type {
   SubjectBooking,
   SubjectMatches,
 } from '@rampflow/shared/modules/privacy/api';
+import type { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
 import { and, asc, desc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import type { BookingId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -127,7 +128,7 @@ export async function findSubject(ctx: SubjectContext, q: Subject): Promise<Subj
   };
 }
 
-async function logRequest(ctx: SubjectContext, kind: 'export' | 'erase', m: SubjectMatches) {
+async function logRequest(ctx: SubjectContext, kind: PrivacyRequestKind, m: SubjectMatches) {
   await ctx.tx.insert(privacyRequestLog).values({
     tenantId: ctx.tenantId,
     kind,

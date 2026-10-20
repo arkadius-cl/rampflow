@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { hashToken, type Id, type UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -7,8 +8,6 @@ import { authToken } from '../schema.ts';
 
 // Magic links and password resets (ADR-0003, "Tokens"). The token derives from the row id, so the
 // outbox payload carries only the id and no table holds a usable token. `auth_token` has no RLS.
-
-export type AuthTokenKind = 'magic_link' | 'password_reset';
 
 export const AUTH_TOKEN_TTL_MS: Record<AuthTokenKind, number> = {
   magic_link: 15 * 60_000,

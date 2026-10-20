@@ -1,10 +1,6 @@
 import type { StaffLocale } from '@rampflow/shared';
-import {
-  KPIS,
-  type KpiKey,
-  type KpiReport,
-  type KpiUnit,
-} from '@rampflow/shared/modules/report/api';
+import { KPIS, type KpiKey, type KpiReport } from '@rampflow/shared/modules/report/api';
+import type { KpiUnit } from '@rampflow/shared/modules/report/values';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocale } from '@/lib/i18n';

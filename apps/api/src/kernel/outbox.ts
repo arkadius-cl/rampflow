@@ -1,5 +1,6 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import type { Entitlements } from '@rampflow/shared';
+import type { EmailCategory } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { and, asc, eq, isNull, lte } from 'drizzle-orm';
 import type { TFunction } from 'i18next';
@@ -17,7 +18,7 @@ import type { Mailer } from './mailer.ts';
 import { systemActor, systemScope } from './system.ts';
 
 /**
- * Payload type per template id `<module>.<name>`. Each template file adds its entry:
+ * Payload type per `EmailTemplate` id `<module>.<name>`. Each template file adds its entry:
  *   declare module '../../../kernel/outbox.ts' { interface EmailTemplates { 'core.invitation': P } }
  * Payloads carry row ids, never tokens or links: the template derives a link at send time with
  * `deriveToken` (kernel/tokens.ts), so the outbox holds nothing a database dump could replay.
@@ -26,11 +27,8 @@ import { systemActor, systemScope } from './system.ts';
 export interface EmailTemplates {}
 export type TemplateId = keyof EmailTemplates & string;
 
-/** `account` emails always send; `booking` emails send only while `notify.email` is on. */
-export type EmailCategory = 'account' | 'booking';
-
 /** What `modules/<module>/emails/<name>.tsx` exports. */
-export interface EmailTemplate<P> {
+export interface EmailTemplateModule<P> {
   category: EmailCategory;
   render(payload: P, t: TFunction): { subject: string; body: ReactElement };
   example: P;
@@ -48,7 +46,7 @@ export interface OutboxEmail<K extends TemplateId> {
 
 export type EnqueueResult = 'enqueued' | 'duplicate' | 'skipped';
 
-export type TemplateLoader = (id: string) => Promise<EmailTemplate<unknown>>;
+export type TemplateLoader = (id: string) => Promise<EmailTemplateModule<unknown>>;
 
 const TEMPLATE_ID = /^([a-z]+)\.([a-z0-9-]+)$/;
 
@@ -56,7 +54,7 @@ const TEMPLATE_ID = /^([a-z]+)\.([a-z0-9-]+)$/;
 export const loadTemplateFile: TemplateLoader = async (id) => {
   const match = TEMPLATE_ID.exec(id);
   if (!match) throw new Error(`Invalid template id ${id}`);
-  const mod: Partial<EmailTemplate<unknown>> = await import(
+  const mod: Partial<EmailTemplateModule<unknown>> = await import(
     `../modules/${match[1]}/emails/${match[2]}.tsx`
   );
   if (
@@ -65,7 +63,7 @@ export const loadTemplateFile: TemplateLoader = async (id) => {
   ) {
     throw new Error(`Template ${id} must export category and render`);
   }
-  return mod as EmailTemplate<unknown>;
+  return mod as EmailTemplateModule<unknown>;
 };
 
 /**

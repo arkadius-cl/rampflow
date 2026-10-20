@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { type Avis, normalizePlate, totalLoadUnits } from '@rampflow/shared/modules/avis/avis';
 import type { CarrierRef } from '@rampflow/shared/modules/booking/api.staff';
 import type { TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
+import type { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, slotGrid, type TimeZone } from '@rampflow/shared/time';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId } from '../../../db/ids.ts';
@@ -75,7 +76,7 @@ export interface CreateResult {
   /** `false` when `clientRequestId` named an earlier booking of the same user. */
   created: boolean;
   /** Walk-ins only: `missing` when safety enforcement kept the truck `confirmed`. */
-  safety: 'valid' | 'missing' | 'not_required' | null;
+  safety: SafetyStatus | null;
 }
 
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';

@@ -1,3 +1,4 @@
+import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -48,7 +49,7 @@ const sessionsOf = (userId: UserId) => ownerCount('session', sql`user_id = ${use
 const TEMPLATE = { magic_link: 'core.magic-link', password_reset: 'core.password-reset' } as const;
 
 /** The link tokens of every `purpose` email to `to`, oldest first, derived like the template does. */
-async function linkTokensTo(to: string, purpose: 'magic_link' | 'password_reset') {
+async function linkTokensTo(to: string, purpose: AuthTokenKind) {
   const rows = await ownerDb()
     .select()
     .from(outboxMessage)
@@ -62,7 +63,7 @@ async function linkTokensTo(to: string, purpose: 'magic_link' | 'password_reset'
 }
 
 /** The link token of the last email of `purpose` to `to`. */
-async function linkTokenTo(to: string, purpose: 'magic_link' | 'password_reset') {
+async function linkTokenTo(to: string, purpose: AuthTokenKind) {
   const token = (await linkTokensTo(to, purpose)).at(-1);
   if (!token) throw new Error(`no ${purpose} email to ${to}`);
   return token;

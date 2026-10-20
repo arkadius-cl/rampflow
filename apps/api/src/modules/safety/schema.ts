@@ -1,8 +1,10 @@
+import { LinkVia } from '@rampflow/shared/modules/booking/values';
 import {
   TRANSLATION_STATES,
   VERSION_STATUSES,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { ACK_CHANNELS } from '@rampflow/shared/modules/safety/api.register';
+import { values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -194,8 +196,6 @@ export const safetyAcknowledgement = pgTable(
   ],
 );
 
-export const LINK_VIA = ['completed', 'pass', 'gate_lookup'] as const;
-
 export const bookingAcknowledgement = pgTable(
   'booking_acknowledgement',
   {
@@ -204,7 +204,7 @@ export const bookingAcknowledgement = pgTable(
     acknowledgementId: uuid('acknowledgement_id').$type<AcknowledgementId>().notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
-    via: text('via', { enum: LINK_VIA }).notNull(),
+    via: text('via', { enum: values(LinkVia) }).notNull(),
     linkedByParty: text('linked_by_party').notNull(),
     linkedByUserId: uuid('linked_by_user_id').$type<UserId>(),
     createdAt: createdAt(),
@@ -222,7 +222,7 @@ export const bookingAcknowledgement = pgTable(
     index('booking_acknowledgement_tenant_id_idx').on(t.tenantId),
     index('booking_acknowledgement_site_id_idx').on(t.siteId),
     index('booking_acknowledgement_acknowledgement_id_idx').on(t.acknowledgementId),
-    check('booking_acknowledgement_via_check', oneOf(t.via, LINK_VIA)),
+    check('booking_acknowledgement_via_check', oneOf(t.via, values(LinkVia))),
     allow('tenant', 'all', and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
     allow('driver', 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
     allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),

@@ -10,7 +10,7 @@ import {
   type TimeZone,
 } from '../../time/index.ts';
 import { values } from '../../values/define.ts';
-import { ClosureKind, Direction, ResourceKind } from './values.ts';
+import { ClosureKind, type ClosureSource, Direction, ResourceKind } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/capacity (MD-03, MD-04, MD-05).
 
@@ -179,7 +179,7 @@ export interface ClosureView {
   startsLocal: LocalDateTime;
   endsLocal: LocalDateTime;
   reason: string | null;
-  source: 'manual' | 'holiday';
+  source: ClosureSource;
   holidayDate: LocalDate | null;
   holidayName: string | null;
   reopenedAt: string | null;

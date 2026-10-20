@@ -1,5 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Role } from '@rampflow/shared';
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import type { SystemActorName } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, TokenHash, UserId } from './ids.ts';
 import { db, type Tx } from './pool.ts';
@@ -11,11 +13,10 @@ export type TenantRole = Extract<
   'tenant_admin' | 'dispatcher' | 'gate_operator' | 'dock_operator'
 >;
 export type CarrierRole = Extract<Role, 'carrier_admin' | 'carrier_user'>;
-export type JobName = string;
 
 export type TenantActor =
   | { kind: 'user'; userId: UserId; role: TenantRole }
-  | { kind: 'system'; job: JobName };
+  | { kind: 'system'; job: SystemActorName };
 
 /** Who a database transaction acts for (ADR-0002). RLS policies read it through `app.*()`. */
 export type Scope =
@@ -36,10 +37,10 @@ export type Scope =
       userId: UserId;
       role: CarrierRole;
     }
-  | { party: 'driver'; tenantId: TenantId; bookingId: BookingId; channel: 'link' | 'staff' }
+  | { party: 'driver'; tenantId: TenantId; bookingId: BookingId; channel: DriverChannel }
   | { party: 'token'; tokenHash: TokenHash; userId: UserId | null }
   | { party: 'public'; tenantId: TenantId; siteId: SiteId | null }
-  | { party: 'system'; job: JobName };
+  | { party: 'system'; job: SystemActorName };
 
 export interface SessionVariables {
   party: string;

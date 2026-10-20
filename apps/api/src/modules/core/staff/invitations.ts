@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Role } from '@rampflow/shared';
 import type { InvitationView } from '@rampflow/shared/modules/core/api.staff';
+import type { OrgKind } from '@rampflow/shared/values';
 import { and, eq, gt, isNull, ne } from 'drizzle-orm';
 import type { AnyOrgId, InvitationId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -8,7 +9,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { enqueueEmail } from '../../../kernel/outbox.ts';
 import { tokenHashFor } from '../../../kernel/tokens.ts';
 import { userDisplay } from '../../../kernel/users.ts';
-import { appUser, invitation, membership, type OrgKind } from '../schema.ts';
+import { appUser, invitation, membership } from '../schema.ts';
 
 // Creating invitations for every org kind (PL-01, TN-01, CR-04). Acceptance is U2's
 // `acceptInvitation` (core/invitations/accept.redeem.ts).

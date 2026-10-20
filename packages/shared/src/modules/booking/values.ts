@@ -90,6 +90,22 @@ export const BookingParty = {
 } as const;
 export type BookingParty = ValueOf<typeof BookingParty>;
 
+/** Who created a booking: a carrier through the portal, or staff. */
+export const CreatedParty = {
+  carrier: BookingParty.carrier,
+  staff: BookingParty.staff,
+} as const;
+export type CreatedParty = ValueOf<typeof CreatedParty>;
+
+/** The party a `booking_event` row records as its actor. */
+export const ActorParty = {
+  carrier: 'carrier',
+  tenant: 'tenant',
+  driver: 'driver',
+  system: 'system',
+} as const;
+export type ActorParty = ValueOf<typeof ActorParty>;
+
 export const CarrierLinkStatus = {
   active: 'active',
   deactivated: 'deactivated',
@@ -179,3 +195,31 @@ export const FitFailure = {
   daily_cap_reached: ConflictReason.daily_cap_reached,
 } as const;
 export type FitFailure = ValueOf<typeof FitFailure>;
+
+export const ClosureSource = {
+  manual: 'manual',
+  holiday: 'holiday',
+} as const;
+export type ClosureSource = ValueOf<typeof ClosureSource>;
+
+/** `booking_event.type`; `events.ts` gives each its payload (booking lifecycle, "Events"). */
+export const BookingEventType = {
+  created: 'created',
+  rescheduled: 'rescheduled',
+  avis_updated: 'avis_updated',
+  cancelled: 'cancelled',
+  driver_link_regenerated: 'driver_link_regenerated',
+  driver_link_sent: 'driver_link_sent',
+  no_show: 'no_show',
+  checked_in: 'checked_in',
+  turned_away: 'turned_away',
+  called: 'called',
+  reassigned: 'reassigned',
+  uncalled: 'uncalled',
+  at_dock: 'at_dock',
+  loading_started: 'loading_started',
+  done: 'done',
+  departed: 'departed',
+  safety_linked: 'safety_linked',
+} as const;
+export type BookingEventType = ValueOf<typeof BookingEventType>;

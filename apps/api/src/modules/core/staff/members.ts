@@ -4,12 +4,13 @@ import {
   type MemberList,
   type MemberView,
 } from '@rampflow/shared/modules/core/api.staff';
+import type { OrgKind } from '@rampflow/shared/values';
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { AnyOrgId, MembershipId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { userDisplay } from '../../../kernel/users.ts';
-import { invitation, membership, membershipSite, type OrgKind, site } from '../schema.ts';
+import { invitation, membership, membershipSite, site } from '../schema.ts';
 import { invitationView, isPending, openInvitations } from './invitations.ts';
 
 // Members and pending invitations of one tenant (TN-01) or carrier (CR-04). Site lists exist for

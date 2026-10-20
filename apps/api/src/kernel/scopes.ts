@@ -1,3 +1,4 @@
+import type { OrgKind } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -15,7 +16,6 @@ import {
   appUser,
   membership,
   membershipSite,
-  type OrgKind,
   session,
   tenantCarrierLink,
 } from '../modules/core/schema.ts';

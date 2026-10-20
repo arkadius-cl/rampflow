@@ -4,6 +4,7 @@ import type {
   InvitationAcceptBody,
   InvitationInspectResponse,
 } from '@rampflow/shared/modules/core/api.auth';
+import type { OrgKind } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
   type AnyOrgId,
@@ -19,7 +20,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { systemActor } from '../../../kernel/system.ts';
 import { accountByEmail } from '../auth/lookup.ts';
 import { hashPassword } from '../auth/password.ts';
-import { appUser, invitation, membership, membershipSite, type OrgKind, org } from '../schema.ts';
+import { appUser, invitation, membership, membershipSite, org } from '../schema.ts';
 
 // Staff, tenant admin, platform admin and carrier user invitations (PL-01, TN-01, CR-01, CR-04).
 // Every function runs in a transaction under the token scope of the presented token (ADR-0002,

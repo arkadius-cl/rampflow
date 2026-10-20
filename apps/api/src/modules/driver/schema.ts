@@ -1,3 +1,5 @@
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { check, foreignKey, index, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
@@ -15,8 +17,6 @@ import {
 import { allow, carrierOwnedPolicies, tokenIs } from '../../db/rls.ts';
 import { booking } from '../booking/schema.ts';
 
-export const DRIVER_CHANNELS = ['link', 'staff'] as const;
-
 /** A driver link or a staff briefing session for one booking (ADR-0008). */
 export const driverAccess = pgTable(
   'driver_access',
@@ -27,7 +27,7 @@ export const driverAccess = pgTable(
     bookingId: uuid('booking_id').$type<BookingId>().notNull(),
     carrierId: uuid('carrier_id').$type<CarrierId>(),
     tokenHash: bytea('token_hash').notNull().unique(),
-    channel: text('channel', { enum: DRIVER_CHANNELS }).notNull(),
+    channel: text('channel', { enum: values(DriverChannel) }).notNull(),
     createdBy: uuid('created_by').$type<UserId>(),
     expiresAt: instant('expires_at').notNull(),
     revokedAt: instant('revoked_at'),
@@ -46,7 +46,7 @@ export const driverAccess = pgTable(
     index('driver_access_tenant_id_idx').on(t.tenantId),
     index('driver_access_site_id_idx').on(t.siteId),
     index('driver_access_carrier_id_idx').on(t.carrierId),
-    check('driver_access_channel_check', oneOf(t.channel, DRIVER_CHANNELS)),
+    check('driver_access_channel_check', oneOf(t.channel, values(DriverChannel))),
     ...carrierOwnedPolicies(t, { update: true, driver: true }),
     allow('token', 'select', tokenIs(t.tokenHash)),
     allow('token', 'update', tokenIs(t.tokenHash)),

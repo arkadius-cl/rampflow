@@ -1,3 +1,4 @@
+import { JobName } from '@rampflow/shared/values';
 import { getTableColumns, getTableName, sql } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -393,7 +394,10 @@ describe('party matrix: each party reads exactly the rows its policies allow', (
         ctx: { party: 'public', tenant: w.A.tenantId },
       }),
     ],
-    ['system', () => ({ scope: { party: 'system', job: 'matrix' }, ctx: { party: 'system' } })],
+    [
+      'system',
+      () => ({ scope: { party: 'system', job: JobName.outbox }, ctx: { party: 'system' } }),
+    ],
   ];
 
   for (const [name, make] of parties) {

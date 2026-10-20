@@ -16,7 +16,7 @@ export {
   type LocaleSet,
   type ModuleManifest,
   type NavItem,
-  type OrgParty,
+  type OrgKind,
   ROLE_INCLUDES,
   ROLE_PARTY,
   ROLES,

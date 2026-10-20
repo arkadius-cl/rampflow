@@ -1,4 +1,5 @@
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   AcknowledgementBody,
@@ -32,7 +33,7 @@ import { driverSafety, keepPass, redeemPasses } from './safety_pass.redeem.ts';
 
 export interface DriverVisit {
   ctx: BookingContext;
-  channel: 'link' | 'staff';
+  channel: DriverChannel;
   booking: {
     id: BookingId;
     tenantId: TenantId;

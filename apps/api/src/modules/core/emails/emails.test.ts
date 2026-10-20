@@ -1,10 +1,11 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import { STAFF_LOCALES } from '@rampflow/shared';
+import type { TokenPurpose } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
 import { loadTemplateFile } from '../../../kernel/outbox.ts';
-import { deriveToken, type TokenPurpose } from '../../../kernel/tokens.ts';
+import { deriveToken } from '../../../kernel/tokens.ts';
 
 // The account emails of U2 as the outbox worker renders them: every staff locale, no raw key,
 // and the link carries the token derived from the payload's row id in the fragment.

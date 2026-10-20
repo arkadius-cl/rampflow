@@ -1,16 +1,18 @@
+import type { ActorParty } from '@rampflow/shared/modules/booking/values';
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import type { SystemActorName } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import type { BookingId, CarrierId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import type { Access } from '../../../kernel/access.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
-import type { ACTOR_PARTIES } from '../schema.ts';
 
 /** Who issues a booking command, derived from the request scope (ADR-0002, ADR-0005). */
 export type BookingActor =
   | { party: 'staff'; userId: UserId }
   | { party: 'carrier'; userId: UserId; carrierId: CarrierId }
-  | { party: 'driver'; bookingId: BookingId; channel: 'link' | 'staff' }
-  | { party: 'system'; job: string };
+  | { party: 'driver'; bookingId: BookingId; channel: DriverChannel }
+  | { party: 'system'; job: SystemActorName };
 
 /** Everything a lifecycle function needs: the request transaction, the actor, access and now. */
 export interface BookingContext {
@@ -62,7 +64,7 @@ export const actorUserId = (actor: BookingActor): UserId | null =>
 
 /** `booking_event.actor_*` columns. */
 export function eventActor(actor: BookingActor): {
-  actorParty: (typeof ACTOR_PARTIES)[number];
+  actorParty: ActorParty;
   actorUserId: UserId | null;
   actorJob: string | null;
 } {

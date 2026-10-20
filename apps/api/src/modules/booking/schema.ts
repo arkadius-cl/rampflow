@@ -5,6 +5,8 @@ import {
   LOAD_STATUSES,
   TURN_AWAY_REASONS,
 } from '@rampflow/shared/modules/booking/lifecycle';
+import { ActorParty, CreatedParty, Punctuality } from '@rampflow/shared/modules/booking/values';
+import { values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -73,7 +75,7 @@ export const booking = pgTable(
     blocksUntil: instant('blocks_until').notNull(),
     siteTimeZone: text('site_time_zone').notNull(),
     loadUnits: integer('load_units').notNull(),
-    createdParty: text('created_party', { enum: ['carrier', 'staff'] }).notNull(),
+    createdParty: text('created_party', { enum: values(CreatedParty) }).notNull(),
     createdBy: uuid('created_by')
       .$type<UserId>()
       .references(() => appUser.id),
@@ -81,7 +83,7 @@ export const booking = pgTable(
     forced: boolean('forced').notNull().default(false),
     walkIn: boolean('walk_in').notNull().default(false),
     dockId: uuid('dock_id').$type<DockId>(),
-    punctuality: text('punctuality', { enum: ['early', 'on_time', 'late'] }),
+    punctuality: text('punctuality', { enum: values(Punctuality) }),
     punctualityMinutes: integer('punctuality_minutes'),
     checkedInAt: instant('checked_in_at'),
     calledAt: instant('called_at'),
@@ -132,8 +134,8 @@ export const booking = pgTable(
       .where(sql`${t.status} = 'confirmed'`),
     check('booking_status_check', oneOf(t.status, BOOKING_STATUSES)),
     check('booking_direction_check', oneOf(t.direction, DIRECTIONS)),
-    check('booking_created_party_check', oneOf(t.createdParty, ['carrier', 'staff'])),
-    check('booking_punctuality_check', oneOf(t.punctuality, ['early', 'on_time', 'late'])),
+    check('booking_created_party_check', oneOf(t.createdParty, values(CreatedParty))),
+    check('booking_punctuality_check', oneOf(t.punctuality, values(Punctuality))),
     check('booking_turn_away_reason_check', oneOf(t.turnAwayReason, TURN_AWAY_REASONS)),
     check(
       'booking_window_check',
@@ -148,8 +150,6 @@ export const booking = pgTable(
   ],
 );
 
-export const ACTOR_PARTIES = ['carrier', 'tenant', 'driver', 'system'] as const;
-
 /** Append-only history of a booking (ADR-0005). */
 export const bookingEvent = pgTable(
   'booking_event',
@@ -163,7 +163,7 @@ export const bookingEvent = pgTable(
     fromStatus: text('from_status', { enum: BOOKING_STATUSES }),
     toStatus: text('to_status', { enum: BOOKING_STATUSES }),
     at: instant('at').notNull(),
-    actorParty: text('actor_party', { enum: ACTOR_PARTIES }).notNull(),
+    actorParty: text('actor_party', { enum: values(ActorParty) }).notNull(),
     actorUserId: uuid('actor_user_id').$type<UserId>(),
     actorJob: text('actor_job'),
     data: jsonb('data').notNull().default({}),
@@ -177,7 +177,7 @@ export const bookingEvent = pgTable(
     index('booking_event_tenant_id_idx').on(t.tenantId),
     index('booking_event_site_id_idx').on(t.siteId),
     index('booking_event_carrier_id_idx').on(t.carrierId),
-    check('booking_event_actor_party_check', oneOf(t.actorParty, ACTOR_PARTIES)),
+    check('booking_event_actor_party_check', oneOf(t.actorParty, values(ActorParty))),
     ...carrierOwnedPolicies(t, { update: false, driver: true }),
     allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
   ],
