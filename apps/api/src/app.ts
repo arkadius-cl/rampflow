@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { db } from './db/pool.ts';
+import { apiDocs } from './kernel/api-docs.ts';
 import { type Clock, isPinnable, pinnableClock, systemClock } from './kernel/clock.ts';
 import { type AppEnv, env } from './kernel/env.ts';
 import { describeForLog, onError, onNotFound } from './kernel/errors.ts';
@@ -16,6 +17,8 @@ export interface AppOptions {
   /** Origins whose mutating requests the API accepts; defaults to APP_ORIGIN and APP_EXTRA_ORIGINS. */
   origins?: readonly string[];
   testRoutes?: boolean;
+  /** Swagger UI at `/api/docs` and the document at `/api/openapi.json` (development). */
+  apiDocs?: boolean;
   /** Serve the built SPAs (production). */
   static?: StaticRoots;
   /** Production adds HSTS; defaults to `NODE_ENV=production`. */
@@ -46,6 +49,7 @@ function buildApi(options: AppOptions) {
     .use(requireSameOrigin(options.origins ?? [env.APP_ORIGIN, ...env.APP_EXTRA_ORIGINS]))
     .route('/health', health)
     .route('/test', pinnable ? testRoutes(pinnable) : new Hono<AppEnv>())
+    .route('/', options.apiDocs ? apiDocs() : new Hono<AppEnv>())
     .route('/', modulesApi);
 }
 
@@ -59,6 +63,9 @@ export function createApp(options: AppOptions = {}) {
   return app.onError(onError).notFound(onNotFound);
 }
 
-export const app = createApp({ testRoutes: env.ENABLE_TEST_ROUTES });
+export const app = createApp({
+  testRoutes: env.ENABLE_TEST_ROUTES,
+  apiDocs: env.ENABLE_API_DOCS,
+});
 
 export type AppType = typeof app;
