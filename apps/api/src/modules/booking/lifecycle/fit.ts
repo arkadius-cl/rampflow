@@ -1,5 +1,7 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
+import type { FitFailure } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, siteDay, slotGrid, type TimeZone } from '@rampflow/shared/time';
+import type { ConflictReason } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -7,7 +9,7 @@ import type { Access } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { loadDayTimeline } from '../capacity/load.ts';
 import { eligibleResources, offersFor } from '../capacity/offers.ts';
-import { checkFit, type FitFailure } from '../capacity/timeline.ts';
+import { checkFit } from '../capacity/timeline.ts';
 import { type LoadTypeId, loadType, type ResourceId } from '../schema.resources.ts';
 
 // Capacity decisions of create, reschedule and avis edits (ADR-0004, "Booking write"). Callers
@@ -65,7 +67,7 @@ export async function conflictWithOffers(
   now: Date,
   scope: OfferScope,
   day: LocalDate,
-  reason: FitFailure | 'not_offered',
+  reason: FitFailure | typeof ConflictReason.not_offered,
 ): Promise<never> {
   const entitlements = access.entitlements;
   if (!entitlements) throw new Error('booking write without tenant entitlements');

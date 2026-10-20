@@ -320,7 +320,7 @@ function AvisEditForm({
         <Alert variant="destructive">
           <AlertTitle>{errorText(tCore, conflict)}</AlertTitle>
           <AlertDescription>
-            {conflict.reason === 'stale_version'
+            {conflict.conflictReason === 'stale_version'
               ? t(($) => $.plan.avis.stale)
               : t(($) => $.plan.avis.unchanged)}
           </AlertDescription>

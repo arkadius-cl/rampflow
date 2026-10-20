@@ -1,4 +1,5 @@
 import type { ValueOf } from '../../values/define.ts';
+import { ConflictReason } from '../../values/errors.ts';
 
 // The booking lifecycle's value sets (ADR-0005, docs/reference/booking-lifecycle.md).
 
@@ -170,3 +171,11 @@ export const ClosureKind = {
   blocked: 'blocked',
 } as const;
 export type ClosureKind = ValueOf<typeof ClosureKind>;
+
+/** Why a booking does not fit the capacity timeline; each is also its 409 reason. */
+export const FitFailure = {
+  closed: ConflictReason.closed,
+  capacity_full: ConflictReason.capacity_full,
+  daily_cap_reached: ConflictReason.daily_cap_reached,
+} as const;
+export type FitFailure = ValueOf<typeof FitFailure>;

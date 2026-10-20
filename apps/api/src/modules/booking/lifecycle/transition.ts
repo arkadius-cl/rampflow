@@ -15,6 +15,7 @@ import {
 } from '@rampflow/shared/modules/booking/lifecycle';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import type { ConflictReason } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, DockId } from '../../../db/ids.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -84,7 +85,7 @@ export interface TransitionResult {
   changed: boolean;
 }
 
-const conflict = (reason: string, details: Record<string, unknown> = {}) =>
+const conflict = (reason: ConflictReason, details: Record<string, unknown> = {}) =>
   new ApiError('conflict', `Conflict: ${reason}`, { reason, ...details });
 
 const setting = <K extends Parameters<BookingContext['access']['setting']>[0]>(

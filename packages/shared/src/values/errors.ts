@@ -14,3 +14,28 @@ export const ErrorCode = {
   internal_error: 'internal_error',
 } as const;
 export type ErrorCode = ValueOf<typeof ErrorCode>;
+
+/** `details.reason` of a 409 `conflict`. The UI shows `core:errors.conflict.<reason>`. */
+export const ConflictReason = {
+  capacity_full: 'capacity_full',
+  daily_cap_reached: 'daily_cap_reached',
+  closed: 'closed',
+  not_offered: 'not_offered',
+  dock_occupied: 'dock_occupied',
+  dock_in_resource: 'dock_in_resource',
+  dock_inactive: 'dock_inactive',
+  invalid_transition: 'invalid_transition',
+  cutoff_passed: 'cutoff_passed',
+  stale_version: 'stale_version',
+  not_due: 'not_due',
+  duplicate_reference: 'duplicate_reference',
+  duplicate_code: 'duplicate_code',
+  already_member: 'already_member',
+  holiday_closure: 'holiday_closure',
+  manual_closure: 'manual_closure',
+  safety_missing: 'safety_missing',
+  acknowledgement_invalid: 'acknowledgement_invalid',
+  quiz_incomplete: 'quiz_incomplete',
+  quiz_not_passed: 'quiz_not_passed',
+} as const;
+export type ConflictReason = ValueOf<typeof ConflictReason>;

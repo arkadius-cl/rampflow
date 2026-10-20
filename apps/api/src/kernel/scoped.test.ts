@@ -25,7 +25,7 @@ function toyApp() {
     .use(scoped(tenantScope))
     .post('/throws', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');
-      throw new ApiError('conflict', 'after a write', { reason: 'test' });
+      throw new ApiError('conflict', 'after a write', { reason: 'stale_version' });
     })
     .post('/returns-409', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');
@@ -65,7 +65,7 @@ describe('scoped(): one transaction per request', () => {
     });
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({
-      error: { code: 'conflict', message: 'after a write', details: { reason: 'test' } },
+      error: { code: 'conflict', message: 'after a write', details: { reason: 'stale_version' } },
     });
     expect(await hallsNamed(name)).toEqual([]);
   });

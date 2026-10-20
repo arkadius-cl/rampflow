@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@rampflow/shared/values';
+import type { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { DrizzleQueryError } from 'drizzle-orm';
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
@@ -19,6 +19,8 @@ export const ERROR_STATUS = {
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 export type ErrorDetails = Readonly<Record<string, unknown>>;
+/** A 409 `conflict` always names its reason, so the client can explain it. */
+export type ConflictDetails = { readonly reason: ConflictReason } & ErrorDetails;
 
 export interface ErrorBody {
   error: { code: ErrorCode; message: string; details?: ErrorDetails };
@@ -43,12 +45,22 @@ export class ApiError extends Error {
   readonly status: ContentfulStatusCode;
   readonly details: ErrorDetails | undefined;
 
+  constructor(code: 'conflict', message: string, details: ConflictDetails);
+  constructor(code: Exclude<ErrorCode, 'conflict'>, message?: string, details?: ErrorDetails);
   constructor(code: ErrorCode, message: string = DEFAULT_MESSAGE[code], details?: ErrorDetails) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.status = ERROR_STATUS[code];
     this.details = details;
+  }
+
+  /** The same error with more details. A conflict keeps the reason its constructor demanded. */
+  withDetails(extra: ErrorDetails & { readonly reason?: never }): ApiError {
+    const details: ErrorDetails = { ...this.details, ...extra };
+    return this.code === 'conflict'
+      ? new ApiError(this.code, this.message, details as ConflictDetails)
+      : new ApiError(this.code, this.message, details);
   }
 
   body(): ErrorBody {

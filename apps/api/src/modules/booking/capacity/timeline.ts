@@ -1,3 +1,4 @@
+import type { FitFailure } from '@rampflow/shared/modules/booking/values';
 import type { GridSlot } from '@rampflow/shared/time';
 
 // The capacity timeline of one resource on one site-local day (ADR-0004, "Availability").
@@ -44,7 +45,6 @@ export interface ResourceDay {
   startsOnDay: number;
 }
 
-export type FitFailure = 'closed' | 'capacity_full' | 'daily_cap_reached';
 export type Fit = { ok: true } | { ok: false; reason: FitFailure };
 
 const floorIndex = (windowStart: Date, t: Date) =>

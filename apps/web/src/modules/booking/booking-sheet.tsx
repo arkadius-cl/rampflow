@@ -230,7 +230,7 @@ function SheetForm({
         }
         if (first === 'carrier') form.setError('carrierName', { type: issue.code });
       }
-      if (e.code === 'conflict' && FORCE_REASONS.has(e.reason ?? '')) {
+      if (e.code === 'conflict' && FORCE_REASONS.has(e.conflictReason ?? '')) {
         setForceNeeded(canForce);
         void queryClient.invalidateQueries({ queryKey: bookingKey(orgId) });
       }

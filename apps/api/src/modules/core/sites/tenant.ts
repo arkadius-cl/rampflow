@@ -1,4 +1,5 @@
 import type { Entitlements } from '@rampflow/shared';
+import type { ConflictReason } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
@@ -34,7 +35,7 @@ function pgError(e: unknown): { code?: string; constraint?: string } | null {
 }
 
 /** Rethrows a unique violation of `constraint` as 409 `conflict` with `reason`. */
-export function conflictOnUnique(e: unknown, constraint: string, reason: string): never {
+export function conflictOnUnique(e: unknown, constraint: string, reason: ConflictReason): never {
   const pg = pgError(e);
   if (pg?.code === '23505' && pg.constraint === constraint) {
     throw new ApiError('conflict', `Conflict: ${reason}`, { reason });

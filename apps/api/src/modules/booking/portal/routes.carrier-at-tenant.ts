@@ -54,7 +54,7 @@ async function withCarrierOffers<T>(run: () => Promise<T>): Promise<T> {
   } catch (e) {
     const offers = e instanceof ApiError ? e.details?.offers : undefined;
     if (!(e instanceof ApiError) || offers === undefined) throw e;
-    throw new ApiError(e.code, e.message, { ...e.details, offers: forCarrier(offers as Offers) });
+    throw e.withDetails({ offers: forCarrier(offers as Offers) });
   }
 }
 
