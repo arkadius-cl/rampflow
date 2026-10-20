@@ -47,7 +47,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { carrierContextQuery } from '@/lib/access';
 import { ApiFailure, api, call } from '@/lib/api';
 import { useSiteTime } from '@/lib/time';
-import { cn } from '@/lib/utils';
+import { cn, randomId } from '@/lib/utils';
 import {
   AvisFields,
   type AvisFormValues,
@@ -118,7 +118,7 @@ export function BookingWizard({
   });
   const [date, setDate] = useState<LocalDate | null>(null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
-  const [clientRequestId, setClientRequestId] = useState(() => crypto.randomUUID());
+  const [clientRequestId, setClientRequestId] = useState(() => randomId());
   const form = useForm<AvisFormValues, unknown, Avis>({
     resolver: avisResolver,
     defaultValues: emptyAvis(),
@@ -134,7 +134,7 @@ export function BookingWizard({
     setSelection({ tenantId: data.tenantId, siteId: data.siteId, loadTypeId: data.loadTypeId });
     setDate(null);
     setStartsAt(null);
-    setClientRequestId(crypto.randomUUID());
+    setClientRequestId(randomId());
     // The prefill leaves references out on purpose; the form starts with one empty row.
     const { references: _, ...rest } = data.avis;
     form.reset(
@@ -192,14 +192,14 @@ export function BookingWizard({
     onSuccess: async (booking) => {
       queryClient.setQueryData(portalBookingQuery(orgId, booking.id).queryKey, booking);
       await queryClient.invalidateQueries({ queryKey: [...portalKey(orgId), 'list'] });
-      setClientRequestId(crypto.randomUUID());
+      setClientRequestId(randomId());
       go({ step: 'done', booking: booking.id });
     },
     onError: (e) => {
       if (request && refreshOffers(e, request)) {
         setStartsAt(null);
         // A new attempt is a new request; the old id names no booking.
-        setClientRequestId(crypto.randomUUID());
+        setClientRequestId(randomId());
         toast.error(t(($) => $.portal.wizard.taken));
         go({ ...search, step: 'when' });
         return;

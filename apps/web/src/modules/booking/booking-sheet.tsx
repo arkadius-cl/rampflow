@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAccess } from '@/lib/access';
 import { ApiFailure, api, call } from '@/lib/api';
 import { useSiteTime } from '@/lib/time';
+import { randomId } from '@/lib/utils';
 import {
   AvisFields,
   type AvisFormValues,
@@ -149,7 +150,7 @@ function SheetForm({
   const siteTime = useSiteTime();
   const rules = useAvisRules(siteId);
   // One id per sheet: a retried submit returns the first booking instead of a second one.
-  const [clientRequestId] = useState(() => crypto.randomUUID());
+  const [clientRequestId] = useState(() => randomId());
   const [forceNeeded, setForceNeeded] = useState(false);
 
   const carriers = useQuery(carrierOptionsQuery(orgId));
