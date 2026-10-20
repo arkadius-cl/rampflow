@@ -5,7 +5,7 @@ type: reference
 audience: [agent, developer]
 tags: [modules, entitlements, permissions, settings, navigation, api, frontend]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md, docs/decisions/ADR-0011-frontend-routes-and-org-context.md, docs/reference/api-routes.md]
 ---
 
@@ -310,9 +310,15 @@ export const modulesApi = new Hono<AppEnv>()
 // apps/api/src/modules/yard/routes.tenant.ts (U9), mounted at /t/:orgId/yard
 export const tenant = new Hono<AppEnv>().post(
   '/bookings/:bookingId/check-in',
+  op({
+    id: 'yard.gate.checkIn',                      // <module>.<area>.<verbNoun>, unique across the API
+    stories: ['YD-02'],
+    description: '`{ plateSeen? }`; 409 `safety_missing` under enforcement',  // Markdown
+    responses: { 200: type<YardTruck>() },        // a named type from packages/shared
+  }),
   requirePermission('yard.gate'),
-  zValidator('param', BookingParam, onInvalid),
-  zValidator('json', CheckInBody, onInvalid),     // 422 validation_failed with zod paths
+  validate('param', BookingParam),                // a bad id answers 404
+  validate('json', CheckInBody),                  // 422 validation_failed with zod paths
   async (c) => {
     const { bookingId } = c.req.valid('param');
     const booking = await checkIn(c.var.db, actorOf(c), bookingId, c.req.valid('json'));
@@ -320,6 +326,11 @@ export const tenant = new Hono<AppEnv>().post(
   },
 );
 ```
+
+- `op()` from `kernel/describe.ts` goes first in every chain. It records the route for the API description and has no effect on the request.
+- `validate(target, schema)` from `kernel/validate.ts` validates `param`, `query` or `json` with a zod schema from `packages/shared` and records the schema.
+- `responses` names each success status the handler returns: `type<T>()` for a JSON body of a named TypeScript type exported from `packages/shared/src/modules/<id>/api*.ts`, `noBody` for 202 and 204 without a body, and `file('text/csv')` for a body that is not JSON. `limits` lists the hard limits the service checks with `withinLimit`, and `body: file(...)` describes a raw request body.
+- A route whose JSON response has no named type yet leaves that status out and is listed in `apps/api/openapi.allowlist.json`. The list may only shrink.
 
 ### Route cases
 
@@ -430,7 +441,7 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
 | Path | Contents |
 |---|---|
 | `packages/shared/src/modules/<id>/manifest.ts` | the manifest |
-| `packages/shared/src/modules/<id>/api.<area>.ts` | zod request and response schemas shared by API and web, imported as `@rampflow/shared/modules/<id>/api.<area>` |
+| `packages/shared/src/modules/<id>/api.<area>.ts` | zod request schemas and named TypeScript response types shared by API and web, imported as `@rampflow/shared/modules/<id>/api.<area>` |
 | `apps/api/src/modules/<id>/schema*.ts` | Drizzle tables and policies, discovered by glob |
 | `apps/api/src/modules/<id>/<area>/routes.<party>.ts` | Hono routers, mounted by `modules/index.ts` |
 | `apps/api/src/modules/<id>/<area>/*.ts` | services and repositories: functions that take `tx` |
@@ -454,7 +465,7 @@ The step-by-step checklist with commands is [Add a module or an entitlement](../
    5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
 2. **Implementation (unit).**
    1. Tables in `schema*.ts` with policies from `apps/api/src/db/rls.ts`; then `pnpm db:generate --name <unit-id>`.
-   2. Routes with `requirePermission`, `requireEntitlement` where finer than the module, and zod validation.
+   2. Routes with `op()`, `requirePermission`, `requireEntitlement` where finer than the module, and `validate()`.
    3. A route case for every route.
    4. Screens with `guard`, components from shadcn, forms with `Field`.
    5. One Playwright spec per story ID.
