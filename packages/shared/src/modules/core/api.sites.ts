@@ -1,16 +1,9 @@
 import * as z from 'zod';
 import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
-import { values } from '../../values/define.ts';
 import { StaffLocale } from '../../values/locales.ts';
-import { CountedDockStatus, DockStatus, DoorType, TemperatureZone } from './values.ts';
+import { DockStatus, DoorType, TemperatureZone } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
-
-export { CountedDockStatus, DockStatus, DoorType, TemperatureZone };
-export const DOOR_TYPES = values(DoorType);
-export const TEMPERATURE_ZONES = values(TemperatureZone);
-export const DOCK_STATUSES = values(DockStatus);
-export const COUNTED_DOCK_STATUSES = values(CountedDockStatus);
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();

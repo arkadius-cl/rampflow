@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { AvisInput } from '@rampflow/shared/modules/avis/avis';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
 import {
   BookingParty,
+  type BookingStatus,
   type CreatedParty,
   Direction,
   ResourceKind,

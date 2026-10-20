@@ -1,7 +1,8 @@
 import type { BookingView, RescheduleBooking } from '@rampflow/shared/modules/booking/api.staff';
-import { availableCommands, type BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import { availableCommands } from '@rampflow/shared/modules/booking/lifecycle';
 import {
   BookingParty,
+  type BookingStatus,
   ChangeLock,
   CommandName,
   OnSiteStatus,

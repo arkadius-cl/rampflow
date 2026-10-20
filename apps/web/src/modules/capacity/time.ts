@@ -1,10 +1,10 @@
-import type { StaffLocale } from '@rampflow/shared';
 import {
   type LocalDateTime,
   localDateTimeToInstant,
   siteTimeParts,
   type TimeZone,
 } from '@rampflow/shared/time';
+import type { StaffLocale } from '@rampflow/shared/values';
 
 // Display of the local wall-clock values the capacity screens edit (ADR-0012): weekly hours and
 // closures are site-local, so they show with the site zone's short names, never converted.

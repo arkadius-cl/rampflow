@@ -1,6 +1,6 @@
 import { tzOffset } from '@date-fns/tz';
 import * as z from 'zod';
-import type { DriverLocale, StaffLocale } from '../locales.ts';
+import type { DriverLocale, StaffLocale } from '../values/locales.ts';
 import { WallTimeFold } from '../values/time.ts';
 
 // Calendar math for sites (ADR-0012). Instants are UTC `Date`s; local values are branded strings.

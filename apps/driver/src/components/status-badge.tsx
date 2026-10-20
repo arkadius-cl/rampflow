@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import type { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { BadgeTone, DriverBadgeSize } from '@rampflow/shared/values';
 import { cva, type VariantProps } from 'class-variance-authority';
 import {

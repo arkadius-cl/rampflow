@@ -1,5 +1,5 @@
-import type { StaffLocale } from '@rampflow/shared';
 import { siteTimeParts, type TimeZone, viewerTime } from '@rampflow/shared/time';
+import type { StaffLocale } from '@rampflow/shared/values';
 import { useLocale } from './i18n';
 
 // Site time for display (ADR-0012, "Display"), on the shared time module: the wall clock of the

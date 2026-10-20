@@ -8,7 +8,6 @@ import {
   type CommandActor,
   type CommandDef,
   type CommandInput,
-  type CommandName,
   type CommandOf,
   punctualityOf,
   sourceStates,
@@ -20,6 +19,7 @@ import {
   BookingStatus,
   CarrierLinkStatus,
   CheckInSafety,
+  type CommandName,
 } from '@rampflow/shared/modules/booking/values';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';

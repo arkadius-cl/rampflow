@@ -1,7 +1,7 @@
-import { OrgKind } from '../values/roles.ts';
+import { OrgKind, type Role } from '../values/roles.ts';
 import type { Catalog, PermissionKeyOf } from './catalog.ts';
 import type { ResolvedEntitlementsOf } from './entitlements.ts';
-import { type NavItem, ROLE_INCLUDES, type Role } from './module.ts';
+import { type NavItem, ROLE_INCLUDES } from './module.ts';
 
 /** The role itself plus every role it includes, transitively. */
 export function rolesHeldBy(role: Role): ReadonlySet<Role> {

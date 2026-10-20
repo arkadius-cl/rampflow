@@ -6,13 +6,15 @@ import {
   GuardKind,
   Module,
   Permission,
+  StoryId,
   ValidationTarget,
+  values,
 } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { requireEntitlement, requireModule, requirePermission } from './access.ts';
-import { describedBy, noBody, op, STORY_IDS, type } from './describe.ts';
+import { describedBy, noBody, op, type } from './describe.ts';
 import { onError } from './errors.ts';
 import { validate } from './validate.ts';
 
@@ -39,7 +41,7 @@ describe('op()', () => {
       'utf8',
     );
     const inDocs = new Set(scope.match(/\b[A-Z]{2}-\d{2}\b/g));
-    expect([...STORY_IDS].sort()).toEqual([...inDocs].sort());
+    expect([...values(StoryId)].sort()).toEqual([...inDocs].sort());
   });
 });
 

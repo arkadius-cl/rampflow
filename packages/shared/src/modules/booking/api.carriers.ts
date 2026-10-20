@@ -1,25 +1,16 @@
 import * as z from 'zod';
-import { values } from '../../values/define.ts';
 import { StaffLocale } from '../../values/locales.ts';
 import { Email, EmailToken, Password } from '../core/api.auth.ts';
 import {
-  CarrierLinkSource,
+  type CarrierLinkSource,
   CarrierLinkStatus,
-  RegistrationCountry,
-  RegistrationMode,
-  RegistrationStatus,
+  type RegistrationMode,
+  type RegistrationStatus,
 } from './values.ts';
 
 // Request schemas and response shapes of the carrier network (U7): /api/t/:orgId/carriers,
 // /api/c/:orgId/tenants, /api/public/links, /api/public/registrations and
 // /api/public/carrier-invitations (TN-03, TN-04, CR-01, CR-02).
-
-export { CarrierLinkSource, CarrierLinkStatus, RegistrationMode, RegistrationStatus };
-export const CARRIER_LINK_STATUSES = values(CarrierLinkStatus);
-export const CARRIER_LINK_SOURCES = values(CarrierLinkSource);
-export const REGISTRATION_STATUSES = values(RegistrationStatus);
-export const REGISTRATION_MODES = values(RegistrationMode);
-export const REGISTRATION_COUNTRIES = values(RegistrationCountry);
 
 const CompanyName = z.string().trim().min(1).max(120);
 const PersonName = z.string().trim().min(1).max(120);

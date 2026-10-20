@@ -1,9 +1,9 @@
 import type {
+  AckStatus,
   PictogramId,
   TranslationState,
   VersionStatus,
-} from '@rampflow/shared/modules/safety/api.authoring';
-import type { AckStatus } from '@rampflow/shared/modules/safety/validity';
+} from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
 import { BadgeTone, DisplayNamesType } from '@rampflow/shared/values';
 import {

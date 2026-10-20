@@ -10,9 +10,15 @@ import type { WallTimeFold } from '../../values/time.ts';
 import { AvisInput, type AvisView } from '../avis/avis.ts';
 import type { InstructionSafety as InstructionSafetySet, SafetyStatus } from '../safety/values.ts';
 import type { BookingEventData } from './events.ts';
-import type { Punctuality, TurnAwayReason } from './lifecycle.ts';
 import type { ActorParty, BookingEventType } from './values.ts';
-import { BookingStatus, type CreatedParty, type Direction, type ResourceKind } from './values.ts';
+import {
+  BookingStatus,
+  type CreatedParty,
+  type Direction,
+  type Punctuality,
+  type ResourceKind,
+  type TurnAwayReason,
+} from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/bookings (BK-01, BK-02, BK-03, AV-01,
 // AV-02, CR-06, YD-08).

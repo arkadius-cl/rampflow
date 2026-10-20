@@ -26,7 +26,7 @@
 - [x] 4.2 Same for `apps/api` (`src`, `test`, `scripts`): include `requirePermission(Permission...)`, `requireEntitlement(Feature...)`, `withModule(Module...)`, `ApiError` codes, conflict reasons, `systemActor` and job names. Verify `pnpm typecheck`, `pnpm --filter @rampflow/api test`, no reports for `apps/api`, and that `pnpm api:docs --check` passes with `openapi.gen.json` unchanged.
 - [x] 4.3 Same for `apps/web`: comparisons, properties, JSX props, `validateSearch` schemas with `z.enum(<Set>)` from `values.ts`, and the i18n index sites. Delete the stale sets and unions in `apps/web/src/lib/domain.ts`. Verify `pnpm typecheck`, the web tests, and no reports for `apps/web`.
 - [x] 4.4 Same for `apps/driver` and `e2e`. Verify `pnpm typecheck` and no reports, and that `pnpm test:e2e` passes unchanged.
-- [ ] 4.5 Delete the `UPPER_CASE` aliases from task 1.3 and every duplicate set (API schema copies, the manifest `PTS` copies, the web copies). Verify `pnpm typecheck`, and that `grep -rE "export const [A-Z_]+ = \[" packages apps --include=*.ts` outside node_modules finds no string-array value set.
+- [x] 4.5 Delete the `UPPER_CASE` aliases from task 1.3 and every duplicate set (API schema copies, the manifest `PTS` copies, the web copies). Verify `pnpm typecheck`, and that `grep -rE "export const [A-Z_]+ = \[" packages apps --include=*.ts` outside node_modules finds no string-array value set.
 
 ## 5. Database
 

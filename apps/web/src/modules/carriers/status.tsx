@@ -1,7 +1,7 @@
 import type {
   CarrierLinkStatus,
   RegistrationStatus,
-} from '@rampflow/shared/modules/booking/api.carriers';
+} from '@rampflow/shared/modules/booking/values';
 import { BadgeTone } from '@rampflow/shared/values';
 import {
   BanIcon,

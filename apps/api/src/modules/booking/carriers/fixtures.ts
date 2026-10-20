@@ -1,6 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import type { RegistrationMode } from '@rampflow/shared/modules/booking/api.carriers';
-import type { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import type { RegistrationMode, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { StaffLocale, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';

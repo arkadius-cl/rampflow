@@ -1,8 +1,5 @@
-import type {
-  CarrierLinkSource,
-  CarrierLinkView,
-} from '@rampflow/shared/modules/booking/api.carriers';
-import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import type { CarrierLinkView } from '@rampflow/shared/modules/booking/api.carriers';
+import { type CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import { ErrorCode, ForbiddenReason } from '@rampflow/shared/values';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId } from '../../../db/ids.ts';

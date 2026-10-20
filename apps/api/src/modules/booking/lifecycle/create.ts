@@ -1,7 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { type Avis, normalizePlate, totalLoadUnits } from '@rampflow/shared/modules/avis/avis';
 import type { CarrierRef } from '@rampflow/shared/modules/booking/api.staff';
-import type { TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
 import {
   BookingEventType,
   BookingParty,
@@ -10,6 +9,7 @@ import {
   CommandName,
   CreatedParty,
   CreateMode,
+  type TurnAwayReason,
   WalkInOutcome,
 } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';

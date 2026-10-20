@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Block, PictogramId } from '@rampflow/shared/modules/safety/api.authoring';
+import type { Block } from '@rampflow/shared/modules/safety/api.authoring';
 import {
   AcknowledgementBody,
   type DriverBriefing,
@@ -9,6 +9,7 @@ import {
   BlockKind,
   BriefingStep,
   InstructionSafety,
+  type PictogramId,
   TranslationState,
 } from '@rampflow/shared/modules/safety/values';
 import { CheckIcon, ChevronRightIcon, CircleAlertIcon, LanguagesIcon, XIcon } from 'lucide-react';

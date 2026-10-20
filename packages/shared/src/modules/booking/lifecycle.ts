@@ -5,14 +5,11 @@ import { Feature, Permission } from '../../values/keys.ts';
 import { DriverLocale } from '../../values/locales.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import {
-  BookingParty,
+  type BookingParty,
   BookingStatus,
   CommandName,
-  DockHoldingStatus,
-  FinalBookingStatus,
   LinkVia,
   LoadStatus,
-  OnSiteStatus,
   Punctuality,
   SiteLock,
   TurnAwayReason,
@@ -20,28 +17,6 @@ import {
 
 // The booking lifecycle as data (ADR-0005, docs/reference/booking-lifecycle.md). The API
 // enforces it in transitionBooking; the web app reads it to decide which actions to offer.
-
-export {
-  BookingParty,
-  BookingStatus,
-  CommandName,
-  DockHoldingStatus,
-  FinalBookingStatus,
-  LinkVia,
-  LoadStatus,
-  OnSiteStatus,
-  Punctuality,
-  TurnAwayReason,
-};
-export const BOOKING_STATUSES = values(BookingStatus);
-export const LOAD_STATUSES = values(LoadStatus);
-export const DOCK_HOLDING_STATUSES = values(DockHoldingStatus);
-export const ON_SITE_STATUSES = values(OnSiteStatus);
-export const FINAL_STATUSES = values(FinalBookingStatus);
-export const TURN_AWAY_REASONS = values(TurnAwayReason);
-export const PUNCTUALITY = values(Punctuality);
-export const LINK_VIA = values(LinkVia);
-export const BOOKING_PARTIES = values(BookingParty);
 
 const isoInstant = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
 const reason = z.string().trim().min(1).max(500);
@@ -73,8 +48,6 @@ export const COMMAND_INPUTS = {
   depart: z.object({ reason: reason.nullable().default(null) }),
   link_acknowledgement: z.object({ acknowledgementId: z.uuid(), via: z.enum(LinkVia) }),
 } as const satisfies Record<CommandName, z.ZodType>;
-
-export const COMMAND_NAMES = values(CommandName);
 
 /** `z.object({})` infers `Record<string, never>`, which no `{ type }` intersection satisfies. */
 type Fields<T> = string extends keyof T ? unknown : T;

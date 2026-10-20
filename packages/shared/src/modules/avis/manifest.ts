@@ -1,14 +1,10 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-import { values } from '../../values/define.ts';
 import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { everyScope, SettingScope } from '../../values/settings.ts';
 import { BookingChange } from '../booking/values.ts';
 import { ReferenceType } from './values.ts';
-
-export { ReferenceType };
-export const REFERENCE_TYPES = values(ReferenceType);
 
 export const avis = defineModule({
   id: BookingChange.avis,

@@ -1,6 +1,6 @@
-import type { DriverLocale } from '@rampflow/shared';
 import type { ContentBody } from '@rampflow/shared/modules/safety/api.authoring';
 import { BlockKind, PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
+import type { DriverLocale } from '@rampflow/shared/values';
 
 // The 12-language platform template (SF-01, domain research §4). Pictograms and correct answers
 // are fixed here once; each locale supplies only text, so every locale has the same shape.

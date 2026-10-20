@@ -11,7 +11,6 @@ import {
   type GuardKind,
   StoryId,
   ValidationTarget,
-  values,
 } from '@rampflow/shared/values';
 import type { MiddlewareHandler } from 'hono';
 import type * as z from 'zod';
@@ -20,7 +19,6 @@ import type * as z from 'zod';
 // access.ts tags its guards. The registry has no effect on how a request is handled.
 
 export { StoryId };
-export const STORY_IDS = values(StoryId);
 
 /** `<module>.<area>.<verbNoun>`, unique across the API. */
 export type OperationId = `${string}.${string}.${string}`;

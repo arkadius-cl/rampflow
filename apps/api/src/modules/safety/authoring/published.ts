@@ -1,10 +1,6 @@
-import type {
-  Block,
-  Question,
-  SafetyLocale,
-  TranslationState,
-} from '@rampflow/shared/modules/safety/api.authoring';
+import type { Block, Question, SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import { materialFloor } from '@rampflow/shared/modules/safety/validity';
+import type { TranslationState } from '@rampflow/shared/modules/safety/values';
 import { and, eq, exists, inArray, isNull, ne, or } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';

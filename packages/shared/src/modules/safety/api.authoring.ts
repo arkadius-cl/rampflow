@@ -1,12 +1,6 @@
 import * as z from 'zod';
-import { values } from '../../values/define.ts';
 import { DriverLocale } from '../../values/locales.ts';
 import { BlockKind, PictogramId, TranslationState, VersionStatus } from './values.ts';
-
-export { PictogramId, TranslationState, VersionStatus };
-export const PICTOGRAM_IDS = values(PictogramId);
-export const VERSION_STATUSES = values(VersionStatus);
-export const TRANSLATION_STATES = values(TranslationState);
 
 /** Briefing content exists in the driver languages. */
 export const SafetyLocale = z.enum(DriverLocale);

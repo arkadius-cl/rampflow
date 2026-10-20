@@ -4,8 +4,6 @@ import { ZodIssueCode } from '../../values/validation.ts';
 import { BookingStatus, CreatedParty, Punctuality } from '../booking/values.ts';
 import { KpiKey, KpiUnit } from './values.ts';
 
-export { KpiKey };
-
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
 // definitions are binding in docs/reference/booking-lifecycle.md, "KPIs".
 

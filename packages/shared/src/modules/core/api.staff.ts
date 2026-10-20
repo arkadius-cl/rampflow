@@ -5,10 +5,6 @@ import { CarrierRole, SiteLimitedRole, TenantRole } from '../../values/roles.ts'
 // Request schemas and response shapes of /api/t/:orgId/staff (TN-01) and /api/c/:orgId/users
 // (CR-04). Both list members and pending invitations of one org.
 
-export { CarrierRole, SiteLimitedRole, TenantRole };
-export const TENANT_ROLES = values(TenantRole);
-export const CARRIER_ROLES = values(CarrierRole);
-export const SITE_LIMITED_ROLES = values(SiteLimitedRole);
 export const isSiteLimited = (role: string) =>
   (values(SiteLimitedRole) as readonly string[]).includes(role);
 

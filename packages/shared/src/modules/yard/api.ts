@@ -2,8 +2,13 @@ import * as z from 'zod';
 import { type LocalDate, localDateSchema, type TimeZone } from '../../time/index.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import { CarrierRef } from '../booking/api.staff.ts';
-import type { BookingStatus, Punctuality } from '../booking/lifecycle.ts';
-import { type ResourceKind, TurnAwayReason, WalkInOutcome } from '../booking/values.ts';
+import {
+  type BookingStatus,
+  type Punctuality,
+  type ResourceKind,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '../booking/values.ts';
 import type { DockStatus, TemperatureZone } from '../core/values.ts';
 import type { SafetyStatus } from '../safety/values.ts';
 

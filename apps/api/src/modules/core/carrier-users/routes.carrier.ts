@@ -1,5 +1,4 @@
 import {
-  type CarrierRole,
   type CarrierUserInvitationView,
   type CarrierUserList,
   type CarrierUserView,
@@ -7,6 +6,7 @@ import {
   UpdateCarrierUser,
 } from '@rampflow/shared/modules/core/api.staff';
 import {
+  type CarrierRole,
   OrgKind,
   Permission,
   ScopeParty,

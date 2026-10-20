@@ -1,5 +1,4 @@
 import * as z from 'zod';
-import { values } from '../../values/define.ts';
 import { DriverChannel } from '../driver/values.ts';
 import { SafetyLocale } from './api.authoring.ts';
 import { AckStatus } from './values.ts';
@@ -23,8 +22,6 @@ export const RegisterSearchBody = RegisterFilter.extend({
   cursor: z.string().max(200).optional(),
 });
 export type RegisterSearchBody = z.infer<typeof RegisterSearchBody>;
-
-export const ACK_CHANNELS = values(DriverChannel);
 
 export const RegisterItem = z.object({
   id: z.uuid(),

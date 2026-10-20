@@ -2,10 +2,9 @@ import * as z from 'zod';
 import type { EntitlementSource } from '../../contract/entitlements.ts';
 import type { Limit } from '../../contract/module.ts';
 import type { ModuleId } from '../../registry.ts';
-import { values } from '../../values/define.ts';
 import type { EntitlementKind } from '../../values/entitlements.ts';
 import { PackageId } from '../../values/packages.ts';
-import { UsageKey } from './values.ts';
+import type { UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
 
@@ -36,7 +35,6 @@ export const PutOverride = z.object({
 export type PutOverride = z.infer<typeof PutOverride>;
 
 export type { UsageKey };
-export const USAGE_KEYS = values(UsageKey);
 
 export interface UsageMeter {
   used: number;

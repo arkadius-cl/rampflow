@@ -1,8 +1,7 @@
 import { TZDate } from '@date-fns/tz';
-import type { StaffLocale } from '@rampflow/shared';
 import { KPIS, type KpiReport, type VisitItem } from '@rampflow/shared/modules/report/api';
 import { KpiUnit, VisitCsvColumn } from '@rampflow/shared/modules/report/values';
-import { values } from '@rampflow/shared/values';
+import { type StaffLocale, values } from '@rampflow/shared/values';
 import { formatISO } from 'date-fns';
 import type { TFunction } from 'i18next';
 

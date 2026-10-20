@@ -1,5 +1,5 @@
 import type { LoadTypeView } from '@rampflow/shared/modules/booking/api.capacity';
-import type { TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
+import type { TurnAwayReason } from '@rampflow/shared/modules/booking/values';
 import type {
   CallResult,
   CandidatesView,

@@ -1,9 +1,5 @@
 import type { PackageValues } from './registry.ts';
-import { values } from './values/define.ts';
-import { PackageId } from './values/packages.ts';
-
-export { PackageId };
-export const PACKAGE_IDS = values(PackageId);
+import type { PackageId } from './values/packages.ts';
 
 const start = {
   'core.max_sites': 1,

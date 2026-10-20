@@ -1,6 +1,5 @@
-import type { DriverLocale } from '@rampflow/shared';
 import { formatSiteTime, type TimeZone } from '@rampflow/shared/time';
-import { StaffLocale } from '@rampflow/shared/values';
+import { type DriverLocale, StaffLocale } from '@rampflow/shared/values';
 import { Heading, Section, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { encode } from 'uqr';

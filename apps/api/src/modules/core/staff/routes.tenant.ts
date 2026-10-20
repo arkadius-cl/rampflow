@@ -3,7 +3,6 @@ import {
   type StaffInvitationView,
   type StaffList,
   type StaffMemberView,
-  type TenantRole,
   UpdateStaff,
 } from '@rampflow/shared/modules/core/api.staff';
 import {
@@ -12,6 +11,7 @@ import {
   Permission,
   Setting,
   StoryId,
+  type TenantRole,
   ValidationTarget,
 } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';

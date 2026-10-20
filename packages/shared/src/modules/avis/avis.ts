@@ -15,9 +15,6 @@ import {
 // customs, SSCC and attachments. Parsing normalizes plates, phones and UN numbers, so the API
 // stores one spelling and searches (YD-01, TN-06) match.
 
-export { AdrClass, LoadUnitType, PackingGroup, VehicleType };
-export const LOAD_UNIT_TYPES = values(LoadUnitType);
-
 /** UN/ECE Recommendation 21 package codes, so an EDI export is a lookup. */
 export const REC21_CODE: Record<LoadUnitType, string> = {
   eur_pallet: 'OH',
@@ -35,10 +32,6 @@ export const REC21_CODE: Record<LoadUnitType, string> = {
   ibc: 'WA',
   other: 'ZZ',
 };
-
-export const VEHICLE_TYPES = values(VehicleType);
-export const ADR_CLASSES = values(AdrClass);
-export const PACKING_GROUPS = values(PackingGroup);
 
 /** Uppercase without spaces, dashes or dots: "hh-ab 123" and "HH AB123" are the same truck. */
 export function normalizePlate(input: string): string {

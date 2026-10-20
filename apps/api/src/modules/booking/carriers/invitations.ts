@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import type { Entitlements, StaffLocale } from '@rampflow/shared';
+import type { Entitlements } from '@rampflow/shared';
 import type {
   CarrierInvitationBody,
   CarrierInvitationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
-import { EmailTemplate, TokenPurpose } from '@rampflow/shared/values';
+import { EmailTemplate, type StaffLocale, TokenPurpose } from '@rampflow/shared/values';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';

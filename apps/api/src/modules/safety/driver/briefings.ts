@@ -1,5 +1,4 @@
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { CommandName, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { type BookingStatus, CommandName, LinkVia } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {

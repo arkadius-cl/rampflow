@@ -1,6 +1,9 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingFlag, Punctuality } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingFlag,
+  type BookingStatus,
+  Punctuality,
+} from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
 import { BadgeTone, StaffLocale, values } from '@rampflow/shared/values';
 import { FootprintsIcon, ShieldIcon, TriangleAlertIcon, ZapIcon } from 'lucide-react';

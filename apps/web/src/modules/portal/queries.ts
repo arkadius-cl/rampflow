@@ -8,7 +8,7 @@ import type {
   PortalRebook,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import type { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
 import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';

@@ -1,8 +1,7 @@
 import { TZDate } from '@date-fns/tz';
-import type { StaffLocale } from '@rampflow/shared';
 import type { RegisterItem } from '@rampflow/shared/modules/safety/api.register';
 import { AcknowledgementCsvColumn } from '@rampflow/shared/modules/safety/values';
-import { values } from '@rampflow/shared/values';
+import { type StaffLocale, values } from '@rampflow/shared/values';
 import { formatISO } from 'date-fns';
 import type { TFunction } from 'i18next';
 

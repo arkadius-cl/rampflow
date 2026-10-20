@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import type { BookingStatus } from '../booking/lifecycle.ts';
+import type { BookingStatus } from '../booking/values.ts';
 import type { SafetyStatus } from '../safety/values.ts';
 import type { DriverChannel as DriverChannelSet } from './values.ts';
 

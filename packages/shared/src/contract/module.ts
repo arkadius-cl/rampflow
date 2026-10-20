@@ -1,12 +1,8 @@
 import type * as z from 'zod';
-import { values } from '../values/define.ts';
 import type { EntitlementKind } from '../values/entitlements.ts';
-import { LocaleSet } from '../values/locales.ts';
+import type { LocaleSet } from '../values/locales.ts';
 import { OrgKind, Role } from '../values/roles.ts';
-import { SettingScope } from '../values/settings.ts';
-
-export { LocaleSet, OrgKind, Role, SettingScope };
-export const ROLES = values(Role);
+import type { SettingScope } from '../values/settings.ts';
 
 export const ROLE_PARTY = {
   platform_admin: OrgKind.platform,
@@ -31,8 +27,6 @@ export const ROLE_INCLUDES = {
   carrier_admin: [Role.carrier_user],
   carrier_user: [],
 } as const satisfies Record<Role, readonly Role[]>;
-
-export const SETTING_SCOPES = values(SettingScope);
 
 export type FeatureDef = {
   readonly kind: typeof EntitlementKind.feature;

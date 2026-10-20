@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import type { StaffLocale } from '@rampflow/shared';
 import type { CarrierRedeemActor } from '@rampflow/shared/modules/booking/values';
 import {
   CarrierRole,
@@ -8,6 +7,7 @@ import {
   OrgKind,
   Role,
   ScopeParty,
+  type StaffLocale,
   UnauthorizedReason,
 } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
