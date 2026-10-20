@@ -59,6 +59,9 @@ or {
   JsPropertyObjectMember(name=$name, value=$value) as $member where {
     $name <: r"['\"]?(?:kind|status|type|as|role|code|party|state|source|channel|mode|direction|via|tab|view|step)['\"]?",
     $value <: string_literal(),
+    // Text with a capital or a space is a label or a code ('Tenant admin', 'A-01'), not a set
+    // member; a typed field is still checked by `pnpm values:check`.
+    not $value <: r"['\"`].*[A-Z\s].*['\"`]",
     not $member <: within `$_ as const`,
     register_diagnostic(span=$member, message="Use the central value set member for this field (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },

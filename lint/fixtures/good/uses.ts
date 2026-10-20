@@ -40,3 +40,5 @@ t('booking.status.no_show');
 export const queryKey = (orgId: string) => ['tenant', orgId, 'staff'] as const;
 // `reason` is free text in most bodies; typed reasons are left to `pnpm values:check`.
 export const cancelled = { reason: 'Ware nicht fertig' };
+// Labels and codes in fields named like discriminants are text, not set members.
+export const membership = { role: 'Tenant admin', code: 'A-01' };
