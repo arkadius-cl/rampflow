@@ -1,11 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import type { Role } from '@rampflow/shared';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type {
   InvitationAcceptBody,
   InvitationInspectResponse,
 } from '@rampflow/shared/modules/core/api.auth';
-import { ConflictReason, ErrorCode, OrgKind, SystemActorName } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  ErrorCode,
+  OrgKind,
+  ScopeParty,
+  SystemActorName,
+  UnauthorizedReason,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
   type AnyOrgId,
@@ -52,20 +59,20 @@ function orgScope(orgKind: OrgKind, orgId: AnyOrgId, userId: UserId, role: Role)
   switch (orgKind) {
     case OrgKind.tenant:
       return {
-        party: ActorParty.tenant,
+        party: ScopeParty.tenant,
         tenantId: orgId as TenantId,
         siteIds: 'all',
         actor: systemActor(SystemActorName.invitation),
       };
     case OrgKind.carrier:
       return {
-        party: ActorParty.carrier,
+        party: ScopeParty.carrier,
         carrierId: orgId as CarrierId,
         userId,
         role: role as CarrierRole,
       };
     case OrgKind.platform:
-      return { party: OrgKind.platform, userId };
+      return { party: ScopeParty.platform, userId };
   }
 }
 
@@ -115,7 +122,7 @@ async function signedInAs(tx: Tx, userId: UserId | null, email: string): Promise
 
 const missing = (path: 'name' | 'password') => ({
   path: [path],
-  code: 'invalid_type',
+  code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
 });
 
@@ -128,6 +135,7 @@ async function createAccount(
 ): Promise<UserId | null> {
   const { name, password } = input;
   if (!name || !password) {
+    // values-check-ignore: a request field name, the path of a zod issue
     const issues = [...(name ? [] : [missing('name')]), ...(password ? [] : [missing('password')])];
     throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', { issues });
   }
@@ -170,13 +178,13 @@ export async function acceptInvitation(
   if (!userId) {
     if (await accountByEmail(tx, inv.email)) {
       throw new ApiError(ErrorCode.unauthorized, 'Sign in to accept', {
-        reason: 'sign_in_required',
+        reason: UnauthorizedReason.sign_in_required,
       });
     }
     userId = await createAccount(tx, inv, input, now);
     if (!userId) {
       throw new ApiError(ErrorCode.unauthorized, 'Sign in to accept', {
-        reason: 'sign_in_required',
+        reason: UnauthorizedReason.sign_in_required,
       });
     }
   }

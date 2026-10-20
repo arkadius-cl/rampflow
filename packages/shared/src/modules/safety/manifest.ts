@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
+import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
 import { everyScope, SettingScope } from '../../values/settings.ts';
@@ -10,12 +11,12 @@ export const safety = defineModule({
   enabledBy: 'safety.briefings',
   locales: LocaleSet.staff,
   entitlements: {
-    'safety.briefings': { kind: 'feature' },
-    'safety.validity': { kind: 'feature' },
-    'safety.quiz': { kind: 'feature' },
-    'safety.gate_enforcement': { kind: 'feature' },
-    'safety.max_briefing_templates': { kind: 'limit' },
-    'safety.media': { kind: 'feature', reserved: true },
+    'safety.briefings': { kind: EntitlementKind.feature },
+    'safety.validity': { kind: EntitlementKind.feature },
+    'safety.quiz': { kind: EntitlementKind.feature },
+    'safety.gate_enforcement': { kind: EntitlementKind.feature },
+    'safety.max_briefing_templates': { kind: EntitlementKind.limit },
+    'safety.media': { kind: EntitlementKind.feature, reserved: true },
   },
   permissions: {
     'safety.manage_briefings': { roles: [Role.tenant_admin] },

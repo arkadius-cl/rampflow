@@ -10,7 +10,7 @@ import {
   UpdateHall,
   UpdateSite,
 } from '@rampflow/shared/modules/core/api.sites';
-import { Limit, Permission, StoryId } from '@rampflow/shared/values';
+import { Limit, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
@@ -72,7 +72,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<SiteView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('json', CreateSite),
+    validate(ValidationTarget.json, CreateSite),
     async (c) => {
       const row = await createSite(c.var.db, tenantRequest(c), c.var.clock, c.req.valid('json'));
       return c.json(siteView(row), 201);
@@ -86,7 +86,7 @@ export const tenant = new Hono<AppEnv>()
       description: 'One site of the tenant; 404 for a site of another tenant.',
       responses: { 200: type<SiteView>() },
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const row = await requireSite(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -103,8 +103,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<SiteView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('param', SiteParam),
-    validate('json', UpdateSite),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, UpdateSite),
     async (c) => {
       const { siteId } = c.req.valid('param');
       const row = await updateSite(
@@ -125,7 +125,7 @@ export const tenant = new Hono<AppEnv>()
       description: 'The halls of a site.',
       responses: {},
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const items = await listHalls(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -141,8 +141,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<HallView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('param', SiteParam),
-    validate('json', CreateHall),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, CreateHall),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { siteId } = c.req.valid('param');
@@ -158,8 +158,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<HallView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('param', HallParam),
-    validate('json', UpdateHall),
+    validate(ValidationTarget.param, HallParam),
+    validate(ValidationTarget.json, UpdateHall),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { siteId, hallId } = c.req.valid('param');
@@ -175,7 +175,7 @@ export const tenant = new Hono<AppEnv>()
       description: 'The docks of a site.',
       responses: {},
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const items = await listDocks(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -193,8 +193,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<DockView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('param', SiteParam),
-    validate('json', CreateDock),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, CreateDock),
     async (c) => {
       const { siteId } = c.req.valid('param');
       const dock = await createDock(c.var.db, tenantRequest(c), siteId, c.req.valid('json'));
@@ -211,8 +211,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<DockView>() },
     }),
     requirePermission(Permission.core.manage_sites),
-    validate('param', DockParam),
-    validate('json', UpdateDock),
+    validate(ValidationTarget.param, DockParam),
+    validate(ValidationTarget.json, UpdateDock),
     async (c) => {
       const { siteId, dockId } = c.req.valid('param');
       const dock = await updateDock(

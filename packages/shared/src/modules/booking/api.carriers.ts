@@ -1,6 +1,6 @@
 import * as z from 'zod';
-import { STAFF_LOCALES } from '../../locales.ts';
 import { values } from '../../values/define.ts';
+import { StaffLocale } from '../../values/locales.ts';
 import { Email, EmailToken, Password } from '../core/api.auth.ts';
 import {
   CarrierLinkSource,
@@ -24,7 +24,7 @@ export const REGISTRATION_COUNTRIES = values(RegistrationCountry);
 const CompanyName = z.string().trim().min(1).max(120);
 const PersonName = z.string().trim().min(1).max(120);
 export const CountryCode = z.string().regex(/^[A-Z]{2}$/, 'ISO 3166-1 alpha-2, for example PL');
-const Locale = z.enum(STAFF_LOCALES);
+const Locale = z.enum(StaffLocale);
 
 /** TN-03. `locale` is the language of the invitation email, default the inviter's. */
 export const CarrierInvitationBody = z.object({
@@ -34,7 +34,7 @@ export const CarrierInvitationBody = z.object({
 });
 export type CarrierInvitationBody = z.infer<typeof CarrierInvitationBody>;
 
-export const CarrierLinkPatch = z.object({ status: z.enum(CARRIER_LINK_STATUSES) });
+export const CarrierLinkPatch = z.object({ status: z.enum(CarrierLinkStatus) });
 export type CarrierLinkPatch = z.infer<typeof CarrierLinkPatch>;
 
 export const RejectRegistrationBody = z.object({ reason: z.string().trim().min(1).max(500) });
@@ -143,7 +143,7 @@ export interface CarrierInvitationAccepted {
 
 export interface RegistrationVerified {
   carrierId: string;
-  status: Extract<RegistrationStatus, 'approved' | 'pending_approval'>;
+  status: typeof RegistrationStatus.approved | typeof RegistrationStatus.pending_approval;
 }
 
 /** GET /api/c/:orgId/tenants: a tenant the carrier is linked to or registered at. */

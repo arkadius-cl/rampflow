@@ -3,8 +3,9 @@ import {
   CreateResource,
   PutHours,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { Direction } from '@rampflow/shared/modules/booking/values';
+import { Direction, DurationKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { CreateDock, CreateSite } from '@rampflow/shared/modules/core/api.sites';
+import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { OrgKind } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../src/db/ids.ts';
@@ -105,8 +106,8 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
       const input = CreateDock.parse({
         hallId: hall.id,
         code,
-        doorType: 'dock_leveler',
-        temperatureZone: 'ambient',
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
         sort: i,
       });
       dockIds.set(code, (await createDock(tx, req, siteId, input)).id);
@@ -115,7 +116,7 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   const ids = (codes: string[]) => codes.map((c) => dockIds.get(c) as string);
   const resources: { id: string; directions: Direction[] }[] = [];
   for (const [sort, p] of demo.pools.entries()) {
-    const input = { siteId, kind: 'pool', name: p.name, directions: p.directions, sort };
+    const input = { siteId, kind: ResourceKind.pool, name: p.name, directions: p.directions, sort };
     resources.push(
       await createResource(tx, req, CreateResource.parse({ ...input, dockIds: ids(p.docks) })),
     );
@@ -123,7 +124,7 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   for (const code of demo.singles) {
     const input = {
       siteId,
-      kind: 'single',
+      kind: ResourceKind.single,
       name: code,
       directions: ['inbound', 'outbound'],
       sort: resources.length,
@@ -144,8 +145,8 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
     CreateLoadType.parse({
       siteId,
       name: { de: 'Palettiert (Versand)', en: 'Palletised (outbound)' },
-      direction: 'outbound',
-      duration: { kind: 'fixed', minutes: 60 },
+      direction: Direction.outbound,
+      duration: { kind: DurationKind.fixed, minutes: 60 },
       bufferMinutes: 10,
       resourceIds: serving(Direction.outbound),
     }),

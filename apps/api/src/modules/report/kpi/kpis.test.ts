@@ -160,7 +160,7 @@ async function seedVisit(side: World['A'], v: Visit, site?: 0 | 1) {
   return row;
 }
 
-const setLocale = (u: WorldUser, locale: 'de' | 'en') =>
+const setLocale = (u: WorldUser, locale: typeof StaffLocale.de | typeof StaffLocale.en) =>
   ownerDb().update(appUser).set({ locale }).where(eq(appUser.id, u.id));
 
 beforeAll(async () => {
@@ -378,7 +378,7 @@ describe('RP-02 visit list and CSV export', () => {
     } while (cursor);
     expect(seen.map((v) => v.code)).toEqual(Object.values(codes));
     expect(seen[2]).toMatchObject({
-      status: 'departed',
+      status: BookingStatus.departed,
       startsAt: '2026-11-10T09:00:00.000Z',
       checkedInAt: '2026-11-10T09:30:00.000Z',
       calledAt: '2026-11-10T09:35:00.000Z',
@@ -386,7 +386,7 @@ describe('RP-02 visit list and CSV export', () => {
       loadingAt: '2026-11-10T09:45:00.000Z',
       doneAt: '2026-11-10T10:40:00.000Z',
       departedAt: '2026-11-10T11:45:00.000Z',
-      punctuality: 'late',
+      punctuality: Punctuality.late,
       waitMinutes: 10,
       dockDwellMinutes: 60,
       turnaroundMinutes: 135,

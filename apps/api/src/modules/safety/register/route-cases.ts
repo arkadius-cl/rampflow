@@ -1,13 +1,13 @@
-import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import { ForeignOutcome, HttpMethod, Permission, RouteCaseActor } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import { seedBriefing } from '../authoring/fixtures.ts';
 
 const base = {
-  as: Role.dispatcher,
+  as: RouteCaseActor.dispatcher,
   permission: Permission.safety.view_register,
   entitlement: null,
   // B's own register lists only B's acknowledgements, none of A's ids or booking codes.
-  foreign: 'empty',
+  foreign: ForeignOutcome.empty,
   siteScoped: false,
   params: (w) => ({ orgId: w.A.tenantId }),
   body: () => ({}),

@@ -1,12 +1,11 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   RegisterFilterOptions,
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
-import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
-import { DriverLocale, StaffLocale } from '@rampflow/shared/values';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import { DriverLocale, ScopeParty, StaffLocale, values } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerDb } from '../../../../test/db.ts';
@@ -57,7 +56,7 @@ beforeAll(async () => {
   const record = (b: WorldBooking, driverName: string, completedAt: Date, validityDays: number) =>
     asParty(
       {
-        party: ActorParty.driver,
+        party: ScopeParty.driver,
         tenantId: side.tenantId,
         bookingId: b.id,
         channel: DriverChannel.link,
@@ -100,13 +99,13 @@ describe('SF-03 acknowledgement register', () => {
     expect(nextCursor).toBeNull();
     expect(items[3]).toMatchObject({
       driverName: 'Jan Kowalski',
-      status: 'valid',
+      status: AckStatus.valid,
       instruction: { id: rules.id, name: 'Site rules' },
       version: { version: 1 },
       booking: { id: side.bookings.own.id, code: side.bookings.own.code },
       carrierId: side.carrierId,
       site: { id: side.sites[0].id, timeZone: 'Europe/Berlin' },
-      locale: 'pl',
+      locale: DriverLocale.pl,
     });
   });
 
@@ -119,9 +118,9 @@ describe('SF-03 acknowledgement register', () => {
     expect(await ids({ versionId: acks.kowalski.versionId, siteId: side.sites[0].id })).toEqual(
       sorted(acks.expired, acks.kowalski, acks.rival, acks.perVisit),
     );
-    expect(await ids({ status: 'expired' })).toEqual(sorted(acks.expired));
-    expect(await ids({ status: 'visit_only' })).toEqual(sorted(acks.perVisit));
-    expect(await ids({ status: 'valid' })).toEqual(
+    expect(await ids({ status: AckStatus.expired })).toEqual(sorted(acks.expired));
+    expect(await ids({ status: AckStatus.visit_only })).toEqual(sorted(acks.perVisit));
+    expect(await ids({ status: AckStatus.valid })).toEqual(
       sorted(acks.kowalski, acks.rival, acks.otherSite),
     );
   });
@@ -150,11 +149,11 @@ describe('SF-03 acknowledgement register', () => {
       await admin.post(`${base()}/instructions/${rules.id}/versions`)
     ).json()) as { id: string };
     await admin.post(`${base()}/versions/${draft.id}/publish`, { body: { materialChange: true } });
-    for (const status of ACK_STATUSES) {
+    for (const status of values(AckStatus)) {
       const { items } = await page({ status });
       expect(items.every((i) => i.status === status)).toBe(true);
     }
-    expect((await page({ status: 'outdated' })).items).toHaveLength(5);
+    expect((await page({ status: AckStatus.outdated })).items).toHaveLength(5);
   });
 
   it('pages with an opaque cursor', async () => {

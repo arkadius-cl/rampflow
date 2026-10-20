@@ -1,4 +1,4 @@
-import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import { ForeignOutcome, HttpMethod, Permission, RouteCaseActor } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import { inviteeEmail } from '../staff/fixtures.ts';
@@ -7,10 +7,10 @@ import { inviteeEmail } from '../staff/fixtures.ts';
 // call for these cases; behavior is covered in platform.test.ts.
 
 const tenants = {
-  as: Role.platform_admin,
+  as: RouteCaseActor.platform_admin,
   permission: Permission.core.manage_tenants,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
 } as const satisfies Partial<RouteCase>;
 const settings = { ...tenants, permission: 'core.manage_platform_settings' } as const;

@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { PermissionKey } from '../../registry.ts';
 import { Permission } from '../../values/keys.ts';
 import { availableCommands, punctualityOf, sourceStates } from './lifecycle.ts';
-import { BookingParty, BookingStatus } from './values.ts';
+import { BookingParty, BookingStatus, CommandName } from './values.ts';
 
 describe('the command table', () => {
   it('lets a carrier edit the avis only while confirmed, and staff until done', () => {
-    expect(sourceStates('update_avis', BookingParty.carrier)).toEqual(['confirmed']);
-    expect(sourceStates('update_avis', BookingParty.staff)).toContain('done');
-    expect(sourceStates('update_avis', BookingParty.staff)).not.toContain('departed');
+    expect(sourceStates(CommandName.update_avis, BookingParty.carrier)).toEqual(['confirmed']);
+    expect(sourceStates(CommandName.update_avis, BookingParty.staff)).toContain('done');
+    expect(sourceStates(CommandName.update_avis, BookingParty.staff)).not.toContain('departed');
   });
 
   it('offers a dock operator dock progress but never check-out (module contract, "Web gating")', () => {
@@ -27,7 +27,12 @@ describe('the command table', () => {
 
   it('offers nothing from the final states but check-in from no_show', () => {
     const all = () => true;
-    for (const status of ['departed', 'cancelled', 'turned_away', 'requested'] as const) {
+    for (const status of [
+      BookingStatus.departed,
+      BookingStatus.cancelled,
+      BookingStatus.turned_away,
+      BookingStatus.requested,
+    ]) {
       expect(availableCommands(status, BookingParty.staff, all)).toEqual([]);
     }
     expect(availableCommands(BookingStatus.no_show, BookingParty.staff, all)).toEqual([

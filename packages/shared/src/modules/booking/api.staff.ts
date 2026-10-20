@@ -1,21 +1,18 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
 import {
   type LocalDate,
   type LocalTime,
   localDateSchema,
   type TimeZone,
 } from '../../time/index.ts';
+import { DriverLocale } from '../../values/locales.ts';
+import type { WallTimeFold } from '../../values/time.ts';
 import { AvisInput, type AvisView } from '../avis/avis.ts';
 import type { InstructionSafety as InstructionSafetySet, SafetyStatus } from '../safety/values.ts';
 import type { BookingEventData } from './events.ts';
-import {
-  BOOKING_STATUSES,
-  type BookingStatus,
-  type Punctuality,
-  type TurnAwayReason,
-} from './lifecycle.ts';
+import type { Punctuality, TurnAwayReason } from './lifecycle.ts';
 import type { ActorParty, BookingEventType } from './values.ts';
+import { BookingStatus, type CreatedParty, type Direction, type ResourceKind } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/bookings (BK-01, BK-02, BK-03, AV-01,
 // AV-02, CR-06, YD-08).
@@ -67,7 +64,7 @@ export const CancelBooking = z.object({ reason: z.string().trim().min(1).max(500
 
 export const SendDriverLink = z.object({
   email: z.email().max(254),
-  locale: z.enum(DRIVER_LOCALES),
+  locale: z.enum(DriverLocale),
 });
 export type SendDriverLink = z.infer<typeof SendDriverLink>;
 
@@ -77,7 +74,7 @@ export type BoardQuery = z.infer<typeof BoardQuery>;
 export const BookingListQuery = z.object({
   siteId: z.uuid(),
   date: localDateSchema,
-  status: z.enum(BOOKING_STATUSES).optional(),
+  status: z.enum(BookingStatus).optional(),
   limit: z.coerce.number().pipe(z.int().min(1).max(200)).default(50),
   cursor: z.string().max(200).optional(),
 });
@@ -100,7 +97,7 @@ export interface BookingSummary {
   loadTypeId: string;
   carrierId: string | null;
   carrierName: string;
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
   startsAt: string;
   endsAt: string;
   blocksUntil: string;
@@ -123,7 +120,7 @@ export interface BookingPage {
 export interface BoardSlot {
   startsAt: string;
   wallTime: LocalTime;
-  fold: 'earlier' | 'later' | null;
+  fold: WallTimeFold | null;
   /** Lowest capacity over the slot's buckets; 0 when closed. */
   capacity: number;
   /** Highest load over the slot's buckets. */
@@ -133,7 +130,7 @@ export interface BoardSlot {
 export interface BoardResource {
   id: string;
   name: string;
-  kind: 'pool' | 'single';
+  kind: ResourceKind;
   dailyCap: number | null;
   slots: BoardSlot[];
   bookings: BookingSummary[];
@@ -171,7 +168,7 @@ export interface BookingView extends Omit<BookingSummary, 'overCapacity'> {
   resource: { id: string; name: string };
   loadType: { id: string; name: { de: string; en: string } };
   dock: { id: string; code: string } | null;
-  createdParty: 'carrier' | 'staff';
+  createdParty: CreatedParty;
   punctualityMinutes: number | null;
   checkedInAt: string | null;
   calledAt: string | null;

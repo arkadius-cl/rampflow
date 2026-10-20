@@ -1,5 +1,5 @@
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { CommandName, LinkVia } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
@@ -11,7 +11,14 @@ import type {
   DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
 import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
-import { ConflictReason, DriverLocale, ErrorCode, Setting } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  ErrorCode,
+  Feature,
+  ScopeParty,
+  Setting,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import type { BookingId, CarrierId, SiteId, TenantId, TokenHash } from '../../../db/ids.ts';
@@ -48,7 +55,7 @@ export interface DriverVisit {
 
 export async function driverVisit(c: Context<AppEnv>): Promise<DriverVisit> {
   const { scope } = c.var;
-  if (scope.party !== ActorParty.driver) throw new ApiError(ErrorCode.unauthorized);
+  if (scope.party !== ScopeParty.driver) throw new ApiError(ErrorCode.unauthorized);
   const ctx = bookingContext(c);
   const [row] = await ctx.tx
     .select({
@@ -64,7 +71,8 @@ export async function driverVisit(c: Context<AppEnv>): Promise<DriverVisit> {
   return { ctx, channel: scope.channel, booking: row };
 }
 
-const quizOn = (v: DriverVisit) => v.ctx.access.entitlements?.features['safety.quiz'] === true;
+const quizOn = (v: DriverVisit) =>
+  v.ctx.access.entitlements?.features[Feature.safety.quiz] === true;
 
 /**
  * Redeems this phone's passes first (never on a gate device, whose next driver starts fresh),
@@ -205,7 +213,7 @@ export async function acknowledge(
     validityDays: await validityDays(access, v.booking.siteId),
   });
   await transitionBooking(v.ctx, v.booking.id, {
-    type: 'link_acknowledgement',
+    type: CommandName.link_acknowledgement,
     acknowledgementId: ack.id,
     via: LinkVia.completed,
   });

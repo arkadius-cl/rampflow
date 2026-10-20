@@ -1,6 +1,5 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
-import { ErrorCode, StoryId } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { op, type } from '../../../kernel/describe.ts';
@@ -22,7 +21,7 @@ export const driver = new Hono<AppEnv>().get(
   async (c) => {
     const { scope, db, access } = c.var;
     const token = getCookie(c, DRIVER_COOKIE);
-    if (scope.party !== ActorParty.driver || !token) throw new ApiError(ErrorCode.unauthorized);
+    if (scope.party !== ScopeParty.driver || !token) throw new ApiError(ErrorCode.unauthorized);
     const view = await loadDriverView({
       tx: db,
       access,

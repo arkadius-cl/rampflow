@@ -1,9 +1,10 @@
 import * as z from 'zod';
 import type { EntitlementSource } from '../../contract/entitlements.ts';
 import type { Limit } from '../../contract/module.ts';
-import { PACKAGE_IDS, type PackageId } from '../../packages.ts';
 import type { ModuleId } from '../../registry.ts';
 import { values } from '../../values/define.ts';
+import type { EntitlementKind } from '../../values/entitlements.ts';
+import { PackageId } from '../../values/packages.ts';
 import { UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
@@ -12,12 +13,12 @@ const name = z.string().trim().min(1).max(120);
 
 export const CreateTenant = z.object({
   name,
-  package: z.enum(PACKAGE_IDS),
+  package: z.enum(PackageId),
   adminEmail: z.email().max(254),
 });
 export type CreateTenant = z.infer<typeof CreateTenant>;
 
-export const UpdateTenant = z.object({ name, package: z.enum(PACKAGE_IDS) }).partial();
+export const UpdateTenant = z.object({ name, package: z.enum(PackageId) }).partial();
 export type UpdateTenant = z.infer<typeof UpdateTenant>;
 
 export const InviteTenantAdmin = z.object({ email: z.email().max(254) });
@@ -63,7 +64,7 @@ export interface TenantList {
 export interface EntitlementView {
   key: string;
   module: ModuleId;
-  kind: 'feature' | 'limit';
+  kind: EntitlementKind;
   soft: boolean;
   value: boolean | Limit;
   source: EntitlementSource;
@@ -98,7 +99,7 @@ export interface PackageView {
   values: {
     key: string;
     module: ModuleId;
-    kind: 'feature' | 'limit';
+    kind: EntitlementKind;
     soft: boolean;
     value: boolean | Limit;
   }[];

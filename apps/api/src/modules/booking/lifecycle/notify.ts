@@ -1,8 +1,8 @@
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { type EmailTemplate, StaffLocale, values } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, UserId } from '../../../db/ids.ts';
-import { type EmailTemplates, enqueueEmail, type TemplateId } from '../../../kernel/outbox.ts';
+import { type EmailTemplates, enqueueEmail } from '../../../kernel/outbox.ts';
 import { userDisplay } from '../../../kernel/users.ts';
 import { site } from '../../core/schema.ts';
 import { loadType } from '../schema.resources.ts';
@@ -31,7 +31,7 @@ export async function bookingContacts(ctx: BookingContext, b: BookingRow): Promi
 }
 
 const staffLocale = (l: string | null): l is StaffLocale =>
-  l !== null && (STAFF_LOCALES as readonly string[]).includes(l);
+  l !== null && (values(StaffLocale) as readonly string[]).includes(l);
 
 /** Display data of a booking email; everything but the recipient's locale. */
 export async function emailFacts(
@@ -68,10 +68,11 @@ export async function emailFacts(
   };
 }
 
-type BookingTemplate = Extract<
-  TemplateId,
-  'booking.confirmed' | 'booking.changed' | 'booking.cancelled' | 'booking.no-show'
->;
+type BookingTemplate =
+  | typeof EmailTemplate.booking_confirmed
+  | typeof EmailTemplate.booking_changed
+  | typeof EmailTemplate.booking_cancelled
+  | typeof EmailTemplate.booking_no_show;
 
 /** Enqueues `template` to every booking contact in their language, in the caller's transaction. */
 export async function emailContacts<K extends BookingTemplate>(

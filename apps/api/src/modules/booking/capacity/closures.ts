@@ -83,7 +83,7 @@ export async function createClosure(
       startsLocal: input.startsLocal,
       endsLocal: input.endsLocal,
       reason: input.reason ?? null,
-      source: 'manual',
+      source: ClosureSource.manual,
       createdBy: req.userId,
     })
     .returning();

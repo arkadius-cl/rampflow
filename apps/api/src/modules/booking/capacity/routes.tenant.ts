@@ -17,7 +17,7 @@ import {
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { CreatedParty } from '@rampflow/shared/modules/booking/values';
-import { Permission, StoryId } from '@rampflow/shared/values';
+import { Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type SiteId } from '../../../db/ids.ts';
@@ -62,7 +62,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.view),
-    validate('query', ResourceListQuery),
+    validate(ValidationTarget.query, ResourceListQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId | undefined;
@@ -79,7 +79,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('json', CreateResource),
+    validate(ValidationTarget.json, CreateResource),
     async (c) => c.json(await createResource(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .patch(
@@ -91,8 +91,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', ResourceParam),
-    validate('json', UpdateResource),
+    validate(ValidationTarget.param, ResourceParam),
+    validate(ValidationTarget.json, UpdateResource),
     async (c) => {
       const id = c.req.valid('param').resourceId;
       return c.json(await updateResource(c.var.db, tenantRequest(c), id, c.req.valid('json')), 200);
@@ -108,8 +108,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', ResourceParam),
-    validate('json', PutResourceDocks),
+    validate(ValidationTarget.param, ResourceParam),
+    validate(ValidationTarget.json, PutResourceDocks),
     async (c) => {
       const id = c.req.valid('param').resourceId;
       const { dockIds } = c.req.valid('json');
@@ -126,8 +126,8 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', DockParam),
-    validate('json', DockBooking),
+    validate(ValidationTarget.param, DockParam),
+    validate(ValidationTarget.json, DockBooking),
     async (c) => {
       const { dockId } = c.req.valid('param');
       const resource = await bookDock(c.var.db, tenantRequest(c), dockId, c.req.valid('json'));
@@ -143,7 +143,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.view),
-    validate('query', SiteQuery),
+    validate(ValidationTarget.query, SiteQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -159,7 +159,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('json', PutHours),
+    validate(ValidationTarget.json, PutHours),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       return c.json({ items: await putHours(c.var.db, tenantId, c.req.valid('json')) }, 200);
@@ -174,7 +174,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.view),
-    validate('query', ClosureQuery),
+    validate(ValidationTarget.query, ClosureQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const q = c.req.valid('query');
@@ -191,7 +191,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<ClosureView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('json', CreateClosure),
+    validate(ValidationTarget.json, CreateClosure),
     async (c) => c.json(await createClosure(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .delete(
@@ -204,7 +204,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 204: noBody },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', ClosureParam),
+    validate(ValidationTarget.param, ClosureParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       await deleteClosure(c.var.db, tenantId, c.req.valid('param').closureId);
@@ -220,7 +220,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<ClosureView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', ClosureParam),
+    validate(ValidationTarget.param, ClosureParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const id = c.req.valid('param').closureId;
@@ -236,7 +236,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.view),
-    validate('query', SiteQuery),
+    validate(ValidationTarget.query, SiteQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -252,7 +252,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 201: type<LoadTypeView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('json', CreateLoadType),
+    validate(ValidationTarget.json, CreateLoadType),
     async (c) => c.json(await createLoadType(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .patch(
@@ -264,8 +264,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<LoadTypeView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', LoadTypeParam),
-    validate('json', UpdateLoadType),
+    validate(ValidationTarget.param, LoadTypeParam),
+    validate(ValidationTarget.json, UpdateLoadType),
     async (c) => {
       const id = c.req.valid('param').loadTypeId;
       return c.json(await updateLoadType(c.var.db, tenantRequest(c), id, c.req.valid('json')), 200);
@@ -280,8 +280,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<LoadTypeView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
-    validate('param', LoadTypeParam),
-    validate('json', PutLoadTypeResources),
+    validate(ValidationTarget.param, LoadTypeParam),
+    validate(ValidationTarget.json, PutLoadTypeResources),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const id = c.req.valid('param').loadTypeId;
@@ -299,7 +299,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<Offers>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('query', AvailabilityQuery),
+    validate(ValidationTarget.query, AvailabilityQuery),
     async (c) => {
       const req = tenantRequest(c);
       const q = c.req.valid('query');

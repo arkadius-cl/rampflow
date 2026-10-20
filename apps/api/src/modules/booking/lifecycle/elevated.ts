@@ -1,5 +1,11 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { CarrierRole, SystemActorName } from '@rampflow/shared/values';
+import { LoadStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  CarrierRole,
+  ScopeParty,
+  SystemActorName,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne, or, type SQL } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import { oneOf } from '../../../db/ids.ts';
@@ -7,7 +13,7 @@ import { oneOf } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
 import { avisReference } from '../../avis/schema.ts';
 import { appUser, membership, org } from '../../core/schema.ts';
-import { booking, LOAD_STATUSES } from '../schema.ts';
+import { booking } from '../schema.ts';
 
 // Reads across a party boundary, in the request transaction (ADR-0002, like the capacity read
 // of ADR-0004). Nothing else in the booking module switches scope.
@@ -25,7 +31,7 @@ export interface Recipient {
 export function carrierAdmins(tx: Tx, carrierId: CarrierId, asUser: UserId): Promise<Recipient[]> {
   return asScope(
     tx,
-    { party: ActorParty.carrier, carrierId, userId: asUser, role: CarrierRole.carrier_admin },
+    { party: ScopeParty.carrier, carrierId, userId: asUser, role: CarrierRole.carrier_admin },
     (inner) =>
       inner
         .select({ email: appUser.email, locale: appUser.locale })
@@ -50,7 +56,7 @@ export async function carrierNames(
   if (ids.length === 0) return new Map();
   const rows = await asScope(
     tx,
-    { party: ActorParty.system, job: SystemActorName.booking_carrier_names },
+    { party: ScopeParty.system, job: SystemActorName.booking_carrier_names },
     (inner) =>
       inner
         .select({ id: org.id, name: org.name })
@@ -82,10 +88,10 @@ export async function referenceTaken(
   const rows = await asScope(
     tx,
     {
-      party: ActorParty.tenant,
+      party: ScopeParty.tenant,
       tenantId: where.tenantId,
       siteIds: 'all',
-      actor: { kind: 'system', job: SystemActorName.avis_unique_references },
+      actor: { kind: TenantActorKind.system, job: SystemActorName.avis_unique_references },
     },
     (inner) =>
       inner
@@ -97,7 +103,7 @@ export async function referenceTaken(
             eq(avisReference.tenantId, where.tenantId),
             eq(avisReference.siteId, where.siteId),
             or(...matches),
-            oneOf(booking.status, LOAD_STATUSES),
+            oneOf(booking.status, values(LoadStatus)),
             where.excludeBookingId ? ne(booking.id, where.excludeBookingId) : undefined,
           ),
         )

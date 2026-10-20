@@ -1,8 +1,10 @@
 import { permissionsFor } from './contract/access.ts';
-import { ROLES } from './contract/module.ts';
-import { PACKAGE_IDS, packages } from './packages.ts';
+import { packages } from './packages.ts';
 import { catalog } from './registry.ts';
-import { OrgKind } from './values/roles.ts';
+import { values } from './values/define.ts';
+import { EntitlementKind } from './values/entitlements.ts';
+import { PackageId } from './values/packages.ts';
+import { OrgKind, Role } from './values/roles.ts';
 
 export const CATALOG_DOC = 'docs/reference/module-contract.md';
 export const START_MARKER = '<!-- catalog:start -->';
@@ -23,7 +25,9 @@ export function renderCatalogTables(): string {
   for (const m of catalog) {
     const entries = Object.entries(m.entitlements);
     const label = ([key, def]: (typeof entries)[number]) =>
-      def.kind === 'limit' ? `${code(key)} (${'soft' in def ? 'soft limit' : 'limit'})` : code(key);
+      def.kind === EntitlementKind.limit
+        ? `${code(key)} (${'soft' in def ? 'soft limit' : 'limit'})`
+        : code(key);
     const implemented = entries.filter(([, d]) => !('reserved' in d)).map(label);
     const reserved = entries.filter(([, d]) => 'reserved' in d).map(label);
     row([
@@ -39,10 +43,12 @@ export function renderCatalogTables(): string {
   out.push('', '### Permissions', '');
   row(['Permission', 'Declared for', 'Held by']);
   row(['---', '---', '---']);
-  const held = new Map(ROLES.map((r) => [r, permissionsFor(catalog, r) as ReadonlySet<string>]));
+  const held = new Map(
+    values(Role).map((r) => [r, permissionsFor(catalog, r) as ReadonlySet<string>]),
+  );
   for (const m of catalog) {
     for (const [key, def] of Object.entries(m.permissions)) {
-      const holders = ROLES.filter((r) => held.get(r)?.has(key));
+      const holders = values(Role).filter((r) => held.get(r)?.has(key));
       row([code(key), list(def.roles, ''), list(holders, '')]);
     }
   }
@@ -72,15 +78,15 @@ export function renderCatalogTables(): string {
   }
 
   out.push('', '### Packages', '');
-  row(['Key', ...PACKAGE_IDS]);
-  row(['---', ...PACKAGE_IDS.map(() => '---')]);
-  const keys = [...new Set(PACKAGE_IDS.flatMap((p) => Object.keys(packages[p])))];
-  const values: Readonly<Record<string, Readonly<Record<string, unknown>>>> = packages;
+  row(['Key', ...values(PackageId)]);
+  row(['---', ...values(PackageId).map(() => '---')]);
+  const keys = [...new Set(values(PackageId).flatMap((p) => Object.keys(packages[p])))];
+  const granted: Readonly<Record<string, Readonly<Record<string, unknown>>>> = packages;
   for (const key of keys) {
     row([
       code(key),
-      ...PACKAGE_IDS.map((p) =>
-        key in (values[p] ?? {}) ? code(JSON.stringify(values[p]?.[key])) : '',
+      ...values(PackageId).map((p) =>
+        key in (granted[p] ?? {}) ? code(JSON.stringify(granted[p]?.[key])) : '',
       ),
     ]);
   }

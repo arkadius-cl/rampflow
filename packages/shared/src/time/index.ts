@@ -1,6 +1,7 @@
 import { tzOffset } from '@date-fns/tz';
 import * as z from 'zod';
 import type { DriverLocale, StaffLocale } from '../locales.ts';
+import { WallTimeFold } from '../values/time.ts';
 
 // Calendar math for sites (ADR-0012). Instants are UTC `Date`s; local values are branded strings.
 // Pure: runs in the API, the web app and the driver PWA.
@@ -46,6 +47,9 @@ export const localDateTimeSchema = z
 
 const MINUTE = 60_000;
 const DAY_MINUTES = 24 * 60;
+/** The wall time a local day starts at, and the one that names its end (a closing time). */
+const START_OF_DAY = '00:00' as LocalTime;
+const END_OF_DAY = '24:00' as LocalTime;
 
 /** Wall-clock minutes since 1970-01-01 00:00, ignoring zones: arithmetic on local values. */
 function naiveMinutes(day: LocalDate, time: LocalTime): number {
@@ -60,12 +64,12 @@ function fromNaive(minutes: number): { day: LocalDate; time: LocalTime } {
 }
 
 export function addDays(day: LocalDate, days: number): LocalDate {
-  return fromNaive(naiveMinutes(day, '00:00' as LocalTime) + days * DAY_MINUTES).day;
+  return fromNaive(naiveMinutes(day, START_OF_DAY) + days * DAY_MINUTES).day;
 }
 
 /** ISO weekday, 1 (Monday) to 7 (Sunday). */
 export function isoWeekday(day: LocalDate): number {
-  const weekday = new Date(naiveMinutes(day, '00:00' as LocalTime) * MINUTE).getUTCDay();
+  const weekday = new Date(naiveMinutes(day, START_OF_DAY) * MINUTE).getUTCDay();
   return weekday === 0 ? 7 : weekday;
 }
 
@@ -111,9 +115,9 @@ export function toLocalDateTime(instant: Date, zone: TimeZone): LocalDateTime {
  * autumn fold, ascending. `24:00` is the start of the next local day.
  */
 export function instantsAt(day: LocalDate, time: LocalTime, zone: TimeZone): Date[] {
-  if (time === '24:00') return [localDayRange(day, zone).end];
+  if (time === END_OF_DAY) return [localDayRange(day, zone).end];
   const naive = naiveMinutes(day, time) * MINUTE;
-  const midnight = naiveMinutes(day, '00:00' as LocalTime) * MINUTE;
+  const midnight = naiveMinutes(day, START_OF_DAY) * MINUTE;
   const offsets = new Set<number>();
   for (let k = -1; k <= 2; k++) offsets.add(tzOffset(zone, new Date(midnight + k * 86_400_000)));
   const found = new Set<number>();
@@ -130,7 +134,7 @@ export function instantsAt(day: LocalDate, time: LocalTime, zone: TimeZone): Dat
  * of a fold, or the end of a gap. Window and closure bounds convert with it.
  */
 export function firstInstantFrom(day: LocalDate, time: LocalTime, zone: TimeZone): Date {
-  if (time === '24:00') return localDayRange(day, zone).end;
+  if (time === END_OF_DAY) return localDayRange(day, zone).end;
   let naive = naiveMinutes(day, time);
   for (let i = 0; i <= DAY_MINUTES; i++, naive++) {
     const wall = fromNaive(naive);
@@ -147,8 +151,8 @@ export function localDateTimeToInstant(value: LocalDateTime, zone: TimeZone): Da
 /** The instants of one site-local day, `[start, end)`: 23, 24 or 25 hours. */
 export function localDayRange(day: LocalDate, zone: TimeZone): { start: Date; end: Date } {
   return {
-    start: firstInstantFrom(day, '00:00' as LocalTime, zone),
-    end: firstInstantFrom(addDays(day, 1), '00:00' as LocalTime, zone),
+    start: firstInstantFrom(day, START_OF_DAY, zone),
+    end: firstInstantFrom(addDays(day, 1), START_OF_DAY, zone),
   };
 }
 
@@ -156,7 +160,7 @@ export interface GridSlot {
   start: Date;
   wallTime: LocalTime;
   /** Which of the two instants of an autumn-fold wall time; `null` outside folds. */
-  fold: 'earlier' | 'later' | null;
+  fold: WallTimeFold | null;
 }
 
 /** The slot grid of one site-local day: wall times every `gridMinutes`, gaps skipped, folds doubled. */
@@ -166,7 +170,8 @@ export function slotGrid(day: LocalDate, zone: TimeZone, gridMinutes: number): G
     const wallTime = fromNaive(minute).time;
     const instants = instantsAt(day, wallTime, zone);
     instants.forEach((start, i) => {
-      const fold = instants.length === 2 ? (i === 0 ? 'earlier' : 'later') : null;
+      const fold =
+        instants.length === 2 ? (i === 0 ? WallTimeFold.earlier : WallTimeFold.later) : null;
       slots.push({ start, wallTime, fold });
     });
   }

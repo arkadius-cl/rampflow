@@ -1,3 +1,4 @@
+import { Role, ScopeParty, TenantActorKind } from '@rampflow/shared/values';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { type World, world } from '../../../../test/world.ts';
 import type { SiteId } from '../../../db/ids.ts';
@@ -11,10 +12,10 @@ beforeAll(async () => {
 
 const scope = () =>
   ({
-    party: 'tenant',
+    party: ScopeParty.tenant,
     tenantId: w.A.tenantId,
     siteIds: 'all',
-    actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: 'dispatcher' },
+    actor: { kind: TenantActorKind.user, userId: w.A.users.dispatcher.id, role: Role.dispatcher },
   }) as const;
 
 /** Holds the site lock in its own transaction until `release` is called. */

@@ -8,14 +8,9 @@ import {
   resolveEntitlements,
 } from '@rampflow/shared';
 import { findEntitlement } from '@rampflow/shared/contract/catalog';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import {
-  type TenantUsage,
-  USAGE_KEYS,
-  type UsageKey,
-} from '@rampflow/shared/modules/core/api.platform';
-import { COUNTED_DOCK_STATUSES } from '@rampflow/shared/modules/core/api.sites';
-import { SystemActorName } from '@rampflow/shared/values';
+import type { TenantUsage } from '@rampflow/shared/modules/core/api.platform';
+import { CountedDockStatus, UsageKey } from '@rampflow/shared/modules/core/values';
+import { EntitlementKind, ScopeParty, SystemActorName, values } from '@rampflow/shared/values';
 import { and, count, eq, gt, gte, inArray, sql } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -45,7 +40,7 @@ export interface Usage {
 
 const isSoft = (key: UsageKey) => {
   const def = findEntitlement(catalog, key)?.def;
-  return def?.kind === 'limit' && def.soft === true;
+  return def?.kind === EntitlementKind.limit && def.soft === true;
 };
 
 /** Resolved entitlements of every tenant from one override query. Stale rows are skipped. */
@@ -99,7 +94,7 @@ async function tenantCounts(tx: Tx, tenantId: TenantId, now: Date) {
   return asScope(
     tx,
     {
-      party: ActorParty.tenant,
+      party: ScopeParty.tenant,
       tenantId,
       siteIds: 'all',
       actor: systemActor(SystemActorName.usage),
@@ -112,7 +107,9 @@ async function tenantCounts(tx: Tx, tenantId: TenantId, now: Date) {
       const docks = inner
         .select({ n: count() })
         .from(dock)
-        .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...COUNTED_DOCK_STATUSES])));
+        .where(
+          and(eq(dock.tenantId, tenantId), inArray(dock.status, [...values(CountedDockStatus)])),
+        );
       const bookings = inner
         .select({ n: count() })
         .from(booking)
@@ -150,7 +147,7 @@ export async function usageOf(
     const resolved = entitlements.get(t.id);
     if (!resolved) throw new Error(`no entitlements for ${t.id}`);
     const usage = {} as TenantUsage;
-    for (const key of USAGE_KEYS) {
+    for (const key of values(UsageKey)) {
       const limit = resolved.limits[key];
       usage[key] = {
         used: used[key],

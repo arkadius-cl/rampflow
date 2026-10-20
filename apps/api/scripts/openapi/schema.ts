@@ -1,3 +1,4 @@
+import type { JsonSchemaType } from '@rampflow/shared/values';
 /** The JSON Schema 2020-12 subset the generator writes and reads (OpenAPI 3.1 schema objects). */
 export interface JsonSchema {
   $ref?: string;
@@ -28,4 +29,4 @@ export interface JsonSchema {
   [key: string]: unknown;
 }
 
-export type JsonType = 'string' | 'number' | 'integer' | 'boolean' | 'null' | 'array' | 'object';
+export type JsonType = JsonSchemaType;

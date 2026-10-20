@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { type LocalDate, localDateSchema } from '../../time/index.ts';
-import { BOOKING_STATUSES, PUNCTUALITY } from '../booking/lifecycle.ts';
+import { ZodIssueCode } from '../../values/validation.ts';
+import { BookingStatus, CreatedParty, Punctuality } from '../booking/values.ts';
 import { KpiUnit } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
@@ -24,10 +25,14 @@ const filterShape = {
 
 function checkPeriod(f: { from: LocalDate; to: LocalDate }, ctx: z.RefinementCtx) {
   if (f.from > f.to) {
-    ctx.addIssue({ code: 'custom', message: 'The period ends before it starts', path: ['to'] });
+    ctx.addIssue({
+      code: ZodIssueCode.custom,
+      message: 'The period ends before it starts',
+      path: ['to'],
+    });
   } else if (periodDays(f.from, f.to) > MAX_PERIOD_DAYS) {
     ctx.addIssue({
-      code: 'custom',
+      code: ZodIssueCode.custom,
       message: `A report covers at most ${MAX_PERIOD_DAYS} days`,
       path: ['to'],
     });
@@ -95,16 +100,16 @@ export const mean = (sum: number, n: number) => (n === 0 ? null : round1(sum / n
 export const VisitItem = z.object({
   id: z.uuid(),
   code: z.string(),
-  status: z.enum(BOOKING_STATUSES),
+  status: z.enum(BookingStatus),
   carrierName: z.string(),
   resourceName: z.string(),
   dockCode: z.string().nullable(),
   direction: z.string(),
-  createdParty: z.enum(['carrier', 'staff']),
+  createdParty: z.enum(CreatedParty),
   walkIn: z.boolean(),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
-  punctuality: z.enum(PUNCTUALITY).nullable(),
+  punctuality: z.enum(Punctuality).nullable(),
   punctualityMinutes: z.int().nullable(),
   checkedInAt: z.iso.datetime().nullable(),
   calledAt: z.iso.datetime().nullable(),

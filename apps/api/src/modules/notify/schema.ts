@@ -1,4 +1,4 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { PolicyCommand, ScopeParty } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { index, integer, jsonb, pgPolicy, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { citext, createdAt, instant, primaryId, type TenantId } from '../../db/ids.ts';
@@ -31,11 +31,11 @@ export const outboxMessage = pgTable(
       .where(sql`${t.sentAt} is null and ${t.failedAt} is null`),
     index('outbox_message_tenant_id_idx').on(t.tenantId),
     pgPolicy('any_insert', {
-      for: 'insert',
+      for: PolicyCommand.insert,
       withCheck: sql`(select app.party()) is not null and (${t.tenantId} is null or ${t.tenantId} = (select app.tenant_id()))`,
     }),
-    allow(ActorParty.system, 'select', always),
-    allow(ActorParty.system, 'update', always),
-    allow(ActorParty.system, 'delete', always),
+    allow(ScopeParty.system, PolicyCommand.select, always),
+    allow(ScopeParty.system, PolicyCommand.update, always),
+    allow(ScopeParty.system, PolicyCommand.delete, always),
   ],
 );

@@ -7,6 +7,7 @@ import {
   type PermissionKey,
   type SettingKey,
 } from '../registry.ts';
+import { EntitlementKind } from './entitlements.ts';
 
 // Manifest keys as runtime values (ADR-0019): `Permission.booking.view === 'booking.view'`.
 // Each dot of a key opens one level, so `Setting.privacy.retention.visit_days` exists too.
@@ -44,7 +45,7 @@ export const Permission = keyTree(keysOf((m) => Object.keys(m.permissions)) as P
 export const Feature = keyTree(
   keysOf((m) =>
     Object.entries(m.entitlements)
-      .filter(([, d]) => d.kind === 'feature' && !d.reserved)
+      .filter(([, d]) => d.kind === EntitlementKind.feature && !d.reserved)
       .map(([k]) => k),
   ) as ImplementedFeatureKey[],
 );
@@ -52,7 +53,7 @@ export const Feature = keyTree(
 export const Limit = keyTree(
   keysOf((m) =>
     Object.entries(m.entitlements)
-      .filter(([, d]) => d.kind === 'limit')
+      .filter(([, d]) => d.kind === EntitlementKind.limit)
       .map(([k]) => k),
   ) as LimitKey[],
 );

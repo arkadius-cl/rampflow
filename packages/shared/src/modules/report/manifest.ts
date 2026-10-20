@@ -1,4 +1,5 @@
 import { defineModule } from '../../contract/module.ts';
+import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
 
@@ -8,10 +9,10 @@ export const report = defineModule({
   enabledBy: 'report.basic',
   locales: LocaleSet.staff,
   entitlements: {
-    'report.basic': { kind: 'feature' },
-    'report.export': { kind: 'feature' },
-    'report.carrier_scorecard': { kind: 'feature', reserved: true },
-    'report.scheduled': { kind: 'feature', reserved: true },
+    'report.basic': { kind: EntitlementKind.feature },
+    'report.export': { kind: EntitlementKind.feature },
+    'report.carrier_scorecard': { kind: EntitlementKind.feature, reserved: true },
+    'report.scheduled': { kind: EntitlementKind.feature, reserved: true },
   },
   permissions: {
     'report.view': { roles: [Role.dispatcher] },

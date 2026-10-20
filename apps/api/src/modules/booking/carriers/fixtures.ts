@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { RegistrationMode } from '@rampflow/shared/modules/booking/api.carriers';
-import { TokenPurpose } from '@rampflow/shared/values';
+import type { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { StaffLocale, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import {
@@ -46,7 +47,7 @@ export async function registrationFor(
     tenantId: TenantId;
     siteId: SiteId;
     email?: string;
-    status?: 'pending_email' | 'pending_approval';
+    status?: typeof RegistrationStatus.pending_email | typeof RegistrationStatus.pending_approval;
     carrierId?: CarrierId;
   },
 ) {
@@ -60,7 +61,7 @@ export async function registrationFor(
     country: 'LT',
     contactName: 'Rasa Registrant',
     email,
-    locale: 'en',
+    locale: StaffLocale.en,
     status: o.status ?? 'pending_email',
     carrierId: o.carrierId ?? null,
     tokenHash: tokenHashFor(TokenPurpose.registration, id),

@@ -9,10 +9,20 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import {
   BookingStatus,
+  CarrierLinkSource,
   CarrierLinkStatus,
+  ClosureKind,
+  ClosureSource,
   CreatedParty,
+  DurationKind,
 } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  EmailTemplate,
+  ErrorCode,
+  ForbiddenReason,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -113,8 +123,8 @@ describe('offered times (BK-04)', () => {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'closed',
-        source: 'manual',
+        kind: ClosureKind.closed,
+        source: ClosureSource.manual,
         startsLocal: `${MONDAY}T08:00`,
         endsLocal: `${MONDAY}T09:00`,
       });
@@ -181,7 +191,10 @@ describe('booking a slot (BK-04)', () => {
     expect(statuses).toEqual([201, 409]);
     const lost = first.status === 409 ? first : second;
     const error = await errorOf(lost);
-    expect(error.details).toMatchObject({ reason: 'capacity_full', offers: { date: MONDAY } });
+    expect(error.details).toMatchObject({
+      reason: ConflictReason.capacity_full,
+      offers: { date: MONDAY },
+    });
     const refreshed = error.details?.offers as PortalOffers;
     expect(refreshed).not.toHaveProperty('resources');
     expect(refreshed.starts.map((x) => x.wallTime)).not.toContain('09:00');
@@ -197,7 +210,7 @@ describe('booking a slot (BK-04)', () => {
     const s = await site();
     const b = await booked(s, mon('09:00'));
     expect(b).toMatchObject({
-      status: 'confirmed',
+      status: BookingStatus.confirmed,
       startsAt: mon('09:00'),
       timeZone: 'Europe/Berlin',
       site: { id: s.siteId, address: { line1: 'Am Hafen 1', postalCode: '20457' } },
@@ -228,8 +241,8 @@ describe('booking a slot (BK-04)', () => {
       const create = await book(s, mon('12:00'));
       expect(create.status).toBe(403);
       expect(await errorOf(create)).toMatchObject({
-        code: 'forbidden',
-        details: { reason: 'link_inactive' },
+        code: ErrorCode.forbidden,
+        details: { reason: ForbiddenReason.link_inactive },
       });
       const cancel = await carrierAs(carrierUser()).post(`${at(w.A)}/bookings/${b.id}/cancel`, {
         body: {},
@@ -244,7 +257,7 @@ describe('booking a slot (BK-04)', () => {
   });
 });
 
-async function setLink(side: WorldSide, carrierId: string, status: 'active' | 'deactivated') {
+async function setLink(side: WorldSide, carrierId: string, status: CarrierLinkStatus) {
   await ownerDb()
     .update(tenantCarrierLink)
     .set({ status, deactivatedAt: status === CarrierLinkStatus.active ? null : new Date() })
@@ -268,7 +281,7 @@ describe('change and cancel (BK-05)', () => {
       body: { startsAt: taken.startsAt, version: b.version },
     });
     expect(full.status).toBe(409);
-    expect((await errorOf(full)).details).toMatchObject({ reason: 'capacity_full' });
+    expect((await errorOf(full)).details).toMatchObject({ reason: ConflictReason.capacity_full });
 
     const moved = await carrierAs(carrierUser()).patch(`${at(w.A)}/bookings/${b.id}`, {
       body: { startsAt: mon('11:00'), version: b.version },
@@ -302,13 +315,13 @@ describe('change and cancel (BK-05)', () => {
     });
     for (const res of [patch, cancel, avis]) {
       expect(res.status).toBe(409);
-      expect((await errorOf(res)).details).toMatchObject({ reason: 'cutoff_passed' });
+      expect((await errorOf(res)).details).toMatchObject({ reason: ConflictReason.cutoff_passed });
     }
     const [row] = await ownerDb()
       .select()
       .from(booking)
       .where(eq(booking.id, b.id as never));
-    expect(row).toMatchObject({ status: 'confirmed', version: b.version });
+    expect(row).toMatchObject({ status: BookingStatus.confirmed, version: b.version });
   });
 
   it('an avis edit whose new duration does not fit answers 409 and keeps the old avis (AV-02)', async () => {
@@ -319,7 +332,7 @@ describe('change and cancel (BK-05)', () => {
     ];
     await ownerDb()
       .update(loadType)
-      .set({ duration: { kind: 'tiers', tiers } })
+      .set({ duration: { kind: DurationKind.tiers, tiers } })
       .where(eq(loadType.id, s.loadTypeId));
     const b = await booked(s, mon('09:00'));
     const res = await carrierAs(carrierUser()).put(`${at(w.A)}/bookings/${b.id}/avis`, {
@@ -344,8 +357,8 @@ describe('bookings across tenants (CR-05)', () => {
       .values({
         tenantId: w.B.tenantId,
         carrierId: w.A.carrierId,
-        status: 'active',
-        source: 'invitation',
+        status: CarrierLinkStatus.active,
+        source: CarrierLinkSource.invitation,
       })
       .onConflictDoNothing();
     const sA = await site();
@@ -361,7 +374,7 @@ describe('bookings across tenants (CR-05)', () => {
     expect(both).toEqual(expect.arrayContaining([atA.id, atB.id]));
     expect(await list({ from: MONDAY, to: MONDAY, tenantId: w.B.tenantId })).toEqual([atB.id]);
     expect(await list({ siteId: sA.siteId })).toEqual([atA.id]);
-    expect(await list({ siteId: sA.siteId, status: 'cancelled' })).toEqual([]);
+    expect(await list({ siteId: sA.siteId, status: BookingStatus.cancelled })).toEqual([]);
     expect(await list({ siteId: sA.siteId, from: '2026-11-03' })).toEqual([]);
     const page = (await (
       await carrierAs(carrierUser()).get(`${mine()}?from=${MONDAY}&to=${MONDAY}&limit=1`)
@@ -424,7 +437,7 @@ describe('book again (BK-06)', () => {
       avis: {
         references: [],
         counterpartyName: 'Lieferant GmbH',
-        loadUnits: [{ type: 'eur_pallet', quantity: 10 }],
+        loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 10 }],
         vehicle: { plate: 'WGM4521K' },
       },
     });
@@ -460,13 +473,13 @@ describe('the driver link (CR-06)', () => {
     const to = `driver-${randomUUID().slice(0, 8)}@example.test`;
     const sent = await carrierAs(carrierUser()).post(
       `${at(w.A)}/bookings/${b.id}/driver-link/email`,
-      { body: { email: to, locale: 'uk' } },
+      { body: { email: to, locale: DriverLocale.uk } },
     );
     expect(sent.status).toBe(202);
     const [mail] = await ownerDb()
       .select()
       .from(outboxMessage)
       .where(eq(outboxMessage.toEmail, to));
-    expect(mail).toMatchObject({ template: 'driver.link', locale: 'uk' });
+    expect(mail).toMatchObject({ template: EmailTemplate.driver_link, locale: DriverLocale.uk });
   });
 });

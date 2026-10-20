@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { EmailCategory, EmailTemplate, TenantRole, TokenPurpose } from '@rampflow/shared/values';
+import {
+  EmailCategory,
+  EmailTemplate,
+  ScopeParty,
+  StaffLocale,
+  TenantActorKind,
+  TenantRole,
+  TokenPurpose,
+} from '@rampflow/shared/values';
 import { Text } from '@react-email/components';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -56,10 +63,14 @@ beforeAll(async () => {
 });
 
 const tenantScope = (): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId: w.A.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: TenantRole.dispatcher },
+  actor: {
+    kind: TenantActorKind.user,
+    userId: w.A.users.dispatcher.id,
+    role: TenantRole.dispatcher,
+  },
 });
 
 const rowsTo = (to: string) =>
@@ -80,13 +91,13 @@ async function mailpitMessagesTo(to: string): Promise<{ ID: string; Subject: str
 }
 
 const enqueueProbe = (to: string, tenantId: TenantId | null, extra: { dedupeKey?: string } = {}) =>
-  withScope({ party: 'anonymous' }, (tx) =>
+  withScope({ party: ScopeParty.anonymous }, (tx) =>
     enqueueEmail(
       tx,
       {
         template: EmailTemplate.core_magic_link,
         to,
-        locale: 'en',
+        locale: StaffLocale.en,
         payload: { authTokenId: randomUUID() },
         tenantId,
         ...extra,
@@ -100,13 +111,13 @@ describe('enqueueEmail', () => {
   it('leaves no outbox row when the transaction rolls back', async () => {
     const to = `rollback-${randomUUID()}@outbox.test`;
     await expect(
-      withScope({ party: 'anonymous' }, async (tx) => {
+      withScope({ party: ScopeParty.anonymous }, async (tx) => {
         await enqueueEmail(
           tx,
           {
             template: EmailTemplate.core_magic_link,
             to,
-            locale: 'en',
+            locale: StaffLocale.en,
             payload: { authTokenId: randomUUID() },
             tenantId: null,
           },
@@ -138,7 +149,7 @@ describe('enqueueEmail', () => {
             {
               template: EmailTemplate.booking_confirmed,
               to,
-              locale: 'de',
+              locale: StaffLocale.de,
               payload: { ...confirmedExample, bookingId: w.A.bookings.own.id },
               tenantId: w.A.tenantId,
             },
@@ -150,7 +161,7 @@ describe('enqueueEmail', () => {
             {
               template: EmailTemplate.core_magic_link,
               to,
-              locale: 'de',
+              locale: StaffLocale.de,
               payload: { authTokenId: randomUUID() },
               tenantId: w.A.tenantId,
             },
@@ -177,13 +188,13 @@ describe('enqueueEmail', () => {
   it('stores row ids, never the token a link carries', async () => {
     const to = `token-${randomUUID()}@outbox.test`;
     const authTokenId = randomUUID();
-    await withScope({ party: 'anonymous' }, (tx) =>
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
       enqueueEmail(
         tx,
         {
           template: EmailTemplate.core_magic_link,
           to,
-          locale: 'en',
+          locale: StaffLocale.en,
           payload: { authTokenId },
           tenantId: null,
         },
@@ -213,13 +224,13 @@ describe('outbox worker', () => {
   it('delivers to Mailpit, marks the row sent and drops its payload', async () => {
     const to = `deliver-${randomUUID()}@outbox.test`;
     const authTokenId = randomUUID();
-    await withScope({ party: 'anonymous' }, (tx) =>
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
       enqueueEmail(
         tx,
         {
           template: EmailTemplate.core_magic_link,
           to,
-          locale: 'en',
+          locale: StaffLocale.en,
           payload: { authTokenId },
           tenantId: null,
         },

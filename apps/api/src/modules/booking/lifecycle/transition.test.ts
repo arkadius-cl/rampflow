@@ -1,16 +1,32 @@
 import { randomUUID } from 'node:crypto';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import {
-  BOOKING_STATUSES,
-  COMMAND_NAMES,
   COMMANDS,
   type CommandDef,
   type CommandInput,
-  type CommandName,
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingParty, BookingStatus, LinkVia } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale } from '@rampflow/shared/values';
+import {
+  ActorParty,
+  BookingEventType,
+  BookingParty,
+  BookingStatus,
+  CommandName,
+  LinkVia,
+  Punctuality,
+  TurnAwayReason,
+} from '@rampflow/shared/modules/booking/values';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  ErrorCode,
+  HealthStatus,
+  Role,
+  ScopeParty,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -38,7 +54,7 @@ const NOW = new Date('2026-11-02T08:00:00Z');
 const app = createApp({ clock: testClock(NOW) });
 const outcome = (p: Promise<unknown>) =>
   p.then(
-    () => ({ code: 'ok' }) as const,
+    () => ({ code: HealthStatus.ok }) as const,
     (e: unknown) => {
       if (e instanceof ApiError) return { code: e.code, ...e.details };
       throw e;
@@ -53,7 +69,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
   beforeAll(async () => {
     site = await capacitySite(w.A.tenantId, { hours: [[1, '00:00', '24:00']], docks: 4 });
     const holding = ['called', 'at_dock', 'loading'];
-    for (const status of BOOKING_STATUSES) {
+    for (const status of values(BookingStatus)) {
       const b = await seedBooking(w.A, {
         site,
         startsAt: new Date('2026-11-02T07:00:00Z'),
@@ -67,9 +83,9 @@ describe('transitionBooking rejects every command from a state outside its sourc
 
   const input = (name: CommandName): CommandInput => {
     switch (name) {
-      case 'reschedule':
+      case CommandName.reschedule:
         return { type: name, startsAt: '2026-11-02T12:00:00Z', version: 1 };
-      case 'update_avis':
+      case CommandName.update_avis:
         return {
           type: name,
           avis: {
@@ -79,29 +95,29 @@ describe('transitionBooking rejects every command from a state outside its sourc
           },
           version: 1,
         };
-      case 'send_driver_link':
+      case CommandName.send_driver_link:
         return { type: name, email: 'driver@example.test', locale: DriverLocale.ro };
-      case 'turn_away':
-        return { type: name, reason: 'other' };
-      case 'call':
-      case 'dock':
-      case 'start_loading':
+      case CommandName.turn_away:
+        return { type: name, reason: TurnAwayReason.other };
+      case CommandName.call:
+      case CommandName.dock:
+      case CommandName.start_loading:
         return { type: name, dockId: freeDock() };
-      case 'complete':
+      case CommandName.complete:
         return { type: name, actualLoadUnits: 9 };
-      case 'depart':
+      case CommandName.depart:
         return { type: name, reason: 'Fahrer abgereist' };
-      case 'link_acknowledgement':
+      case CommandName.link_acknowledgement:
         return { type: name, acknowledgementId: randomUUID(), via: LinkVia.gate_lookup };
       default:
         return { type: name } as CommandInput;
     }
   };
 
-  for (const name of COMMAND_NAMES) {
+  for (const name of values(CommandName)) {
     const def: CommandDef = COMMANDS[name];
     const party = def.actors.staff ? 'staff' : 'system';
-    const invalid = BOOKING_STATUSES.filter(
+    const invalid = values(BookingStatus).filter(
       (s) => !sourceStates(name, party).includes(s) && s !== def.to,
     );
     it(`${name} from ${invalid.join(', ')}`, async () => {
@@ -115,8 +131,8 @@ describe('transitionBooking rejects every command from a state outside its sourc
             : asSystem(w.A, NOW, (ctx) => transitionBooking(ctx, id, input(name)));
         expect({ status, ...(await outcome(run)) }).toEqual({
           status,
-          code: 'conflict',
-          reason: 'invalid_transition',
+          code: ErrorCode.conflict,
+          reason: ConflictReason.invalid_transition,
         });
       }
       expect((await bookingRow(byStatus.get(BookingStatus.departed) as never)).version).toBe(1);
@@ -128,17 +144,17 @@ describe('transitionBooking rejects every command from a state outside its sourc
     expect(
       await outcome(
         asStaff(w.A, w.A.users.tenant_admin, NOW, (ctx) =>
-          transitionBooking(ctx, id, { type: 'mark_no_show' }),
+          transitionBooking(ctx, id, { type: CommandName.mark_no_show }),
         ),
       ),
-    ).toEqual({ code: 'forbidden' });
+    ).toEqual({ code: ErrorCode.forbidden });
     expect(
       await outcome(
         asStaff(w.A, w.A.users.dock_operator, NOW, (ctx) =>
-          transitionBooking(ctx, w.A.bookings.own.id, { type: 'check_in' }),
+          transitionBooking(ctx, w.A.bookings.own.id, { type: CommandName.check_in }),
         ),
       ),
-    ).toEqual({ code: 'forbidden' });
+    ).toEqual({ code: ErrorCode.forbidden });
   });
 });
 
@@ -158,17 +174,22 @@ describe('idempotent repeats and the event log', () => {
   it('keeps booking_event append-only under RLS', async () => {
     const b = await seedBooking(w.A, { startsAt: new Date('2026-11-03T09:00:00Z') });
     await asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'cancel' }),
+      transitionBooking(ctx, b.id, { type: CommandName.cancel }),
     );
     const scope = {
-      party: 'tenant',
+      party: ScopeParty.tenant,
       tenantId: w.A.tenantId,
       siteIds: 'all',
-      actor: { kind: 'user', userId: w.A.users.tenant_admin.id, role: 'tenant_admin' },
+      actor: {
+        kind: TenantActorKind.user,
+        userId: w.A.users.tenant_admin.id,
+        role: Role.tenant_admin,
+      },
     } as const;
     const updated = await withScope(scope, (tx) =>
       tx
         .update(bookingEvent)
+        // biome-ignore lint/plugin: an unknown event type on purpose
         .set({ type: 'forged' })
         .where(eq(bookingEvent.bookingId, b.id))
         .returning(),
@@ -190,15 +211,18 @@ describe('idempotent repeats and the event log', () => {
       ).items;
     const [forAdmin] = await events(w.A.users.tenant_admin);
     expect(forAdmin).toMatchObject({
-      type: 'cancelled',
+      type: BookingEventType.cancelled,
       actor: {
-        party: 'tenant',
+        party: ActorParty.tenant,
         userId: w.A.users.dispatcher.id,
         name: expect.stringMatching(/^dispatcher /),
       },
     });
     const [forDispatcher] = await events(w.A.users.dispatcher);
-    expect(forDispatcher).toMatchObject({ type: 'cancelled', data: { late: false } });
+    expect(forDispatcher).toMatchObject({
+      type: BookingEventType.cancelled,
+      data: { late: false },
+    });
     expect(forDispatcher).not.toHaveProperty('actor');
     expect(JSON.stringify(forDispatcher)).not.toContain(w.A.users.dispatcher.id);
   });
@@ -219,24 +243,32 @@ describe('yard commands', () => {
     const late = await seedBooking(w.A, { startsAt });
     for (const b of [early, late]) {
       const r = await asSystem(w.A, markedAt, (ctx) =>
-        transitionBooking(ctx, b.id, { type: 'mark_no_show' }),
+        transitionBooking(ctx, b.id, { type: CommandName.mark_no_show }),
       );
-      expect(r.booking).toMatchObject({ status: 'no_show', noShowAt: markedAt });
+      expect(r.booking).toMatchObject({ status: BookingStatus.no_show, noShowAt: markedAt });
     }
     const at0040 = new Date('2026-11-03T23:40:00Z');
     const checkedIn = await gate(at0040, (ctx) =>
-      transitionBooking(ctx, early.id, { type: 'check_in', plateSeen: 'hh ab 1' }),
+      transitionBooking(ctx, early.id, { type: CommandName.check_in, plateSeen: 'hh ab 1' }),
     );
     expect(checkedIn.booking).toMatchObject({
-      status: 'checked_in',
-      punctuality: 'late',
+      status: BookingStatus.checked_in,
+      punctuality: Punctuality.late,
       punctualityMinutes: 70,
     });
     const nextDay = new Date('2026-11-04T23:10:00Z'); // Thursday 00:10 CET
     expect(
-      await outcome(gate(nextDay, (ctx) => transitionBooking(ctx, late.id, { type: 'check_in' }))),
-    ).toEqual({ code: 'conflict', reason: 'invalid_transition', status: 'no_show' });
-    const [checkInEvent] = (await eventsOf(early.id)).filter((e) => e.type === 'checked_in');
+      await outcome(
+        gate(nextDay, (ctx) => transitionBooking(ctx, late.id, { type: CommandName.check_in })),
+      ),
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.invalid_transition,
+      status: BookingStatus.no_show,
+    });
+    const [checkInEvent] = (await eventsOf(early.id)).filter(
+      (e) => e.type === BookingEventType.checked_in,
+    );
     expect(checkInEvent?.data).toMatchObject({ fromNoShow: true, plateRecorded: true });
     expect(await ownerCount('avis', sql`booking_id = ${early.id} and plate_seen = 'HHAB1'`)).toBe(
       1,
@@ -248,10 +280,10 @@ describe('yard commands', () => {
     expect(
       await outcome(
         asSystem(w.A, new Date('2026-11-05T08:59:00Z'), (ctx) =>
-          transitionBooking(ctx, b.id, { type: 'mark_no_show' }),
+          transitionBooking(ctx, b.id, { type: CommandName.mark_no_show }),
         ),
       ),
-    ).toMatchObject({ code: 'conflict', reason: 'not_due' });
+    ).toMatchObject({ code: ErrorCode.conflict, reason: ConflictReason.not_due });
   });
 
   it('computes punctuality against the tolerance and grace settings', async () => {
@@ -265,7 +297,9 @@ describe('yard commands', () => {
     for (const [minutes, expected] of cases) {
       const b = await seedBooking(w.A, { startsAt });
       const at = new Date(startsAt.getTime() + minutes * 60_000);
-      const r = await gate(at, (ctx) => transitionBooking(ctx, b.id, { type: 'check_in' }));
+      const r = await gate(at, (ctx) =>
+        transitionBooking(ctx, b.id, { type: CommandName.check_in }),
+      );
       expect([minutes, r.booking.punctuality]).toEqual([minutes, expected]);
     }
   });
@@ -274,8 +308,8 @@ describe('yard commands', () => {
     const startsAt = new Date('2026-11-06T10:00:00Z');
     const b = await seedBooking(w.A, { startsAt });
     const at = new Date(startsAt.getTime() - (30 * 60 + 20) * 1000);
-    const r = await gate(at, (ctx) => transitionBooking(ctx, b.id, { type: 'check_in' }));
-    expect(r.booking).toMatchObject({ punctuality: 'early', punctualityMinutes: -30 });
+    const r = await gate(at, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.check_in }));
+    expect(r.booking).toMatchObject({ punctuality: Punctuality.early, punctualityMinutes: -30 });
   });
 
   it('answers 409, not a no-op, for a repeat-looking command on a final booking', async () => {
@@ -285,13 +319,17 @@ describe('yard commands', () => {
       await outcome(
         asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
           transitionBooking(ctx, b.id, {
-            type: 'reschedule',
+            type: CommandName.reschedule,
             startsAt: startsAt.toISOString(),
             version: 1,
           }),
         ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'invalid_transition', status: 'cancelled' });
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.invalid_transition,
+      status: BookingStatus.cancelled,
+    });
   });
 
   it('turns a truck away after check-in and shortens its driver link', async () => {
@@ -299,9 +337,15 @@ describe('yard commands', () => {
     const b = await seedBooking(w.A, { startsAt, status: BookingStatus.checked_in });
     const at = new Date('2026-11-07T08:20:00Z');
     const r = await gate(at, (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'turn_away', reason: 'wrong_load' }),
+      transitionBooking(ctx, b.id, {
+        type: CommandName.turn_away,
+        reason: TurnAwayReason.wrong_load,
+      }),
     );
-    expect(r.booking).toMatchObject({ status: 'turned_away', turnAwayReason: 'wrong_load' });
+    expect(r.booking).toMatchObject({
+      status: BookingStatus.turned_away,
+      turnAwayReason: 'wrong_load',
+    });
     const expiry = new Date(at.getTime() + 24 * 3_600_000);
     expect(
       await ownerCount('driver_access', sql`booking_id = ${b.id} and expires_at = ${expiry}`),
@@ -311,22 +355,30 @@ describe('yard commands', () => {
   it('frees the dock on uncall, so another truck can be called to it (YD-07)', async () => {
     const first = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     const second = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
-    await dockOp(NOW, (ctx) => transitionBooking(ctx, first.id, { type: 'call', dockId: dock1() }));
+    await dockOp(NOW, (ctx) =>
+      transitionBooking(ctx, first.id, { type: CommandName.call, dockId: dock1() }),
+    );
     expect(
       await outcome(
-        dockOp(NOW, (ctx) => transitionBooking(ctx, second.id, { type: 'call', dockId: dock1() })),
+        dockOp(NOW, (ctx) =>
+          transitionBooking(ctx, second.id, { type: CommandName.call, dockId: dock1() }),
+        ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'dock_occupied' });
+    ).toEqual({ code: ErrorCode.conflict, reason: ConflictReason.dock_occupied });
     const uncalled = await dockOp(NOW, (ctx) =>
-      transitionBooking(ctx, first.id, { type: 'uncall' }),
+      transitionBooking(ctx, first.id, { type: CommandName.uncall }),
     );
-    expect(uncalled.booking).toMatchObject({ status: 'checked_in', dockId: null, calledAt: null });
+    expect(uncalled.booking).toMatchObject({
+      status: BookingStatus.checked_in,
+      dockId: null,
+      calledAt: null,
+    });
     const called = await dockOp(NOW, (ctx) =>
-      transitionBooking(ctx, second.id, { type: 'call', dockId: dock1() }),
+      transitionBooking(ctx, second.id, { type: CommandName.call, dockId: dock1() }),
     );
-    expect(called.booking).toMatchObject({ status: 'called', dockId: dock1() });
+    expect(called.booking).toMatchObject({ status: BookingStatus.called, dockId: dock1() });
     await dockOp(NOW, (ctx) =>
-      transitionBooking(ctx, second.id, { type: 'complete', actualLoadUnits: 10 }),
+      transitionBooking(ctx, second.id, { type: CommandName.complete, actualLoadUnits: 10 }),
     );
   });
 
@@ -339,28 +391,28 @@ describe('yard commands', () => {
     const other = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     const afterwards = await dockOp(NOW, async (ctx) => {
       const err = await outcome(
-        transitionBooking(ctx, other.id, { type: 'dock', dockId: dock2() }),
+        transitionBooking(ctx, other.id, { type: CommandName.dock, dockId: dock2() }),
       );
       const [row] = await ctx.tx.select().from(booking).where(eq(booking.id, other.id));
       return { err, status: row?.status };
     });
     expect(afterwards).toEqual({
-      err: { code: 'conflict', reason: 'dock_occupied' },
-      status: 'checked_in',
+      err: { code: ErrorCode.conflict, reason: ConflictReason.dock_occupied },
+      status: BookingStatus.checked_in,
     });
     await dockOp(NOW, (ctx) =>
-      transitionBooking(ctx, holder.id, { type: 'complete', actualLoadUnits: 10 }),
+      transitionBooking(ctx, holder.id, { type: CommandName.complete, actualLoadUnits: 10 }),
     );
   });
 
   it('needs a reason to depart before done, and a dock for dock commands', async () => {
     const b = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     expect(
-      await outcome(gate(NOW, (ctx) => transitionBooking(ctx, b.id, { type: 'depart' }))),
-    ).toMatchObject({ code: 'validation_failed' });
+      await outcome(gate(NOW, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.depart }))),
+    ).toMatchObject({ code: ErrorCode.validation_failed });
     expect(
-      await outcome(dockOp(NOW, (ctx) => transitionBooking(ctx, b.id, { type: 'dock' }))),
-    ).toMatchObject({ code: 'validation_failed' });
+      await outcome(dockOp(NOW, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.dock }))),
+    ).toMatchObject({ code: ErrorCode.validation_failed });
   });
 });
 
@@ -373,21 +425,21 @@ describe('check-in under safety enforcement (YD-02)', () => {
     const gate = <T>(fn: Parameters<typeof asStaff<T>>[3]) =>
       asStaff(enforced.A, enforced.A.users.gate_operator, NOW, fn);
     expect(
-      await outcome(gate((ctx) => transitionBooking(ctx, b.id, { type: 'check_in' }))),
+      await outcome(gate((ctx) => transitionBooking(ctx, b.id, { type: CommandName.check_in }))),
     ).toEqual({
-      code: 'conflict',
-      reason: 'safety_missing',
+      code: ErrorCode.conflict,
+      reason: ConflictReason.safety_missing,
       instructionIds: [briefing.instructionId],
     });
     const linked = await gate((ctx) =>
       transitionBooking(ctx, b.id, {
-        type: 'link_acknowledgement',
+        type: CommandName.link_acknowledgement,
         acknowledgementId: briefing.acknowledgementId,
         via: LinkVia.gate_lookup,
       }),
     );
     expect(linked.changed).toBe(true);
-    const r = await gate((ctx) => transitionBooking(ctx, b.id, { type: 'check_in' }));
+    const r = await gate((ctx) => transitionBooking(ctx, b.id, { type: CommandName.check_in }));
     expect(r.booking.status).toBe('checked_in');
     expect((await eventsOf(b.id)).map((e) => [e.type, e.data])).toEqual([
       [
@@ -395,7 +447,7 @@ describe('check-in under safety enforcement (YD-02)', () => {
         {
           instructionId: briefing.instructionId,
           acknowledgementId: briefing.acknowledgementId,
-          via: 'gate_lookup',
+          via: LinkVia.gate_lookup,
         },
       ],
       ['checked_in', expect.objectContaining({ safety: 'valid' })],
@@ -414,12 +466,16 @@ describe('check-in under safety enforcement (YD-02)', () => {
       await outcome(
         asStaff(enforced.A, enforced.A.users.gate_operator, NOW, (ctx) =>
           transitionBooking(ctx, b.id, {
-            type: 'link_acknowledgement',
+            type: CommandName.link_acknowledgement,
             acknowledgementId: briefing.acknowledgementId,
             via: LinkVia.gate_lookup,
           }),
         ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'acknowledgement_invalid', status: 'expired' });
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.acknowledgement_invalid,
+      status: AckStatus.expired,
+    });
   });
 });

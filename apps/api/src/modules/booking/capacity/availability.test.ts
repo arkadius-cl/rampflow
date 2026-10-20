@@ -1,5 +1,12 @@
-import { BookingStatus, CreatedParty, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingStatus,
+  ClosureKind,
+  ClosureSource,
+  CreatedParty,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
 import { instantsAt, type LocalDate, type LocalTime, wallClock } from '@rampflow/shared/time';
+import { ConflictReason } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -43,7 +50,7 @@ const at = (s: CapacitySite, day: string, time: string) => {
 async function offers(
   s: CapacitySite,
   day: LocalDate,
-  o: { audience?: 'staff' | 'carrier'; now?: Date } = {},
+  o: { audience?: CreatedParty; now?: Date } = {},
 ) {
   return asTenantAdmin(
     w.A,
@@ -154,8 +161,8 @@ describe('offered starts (MD-04)', () => {
         {
           tenantId: s.tenantId,
           siteId: s.siteId,
-          kind: 'closed',
-          source: 'manual',
+          kind: ClosureKind.closed,
+          source: ClosureSource.manual,
           startsLocal: `${MONDAY}T08:00`,
           endsLocal: `${MONDAY}T09:00`,
         },
@@ -163,8 +170,8 @@ describe('offered starts (MD-04)', () => {
           tenantId: s.tenantId,
           siteId: s.siteId,
           resourceId: s.resourceId,
-          kind: 'blocked',
-          source: 'manual',
+          kind: ClosureKind.blocked,
+          source: ClosureSource.manual,
           startsLocal: `${MONDAY}T11:00`,
           endsLocal: `${MONDAY}T14:00`,
         },
@@ -186,8 +193,8 @@ describe('offered starts (MD-04)', () => {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'closed',
-        source: 'holiday',
+        kind: ClosureKind.closed,
+        source: ClosureSource.holiday,
         holidayDate: MONDAY,
         holidayName: 'Testfeiertag',
         startsLocal: `${MONDAY}T00:00`,
@@ -233,7 +240,7 @@ describe('offered starts (MD-04)', () => {
     const timeline = day.resources[0]?.timeline ?? never();
     expect(checkFit(timeline, at(s, MONDAY, '09:00'), 60)).toEqual({
       ok: false,
-      reason: 'daily_cap_reached',
+      reason: ConflictReason.daily_cap_reached,
     });
   });
 

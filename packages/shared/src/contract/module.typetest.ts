@@ -2,15 +2,16 @@
 // rejecting the marked line, because the @ts-expect-error directive is then unused.
 import * as z from 'zod';
 import type { PackageValues } from '../registry.ts';
+import { EntitlementKind } from '../values/entitlements.ts';
 import { OrgKind } from '../values/roles.ts';
 import { SettingScope } from '../values/settings.ts';
 import { defineModule } from './module.ts';
 
 const base = { id: 'demo', dependsOn: [], locales: 'staff', settings: {}, nav: [] } as const;
 const entitlements = {
-  'demo.on': { kind: 'feature' },
-  'demo.later': { kind: 'feature', reserved: true },
-  'demo.max': { kind: 'limit' },
+  'demo.on': { kind: EntitlementKind.feature },
+  'demo.later': { kind: EntitlementKind.feature, reserved: true },
+  'demo.max': { kind: EntitlementKind.limit },
 } as const;
 const permissions = { 'demo.view': { roles: ['dispatcher'] } } as const;
 
@@ -19,7 +20,7 @@ export const prefix = defineModule({
   enabledBy: null,
   entitlements: {
     // @ts-expect-error keys carry the module id as prefix
-    'other.flag': { kind: 'feature' },
+    'other.flag': { kind: EntitlementKind.feature },
   },
   permissions: {},
 });
@@ -87,9 +88,9 @@ export const carrierNavEntitlement = defineModule({
       area: OrgKind.carrier,
       to: '/',
       icon: 'x',
-      permission: 'demo.view',
+      permission: 'demo.view', // values-check-ignore: a test manifest names its own keys
       // @ts-expect-error carriers have no package, so carrier nav cannot require an entitlement
-      entitlement: 'demo.on',
+      entitlement: 'demo.on', // values-check-ignore: a test manifest names its own keys
     },
   ],
 });

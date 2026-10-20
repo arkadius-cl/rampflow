@@ -1,4 +1,11 @@
-import { HttpMethod, OrgKind, Permission, Role } from '@rampflow/shared/values';
+import {
+  ForeignOutcome,
+  HttpMethod,
+  OrgKind,
+  Permission,
+  Role,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { MembershipId } from '../../../db/ids.ts';
@@ -10,10 +17,10 @@ const P = '/api/t/:orgId/staff';
 // Staff routes need core.manage_staff, which gate and dock operators lack, so `siteScoped`
 // checks that an operator of the other site gets 403 (TN-01).
 const base = {
-  as: Role.tenant_admin,
+  as: RouteCaseActor.tenant_admin,
   permission: Permission.core.manage_staff,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 
@@ -23,14 +30,14 @@ const members = new WeakMap<World, MembershipId>();
 const invitations = new WeakMap<World, string>();
 
 export const cases = defineRouteCases([
-  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: ForeignOutcome.empty },
   {
     ...base,
     method: HttpMethod.POST,
     path: `${P}/invitations`,
     params: org,
-    body: () => ({ email: inviteeEmail('staff'), role: 'dispatcher' }),
-    foreign: 'empty',
+    body: () => ({ email: inviteeEmail('staff'), role: Role.dispatcher }),
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -46,7 +53,7 @@ export const cases = defineRouteCases([
       invitations.set(w, inv.id);
     },
     params: (w) => ({ ...org(w), invitationId: invitations.get(w) ?? '' }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -56,7 +63,7 @@ export const cases = defineRouteCases([
       members.set(w, await membershipOf(db, w.A.users.dock_operator.id));
     },
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
-    body: () => ({ role: 'dispatcher' }),
+    body: () => ({ role: Role.dispatcher }),
   },
   {
     ...base,
@@ -66,6 +73,6 @@ export const cases = defineRouteCases([
       members.set(w, await membershipOf(db, w.A.users.dock_operator.id));
     },
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
 ]);

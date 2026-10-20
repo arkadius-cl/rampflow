@@ -1,48 +1,53 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { Role } from '@rampflow/shared';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SystemActorName } from '@rampflow/shared/values';
-import { OrgKind } from '@rampflow/shared/values';
+import {
+  type CarrierRole,
+  ScopeParty,
+  SiteAccess,
+  TenantActorKind,
+  type TenantRole,
+} from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, TokenHash, UserId } from './ids.ts';
 import { db, type Tx } from './pool.ts';
 
 export type { Tx } from './pool.ts';
 
-export type TenantRole = Extract<
-  Role,
-  'tenant_admin' | 'dispatcher' | 'gate_operator' | 'dock_operator'
->;
-export type CarrierRole = Extract<Role, 'carrier_admin' | 'carrier_user'>;
+export type { CarrierRole, TenantRole };
 
 export type TenantActor =
-  | { kind: 'user'; userId: UserId; role: TenantRole }
-  | { kind: 'system'; job: SystemActorName };
+  | { kind: typeof TenantActorKind.user; userId: UserId; role: TenantRole }
+  | { kind: typeof TenantActorKind.system; job: SystemActorName };
 
 /** Who a database transaction acts for (ADR-0002). RLS policies read it through `app.*()`. */
 export type Scope =
-  | { party: 'anonymous' }
-  | { party: 'user'; userId: UserId }
-  | { party: 'platform'; userId: UserId }
+  | { party: typeof ScopeParty.anonymous }
+  | { party: typeof ScopeParty.user; userId: UserId }
+  | { party: typeof ScopeParty.platform; userId: UserId }
   | {
-      party: 'tenant';
+      party: typeof ScopeParty.tenant;
       tenantId: TenantId;
-      siteIds: readonly SiteId[] | 'all';
+      siteIds: readonly SiteId[] | SiteAccess;
       actor: TenantActor;
     }
-  | { party: 'carrier'; carrierId: CarrierId; userId: UserId; role: CarrierRole }
+  | { party: typeof ScopeParty.carrier; carrierId: CarrierId; userId: UserId; role: CarrierRole }
   | {
-      party: 'carrier_at_tenant';
+      party: typeof ScopeParty.carrier_at_tenant;
       carrierId: CarrierId;
       tenantId: TenantId;
       userId: UserId;
       role: CarrierRole;
     }
-  | { party: 'driver'; tenantId: TenantId; bookingId: BookingId; channel: DriverChannel }
-  | { party: 'token'; tokenHash: TokenHash; userId: UserId | null }
-  | { party: 'public'; tenantId: TenantId; siteId: SiteId | null }
-  | { party: 'system'; job: SystemActorName };
+  | {
+      party: typeof ScopeParty.driver;
+      tenantId: TenantId;
+      bookingId: BookingId;
+      channel: DriverChannel;
+    }
+  | { party: typeof ScopeParty.token; tokenHash: TokenHash; userId: UserId | null }
+  | { party: typeof ScopeParty.public; tenantId: TenantId; siteId: SiteId | null }
+  | { party: typeof ScopeParty.system; job: SystemActorName };
 
 export interface SessionVariables {
   party: string;
@@ -55,6 +60,7 @@ export interface SessionVariables {
 }
 
 const EMPTY: SessionVariables = {
+  // biome-ignore lint/plugin: '' is an unset session variable, not a set member
   party: '',
   user_id: '',
   tenant_id: '',
@@ -68,33 +74,33 @@ const EMPTY: SessionVariables = {
 export function sessionVariables(scope: Scope): SessionVariables {
   const v = { ...EMPTY, party: scope.party };
   switch (scope.party) {
-    case 'anonymous':
-    case ActorParty.system:
+    case ScopeParty.anonymous:
+    case ScopeParty.system:
       return v;
-    case 'user':
-    case OrgKind.platform:
+    case ScopeParty.user:
+    case ScopeParty.platform:
       return { ...v, user_id: scope.userId };
-    case ActorParty.tenant:
+    case ScopeParty.tenant:
       return {
         ...v,
         tenant_id: scope.tenantId,
-        user_id: scope.actor.kind === 'user' ? scope.actor.userId : '',
-        site_ids: scope.siteIds === 'all' ? '*' : scope.siteIds.join(','),
+        user_id: scope.actor.kind === TenantActorKind.user ? scope.actor.userId : '',
+        site_ids: scope.siteIds === SiteAccess.all ? '*' : scope.siteIds.join(','),
       };
-    case ActorParty.carrier:
+    case ScopeParty.carrier:
       return { ...v, carrier_id: scope.carrierId, user_id: scope.userId };
-    case 'carrier_at_tenant':
+    case ScopeParty.carrier_at_tenant:
       return {
         ...v,
         carrier_id: scope.carrierId,
         tenant_id: scope.tenantId,
         user_id: scope.userId,
       };
-    case ActorParty.driver:
+    case ScopeParty.driver:
       return { ...v, tenant_id: scope.tenantId, booking_id: scope.bookingId };
-    case 'token':
+    case ScopeParty.token:
       return { ...v, token_hash: scope.tokenHash.toString('hex'), user_id: scope.userId ?? '' };
-    case 'public':
+    case ScopeParty.public:
       return { ...v, tenant_id: scope.tenantId };
   }
 }

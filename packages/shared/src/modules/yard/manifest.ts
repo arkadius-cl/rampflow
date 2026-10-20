@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
+import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
 import { everyScope } from '../../values/settings.ts';
@@ -10,12 +11,12 @@ export const yard = defineModule({
   enabledBy: 'yard.checkin_qr',
   locales: LocaleSet.staff,
   entitlements: {
-    'yard.checkin_qr': { kind: 'feature' },
-    'yard.call_to_dock': { kind: 'feature' },
-    'yard.checkin_kiosk': { kind: 'feature', reserved: true },
-    'yard.board': { kind: 'feature', reserved: true },
-    'yard.queue': { kind: 'feature', reserved: true },
-    'yard.map': { kind: 'feature', reserved: true },
+    'yard.checkin_qr': { kind: EntitlementKind.feature },
+    'yard.call_to_dock': { kind: EntitlementKind.feature },
+    'yard.checkin_kiosk': { kind: EntitlementKind.feature, reserved: true },
+    'yard.board': { kind: EntitlementKind.feature, reserved: true },
+    'yard.queue': { kind: EntitlementKind.feature, reserved: true },
+    'yard.map': { kind: EntitlementKind.feature, reserved: true },
   },
   permissions: {
     'yard.gate': { roles: [Role.gate_operator] },

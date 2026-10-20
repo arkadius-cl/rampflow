@@ -5,7 +5,7 @@ import {
   SafetyLocale,
   UpdateInstructionBody,
 } from '@rampflow/shared/modules/safety/api.authoring';
-import { Limit, Permission, StoryId } from '@rampflow/shared/values';
+import { Limit, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
@@ -58,7 +58,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('json', CreateInstructionBody),
+    validate(ValidationTarget.json, CreateInstructionBody),
     async (c) => {
       const instruction = await createInstruction(c.var.db, {
         ...tenantActor(c),
@@ -77,8 +77,8 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', InstructionParam),
-    validate('json', UpdateInstructionBody),
+    validate(ValidationTarget.param, InstructionParam),
+    validate(ValidationTarget.json, UpdateInstructionBody),
     async (c) => {
       const instruction = await updateInstruction(c.var.db, {
         ...tenantActor(c),
@@ -98,7 +98,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', InstructionParam),
+    validate(ValidationTarget.param, InstructionParam),
     async (c) => {
       const { tenantId } = tenantActor(c);
       const items = await listVersions(c.var.db, tenantId, c.req.valid('param').instructionId);
@@ -115,7 +115,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', InstructionParam),
+    validate(ValidationTarget.param, InstructionParam),
     async (c) => {
       const { created, version } = await openDraft(c.var.db, {
         ...tenantActor(c),
@@ -133,7 +133,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', VersionParam),
+    validate(ValidationTarget.param, VersionParam),
     async (c) => {
       const { tenantId } = tenantActor(c);
       return c.json(await getVersion(c.var.db, tenantId, c.req.valid('param').versionId), 200);
@@ -149,8 +149,8 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', ContentParam),
-    validate('json', ContentBody),
+    validate(ValidationTarget.param, ContentParam),
+    validate(ValidationTarget.json, ContentBody),
     async (c) => {
       const { versionId, locale } = c.req.valid('param');
       const content = await putContent(c.var.db, {
@@ -172,8 +172,8 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('param', VersionParam),
-    validate('json', PublishBody),
+    validate(ValidationTarget.param, VersionParam),
+    validate(ValidationTarget.json, PublishBody),
     async (c) => {
       const version = await publishVersion(c.var.db, {
         ...tenantActor(c),

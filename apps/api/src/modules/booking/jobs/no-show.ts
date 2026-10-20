@@ -1,5 +1,5 @@
-import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
-import { Setting } from '@rampflow/shared/values';
+import { BookingParty, CommandName } from '@rampflow/shared/modules/booking/values';
+import { ScopeParty, Setting } from '@rampflow/shared/values';
 import { and, asc, eq, lte } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
@@ -22,7 +22,7 @@ const JOB = 'no_show';
  */
 async function markNoShows(tx: Tx, tenantId: TenantId, clock: Clock): Promise<JobStats> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: 'all',
     actor: systemActor(JOB),
@@ -55,7 +55,8 @@ async function markNoShows(tx: Tx, tenantId: TenantId, clock: Clock): Promise<Jo
           access,
           now,
         };
-        if ((await transitionBooking(ctx, b.id, { type: 'mark_no_show' })).changed) stats.marked++;
+        if ((await transitionBooking(ctx, b.id, { type: CommandName.mark_no_show })).changed)
+          stats.marked++;
       });
     } catch (e) {
       stats.failed++;

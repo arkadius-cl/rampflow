@@ -1,5 +1,11 @@
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingParty,
+  CommandName,
+  CreateMode,
+  LinkVia,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
 import {
   type BriefingSession,
   CallBody,
@@ -19,7 +25,7 @@ import {
   WalkInBody,
   type YardTruck,
 } from '@rampflow/shared/modules/yard/api';
-import { Feature, Module, Permission, StoryId } from '@rampflow/shared/values';
+import { Feature, Module, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
@@ -83,7 +89,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<ExpectedView>() },
     }),
     gate,
-    validate('query', ExpectedQuery),
+    validate(ValidationTarget.query, ExpectedQuery),
     async (c) => {
       const q = c.req.valid('query');
       return c.json(await expectedTrucks(yardScope(c, q.siteId), q.date), 200);
@@ -99,7 +105,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     gate,
-    validate('json', SearchBody),
+    validate(ValidationTarget.json, SearchBody),
     async (c) => {
       const body = c.req.valid('json');
       return c.json({ items: await searchTrucks(yardScope(c, body.siteId), body.q) }, 200);
@@ -115,7 +121,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<OnSiteView>() },
     }),
     gate,
-    validate('query', SiteQuery),
+    validate(ValidationTarget.query, SiteQuery),
     async (c) => c.json(await onSiteTrucks(yardScope(c, c.req.valid('query').siteId)), 200),
   )
   .post(
@@ -128,11 +134,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     gate,
-    validate('param', BookingParam),
-    validate('json', CheckInBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CheckInBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'check_in',
+        type: CommandName.check_in,
         plateSeen: c.req.valid('json').plateSeen,
       }),
   )
@@ -146,11 +152,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     gate,
-    validate('param', BookingParam),
-    validate('json', TurnAwayBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, TurnAwayBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'turn_away',
+        type: CommandName.turn_away,
         reason: c.req.valid('json').reason,
       }),
   )
@@ -163,11 +169,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     gate,
-    validate('param', BookingParam),
-    validate('json', DepartBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, DepartBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'depart',
+        type: CommandName.depart,
         reason: c.req.valid('json').reason ?? null,
       }),
   )
@@ -182,12 +188,12 @@ export const tenant = new Hono<AppEnv>()
     }),
     gate,
     requirePermission(Permission.booking.walk_in),
-    validate('json', WalkInBody),
+    validate(ValidationTarget.json, WalkInBody),
     async (c) => {
       const body = c.req.valid('json');
       const ctx = bookingContext(c);
       const result = await createBooking(ctx, {
-        mode: 'walk_in',
+        mode: CreateMode.walk_in,
         clientRequestId: body.clientRequestId,
         siteId: body.siteId as SiteId,
         resourceId: body.resourceId as ResourceId | undefined,
@@ -195,9 +201,9 @@ export const tenant = new Hono<AppEnv>()
         carrier: body.carrier,
         plateSeen: body.plateSeen,
         outcome:
-          body.outcome === 'check_in'
-            ? { kind: 'check_in', avis: body.avis }
-            : { kind: 'turn_away', avis: body.avis ?? null, reason: body.reason },
+          body.outcome === WalkInOutcome.check_in
+            ? { kind: WalkInOutcome.check_in, avis: body.avis }
+            : { kind: WalkInOutcome.turn_away, avis: body.avis ?? null, reason: body.reason },
       });
       return c.json(
         { truck: await truckOf(ctx, result.booking.id), safety: result.safety },
@@ -216,8 +222,8 @@ export const tenant = new Hono<AppEnv>()
     }),
     gate,
     requireModule(Module.safety),
-    validate('param', BookingParam),
-    validate('json', CandidatesBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CandidatesBody),
     async (c) => {
       const items = await acknowledgementCandidates(
         bookingContext(c),
@@ -238,11 +244,11 @@ export const tenant = new Hono<AppEnv>()
     }),
     gate,
     requireModule(Module.safety),
-    validate('param', BookingParam),
-    validate('json', LinkAcknowledgementBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, LinkAcknowledgementBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'link_acknowledgement',
+        type: CommandName.link_acknowledgement,
         acknowledgementId: c.req.valid('json').acknowledgementId,
         via: LinkVia.gate_lookup,
       }),
@@ -258,7 +264,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     gate,
     requireModule(Module.safety),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const ctx = bookingContext(c);
       return c.json(await briefingSession(ctx, c.req.valid('param').bookingId, userOf(ctx)), 200);
@@ -274,7 +280,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<DocksView>() },
     }),
     ...callToDock,
-    validate('query', SiteQuery),
+    validate(ValidationTarget.query, SiteQuery),
     async (c) => c.json(await docksView(yardScope(c, c.req.valid('query').siteId)), 200),
   )
   .post(
@@ -287,13 +293,16 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     ...callToDock,
-    validate('param', BookingParam),
-    validate('json', CallBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CallBody),
     async (c) => {
       const ctx = bookingContext(c);
       const { bookingId } = c.req.valid('param');
       const { dockId } = c.req.valid('json');
-      const { booking: called } = await transitionBooking(ctx, bookingId, { type: 'call', dockId });
+      const { booking: called } = await transitionBooking(ctx, bookingId, {
+        type: CommandName.call,
+        dockId,
+      });
       const [member] = await ctx.tx
         .select({ dockId: resourceDock.dockId })
         .from(resourceDock)
@@ -318,8 +327,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     ...callToDock,
-    validate('param', BookingParam),
-    (c) => command(c, c.req.valid('param').bookingId, { type: 'uncall' }),
+    validate(ValidationTarget.param, BookingParam),
+    (c) => command(c, c.req.valid('param').bookingId, { type: CommandName.uncall }),
   )
   .post(
     '/bookings/:bookingId/dock',
@@ -330,11 +339,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     ...dockWork,
-    validate('param', BookingParam),
-    validate('json', DockBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, DockBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'dock',
+        type: CommandName.dock,
         dockId: c.req.valid('json').dockId,
       }),
   )
@@ -347,11 +356,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     ...dockWork,
-    validate('param', BookingParam),
-    validate('json', DockBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, DockBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
-        type: 'start_loading',
+        type: CommandName.start_loading,
         dockId: c.req.valid('json').dockId,
       }),
   )
@@ -364,12 +373,12 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<YardTruck>() },
     }),
     ...dockWork,
-    validate('param', BookingParam),
-    validate('json', CompleteBody),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CompleteBody),
     (c) => {
       const body = c.req.valid('json');
       return command(c, c.req.valid('param').bookingId, {
-        type: 'complete',
+        type: CommandName.complete,
         actualLoadUnits: body.actualLoadUnits,
         discrepancyNote: body.discrepancyNote ?? null,
       });

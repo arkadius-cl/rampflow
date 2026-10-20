@@ -6,8 +6,16 @@ import type {
   BookingPage,
   BookingView,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { CreatedParty } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale } from '@rampflow/shared/values';
+import {
+  BookingStatus,
+  CommandName,
+  CreatedParty,
+  CreateMode,
+  Direction,
+  DurationKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { ConflictReason, DriverLocale, EmailTemplate, ErrorCode } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -80,14 +88,14 @@ describe('reschedule and cancel (BK-03)', () => {
     });
     expect(full.status).toBe(409);
     expect(await errorOf(full)).toMatchObject({
-      code: 'conflict',
-      details: { reason: 'capacity_full', offers: { date: '2026-11-02' } },
+      code: ErrorCode.conflict,
+      details: { reason: ConflictReason.capacity_full, offers: { date: '2026-11-02' } },
     });
     const stale = await dispatcher().patch(`${base()}/${b.id}`, {
       body: { startsAt: '2026-11-02T11:00:00.000Z', version: 7 },
     });
     expect(await errorOf(stale)).toMatchObject({
-      details: { reason: 'stale_version', version: 1 },
+      details: { reason: ConflictReason.stale_version, version: 1 },
     });
   });
 
@@ -109,7 +117,7 @@ describe('reschedule and cancel (BK-03)', () => {
     const late = await seedBooking(w.A, { startsAt });
     const cancelAt = (id: string, now: Date) =>
       asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
-        transitionBooking(ctx, id, { type: 'cancel' }),
+        transitionBooking(ctx, id, { type: CommandName.cancel }),
       );
     // Default cutoff: 120 minutes before the start, at 06:00Z.
     expect((await cancelAt(early.id, new Date('2026-11-04T05:59:00Z'))).booking.cancelledLate).toBe(
@@ -188,7 +196,9 @@ describe('the avis (AV-01, AV-02)', () => {
         }),
       }),
     });
-    expect(await errorOf(again)).toMatchObject({ details: { reason: 'duplicate_reference' } });
+    expect(await errorOf(again)).toMatchObject({
+      details: { reason: ConflictReason.duplicate_reference },
+    });
   });
 
   it('refuses an edit whose new duration does not fit and keeps the avis; after check-in it succeeds', async () => {
@@ -199,9 +209,9 @@ describe('the avis (AV-01, AV-02)', () => {
         tenantId: s.tenantId,
         siteId: s.siteId,
         name: { de: 'Palettiert', en: 'Palletised' },
-        direction: 'inbound',
+        direction: Direction.inbound,
         duration: {
-          kind: 'tiers',
+          kind: DurationKind.tiers,
           tiers: [
             { upTo: 10, minutes: 30 },
             { upTo: null, minutes: 120 },
@@ -224,24 +234,26 @@ describe('the avis (AV-01, AV-02)', () => {
     };
     const refused = await dispatcher().put(`${base()}/${b.id}/avis`, { body: bigger });
     expect(refused.status).toBe(409);
-    expect(await errorOf(refused)).toMatchObject({ details: { reason: 'capacity_full' } });
+    expect(await errorOf(refused)).toMatchObject({
+      details: { reason: ConflictReason.capacity_full },
+    });
     const unchanged = (await (await dispatcher().get(`${base()}/${b.id}`)).json()) as BookingView;
     expect(unchanged).toMatchObject({
       loadUnits: 10,
       endsAt: '2026-11-02T07:30:00.000Z',
       version: 1,
     });
-    expect(unchanged.avis?.loadUnits).toEqual([{ type: 'eur_pallet', quantity: 10 }]);
+    expect(unchanged.avis?.loadUnits).toEqual([{ type: LoadUnitType.eur_pallet, quantity: 10 }]);
 
     await asStaff(w.A, w.A.users.tenant_admin, new Date(MON_0800), (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'check_in' }),
+      transitionBooking(ctx, b.id, { type: CommandName.check_in }),
     );
     const accepted = await dispatcher().put(`${base()}/${b.id}/avis`, {
       body: { ...bigger, version: 2 },
     });
     expect(accepted.status).toBe(200);
     expect((await accepted.json()) as BookingView).toMatchObject({
-      status: 'checked_in',
+      status: BookingStatus.checked_in,
       loadUnits: 20,
       endsAt: '2026-11-02T09:00:00.000Z',
     });
@@ -305,7 +317,7 @@ describe('the driver link (CR-06, issuing half)', () => {
       .select()
       .from(driverAccess)
       .where(eq(driverAccess.tokenHash, hashToken(token)));
-    expect(row).toMatchObject({ bookingId: b.id, channel: 'link', revokedAt: null });
+    expect(row).toMatchObject({ bookingId: b.id, channel: DriverChannel.link, revokedAt: null });
     const regenerated = (await (
       await dispatcher().post(`${base()}/${b.id}/driver-link`)
     ).json()) as { url: string };
@@ -323,11 +335,11 @@ describe('the driver link (CR-06, issuing half)', () => {
     const b = await create(s);
     const to = `driver-${randomUUID()}@example.test`;
     const res = await dispatcher().post(`${base()}/${b.id}/driver-link/email`, {
-      body: { email: to, locale: 'ro' },
+      body: { email: to, locale: DriverLocale.ro },
     });
     expect(res.status).toBe(202);
     const [row] = await ownerDb().select().from(outboxMessage).where(eq(outboxMessage.toEmail, to));
-    expect(row).toMatchObject({ template: 'driver.link', locale: 'ro' });
+    expect(row).toMatchObject({ template: EmailTemplate.driver_link, locale: DriverLocale.ro });
     const { url } = (await (await dispatcher().get(`${base()}/${b.id}/driver-link`)).json()) as {
       url: string;
     };
@@ -402,7 +414,7 @@ describe('booking emails to the booking contact', () => {
     await expect(
       asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), async (ctx) => {
         await createBooking(ctx, {
-          mode: CreatedParty.staff,
+          mode: CreateMode.staff,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -434,7 +446,7 @@ describe('booking emails to the booking contact', () => {
       createdBy: mail.A.users.carrier_user.id,
     });
     await asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'cancel' }),
+      transitionBooking(ctx, b.id, { type: CommandName.cancel }),
     );
     expect(await deliveredTo(mail.A.users.carrier_user.email)).toEqual([
       `Booking ${b.code} cancelled`,

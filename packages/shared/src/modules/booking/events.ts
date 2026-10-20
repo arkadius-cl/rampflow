@@ -1,13 +1,20 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
-import { BOOKING_STATUSES, LINK_VIA, PUNCTUALITY, TURN_AWAY_REASONS } from './lifecycle.ts';
-import { BookingEventType, CreatedParty } from './values.ts';
+import { DriverLocale } from '../../values/locales.ts';
+import {
+  BookingEventType,
+  BookingStatus,
+  CheckInSafety,
+  CreatedParty,
+  LinkVia,
+  Punctuality,
+  TurnAwayReason,
+} from './values.ts';
 
 // `booking_event.data` per event type (booking lifecycle, "Events"). Payloads never hold personal
 // data; the avis does. Instants travel as ISO strings, as in every API body.
 
 const instant = z.iso.datetime({ offset: true });
-const status = z.enum(BOOKING_STATUSES);
+const status = z.enum(BookingStatus);
 const slot = z.object({ resourceId: z.uuid(), startsAt: instant, endsAt: instant });
 
 export const BookingEventData = z.discriminatedUnion('type', [
@@ -42,19 +49,19 @@ export const BookingEventData = z.discriminatedUnion('type', [
     late: z.boolean(),
   }),
   z.object({ type: z.literal(BookingEventType.driver_link_regenerated) }),
-  z.object({ type: z.literal(BookingEventType.driver_link_sent), locale: z.enum(DRIVER_LOCALES) }),
+  z.object({ type: z.literal(BookingEventType.driver_link_sent), locale: z.enum(DriverLocale) }),
   z.object({ type: z.literal(BookingEventType.no_show), dueAt: instant }),
   z.object({
     type: z.literal(BookingEventType.checked_in),
-    punctuality: z.enum(PUNCTUALITY).nullable(),
+    punctuality: z.enum(Punctuality).nullable(),
     punctualityMinutes: z.int().nullable(),
     plateRecorded: z.boolean(),
-    safety: z.enum(['valid', 'missing_warned', 'not_required']),
+    safety: z.enum(CheckInSafety),
     fromNoShow: z.boolean(),
   }),
   z.object({
     type: z.literal(BookingEventType.turned_away),
-    reason: z.enum(TURN_AWAY_REASONS),
+    reason: z.enum(TurnAwayReason),
     fromStatus: status,
   }),
   z.object({
@@ -86,7 +93,7 @@ export const BookingEventData = z.discriminatedUnion('type', [
     type: z.literal(BookingEventType.safety_linked),
     instructionId: z.uuid(),
     acknowledgementId: z.uuid(),
-    via: z.enum(LINK_VIA),
+    via: z.enum(LinkVia),
   }),
 ]);
 export type BookingEventData = z.infer<typeof BookingEventData>;

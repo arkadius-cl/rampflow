@@ -14,20 +14,27 @@ import {
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
 import {
+  BookingChange,
   BookingEventType,
   BookingParty,
   BookingStatus,
   CarrierLinkStatus,
+  CheckInSafety,
 } from '@rampflow/shared/modules/booking/values';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
-import { AckStatus, InstructionSafety, SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import {
+  AckLinkStatus,
+  InstructionSafety,
+  SafetyStatus,
+} from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
 import {
   ConflictReason,
   EmailTemplate,
   ErrorCode,
+  ForbiddenReason,
   Module,
   Permission,
   Setting,
@@ -226,7 +233,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
           if (ctx.actor.party === BookingParty.staff) {
             const updated = { ...b, ...to };
             await emailContacts(ctx, updated, EmailTemplate.booking_changed, {
-              change: 'rescheduled',
+              change: BookingChange.rescheduled,
               previous,
             });
           }
@@ -287,7 +294,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
         after: async () => {
           if (ctx.actor.party === BookingParty.staff && b.status === BookingStatus.confirmed) {
             await emailContacts(ctx, { ...b, ...window }, EmailTemplate.booking_changed, {
-              change: 'avis',
+              change: BookingChange.avis,
               previous: null,
             });
           }
@@ -431,10 +438,10 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
           plateRecorded: cmd.plateSeen !== null,
           safety:
             safety.status === SafetyStatus.valid
-              ? 'valid'
+              ? CheckInSafety.valid
               : safety.status === SafetyStatus.missing
-                ? 'missing_warned'
-                : 'not_required',
+                ? CheckInSafety.missing_warned
+                : CheckInSafety.not_required,
           fromNoShow,
         },
         after: async () => {
@@ -587,14 +594,14 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       const instruction = (
         await applicableInstructions(ctx.tx, { tenantId: b.tenantId, siteId: b.siteId })
       ).find((i) => i.instructionId === ack.instructionId);
-      const status = instruction
+      const status: AckLinkStatus = instruction
         ? acknowledgementStatus(ack, {
             now: ctx.now,
             bookingId: b.id,
             materialFloor: instruction.materialFloor,
           })
-        : 'not_applicable';
-      if (status !== AckStatus.valid || ack.restrictedAt !== null) {
+        : AckLinkStatus.not_applicable;
+      if (status !== AckLinkStatus.valid || ack.restrictedAt !== null) {
         throw conflict(ConflictReason.acknowledgement_invalid, { status });
       }
       const link = {
@@ -658,7 +665,7 @@ async function carrierGuards(ctx: BookingContext, b: BookingRow, actor: CommandA
       );
     if (link?.status !== CarrierLinkStatus.active) {
       throw new ApiError(ErrorCode.forbidden, 'The carrier link is deactivated', {
-        reason: 'link_inactive',
+        reason: ForbiddenReason.link_inactive,
       });
     }
   }

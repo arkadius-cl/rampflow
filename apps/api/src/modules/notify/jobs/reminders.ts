@@ -1,8 +1,15 @@
 import { createHash } from 'node:crypto';
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
-import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
+import { BookingParty } from '@rampflow/shared/modules/booking/values';
 import { notify } from '@rampflow/shared/modules/notify/manifest';
-import { EmailTemplate, Setting } from '@rampflow/shared/values';
+import {
+  EmailTemplate,
+  EnqueueResult,
+  Feature,
+  ScopeParty,
+  Setting,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, gt, lte } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
@@ -18,7 +25,7 @@ import { booking } from '../../booking/schema.ts';
 const JOB = 'reminders';
 const HOUR = 3_600_000;
 /** The schema maximum of `notify.reminder_hours_before`: no reminder is due earlier. */
-const MAX_HOURS = notify.settings['notify.reminder_hours_before'].schema.maxValue ?? 72;
+const MAX_HOURS = notify.settings[Setting.notify.reminder_hours_before].schema.maxValue ?? 72;
 
 /** When the reminder of a booking is due. */
 const reminderDueAt = (startsAt: Date, hoursBefore: number) =>
@@ -32,7 +39,7 @@ const dedupeKey = (bookingId: string, startsAt: Date, email: string) =>
   `reminder:${bookingId}:${startsAt.toISOString()}:${createHash('sha256').update(email.toLowerCase()).digest('hex').slice(0, 16)}`;
 
 const staffLocale = (l: string | null): l is StaffLocale =>
-  l !== null && (STAFF_LOCALES as readonly string[]).includes(l);
+  l !== null && (values(StaffLocale) as readonly string[]).includes(l);
 
 /**
  * BK-07 for one tenant: every `confirmed` booking whose reminder time has come and whose start
@@ -41,14 +48,14 @@ const staffLocale = (l: string | null): l is StaffLocale =>
  */
 async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<JobStats> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: 'all',
     actor: systemActor(JOB),
   };
   const access = await loadAccess(tx, scope, clock);
   const features = access.entitlements?.features;
-  if (!features?.['notify.reminders'] || !features['notify.email']) return { off: 1 };
+  if (!features?.[Feature.notify.reminders] || !features[Feature.notify.email]) return { off: 1 };
   const now = clock.now();
   const ctx: BookingContext = {
     tx,
@@ -90,7 +97,7 @@ async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<
         },
         access.entitlements,
       );
-      if (result === 'enqueued') stats.reminded++;
+      if (result === EnqueueResult.enqueued) stats.reminded++;
     }
   }
   return stats;

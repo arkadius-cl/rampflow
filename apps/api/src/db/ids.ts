@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { ColumnMode } from '@rampflow/shared/values';
 import { type SQL, sql } from 'drizzle-orm';
 import { type AnyPgColumn, customType, timestamp, uuid } from 'drizzle-orm/pg-core';
 import * as z from 'zod';
@@ -47,7 +48,8 @@ export const primaryId = <E extends string>() =>
   uuid('id').$type<Id<E>>().primaryKey().default(sql`uuidv7()`);
 
 /** A UTC instant (ADR-0012). */
-export const instant = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
+export const instant = (name: string) =>
+  timestamp(name, { withTimezone: true, mode: ColumnMode.date });
 
 export const createdAt = () => instant('created_at').notNull().defaultNow();
 

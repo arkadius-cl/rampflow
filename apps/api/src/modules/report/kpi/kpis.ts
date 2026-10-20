@@ -19,7 +19,7 @@ import {
   localDayRange,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import { and, asc, eq, gt, gte, isNull, lt, or, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
 import * as z from 'zod';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
@@ -256,7 +256,7 @@ function decodeCursor(cursor: string) {
     return Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
   } catch {
     throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
-      issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
+      issues: [{ path: ['cursor'], code: ZodIssueCode.custom, message: 'Invalid cursor' }],
     });
   }
 }

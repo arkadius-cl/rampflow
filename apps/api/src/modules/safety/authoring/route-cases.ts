@@ -1,5 +1,12 @@
 import { TranslationState } from '@rampflow/shared/modules/safety/values';
-import { Feature, HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import {
+  DriverLocale,
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import { briefingOf, contentFixture, seedBriefing } from './fixtures.ts';
@@ -7,10 +14,10 @@ import { briefingOf, contentFixture, seedBriefing } from './fixtures.ts';
 const P = '/api/t/:orgId/safety';
 
 const base = {
-  as: Role.tenant_admin,
+  as: RouteCaseActor.tenant_admin,
   permission: Permission.safety.manage_briefings,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
   setup: async (w, o) => {
     await seedBriefing(o, w.A);
@@ -21,7 +28,13 @@ const base = {
 const org = (w: World) => ({ orgId: w.A.tenantId });
 
 export const cases = defineRouteCases([
-  { ...base, method: HttpMethod.GET, path: `${P}/instructions`, params: org, foreign: 'empty' },
+  {
+    ...base,
+    method: HttpMethod.GET,
+    path: `${P}/instructions`,
+    params: org,
+    foreign: ForeignOutcome.empty,
+  },
   {
     ...base,
     method: HttpMethod.POST,
@@ -60,7 +73,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.PUT,
     path: `${P}/versions/:versionId/content/:locale`,
     entitlement: Feature.safety.quiz,
-    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: 'pl' }),
+    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: DriverLocale.pl }),
     body: () => contentFixture({ translation: TranslationState.machine }),
   },
   {

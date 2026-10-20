@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-import { STAFF_LOCALES } from '../../locales.ts';
-import { LocaleSet } from '../../values/locales.ts';
+import { LocaleSet, StaffLocale } from '../../values/locales.ts';
 import { SettingScope } from '../../values/settings.ts';
 
 /** Owns the default UI language. Its namespace holds language names for the switchers. */
@@ -14,7 +13,7 @@ export const i18n = defineModule({
   permissions: {},
   settings: {
     'i18n.default_locale': {
-      schema: z.enum(STAFF_LOCALES),
+      schema: z.enum(StaffLocale),
       default: 'de',
       scopes: [SettingScope.platform, SettingScope.tenant, SettingScope.site],
     },

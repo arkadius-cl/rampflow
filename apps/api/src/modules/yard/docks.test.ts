@@ -1,7 +1,8 @@
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
-import { BookingStatus } from '@rampflow/shared/modules/booking/values';
-import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { ActorParty, BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { CallResult, DocksView, YardTruck } from '@rampflow/shared/modules/yard/api';
+import { ConflictReason, ErrorCode, values } from '@rampflow/shared/values';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
 import { as } from '../../../test/http.ts';
@@ -37,7 +38,7 @@ beforeAll(async () => {
   const extra = await ownerDb()
     .insert(dock)
     .values(
-      (['active', 'maintenance', 'inactive'] as const).map((status, i) => ({
+      values(DockStatus).map((status, i) => ({
         tenantId: w.A.tenantId,
         siteId: s.id,
         hallId: hall2?.id as string,
@@ -98,12 +99,16 @@ describe('YD-07 assign and call', () => {
     expect([r1.status, r2.status].sort()).toEqual([200, 409]);
     const loser = r1.status === 409 ? r1 : r2;
     expect(await loser.json()).toMatchObject({
-      error: { code: 'conflict', details: { reason: 'dock_occupied' } },
+      error: { code: ErrorCode.conflict, details: { reason: ConflictReason.dock_occupied } },
     });
     const view = await docks();
     const occupied = view.halls[0]?.docks.find((d) => d.id === target)?.occupant;
     expect([a?.id, b?.id]).toContain(occupied?.id);
-    expect(occupied).toMatchObject({ status: 'called', dock: { code: 'D-01', hall: 'Hall 1' } });
+    expect(occupied).toMatchObject({
+      status: BookingStatus.called,
+      // biome-ignore lint/plugin: a dock code, free text
+      dock: { code: 'D-01', hall: 'Hall 1' },
+    });
     const winner = occupied?.id as string;
     const waiting = winner === a?.id ? b : a;
     await post(w.A.users.dock_operator, `${winner}/uncall`);
@@ -122,11 +127,14 @@ describe('YD-07 assign and call', () => {
     );
     expect(moved).toMatchObject({
       outsideResource: true,
-      truck: { status: 'called', dock: { code: 'B-01', hall: 'Hall 2' } },
+      // biome-ignore lint/plugin: a dock code, free text
+      truck: { status: BookingStatus.called, dock: { code: 'B-01', hall: 'Hall 2' } },
     });
     const refused = await post(w.A.users.dock_operator, `${b.id}/call`, { dockId: maintenance });
     expect(refused.status).toBe(409);
-    expect(await refused.json()).toMatchObject({ error: { details: { reason: 'dock_inactive' } } });
+    expect(await refused.json()).toMatchObject({
+      error: { details: { reason: ConflictReason.dock_inactive } },
+    });
     await post(w.A.users.gate_operator, `${b.id}/depart`, { reason: 'test' });
   });
 
@@ -136,7 +144,7 @@ describe('YD-07 assign and call', () => {
     await json(await post(w.A.users.dock_operator, `${b.id}/call`, { dockId }));
     expect((await docks()).queue.map((t) => t.id)).not.toContain(b.id);
     const truck = await json<YardTruck>(await post(w.A.users.dock_operator, `${b.id}/uncall`));
-    expect(truck).toMatchObject({ status: 'checked_in', dock: null, calledAt: null });
+    expect(truck).toMatchObject({ status: BookingStatus.checked_in, dock: null, calledAt: null });
     const view = await docks();
     expect(view.queue.map((t) => t.id)).toContain(b.id);
     expect(view.halls[0]?.docks.find((d) => d.id === dockId)?.occupant).toBeNull();
@@ -151,7 +159,8 @@ describe('YD-08 dock progress', () => {
     const dockOp = w.A.users.dock_operator;
     expect((await post(dockOp, `${b.id}/loading`)).status).toBe(422);
     const loading = await json<YardTruck>(await post(dockOp, `${b.id}/loading`, { dockId }));
-    expect(loading).toMatchObject({ status: 'loading', dock: { code: 'D-02' } });
+    // biome-ignore lint/plugin: a dock code, free text
+    expect(loading).toMatchObject({ status: BookingStatus.loading, dock: { code: 'D-02' } });
     expect((await post(dockOp, `${b.id}/complete`, { actualLoadUnits: -1 })).status).toBe(422);
     const done = await json<YardTruck>(
       await post(dockOp, `${b.id}/complete`, {
@@ -159,7 +168,7 @@ describe('YD-08 dock progress', () => {
         discrepancyNote: 'One pallet damaged',
       }),
     );
-    expect(done).toMatchObject({ status: 'done', calledAt: null, atDockAt: null });
+    expect(done).toMatchObject({ status: BookingStatus.done, calledAt: null, atDockAt: null });
     expect(done.loadingAt).not.toBeNull();
     expect(await bookingRow(b.id)).toMatchObject({
       actualLoadUnits: 9,
@@ -187,7 +196,7 @@ describe('YD-08 dock progress', () => {
     const forAdmin = await events(w.A.users.tenant_admin);
     expect(forAdmin.map((e) => e.type)).toEqual(['called', 'at_dock']);
     expect(forAdmin[0]?.actor).toMatchObject({
-      party: 'tenant',
+      party: ActorParty.tenant,
       userId: w.A.users.dock_operator.id,
     });
     const forDispatcher = await events(w.A.users.dispatcher);

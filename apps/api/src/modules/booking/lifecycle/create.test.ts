@@ -1,7 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { CreatedParty, Direction, TurnAwayReason } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode } from '@rampflow/shared/values';
+import {
+  BookingStatus,
+  CommandName,
+  CreatedParty,
+  CreateMode,
+  Direction,
+  ResourceKind,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
+import { ConflictReason, ErrorCode, PromiseStatus } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -44,7 +53,7 @@ const oneDockSite = (o: Partial<Parameters<typeof capacitySite>[1]> = {}) =>
 const staffCreate = (s: CapacitySite, startsAt: Date, o: { forceReason?: string } = {}) =>
   asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
     createBooking(ctx, {
-      mode: CreatedParty.staff,
+      mode: CreateMode.staff,
       clientRequestId: randomUUID(),
       siteId: s.siteId,
       loadTypeId: s.loadTypeId,
@@ -92,7 +101,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: 'Rampe 2',
         directions: [Direction.inbound],
         sort: 1,
@@ -131,7 +140,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
         .where(eq(booking.id, onSecond.id));
       const carrier = asCarrier(w.A, w.A.users.carrier_user, NOW, (ctx) =>
         createBooking(ctx, {
-          mode: CreatedParty.carrier,
+          mode: CreateMode.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -141,14 +150,14 @@ describe('capacity under concurrency (ADR-0004)', () => {
       );
       const reschedule = asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
         transitionBooking(ctx, onSecond.id, {
-          type: 'reschedule',
+          type: CommandName.reschedule,
           startsAt: new Date(start.getTime() + 30 * 60_000).toISOString(),
           resourceId: s.resourceId,
           version: 1,
         }),
       );
       for (const r of await Promise.allSettled([carrier, reschedule])) {
-        if (r.status === 'rejected') errors.push(r.reason);
+        if (r.status === PromiseStatus.rejected) errors.push(r.reason);
       }
     }
     const deadlocks = errors.filter((e) => JSON.stringify(e).includes('40P01'));
@@ -185,8 +194,8 @@ describe('createBooking in staff mode (BK-02)', () => {
     await staffCreate(s, MON_0800);
     const later = new Date(MON_0800.getTime() + 3 * 3_600_000);
     expect(await failure(staffCreate(s, later))).toMatchObject({
-      code: 'conflict',
-      reason: 'daily_cap_reached',
+      code: ErrorCode.conflict,
+      reason: ConflictReason.daily_cap_reached,
       offers: { starts: [] },
     });
     const forced = await staffCreate(s, later, { forceReason: 'Eilauftrag' });
@@ -198,12 +207,14 @@ describe('createBooking in staff mode (BK-02)', () => {
   it('books a full slot when forced but never a closed one', async () => {
     const s = await oneDockSite();
     await staffCreate(s, MON_0800);
-    expect(await failure(staffCreate(s, MON_0800))).toMatchObject({ reason: 'capacity_full' });
+    expect(await failure(staffCreate(s, MON_0800))).toMatchObject({
+      reason: ConflictReason.capacity_full,
+    });
     const forced = await staffCreate(s, MON_0800, { forceReason: 'Kunde wartet' });
     expect(forced.created).toBe(true);
     const closed = new Date('2026-11-02T14:00:00Z');
     expect(await failure(staffCreate(s, closed, { forceReason: 'Nachtschicht' }))).toMatchObject({
-      reason: 'closed',
+      reason: ConflictReason.closed,
     });
     expect(await rowsAt(s)).toBe(2);
   });
@@ -214,7 +225,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const now = new Date('2026-11-02T07:20:00Z');
     const staffSoon = await asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
       createBooking(ctx, {
-        mode: CreatedParty.staff,
+        mode: CreateMode.staff,
         clientRequestId: randomUUID(),
         siteId: s.siteId,
         loadTypeId: s.loadTypeId,
@@ -229,7 +240,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const carrier = (startsAt: Date, at: Date) =>
       asCarrier(w.A, w.A.users.carrier_user, at, (ctx) =>
         createBooking(ctx, {
-          mode: CreatedParty.carrier,
+          mode: CreateMode.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -238,18 +249,23 @@ describe('createBooking in staff mode (BK-02)', () => {
         }),
       );
     const hourLater = new Date(soon.getTime() + 3_600_000);
-    expect(await failure(carrier(hourLater, now))).toMatchObject({ reason: 'not_offered' });
+    expect(await failure(carrier(hourLater, now))).toMatchObject({
+      reason: ConflictReason.not_offered,
+    });
     expect(await failure(carrier(new Date('2027-05-03T09:00:00Z'), NOW))).toMatchObject({
-      reason: 'not_offered',
+      reason: ConflictReason.not_offered,
     });
     const offered = await carrier(new Date('2026-11-02T12:00:00Z'), NOW);
-    expect(offered.booking).toMatchObject({ createdParty: 'carrier', carrierId: w.A.carrierId });
+    expect(offered.booking).toMatchObject({
+      createdParty: CreatedParty.carrier,
+      carrierId: w.A.carrierId,
+    });
   });
 
   it('rejects a start off the slot grid', async () => {
     const s = await oneDockSite();
     expect(await failure(staffCreate(s, new Date('2026-11-02T07:10:00Z')))).toMatchObject({
-      reason: 'not_offered',
+      reason: ConflictReason.not_offered,
     });
   });
 });
@@ -265,7 +281,7 @@ describe('walk-in mode (YD-03)', () => {
   const walkIn = (now: Date, outcome: WalkInCreate['outcome']) =>
     asStaff(walkInWorld.A, walkInWorld.A.users.gate_operator, now, (ctx) =>
       createBooking(ctx, {
-        mode: 'walk_in',
+        mode: CreateMode.walk_in,
         clientRequestId: randomUUID(),
         siteId: walkInWorld.A.sites[0].id as SiteId,
         loadTypeId: walkInWorld.A.sites[0].loadTypeId,
@@ -277,9 +293,9 @@ describe('walk-in mode (YD-03)', () => {
 
   it('checks in before opening hours as a gate operator, starting at the grid slot of now', async () => {
     const now = new Date('2026-11-02T04:50:00Z'); // Monday 05:50 CET, before the 06:00 opening
-    const result = await walkIn(now, { kind: 'check_in', avis });
+    const result = await walkIn(now, { kind: WalkInOutcome.check_in, avis });
     expect(result.booking).toMatchObject({
-      status: 'checked_in',
+      status: BookingStatus.checked_in,
       walkIn: true,
       forced: false,
       startsAt: new Date('2026-11-02T04:30:00Z'),
@@ -295,19 +311,22 @@ describe('walk-in mode (YD-03)', () => {
   it('checks in at a full slot', async () => {
     const at = new Date('2026-11-02T09:00:00Z');
     for (const _ of [1, 2]) await seedBooking(walkInWorld.A, { startsAt: at, minutes: 30 });
-    const result = await walkIn(new Date('2026-11-02T09:05:00Z'), { kind: 'check_in', avis });
-    expect(result.booking).toMatchObject({ status: 'checked_in', startsAt: at });
+    const result = await walkIn(new Date('2026-11-02T09:05:00Z'), {
+      kind: WalkInOutcome.check_in,
+      avis,
+    });
+    expect(result.booking).toMatchObject({ status: BookingStatus.checked_in, startsAt: at });
   });
 
   it('turns an unbooked truck away without a driver link, recording the plate', async () => {
     const now = new Date('2026-11-02T10:10:00Z');
     const result = await walkIn(now, {
-      kind: 'turn_away',
+      kind: WalkInOutcome.turn_away,
       avis: null,
       reason: TurnAwayReason.documents_missing,
     });
     expect(result.booking).toMatchObject({
-      status: 'turned_away',
+      status: BookingStatus.turned_away,
       turnAwayReason: 'documents_missing',
       walkIn: true,
     });
@@ -327,18 +346,18 @@ describe('walk-in mode (YD-03)', () => {
     await seedBriefing(ownerDb(), enforced.A);
     const result = await asStaff(enforced.A, enforced.A.users.gate_operator, NOW, (ctx) =>
       createBooking(ctx, {
-        mode: 'walk_in',
+        mode: CreateMode.walk_in,
         clientRequestId: randomUUID(),
         siteId: enforced.A.sites[0].id,
         loadTypeId: enforced.A.sites[0].loadTypeId,
         carrier: { name: 'Unangemeldet KG' },
         plateSeen: 'B-XY 123',
-        outcome: { kind: 'check_in', avis },
+        outcome: { kind: WalkInOutcome.check_in, avis },
       }),
     );
     expect(result).toMatchObject({
       safety: 'missing',
-      booking: { status: 'confirmed', walkIn: true },
+      booking: { status: BookingStatus.confirmed, walkIn: true },
     });
     const [row] = await ownerDb()
       .select({ n: sql<number>`count(*)::int` })

@@ -1,18 +1,20 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
 import type { ImplementedFeatureKey, PermissionKey } from '../../registry.ts';
 import { values } from '../../values/define.ts';
 import { Feature, Permission } from '../../values/keys.ts';
+import { DriverLocale } from '../../values/locales.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import {
   BookingParty,
   BookingStatus,
+  CommandName,
   DockHoldingStatus,
   FinalBookingStatus,
   LinkVia,
   LoadStatus,
   OnSiteStatus,
   Punctuality,
+  SiteLock,
   TurnAwayReason,
 } from './values.ts';
 
@@ -22,6 +24,7 @@ import {
 export {
   BookingParty,
   BookingStatus,
+  CommandName,
   DockHoldingStatus,
   FinalBookingStatus,
   LinkVia,
@@ -55,10 +58,10 @@ export const COMMAND_INPUTS = {
   update_avis: z.object({ avis: AvisInput, version: z.int().min(1) }),
   cancel: z.object({ reason: reason.nullable().default(null) }),
   regenerate_driver_link: z.object({}),
-  send_driver_link: z.object({ email: z.email().max(254), locale: z.enum(DRIVER_LOCALES) }),
+  send_driver_link: z.object({ email: z.email().max(254), locale: z.enum(DriverLocale) }),
   mark_no_show: z.object({}),
   check_in: z.object({ plateSeen: plateSchema.nullable().default(null) }),
-  turn_away: z.object({ reason: z.enum(TURN_AWAY_REASONS) }),
+  turn_away: z.object({ reason: z.enum(TurnAwayReason) }),
   call: z.object({ dockId: z.uuid() }),
   uncall: z.object({}),
   dock: z.object({ dockId: z.uuid().optional() }),
@@ -68,11 +71,10 @@ export const COMMAND_INPUTS = {
     discrepancyNote: z.string().trim().min(1).max(1000).nullable().default(null),
   }),
   depart: z.object({ reason: reason.nullable().default(null) }),
-  link_acknowledgement: z.object({ acknowledgementId: z.uuid(), via: z.enum(LINK_VIA) }),
-} as const;
+  link_acknowledgement: z.object({ acknowledgementId: z.uuid(), via: z.enum(LinkVia) }),
+} as const satisfies Record<CommandName, z.ZodType>;
 
-export type CommandName = keyof typeof COMMAND_INPUTS;
-export const COMMAND_NAMES = Object.keys(COMMAND_INPUTS) as CommandName[];
+export const COMMAND_NAMES = values(CommandName);
 
 /** `z.object({})` infers `Record<string, never>`, which no `{ type }` intersection satisfies. */
 type Fields<T> = string extends keyof T ? unknown : T;
@@ -106,10 +108,10 @@ export interface CommandDef {
   /** A tenant feature beyond the actor's permission. */
   entitlement?: ImplementedFeatureKey;
   /** Takes `lockSiteCapacity` before reading load (ADR-0004). */
-  siteLock: 'always' | 'when_duration_changes' | 'never';
+  siteLock: SiteLock;
 }
 
-const ACTIVE = LOAD_STATUSES;
+const ACTIVE = values(LoadStatus);
 const carrierBook: CommandActor = {
   permission: Permission.booking.book,
   beforeCutoff: true,
@@ -123,7 +125,7 @@ export const COMMANDS = {
     from: [BookingStatus.confirmed],
     to: null,
     actors: { carrier: carrierBook, staff: staffBook },
-    siteLock: 'always',
+    siteLock: SiteLock.always,
   },
   update_avis: {
     from: [
@@ -136,78 +138,78 @@ export const COMMANDS = {
     ],
     to: null,
     actors: { carrier: { ...carrierBook, from: [BookingStatus.confirmed] }, staff: staffBook },
-    siteLock: 'when_duration_changes',
+    siteLock: SiteLock.when_duration_changes,
   },
   cancel: {
     from: [BookingStatus.confirmed],
     to: BookingStatus.cancelled,
     actors: { carrier: { ...carrierBook, activeLink: false }, staff: staffBook },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   regenerate_driver_link: {
     from: ACTIVE,
     to: null,
     actors: { carrier: { permission: Permission.booking.book }, staff: staffBook },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   send_driver_link: {
     from: ACTIVE,
     to: null,
     actors: { carrier: { permission: Permission.booking.book }, staff: staffBook },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   mark_no_show: {
     from: [BookingStatus.confirmed],
     to: BookingStatus.no_show,
     actors: { system: { permission: null } },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   check_in: {
     from: [BookingStatus.confirmed, BookingStatus.no_show],
     to: BookingStatus.checked_in,
     actors: { staff: { permission: Permission.yard.gate } },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   turn_away: {
     from: [BookingStatus.confirmed, BookingStatus.no_show, BookingStatus.checked_in],
     to: BookingStatus.turned_away,
     actors: { staff: { permission: Permission.yard.gate } },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   call: {
     from: [BookingStatus.checked_in, BookingStatus.called],
     to: BookingStatus.called,
     actors: { staff: { permission: Permission.yard.call } },
     entitlement: Feature.yard.call_to_dock,
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   uncall: {
     from: [BookingStatus.called],
     to: BookingStatus.checked_in,
     actors: { staff: { permission: Permission.yard.call } },
     entitlement: Feature.yard.call_to_dock,
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   dock: {
     from: [BookingStatus.checked_in, BookingStatus.called],
     to: BookingStatus.at_dock,
     actors: { staff: { permission: Permission.yard.dock } },
     entitlement: Feature.yard.call_to_dock,
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   start_loading: {
     from: [BookingStatus.checked_in, BookingStatus.called, BookingStatus.at_dock],
     to: BookingStatus.loading,
     actors: { staff: { permission: Permission.yard.dock } },
     entitlement: Feature.yard.call_to_dock,
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   complete: {
     from: [BookingStatus.called, BookingStatus.at_dock, BookingStatus.loading],
     to: BookingStatus.done,
     actors: { staff: { permission: Permission.yard.dock } },
     entitlement: Feature.yard.call_to_dock,
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   depart: {
     from: [
@@ -219,13 +221,13 @@ export const COMMANDS = {
     ],
     to: BookingStatus.departed,
     actors: { staff: { permission: Permission.yard.gate } },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
   link_acknowledgement: {
     from: [BookingStatus.confirmed, BookingStatus.no_show, BookingStatus.checked_in],
     to: null,
     actors: { staff: { permission: Permission.yard.gate }, driver: { permission: null } },
-    siteLock: 'never',
+    siteLock: SiteLock.never,
   },
 } as const satisfies Record<CommandName, CommandDef>;
 
@@ -244,7 +246,7 @@ export function availableCommands(
   party: BookingParty,
   can: (permission: PermissionKey) => boolean,
 ): CommandName[] {
-  return COMMAND_NAMES.filter((name) => {
+  return values(CommandName).filter((name) => {
     const actor: CommandActor | undefined = (COMMANDS[name] as CommandDef).actors[party];
     if (!actor || (actor.permission !== null && !can(actor.permission))) return false;
     return sourceStates(name, party).includes(status);

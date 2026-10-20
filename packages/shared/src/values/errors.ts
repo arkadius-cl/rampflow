@@ -39,3 +39,29 @@ export const ConflictReason = {
   quiz_not_passed: 'quiz_not_passed',
 } as const;
 export type ConflictReason = ValueOf<typeof ConflictReason>;
+
+/** `details.reason` of a 400 `bad_request`. */
+export const BadRequestReason = {
+  /** The body is not parseable JSON. */
+  malformed: 'malformed',
+  unknown_key: 'unknown_key',
+  reserved_key: 'reserved_key',
+  invalid_value: 'invalid_value',
+  scope_not_allowed: 'scope_not_allowed',
+} as const;
+export type BadRequestReason = ValueOf<typeof BadRequestReason>;
+
+/** `details.reason` of a 401 `unauthorized`. */
+export const UnauthorizedReason = {
+  /** The email has an account: the caller signs in first, then redeems the token. */
+  sign_in_required: 'sign_in_required',
+} as const;
+export type UnauthorizedReason = ValueOf<typeof UnauthorizedReason>;
+
+/** `details.reason` of a 403 `forbidden`. */
+export const ForbiddenReason = {
+  carrier_admin_required: 'carrier_admin_required',
+  link_inactive: 'link_inactive',
+  origin: 'origin',
+} as const;
+export type ForbiddenReason = ValueOf<typeof ForbiddenReason>;

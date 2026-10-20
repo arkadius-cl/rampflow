@@ -3,7 +3,7 @@ import type {
   CarrierLinkView,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, ForbiddenReason } from '@rampflow/shared/values';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -30,7 +30,7 @@ export async function assertActiveLink(
     );
   if (link?.status !== CarrierLinkStatus.active) {
     throw new ApiError(ErrorCode.forbidden, 'The carrier link is not active', {
-      reason: 'link_inactive',
+      reason: ForbiddenReason.link_inactive,
     });
   }
 }
@@ -50,13 +50,16 @@ export async function linkCarrier(
     reactivateDeactivatedBefore: Date | null;
   },
 ): Promise<void> {
-  const insert = tx
-    .insert(tenantCarrierLink)
-    .values({ tenantId: o.tenantId, carrierId: o.carrierId, status: 'active', source: o.source });
+  const insert = tx.insert(tenantCarrierLink).values({
+    tenantId: o.tenantId,
+    carrierId: o.carrierId,
+    status: CarrierLinkStatus.active,
+    source: o.source,
+  });
   await (o.reactivateDeactivatedBefore
     ? insert.onConflictDoUpdate({
         target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-        set: { status: 'active', deactivatedAt: null },
+        set: { status: CarrierLinkStatus.active, deactivatedAt: null },
         setWhere: lt(tenantCarrierLink.deactivatedAt, o.reactivateDeactivatedBefore),
       })
     : insert.onConflictDoNothing());

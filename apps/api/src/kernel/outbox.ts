@@ -1,6 +1,12 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import type { Entitlements } from '@rampflow/shared';
-import { EmailCategory, SystemActorName } from '@rampflow/shared/values';
+import {
+  EmailCategory,
+  type EnqueueResult,
+  Feature,
+  ScopeParty,
+  SystemActorName,
+} from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { and, asc, eq, isNull, lte } from 'drizzle-orm';
 import type { TFunction } from 'i18next';
@@ -44,7 +50,7 @@ export interface OutboxEmail<K extends TemplateId> {
   dedupeKey?: string;
 }
 
-export type EnqueueResult = 'enqueued' | 'duplicate' | 'skipped';
+export type { EnqueueResult };
 
 export type TemplateLoader = (id: string) => Promise<EmailTemplateModule<unknown>>;
 
@@ -78,7 +84,7 @@ export async function enqueueEmail<K extends TemplateId>(
   loadTemplate: TemplateLoader = loadTemplateFile,
 ): Promise<EnqueueResult> {
   const template = await loadTemplate(email.template);
-  if (template.category === EmailCategory.booking && !entitlements?.features['notify.email'])
+  if (template.category === EmailCategory.booking && !entitlements?.features[Feature.notify.email])
     return 'skipped';
   const result = await tx
     .insert(outboxMessage)
@@ -125,7 +131,7 @@ export interface DeliverOptions {
  */
 function emailBrand(tx: Tx, tenantId: TenantId, now: Date): Promise<EmailBrand | null> {
   const scope = {
-    party: 'tenant',
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: [],
     actor: systemActor(SystemActorName.outbox),

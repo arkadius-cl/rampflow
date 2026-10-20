@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingEventType,
+  BookingStatus,
+  CreatedParty,
+  CreateMode,
+} from '@rampflow/shared/modules/booking/values';
+import { ConflictReason, ErrorCode, SystemActorName } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -52,7 +58,7 @@ beforeAll(async () => {
 const staffBookAtStart = (now: Date) =>
   asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
     createBooking(ctx, {
-      mode: CreatedParty.staff,
+      mode: CreateMode.staff,
       clientRequestId: randomUUID(),
       siteId: w.A.sites[0].id,
       loadTypeId: w.A.sites[0].loadTypeId,
@@ -73,8 +79,8 @@ describe('BK-08 no-show job', () => {
     // The pool holds two trucks at a time: with both units booked, staff cannot add a third.
     await seedBooking(w.A, { startsAt: START });
     await expect(staffBookAtStart(minutes(1))).rejects.toMatchObject({
-      code: 'conflict',
-      details: { reason: 'capacity_full' },
+      code: ErrorCode.conflict,
+      details: { reason: ConflictReason.capacity_full },
     });
 
     await tick(minutes(59));
@@ -83,14 +89,14 @@ describe('BK-08 no-show job', () => {
 
     await tick(minutes(60));
     expect(await bookingRow(late.id as BookingId)).toMatchObject({
-      status: 'no_show',
+      status: BookingStatus.no_show,
       noShowAt: minutes(60),
     });
     const events = await eventsOf(late.id as BookingId);
     expect(events.at(-1)).toMatchObject({
-      type: 'no_show',
+      type: BookingEventType.no_show,
       actorParty: 'system',
-      actorJob: 'no_show',
+      actorJob: SystemActorName.no_show,
       actorUserId: null,
     });
     const [mail, ...more] = await noShowMails(carrierUser.email);

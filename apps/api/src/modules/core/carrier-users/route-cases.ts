@@ -1,4 +1,11 @@
-import { HttpMethod, OrgKind, Permission, Role } from '@rampflow/shared/values';
+import {
+  ForeignOutcome,
+  HttpMethod,
+  OrgKind,
+  Permission,
+  Role,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { MembershipId } from '../../../db/ids.ts';
@@ -8,10 +15,10 @@ import { inviteeEmail, membershipOf } from '../staff/fixtures.ts';
 const P = '/api/c/:orgId/users';
 
 const base = {
-  as: Role.carrier_admin,
+  as: RouteCaseActor.carrier_admin,
   permission: Permission.core.manage_carrier_users,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
 } as const satisfies Partial<RouteCase>;
 
@@ -24,14 +31,14 @@ const colleague = async (w: World, db: Parameters<NonNullable<RouteCase['setup']
 };
 
 export const cases = defineRouteCases([
-  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: ForeignOutcome.empty },
   {
     ...base,
     method: HttpMethod.POST,
     path: `${P}/invitations`,
     params: org,
-    body: () => ({ email: inviteeEmail('colleague'), role: 'carrier_user' }),
-    foreign: 'empty',
+    body: () => ({ email: inviteeEmail('colleague'), role: Role.carrier_user }),
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -47,7 +54,7 @@ export const cases = defineRouteCases([
       invitations.set(w, inv.id);
     },
     params: (w) => ({ ...org(w), invitationId: invitations.get(w) ?? '' }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -55,7 +62,7 @@ export const cases = defineRouteCases([
     path: `${P}/:membershipId`,
     setup: colleague,
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
-    body: () => ({ role: 'carrier_admin' }),
+    body: () => ({ role: Role.carrier_admin }),
   },
   {
     ...base,
@@ -63,6 +70,6 @@ export const cases = defineRouteCases([
     path: `${P}/:membershipId`,
     setup: colleague,
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
 ]);

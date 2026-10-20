@@ -1,6 +1,7 @@
-import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
+import { type ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SystemActorName } from '@rampflow/shared/values';
+import { ScopeParty, TenantActorKind } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import type { BookingId, CarrierId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -27,18 +28,18 @@ export function bookingContext(c: Context<AppEnv>): BookingContext {
   const { scope, access, db } = c.var;
   const now = c.var.clock.now();
   switch (scope.party) {
-    case ActorParty.tenant:
+    case ScopeParty.tenant:
       return {
         tx: db,
         tenantId: scope.tenantId,
         actor:
-          scope.actor.kind === 'user'
+          scope.actor.kind === TenantActorKind.user
             ? { party: BookingParty.staff, userId: scope.actor.userId }
             : { party: BookingParty.system, job: scope.actor.job },
         access,
         now,
       };
-    case 'carrier_at_tenant':
+    case ScopeParty.carrier_at_tenant:
       return {
         tx: db,
         tenantId: scope.tenantId,
@@ -46,7 +47,7 @@ export function bookingContext(c: Context<AppEnv>): BookingContext {
         access,
         now,
       };
-    case ActorParty.driver:
+    case ScopeParty.driver:
       return {
         tx: db,
         tenantId: scope.tenantId,

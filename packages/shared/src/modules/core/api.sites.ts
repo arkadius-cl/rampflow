@@ -1,7 +1,7 @@
 import * as z from 'zod';
-import { STAFF_LOCALES, type StaffLocale } from '../../locales.ts';
 import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
 import { values } from '../../values/define.ts';
+import { StaffLocale } from '../../values/locales.ts';
 import { CountedDockStatus, DockStatus, DoorType, TemperatureZone } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
@@ -28,7 +28,7 @@ const siteFields = {
     .nullable()
     .optional(),
   timeZone: timeZoneSchema,
-  defaultLocale: z.enum(STAFF_LOCALES),
+  defaultLocale: z.enum(StaffLocale),
   phone: z
     .string()
     .regex(/^\+[1-9]\d{6,14}$/, 'E.164, for example +4940123456')
@@ -97,10 +97,10 @@ const dockFields = {
     .min(1)
     .max(16)
     .regex(/^[A-Za-z0-9][A-Za-z0-9 ._/-]*$/, 'Letters, digits, space, dot, dash, slash'),
-  doorType: z.enum(DOOR_TYPES),
-  temperatureZone: z.enum(TEMPERATURE_ZONES),
+  doorType: z.enum(DoorType),
+  temperatureZone: z.enum(TemperatureZone),
   adrAllowed: z.boolean(),
-  status: z.enum(DOCK_STATUSES),
+  status: z.enum(DockStatus),
   sort: z.int().min(0),
 };
 

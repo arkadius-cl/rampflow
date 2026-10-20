@@ -1,6 +1,6 @@
 import { normalizePlate } from '@rampflow/shared/modules/avis/avis';
-import { ON_SITE_STATUSES, punctualityOf } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { punctualityOf } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus, OnSiteStatus } from '@rampflow/shared/modules/booking/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
 import { AckStatus, SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type {
@@ -10,7 +10,7 @@ import type {
   YardTruck,
 } from '@rampflow/shared/modules/yard/api';
 import { type LocalDate, localDayRange, siteDay, type TimeZone } from '@rampflow/shared/time';
-import { Setting } from '@rampflow/shared/values';
+import { Setting, values } from '@rampflow/shared/values';
 import { and, asc, eq, gte, ilike, inArray, lt, or, type SQL, sql } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../db/ids.ts';
 import type { Tx } from '../../db/scope.ts';
@@ -240,7 +240,13 @@ export async function truckOf(
   return truck;
 }
 
-const VISIBLE = ['confirmed', 'no_show', ...ON_SITE_STATUSES, 'departed', 'turned_away'] as const;
+const VISIBLE = [
+  'confirmed',
+  'no_show',
+  ...values(OnSiteStatus),
+  'departed',
+  'turned_away',
+] as const;
 
 /**
  * YD-01: the bookings of a site-local day, by start, and the no-shows of that day whose slot
@@ -287,7 +293,7 @@ export async function onSiteTrucks(s: YardScope): Promise<OnSiteView> {
   const site = await requireSite(s.tx, s.tenantId, s.siteId);
   const standgeldMinutes = (await s.access.setting(Setting.yard.standgeld_flag_minutes, s.siteId))
     .value;
-  const items = await trucks(s, inArray(booking.status, ON_SITE_STATUSES), [
+  const items = await trucks(s, inArray(booking.status, values(OnSiteStatus)), [
     asc(booking.checkedInAt),
     asc(booking.id),
   ]);
@@ -321,7 +327,7 @@ export async function searchTrucks(s: YardScope, q: string): Promise<YardTruck[]
     s,
     and(
       or(
-        inArray(booking.status, ['confirmed', ...ON_SITE_STATUSES]),
+        inArray(booking.status, ['confirmed', ...values(OnSiteStatus)]),
         and(eq(booking.status, 'no_show'), gte(booking.noShowAt, start)),
       ),
       or(

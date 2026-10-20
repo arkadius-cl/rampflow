@@ -1,15 +1,21 @@
-import { HttpMethod } from '@rampflow/shared/values';
+import {
+  AccountCredential,
+  ForeignOutcome,
+  HttpMethod,
+  RouteCaseActor,
+  RouteCaseGrant,
+} from '@rampflow/shared/values';
 import { defineAccountCases, defineRouteCases } from '../../../../test/route-cases.ts';
 
 export const cases = defineRouteCases([
   {
     method: HttpMethod.DELETE,
     path: '/api/driver/session',
-    as: 'driver',
-    permission: 'driver',
+    as: RouteCaseActor.driver,
+    permission: RouteCaseGrant.driver,
     entitlement: null,
     params: () => ({}),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
     siteScoped: false,
   },
 ]);
@@ -20,7 +26,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/public/driver-session',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (w) => ({ actor: null, body: { token: w.A.bookings.own.driverToken } }),
   },
 ]);

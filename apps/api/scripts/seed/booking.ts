@@ -1,21 +1,32 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType, VehicleType } from '@rampflow/shared/modules/avis/values';
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
 import {
-  ActorParty,
+  BookingParty,
   CarrierLinkStatus,
-  CreatedParty,
+  CommandName,
+  CreateMode,
   Direction,
   LinkVia,
   ResourceKind,
+  WalkInOutcome,
 } from '@rampflow/shared/modules/booking/values';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { DriverLocale, OrgKind, SiteLimitedRole, SystemActorName } from '@rampflow/shared/values';
+import {
+  DriverLocale,
+  OrgKind,
+  ScopeParty,
+  SeedActor,
+  SeedOrg,
+  SystemActorName,
+  TenantActorKind,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, CarrierId, DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
-import type { Scope, TenantRole, Tx } from '../../src/db/scope.ts';
+import type { Scope, Tx } from '../../src/db/scope.ts';
 import { loadAccess } from '../../src/kernel/access.ts';
 import { testClock } from '../../src/kernel/clock.ts';
 import { seedLoadTypes } from '../../src/modules/booking/capacity/load-types.ts';
@@ -50,7 +61,7 @@ const SITE = 'Lager Hamburg';
 const ZONE = 'Europe/Berlin' as TimeZone;
 const MINUTE = 60_000;
 
-type Role = Extract<TenantRole, 'dispatcher' | 'gate_operator' | 'dock_operator'>;
+type Role = Exclude<SeedActor, typeof SeedActor.system>;
 const ACCOUNTS: Record<Role, string> = {
   dispatcher: 'dispatch@acme.local',
   gate_operator: 'gate@acme.local',
@@ -60,7 +71,7 @@ const ACCOUNTS: Record<Role, string> = {
 interface Step {
   /** Minutes from the current grid slot. */
   at: number;
-  as: Role | 'system';
+  as: SeedActor;
   command: CommandInput;
 }
 
@@ -80,22 +91,23 @@ const dockStep = (dockNo: number) => `D-0${dockNo}`;
 function visits(): Visit[] {
   const gate = (at: number, command: CommandInput): Step => ({
     at,
-    as: SiteLimitedRole.gate_operator,
+    as: SeedActor.gate_operator,
     command,
   });
   const dockOp = (at: number, command: CommandInput): Step => ({
     at,
-    as: SiteLimitedRole.dock_operator,
+    as: SeedActor.dock_operator,
     command,
   });
-  const call = (at: number, n: number) => dockOp(at, { type: 'call', dockId: dockStep(n) });
+  const call = (at: number, n: number) =>
+    dockOp(at, { type: CommandName.call, dockId: dockStep(n) });
   return [
     {
       start: -240,
       carrier: 'Spedition Müller',
       units: 12,
       plate: 'HH-SM 401',
-      steps: [{ at: -180, as: 'system', command: { type: 'mark_no_show' } }],
+      steps: [{ at: -180, as: SeedActor.system, command: { type: CommandName.mark_no_show } }],
     },
     {
       start: -180,
@@ -103,12 +115,12 @@ function visits(): Visit[] {
       units: 26,
       plate: 'PO 4KX19',
       steps: [
-        gate(-188, { type: 'check_in' }),
+        gate(-188, { type: CommandName.check_in }),
         call(-178, 1),
-        dockOp(-174, { type: 'dock' }),
-        dockOp(-170, { type: 'start_loading' }),
-        dockOp(-125, { type: 'complete', actualLoadUnits: 26 }),
-        gate(-115, { type: 'depart' }),
+        dockOp(-174, { type: CommandName.dock }),
+        dockOp(-170, { type: CommandName.start_loading }),
+        dockOp(-125, { type: CommandName.complete, actualLoadUnits: 26 }),
+        gate(-115, { type: CommandName.depart }),
       ],
     },
     {
@@ -117,11 +129,11 @@ function visits(): Visit[] {
       units: 18,
       plate: 'B-KL 2210',
       steps: [
-        gate(-112, { type: 'check_in' }),
+        gate(-112, { type: CommandName.check_in }),
         call(-104, 2),
-        dockOp(-100, { type: 'dock' }),
+        dockOp(-100, { type: CommandName.dock }),
         dockOp(-55, {
-          type: 'complete',
+          type: CommandName.complete,
           actualLoadUnits: 17,
           discrepancyNote: '1 Palette beschädigt',
         }),
@@ -133,10 +145,10 @@ function visits(): Visit[] {
       units: 33,
       plate: 'PO 7GH02',
       steps: [
-        gate(-64, { type: 'check_in' }),
+        gate(-64, { type: CommandName.check_in }),
         call(-55, 3),
-        dockOp(-50, { type: 'dock' }),
-        dockOp(-45, { type: 'start_loading' }),
+        dockOp(-50, { type: CommandName.dock }),
+        dockOp(-45, { type: CommandName.start_loading }),
       ],
     },
     {
@@ -144,14 +156,18 @@ function visits(): Visit[] {
       carrier: 'Nordfracht GmbH',
       units: 10,
       plate: 'HB-NF 77',
-      steps: [gate(-14, { type: 'check_in' }), call(-8, 4), dockOp(-3, { type: 'dock' })],
+      steps: [
+        gate(-14, { type: CommandName.check_in }),
+        call(-8, 4),
+        dockOp(-3, { type: CommandName.dock }),
+      ],
     },
     {
       start: 0,
       carrier: 'transpol',
       units: 20,
       plate: 'WA 1234K',
-      steps: [gate(-12, { type: 'check_in' }), call(-2, 5)],
+      steps: [gate(-12, { type: CommandName.check_in }), call(-2, 5)],
     },
     {
       start: 0,
@@ -160,14 +176,14 @@ function visits(): Visit[] {
       plate: 'HH-UK 12',
       walkIn: true,
       // Gate enforcement keeps the walk-in confirmed until the driver's briefing is linked.
-      steps: [gate(-5, { type: 'check_in' })],
+      steps: [gate(-5, { type: CommandName.check_in })],
     },
     {
       start: 30,
       carrier: 'Kraft Logistik',
       units: 8,
       plate: 'B-KL 3301',
-      steps: [gate(-4, { type: 'check_in' })],
+      steps: [gate(-4, { type: CommandName.check_in })],
     },
     { start: 60, carrier: 'transpol', units: 30, plate: 'PO 2LM88', steps: [] },
     { start: 90, carrier: 'Spedition Müller', units: 14, plate: 'HH-SM 409', steps: [] },
@@ -177,7 +193,11 @@ function visits(): Visit[] {
       units: 4,
       plate: 'HB-NF 81',
       steps: [
-        { at: -30, as: 'dispatcher', command: { type: 'cancel', reason: 'Ware nicht fertig' } },
+        {
+          at: -30,
+          as: SeedActor.dispatcher,
+          command: { type: CommandName.cancel, reason: 'Ware nicht fertig' },
+        },
       ],
     },
     { start: 150, carrier: 'transpol', units: 24, plate: 'PO 9TT31', steps: [] },
@@ -212,7 +232,7 @@ async function briefDriver(
       validityDays: await validityDays(ctx.access, siteId),
     });
     await transitionBooking(ctx, booking.id as BookingId, {
-      type: 'link_acknowledgement',
+      type: CommandName.link_acknowledgement,
       acknowledgementId: ack.id,
       via: LinkVia.completed,
     });
@@ -272,7 +292,7 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
     .values({
       tenantId,
       siteId,
-      kind: 'pool',
+      kind: ResourceKind.pool,
       name: 'Rampen 1–6',
       directions: [Direction.inbound, Direction.outbound],
     })
@@ -339,25 +359,25 @@ export async function seed(ctx: SeedContext): Promise<void> {
     dock_operator: await userId(ctx, ACCOUNTS.dock_operator),
   };
   const tx = ctx.db as unknown as Tx;
-  const context = async (as: Role | 'system', now: Date): Promise<BookingContext> => {
+  const context = async (as: SeedActor, now: Date): Promise<BookingContext> => {
     const scope: Scope =
-      as === 'system'
+      as === SeedActor.system
         ? {
-            party: ActorParty.tenant,
+            party: ScopeParty.tenant,
             tenantId,
             siteIds: 'all',
-            actor: { kind: 'system', job: SystemActorName.no_show },
+            actor: { kind: TenantActorKind.system, job: SystemActorName.no_show },
           }
         : {
-            party: ActorParty.tenant,
+            party: ScopeParty.tenant,
             tenantId,
             siteIds: 'all',
-            actor: { kind: 'user', userId: users[as], role: as },
+            actor: { kind: TenantActorKind.user, userId: users[as], role: as },
           };
     const actor =
-      as === 'system'
-        ? ({ party: 'system', job: 'no_show' } as const)
-        : ({ party: 'staff', userId: users[as] } as const);
+      as === SeedActor.system
+        ? ({ party: BookingParty.system, job: SystemActorName.no_show } as const)
+        : ({ party: BookingParty.staff, userId: users[as] } as const);
     return { tx, tenantId, actor, access: await loadAccess(tx, scope, testClock(now)), now };
   };
 
@@ -368,12 +388,14 @@ export async function seed(ctx: SeedContext): Promise<void> {
   let created = 0;
   for (const [i, v] of visits().entries()) {
     const avis = AvisInput.parse({
-      references: [{ type: 'purchase_order', value: `PO-${day.replaceAll('-', '')}-${i + 1}` }],
+      references: [
+        { type: ReferenceType.purchase_order, value: `PO-${day.replaceAll('-', '')}-${i + 1}` },
+      ],
       counterpartyName: v.start % 60 === 0 ? 'Elektro Nord AG' : 'Möbelhaus Süd GmbH',
-      loadUnits: [{ type: 'eur_pallet', quantity: v.units }],
-      vehicle: { type: 'semi_trailer', plate: v.plate },
+      loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: v.units }],
+      vehicle: { type: VehicleType.semi_trailer, plate: v.plate },
     });
-    const carrier = v.carrier === 'transpol' ? { id: transpol } : { name: v.carrier };
+    const carrier = v.carrier === SeedOrg.transpol ? { id: transpol } : { name: v.carrier };
     const base = {
       clientRequestId: requestId(`${day}:${i}`),
       siteId,
@@ -381,17 +403,22 @@ export async function seed(ctx: SeedContext): Promise<void> {
       carrier,
     };
     const request: CreateBookingRequest = v.walkIn
-      ? { ...base, mode: 'walk_in', plateSeen: v.plate, outcome: { kind: 'check_in', avis } }
-      : { ...base, mode: CreatedParty.staff, startsAt: at(v.start), avis };
+      ? {
+          ...base,
+          mode: CreateMode.walk_in,
+          plateSeen: v.plate,
+          outcome: { kind: WalkInOutcome.check_in, avis },
+        }
+      : { ...base, mode: CreateMode.staff, startsAt: at(v.start), avis };
     const createdAt = v.walkIn ? at(-6) : at(Math.min(v.start, 0) - 24 * 60);
     const result = await createBooking(
-      await context(v.walkIn ? SiteLimitedRole.gate_operator : 'dispatcher', createdAt),
+      await context(v.walkIn ? SeedActor.gate_operator : SeedActor.dispatcher, createdAt),
       request,
     );
     if (!result.created) continue;
     created++;
     for (const step of v.steps) {
-      if (step.command.type === 'check_in') {
+      if (step.command.type === CommandName.check_in) {
         const driver = DRIVERS[i % DRIVERS.length] as string;
         await briefDriver(await context(step.as, at(step.at)), result.booking, driver);
       }

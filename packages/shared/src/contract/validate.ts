@@ -1,3 +1,4 @@
+import { EntitlementKind } from '../values/entitlements.ts';
 import { OrgKind } from '../values/roles.ts';
 import { type Catalog, findEntitlement } from './catalog.ts';
 import { isValidEntitlementValue } from './entitlements.ts';
@@ -16,7 +17,8 @@ function checkFeatureRef(catalog: Catalog, where: string, key: string): string[]
   const found = findEntitlement(catalog, key);
   if (!found) return [`${where}: unknown entitlement ${key}`];
   if (found.def.reserved) return [`${where}: reserved entitlement ${key}`];
-  if (found.def.kind !== 'feature') return [`${where}: ${key} is a limit, not a feature`];
+  if (found.def.kind !== EntitlementKind.feature)
+    return [`${where}: ${key} is a limit, not a feature`];
   return [];
 }
 

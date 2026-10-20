@@ -1,4 +1,5 @@
 import type * as z from 'zod';
+import type { EntitlementKind } from '../values/entitlements.ts';
 import type { AnyModuleManifest, SettingDef } from './module.ts';
 
 /** Every module manifest, listed so that each module comes after the modules it depends on. */
@@ -15,9 +16,12 @@ type KeysOf<R> = R extends unknown ? keyof R & string : never;
 export type ModuleIdOf<C extends Catalog> = C[number]['id'];
 export type FeatureKeyOf<C extends Catalog> = KeysWhere<
   Defs<C, 'entitlements'>,
-  { kind: 'feature' }
+  { kind: typeof EntitlementKind.feature }
 >;
-export type LimitKeyOf<C extends Catalog> = KeysWhere<Defs<C, 'entitlements'>, { kind: 'limit' }>;
+export type LimitKeyOf<C extends Catalog> = KeysWhere<
+  Defs<C, 'entitlements'>,
+  { kind: typeof EntitlementKind.limit }
+>;
 export type EntitlementKeyOf<C extends Catalog> = FeatureKeyOf<C> | LimitKeyOf<C>;
 export type ReservedKeyOf<C extends Catalog> = KeysWhere<
   Defs<C, 'entitlements'>,

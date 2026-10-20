@@ -4,25 +4,29 @@
 // scripts/seed/<module>.ts, exports `seed(ctx)`, and runs in its own transaction in the order
 // below. A later seed finds earlier data by name (for example `findOrg(ctx.db, 'tenant', ...)`).
 // Accounts and passwords are listed in docs/how-to/run-locally.md.
+
+import { DatabaseUrlVar, NodeEnv } from '@rampflow/shared/values';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { requireUrl } from './db-setup.ts';
 import type { SeedContext } from './seed/context.ts';
 
 /** Add one line per module, after the modules whose data it uses. */
-const SEEDS = ['core', 'sites', 'safety', 'booking', 'carriers', 'portal'] as const;
+const SEEDS: readonly string[] = ['core', 'sites', 'safety', 'booking', 'carriers', 'portal'];
 
 // The demo accounts share a published password, one of them a platform admin. An unset NODE_ENV
 // counts as production, as in apps/api/src/kernel/env.ts; `pnpm db:seed` sets development.
-const nodeEnv = process.env.NODE_ENV ?? 'production';
-if (nodeEnv !== 'development' && nodeEnv !== 'test') {
+const nodeEnv = process.env.NODE_ENV ?? NodeEnv.production;
+if (nodeEnv !== NodeEnv.development && nodeEnv !== NodeEnv.test) {
   console.error(
     `db:seed refuses to run with NODE_ENV=${nodeEnv}: the demo data signs in a platform admin with the published password from docs/how-to/run-locally.md. Seed only development databases.`,
   );
   process.exit(1);
 }
 
-const pool = new pg.Pool({ connectionString: requireUrl('MIGRATION_DATABASE_URL').toString() });
+const pool = new pg.Pool({
+  connectionString: requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL).toString(),
+});
 try {
   const db = drizzle(pool);
   for (const name of SEEDS) {

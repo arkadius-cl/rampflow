@@ -2,8 +2,20 @@ import { randomUUID } from 'node:crypto';
 import type { AvisInput } from '@rampflow/shared/modules/avis/avis';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { ActorParty, BookingParty, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { Role, SystemActorName, TokenPurpose } from '@rampflow/shared/values';
+import {
+  BookingParty,
+  type CreatedParty,
+  Direction,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import {
+  Role,
+  ScopeParty,
+  SystemActorName,
+  TenantActorKind,
+  TokenPurpose,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide, WorldUser } from '../../../../test/world.ts';
@@ -108,10 +120,10 @@ export function asStaff<T>(
 ): Promise<T> {
   const siteLimited = user.role === Role.gate_operator || user.role === Role.dock_operator;
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId: side.tenantId,
     siteIds: siteLimited ? [side.sites[0].id] : 'all',
-    actor: { kind: 'user', userId: user.id, role: user.role as TenantRole },
+    actor: { kind: TenantActorKind.user, userId: user.id, role: user.role as TenantRole },
   };
   return withScope(scope, async (tx: Tx) =>
     fn({
@@ -131,10 +143,10 @@ export function asSystem<T>(
   fn: (ctx: BookingContext) => Promise<T>,
 ): Promise<T> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId: side.tenantId,
     siteIds: 'all',
-    actor: { kind: 'system', job: SystemActorName.no_show },
+    actor: { kind: TenantActorKind.system, job: SystemActorName.no_show },
   };
   return withScope(scope, async (tx) =>
     fn({
@@ -155,7 +167,7 @@ export function asCarrier<T>(
   fn: (ctx: BookingContext) => Promise<T>,
 ): Promise<T> {
   const scope: Scope = {
-    party: 'carrier_at_tenant',
+    party: ScopeParty.carrier_at_tenant,
     carrierId: side.carrierId,
     tenantId: side.tenantId,
     userId: user.id,
@@ -179,7 +191,7 @@ export interface SeedBooking {
   dockId?: DockId | null;
   site?: CapacitySite;
   carrierId?: CarrierId | null;
-  createdParty?: 'carrier' | 'staff';
+  createdParty?: CreatedParty;
   createdBy?: UserId | null;
   walkIn?: boolean;
   noShowAt?: Date | null;
@@ -217,7 +229,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
       carrierName: 'Spedition Nowak',
       code: bookingCode(),
       status: o.status ?? 'confirmed',
-      direction: 'inbound',
+      direction: Direction.inbound,
       startsAt: o.startsAt,
       endsAt,
       blocksUntil: endsAt,
@@ -237,7 +249,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
     siteId: at.siteId,
     carrierId,
     counterpartyName: 'Lieferant GmbH',
-    loadUnits: [{ type: 'eur_pallet', quantity: 10 }],
+    loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 10 }],
   });
   const linkId = randomUUID();
   await db.insert(driverAccess).values({
@@ -247,7 +259,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
     bookingId: row.id,
     carrierId,
     tokenHash: hashToken(deriveToken(TokenPurpose.driver, linkId)),
-    channel: 'link',
+    channel: DriverChannel.link,
     expiresAt: new Date(o.startsAt.getTime() + 7 * 86_400_000),
   });
   return row;

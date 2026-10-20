@@ -3,16 +3,21 @@
 // Creates the platform org if missing, the user with a verified email, and the platform_admin
 // membership. The user signs in by magic link (U2); no password is set here.
 import { parseArgs } from 'node:util';
+import { CliOptionType, DatabaseUrlVar } from '@rampflow/shared/values';
 import pg from 'pg';
 import { requireUrl } from './db-setup.ts';
 
-const { values } = parseArgs({ options: { email: { type: 'string' }, name: { type: 'string' } } });
+const { values } = parseArgs({
+  options: { email: { type: CliOptionType.string }, name: { type: CliOptionType.string } },
+});
 if (!values.email || !values.name) {
   console.error('usage: pnpm admin:create --email <address> --name <display name>');
   process.exit(2);
 }
 
-const client = new pg.Client({ connectionString: requireUrl('MIGRATION_DATABASE_URL').toString() });
+const client = new pg.Client({
+  connectionString: requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL).toString(),
+});
 await client.connect();
 try {
   await client.query('begin');

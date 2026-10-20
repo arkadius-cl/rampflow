@@ -1,7 +1,7 @@
-import { DOCK_HOLDING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { DockHoldingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Setting, values } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type BookingId, hashToken, type TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -69,7 +69,7 @@ export async function loadDriverView(r: ViewRequest): Promise<DriverBookingView>
     );
   if (!link) throw new ApiError(ErrorCode.unauthorized);
 
-  const holdsDock = (DOCK_HOLDING_STATUSES as readonly string[]).includes(row.status);
+  const holdsDock = (values(DockHoldingStatus) as readonly string[]).includes(row.status);
   const [called] =
     holdsDock && row.dockId
       ? await tx

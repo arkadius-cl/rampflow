@@ -10,7 +10,7 @@ export const TENANT_ROLES = values(TenantRole);
 export const CARRIER_ROLES = values(CarrierRole);
 export const SITE_LIMITED_ROLES = values(SiteLimitedRole);
 export const isSiteLimited = (role: string) =>
-  (SITE_LIMITED_ROLES as readonly string[]).includes(role);
+  (values(SiteLimitedRole) as readonly string[]).includes(role);
 
 const email = z.email().max(254);
 const siteIds = z.array(z.uuid()).max(100);
@@ -20,20 +20,20 @@ const onlyOperatorsHaveSites = (v: { role?: TenantRole; siteIds?: string[] }) =>
 const sitesIssue = { message: 'Only gate and dock operators have a site list', path: ['siteIds'] };
 
 export const InviteStaff = z
-  .object({ email, role: z.enum(TENANT_ROLES), siteIds: siteIds.default([]) })
+  .object({ email, role: z.enum(TenantRole), siteIds: siteIds.default([]) })
   .refine(onlyOperatorsHaveSites, sitesIssue);
 export type InviteStaff = z.input<typeof InviteStaff>;
 
 export const UpdateStaff = z
-  .object({ role: z.enum(TENANT_ROLES), siteIds })
+  .object({ role: z.enum(TenantRole), siteIds })
   .partial()
   .refine(onlyOperatorsHaveSites, sitesIssue);
 export type UpdateStaff = z.infer<typeof UpdateStaff>;
 
-export const InviteCarrierUser = z.object({ email, role: z.enum(CARRIER_ROLES) });
+export const InviteCarrierUser = z.object({ email, role: z.enum(CarrierRole) });
 export type InviteCarrierUser = z.infer<typeof InviteCarrierUser>;
 
-export const UpdateCarrierUser = z.object({ role: z.enum(CARRIER_ROLES) });
+export const UpdateCarrierUser = z.object({ role: z.enum(CarrierRole) });
 export type UpdateCarrierUser = z.infer<typeof UpdateCarrierUser>;
 
 export interface MemberView<R extends string = string> {

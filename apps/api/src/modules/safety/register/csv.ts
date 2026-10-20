@@ -1,6 +1,8 @@
 import { TZDate } from '@date-fns/tz';
 import type { StaffLocale } from '@rampflow/shared';
 import type { RegisterItem } from '@rampflow/shared/modules/safety/api.register';
+import { AcknowledgementCsvColumn } from '@rampflow/shared/modules/safety/values';
+import { values } from '@rampflow/shared/values';
 import { formatISO } from 'date-fns';
 import type { TFunction } from 'i18next';
 
@@ -9,21 +11,7 @@ import type { TFunction } from 'i18next';
 
 export const CSV_DELIMITER: Record<StaffLocale, string> = { de: ';', en: ',', pl: ';' };
 
-const COLUMNS = [
-  'completedAt',
-  'expiresAt',
-  'status',
-  'driverName',
-  'carrier',
-  'booking',
-  'site',
-  'instruction',
-  'version',
-  'locale',
-  'score',
-  'attempts',
-  'channel',
-] as const;
+const COLUMNS = values(AcknowledgementCsvColumn);
 
 /** Quotes when needed, and defuses cells a spreadsheet would run as a formula. */
 function cell(value: string, delimiter: string): string {
@@ -38,10 +26,10 @@ const siteTime = (iso: string | null, timeZone: string) =>
 
 export function registerCsv(items: readonly RegisterItem[], locale: StaffLocale, t: TFunction) {
   const delimiter = CSV_DELIMITER[locale];
-  const line = (values: readonly string[]) => values.map((v) => cell(v, delimiter)).join(delimiter);
+  const line = (row: readonly string[]) => row.map((v) => cell(v, delimiter)).join(delimiter);
   const rows = items.map((item) => {
     const zone = item.site?.timeZone ?? 'UTC';
-    const values: Record<(typeof COLUMNS)[number], string> = {
+    const cells: Record<AcknowledgementCsvColumn, string> = {
       completedAt: siteTime(item.completedAt, zone),
       expiresAt: siteTime(item.expiresAt, zone),
       status: t(`safety:register.status.${item.status}`),
@@ -56,7 +44,7 @@ export function registerCsv(items: readonly RegisterItem[], locale: StaffLocale,
       attempts: String(item.attempts),
       channel: t(`safety:register.channel.${item.channel}`),
     };
-    return line(COLUMNS.map((c) => values[c]));
+    return line(COLUMNS.map((c) => cells[c]));
   });
   const header = line(COLUMNS.map((c) => t(`safety:register.csv.${c}`)));
   return `﻿${[header, ...rows].join('\r\n')}\r\n`;

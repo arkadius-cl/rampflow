@@ -1,3 +1,10 @@
+import {
+  ErrorCode,
+  ForbiddenReason,
+  HealthStatus,
+  ValidationTarget,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,13 +22,15 @@ describe('api', () => {
   it('reports ok health against the real database', async () => {
     const res = await app.request('/api/health');
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok', db: 'ok' });
+    expect(await res.json()).toEqual({ status: HealthStatus.ok, db: 'ok' });
   });
 
   it('answers unknown routes with the JSON error envelope', async () => {
     const res = await app.request('/api/nope');
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: { code: 'not_found', message: 'No such route' } });
+    expect(await res.json()).toEqual({
+      error: { code: ErrorCode.not_found, message: 'No such route' },
+    });
   });
 
   it('test routes seed a world, pin the clock and run a job tick', async () => {
@@ -59,7 +68,7 @@ describe('Origin check', () => {
       const res = await as(echo(), null).post('/x', { origin });
       expect(res.status).toBe(403);
       expect(await res.json()).toMatchObject({
-        error: { code: 'forbidden', details: { reason: 'origin' } },
+        error: { code: ErrorCode.forbidden, details: { reason: ForbiddenReason.origin } },
       });
     }
   });
@@ -90,8 +99,8 @@ describe('validation', () => {
     new Hono()
       .post(
         '/items/:id',
-        validate('param', z.object({ id: z.uuid() })),
-        validate('json', z.object({ avis: z.object({ plate: z.string().min(2) }) })),
+        validate(ValidationTarget.param, z.object({ id: z.uuid() })),
+        validate(ValidationTarget.json, z.object({ avis: z.object({ plate: z.string().min(2) }) })),
         (c) => c.json(c.req.valid('json')),
       )
       .onError(onError);
@@ -110,8 +119,8 @@ describe('validation', () => {
     expect(res.status).toBe(422);
     expect(await res.json()).toMatchObject({
       error: {
-        code: 'validation_failed',
-        details: { issues: [{ path: ['avis', 'plate'], code: 'too_small' }] },
+        code: ErrorCode.validation_failed,
+        details: { issues: [{ path: ['avis', 'plate'], code: ZodIssueCode.too_small }] },
       },
     });
   });
@@ -123,7 +132,7 @@ describe('validation', () => {
       body: '{',
     });
     expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ error: { code: 'bad_request' } });
+    expect(await res.json()).toMatchObject({ error: { code: ErrorCode.bad_request } });
   });
 });
 

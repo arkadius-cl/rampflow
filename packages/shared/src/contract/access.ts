@@ -32,12 +32,12 @@ export function permissionsFor<C extends Catalog>(
 
 export type NavContext<C extends Catalog> =
   | {
-      readonly area: 'tenant';
+      readonly area: typeof OrgKind.tenant;
       readonly permissions: ReadonlySet<PermissionKeyOf<C>>;
       readonly entitlements: ResolvedEntitlementsOf<C>;
     }
   | {
-      readonly area: 'carrier' | 'platform';
+      readonly area: typeof OrgKind.carrier | typeof OrgKind.platform;
       readonly permissions: ReadonlySet<PermissionKeyOf<C>>;
     };
 

@@ -1,6 +1,5 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES } from '@rampflow/shared';
-import { TokenPurpose } from '@rampflow/shared/values';
+import { StaffLocale, TokenPurpose, values } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
@@ -27,7 +26,7 @@ const TEMPLATES: { id: string; link: (example: Record<string, string>) => string
 
 describe('carrier network emails', () => {
   for (const tpl of TEMPLATES) {
-    for (const locale of STAFF_LOCALES) {
+    for (const locale of values(StaffLocale)) {
       it(`${tpl.id} renders in ${locale}`, async () => {
         const template = await loadTemplateFile(tpl.id);
         expect(template.category).toBe('account');

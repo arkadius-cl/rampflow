@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
-import { ErrorCode } from '@rampflow/shared/values';
+import { DescribedKind, ErrorCode, ValidationTarget } from '@rampflow/shared/values';
 import type { ValidationTargets } from 'hono';
 import type * as z from 'zod';
-import { register, type ValidationTarget } from './describe.ts';
+import { register } from './describe.ts';
 import { ApiError } from './errors.ts';
 
 interface Issue {
@@ -21,7 +21,7 @@ type ValidationResult =
  */
 function onInvalid(result: ValidationResult): void {
   if (result.success) return;
-  if (result.target === 'param') throw new ApiError(ErrorCode.not_found);
+  if (result.target === ValidationTarget.param) throw new ApiError(ErrorCode.not_found);
   const issues = result.error.issues.map(({ path, code, message }) => ({
     path: path.map((p) => (typeof p === 'symbol' ? String(p) : p)),
     code,
@@ -35,5 +35,9 @@ export function validate<Target extends ValidationTarget, Schema extends z.ZodTy
   target: Target,
   schema: Schema,
 ) {
-  return register(zValidator(target, schema, onInvalid), { kind: 'validator', target, schema });
+  return register(zValidator(target, schema, onInvalid), {
+    kind: DescribedKind.validator,
+    target,
+    schema,
+  });
 }

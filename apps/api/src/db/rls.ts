@@ -1,4 +1,4 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { PolicyCommand, PolicyReader, ScopeParty } from '@rampflow/shared/values';
 import { type SQL, sql } from 'drizzle-orm';
 import { type AnyPgColumn, type PgPolicy, pgPolicy } from 'drizzle-orm/pg-core';
 import type { Scope } from './scope.ts';
@@ -8,7 +8,7 @@ import type { Scope } from './scope.ts';
 // all set app.tenant_id() and must not inherit each other's rights.
 
 export type Party = Scope['party'];
-export type Command = 'all' | 'select' | 'insert' | 'update' | 'delete';
+export type Command = PolicyCommand;
 
 const PARTY_PATTERN = /^[a-z_]+$/;
 
@@ -49,18 +49,18 @@ export function allow(
   const checked = and(isParty(party), check);
   const name = `${party}_${command}${suffix ? `_${suffix}` : ''}`;
   switch (command) {
-    case 'select':
-    case 'delete':
+    case PolicyCommand.select:
+    case PolicyCommand.delete:
       return pgPolicy(name, { for: command, using: condition });
-    case 'insert':
+    case PolicyCommand.insert:
       return pgPolicy(name, { for: command, withCheck: checked });
-    case 'update':
-    case 'all':
+    case PolicyCommand.update:
+    case PolicyCommand.all:
       return pgPolicy(name, { for: command, using: condition, withCheck: checked });
   }
 }
 
-export type Reader = 'carrier' | 'carrier_at_tenant' | 'driver' | 'public';
+export type Reader = PolicyReader;
 
 export interface TenantColumns {
   tenantId: AnyPgColumn;
@@ -76,12 +76,12 @@ export function tenantPolicies(
 ): PgPolicy[] {
   const own = o.site ? and(tenantIs(t.tenantId), siteAllowed(o.site)) : tenantIs(t.tenantId);
   return [
-    allow(ActorParty.tenant, 'all', own),
+    allow(ScopeParty.tenant, PolicyCommand.all, own),
     ...o.readers.map((reader) =>
       allow(
         reader,
-        'select',
-        reader === 'carrier' ? linkedTenant(t.tenantId) : tenantIs(t.tenantId),
+        PolicyCommand.select,
+        reader === PolicyReader.carrier ? linkedTenant(t.tenantId) : tenantIs(t.tenantId),
       ),
     ),
   ];
@@ -109,18 +109,18 @@ export function carrierOwnedPolicies(
   const own = and(tenantIs(t.tenantId), carrierIs(t.carrierId));
   return [
     ...(o.update
-      ? [allow(ActorParty.tenant, 'all', tenant)]
-      : (['select', 'insert', 'delete'] as const).map((cmd) =>
-          allow(ActorParty.tenant, cmd, tenant),
+      ? [allow(ScopeParty.tenant, PolicyCommand.all, tenant)]
+      : [PolicyCommand.select, PolicyCommand.insert, PolicyCommand.delete].map((cmd) =>
+          allow(ScopeParty.tenant, cmd, tenant),
         )),
-    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
-    allow('carrier_at_tenant', 'select', own),
-    allow('carrier_at_tenant', 'insert', own),
-    ...(o.update ? [allow('carrier_at_tenant', 'update', own)] : []),
-    ...(o.driver ? [allow(ActorParty.driver, 'select', bookingIs(t.bookingId))] : []),
+    allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, own),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.insert, own),
+    ...(o.update ? [allow(ScopeParty.carrier_at_tenant, PolicyCommand.update, own)] : []),
+    ...(o.driver ? [allow(ScopeParty.driver, PolicyCommand.select, bookingIs(t.bookingId))] : []),
   ];
 }
 
 /** `select ... for update` without the right to change the row: update policy with check false. */
 export const lockOnly = (party: Party, using: SQL): PgPolicy =>
-  allow(party, 'update', using, sql`false`, 'lock');
+  allow(party, PolicyCommand.update, using, sql`false`, 'lock');

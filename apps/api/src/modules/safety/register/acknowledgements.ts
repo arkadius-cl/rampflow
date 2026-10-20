@@ -8,7 +8,7 @@ import type {
 } from '@rampflow/shared/modules/safety/api.register';
 import { acknowledgementStatus, expiresAtFor } from '@rampflow/shared/modules/safety/validity';
 import { AckStatus } from '@rampflow/shared/modules/safety/values';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Feature, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import {
   and,
   asc,
@@ -42,7 +42,7 @@ import {
 
 /** Days an acknowledgement completed at this site stays valid; 0 while `safety.validity` is off. */
 export async function validityDays(access: Access, siteId: SiteId): Promise<number> {
-  if (!access.entitlements?.features['safety.validity']) return 0;
+  if (!access.entitlements?.features[Feature.safety.validity]) return 0;
   return (await access.setting(Setting.safety.validity_days, siteId)).value;
 }
 
@@ -140,7 +140,7 @@ function decodeCursor(cursor: string) {
     return Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
   } catch {
     throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
-      issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
+      issues: [{ path: ['cursor'], code: ZodIssueCode.custom, message: 'Invalid cursor' }],
     });
   }
 }

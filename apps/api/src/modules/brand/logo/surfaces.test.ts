@@ -5,6 +5,7 @@ import type {
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { logoUrl } from '@rampflow/shared/modules/brand/api';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { EmailTemplate, StaffLocale } from '@rampflow/shared/values';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
@@ -71,9 +72,9 @@ async function emailHtml(tenants: (TenantId | null)[]): Promise<(string | undefi
   const due = new Date('2001-01-01T00:00:00Z');
   const rows = tenants.map((tenantId) => ({
     tenantId,
-    template: 'core.invitation',
+    template: EmailTemplate.core_invitation,
     toEmail: `logo-${randomUUID()}@mail.test`,
-    locale: 'en',
+    locale: StaffLocale.en,
     payload: template.example as Record<string, unknown>,
     nextAttemptAt: due,
   }));

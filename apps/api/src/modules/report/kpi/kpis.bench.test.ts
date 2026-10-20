@@ -1,3 +1,4 @@
+import { BookingStatus, Direction, Punctuality } from '@rampflow/shared/modules/booking/values';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -41,15 +42,15 @@ async function insertVisits(s: CapacitySite, perDay: number) {
         loadTypeId: s.loadTypeId,
         carrierName: 'Bench',
         code: `K${String(codes++).padStart(7, '0')}`,
-        status: 'departed' as const,
-        direction: 'inbound' as const,
+        status: BookingStatus.departed,
+        direction: Direction.inbound,
         startsAt,
         endsAt,
         blocksUntil: endsAt,
         siteTimeZone: s.zone,
         loadUnits: 20,
         createdParty: k % 3 === 0 ? ('staff' as const) : ('carrier' as const),
-        punctuality: 'on_time' as const,
+        punctuality: Punctuality.on_time,
         punctualityMinutes: (k % 50) - 25,
         checkedInAt,
         atDockAt,

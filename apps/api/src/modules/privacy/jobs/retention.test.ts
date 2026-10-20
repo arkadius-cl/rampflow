@@ -1,5 +1,11 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { BookingStatus, CreatedParty } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingEventType,
+  BookingStatus,
+  CreatedParty,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { EmailTemplate, OrgKind, Role, StaffLocale } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -50,7 +56,7 @@ async function departed(days: number, minutes: number) {
       tenantId: w.A.tenantId,
       siteId: b.siteId,
       bookingId: b.id,
-      type: 'departed',
+      type: BookingEventType.departed,
       fromStatus: 'done',
       toStatus: 'departed',
       at,
@@ -199,7 +205,7 @@ describe('PL-05 retention job', () => {
           siteId: w.A.sites[0].id,
           bookingId: b.id,
           tokenHash: randomBytes(32),
-          channel: 'staff',
+          channel: DriverChannel.staff,
           expiresAt,
         })
         .returning({ id: driverAccess.id });
@@ -237,13 +243,13 @@ describe('PL-05 platform rules', () => {
     const carrierId = randomUUID() as OrgId;
     await ownerDb()
       .insert(org)
-      .values({ id: carrierId, kind: 'carrier', name: `Inactive ${carrierId.slice(0, 6)}` });
+      .values({ id: carrierId, kind: OrgKind.carrier, name: `Inactive ${carrierId.slice(0, 6)}` });
     const [u] = await ownerDb()
       .insert(appUser)
       .values({
         email: `inactive-${randomUUID()}@example.test`,
         name: 'Inactive Carrier User',
-        locale: 'pl',
+        locale: StaffLocale.pl,
         lastSeenAt: ago(lastSeenDaysAgo, minutes),
         uiPrefs: { 'platform.tenant.openModules': ['yard'] },
       })
@@ -251,7 +257,7 @@ describe('PL-05 platform rules', () => {
     if (!u) throw new Error('no user');
     await ownerDb()
       .insert(membership)
-      .values({ userId: u.id, orgId: carrierId, orgKind: 'carrier', role: 'carrier_admin' });
+      .values({ userId: u.id, orgId: carrierId, orgKind: 'carrier', role: Role.carrier_admin });
     return { user: u, carrierId };
   };
   const notices = (to: string) =>
@@ -279,7 +285,10 @@ describe('PL-05 platform rules', () => {
 
     await run();
     expect(await notices(due.user.email)).toHaveLength(1);
-    expect((await notices(due.user.email))[0]).toMatchObject({ tenantId: null, locale: 'pl' });
+    expect((await notices(due.user.email))[0]).toMatchObject({
+      tenantId: null,
+      locale: StaffLocale.pl,
+    });
     expect(await notices(notYet.user.email)).toHaveLength(0);
     expect(await userRow(gone.user.id)).toBeUndefined();
     expect(await ownerCount('org', sql`id = ${gone.carrierId}`)).toBe(0);
@@ -316,9 +325,9 @@ describe('PL-05 platform rules', () => {
       ownerDb()
         .insert(outboxMessage)
         .values({
-          template: 'core.magic-link',
+          template: EmailTemplate.core_magic_link,
           toEmail: `${randomUUID()}@example.test`,
-          locale: 'en',
+          locale: StaffLocale.en,
           payload: {},
           sentAt,
         })

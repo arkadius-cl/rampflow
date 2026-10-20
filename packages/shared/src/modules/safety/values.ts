@@ -53,3 +53,35 @@ export const InstructionSafety = {
   missing: SafetyStatus.missing,
 } as const;
 export type InstructionSafety = ValueOf<typeof InstructionSafety>;
+
+/** A block of briefing content: a paragraph, or a bundled pictogram. */
+export const BlockKind = {
+  text: 'text',
+  pictogram: 'pictogram',
+} as const;
+export type BlockKind = ValueOf<typeof BlockKind>;
+
+/** An acknowledgement's status when a visit links it (YD-02), or that its briefing no longer applies. */
+export const AckLinkStatus = {
+  ...AckStatus,
+  not_applicable: 'not_applicable',
+} as const;
+export type AckLinkStatus = ValueOf<typeof AckLinkStatus>;
+
+/** The columns of the acknowledgement register CSV, in file order; `safety:register.csv.<column>` heads each. */
+export const AcknowledgementCsvColumn = {
+  completedAt: 'completedAt',
+  expiresAt: 'expiresAt',
+  status: 'status',
+  driverName: 'driverName',
+  carrier: 'carrier',
+  booking: 'booking',
+  site: 'site',
+  instruction: 'instruction',
+  version: 'version',
+  locale: 'locale',
+  score: 'score',
+  attempts: 'attempts',
+  channel: 'channel',
+} as const;
+export type AcknowledgementCsvColumn = ValueOf<typeof AcknowledgementCsvColumn>;

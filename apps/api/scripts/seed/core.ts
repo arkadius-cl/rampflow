@@ -1,5 +1,6 @@
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
-import { Module, OrgKind, Role, StaffLocale } from '@rampflow/shared/values';
+import { Module, OrgKind, Role, SeedOrg, StaffLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
 import { hashPassword, verifyPassword } from '../../src/modules/core/auth/password.ts';
@@ -28,7 +29,7 @@ interface DemoUser {
   email: string;
   name: string;
   locale: StaffLocale;
-  org: 'platform' | 'acme' | 'transpol';
+  org: SeedOrg;
   role: Role;
 }
 
@@ -37,42 +38,42 @@ export const DEMO_USERS: readonly DemoUser[] = [
     email: 'admin@rampflow.local',
     name: 'Sam Ops',
     locale: StaffLocale.en,
-    org: 'platform',
+    org: SeedOrg.platform,
     role: Role.platform_admin,
   },
   {
     email: 'admin@acme.local',
     name: 'Anna Lenz',
     locale: StaffLocale.de,
-    org: 'acme',
+    org: SeedOrg.acme,
     role: Role.tenant_admin,
   },
   {
     email: 'dispatch@acme.local',
     name: 'Daniel Brandt',
     locale: StaffLocale.de,
-    org: 'acme',
+    org: SeedOrg.acme,
     role: Role.dispatcher,
   },
   {
     email: 'gate@acme.local',
     name: 'Gerd Weber',
     locale: StaffLocale.de,
-    org: 'acme',
+    org: SeedOrg.acme,
     role: Role.gate_operator,
   },
   {
     email: 'dock@acme.local',
     name: 'Dana Krüger',
     locale: StaffLocale.de,
-    org: 'acme',
+    org: SeedOrg.acme,
     role: Role.dock_operator,
   },
   {
     email: 'admin@trans-pol.local',
     name: 'Piotr Nowak',
     locale: StaffLocale.pl,
-    org: 'transpol',
+    org: SeedOrg.transpol,
     role: Role.carrier_admin,
   },
 ];
@@ -159,12 +160,12 @@ export async function seed(ctx: SeedContext): Promise<void> {
     .values({
       tenantId: orgs.acme as TenantId,
       carrierId: orgs.transpol as CarrierId,
-      status: 'active',
-      source: 'invitation',
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.invitation,
     })
     .onConflictDoUpdate({
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-      set: { status: 'active', deactivatedAt: null },
+      set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
   ctx.log(`${DEMO_USERS.length} accounts ready`);
 }

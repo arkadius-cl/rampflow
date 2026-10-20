@@ -1,3 +1,4 @@
+import { BookingChange } from '@rampflow/shared/modules/booking/values';
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
 import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
@@ -5,7 +6,7 @@ import { type BookingEmailPayload, BookingFacts, formatSlot } from '../lifecycle
 import { example as confirmed } from './confirmed.tsx';
 
 export interface BookingChangedPayload extends BookingEmailPayload {
-  change: 'rescheduled' | 'avis';
+  change: BookingChange;
   /** The slot before a reschedule. */
   previous: { startsAt: string; endsAt: string } | null;
 }
@@ -28,7 +29,7 @@ export const render: EmailTemplateModule<BookingChangedPayload>['render'] = (p, 
       footer={t('booking.email.footer')}
     >
       <Text>
-        {p.change === 'rescheduled'
+        {p.change === BookingChange.rescheduled
           ? t('booking.email.changed.rescheduled', { site: p.site.name })
           : t('booking.email.changed.avis', { site: p.site.name })}
       </Text>
@@ -45,6 +46,6 @@ export const render: EmailTemplateModule<BookingChangedPayload>['render'] = (p, 
 
 export const example: BookingChangedPayload = {
   ...confirmed,
-  change: 'rescheduled',
+  change: BookingChange.rescheduled,
   previous: { startsAt: '2026-11-02T07:00:00.000Z', endsAt: '2026-11-02T08:00:00.000Z' },
 };

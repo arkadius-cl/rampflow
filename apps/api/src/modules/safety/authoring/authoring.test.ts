@@ -1,5 +1,4 @@
-import { DRIVER_LOCALES } from '@rampflow/shared';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type {
   Instruction,
@@ -7,7 +6,17 @@ import type {
   VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { isAcknowledgementValid } from '@rampflow/shared/modules/safety/validity';
-import { DriverLocale, PackageId, TenantRole } from '@rampflow/shared/values';
+import { BlockKind, VersionStatus } from '@rampflow/shared/modules/safety/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  ErrorCode,
+  PackageId,
+  ScopeParty,
+  TenantActorKind,
+  TenantRole,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -57,13 +66,17 @@ const publish = (side: WorldSide, versionId: string, materialChange = false) =>
   admin(side).post(`${base(side)}/versions/${versionId}/publish`, { body: { materialChange } });
 
 const tenantScope = (side: WorldSide): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: side.users.dispatcher.id, role: TenantRole.dispatcher },
+  actor: {
+    kind: TenantActorKind.user,
+    userId: side.users.dispatcher.id,
+    role: TenantRole.dispatcher,
+  },
 });
 const driverScope = (side: WorldSide): Scope => ({
-  party: ActorParty.driver,
+  party: ScopeParty.driver,
   tenantId: side.tenantId,
   bookingId: side.bookings.own.id,
   channel: DriverChannel.link,
@@ -79,18 +92,18 @@ describe('SF-01 author a briefing', () => {
     expect(instruction.draft?.version).toBe(1);
     const draft = await draftOf(w.A, instruction);
     expect(draft.status).toBe('draft');
-    expect(draft.content.map((c) => c.locale)).toEqual([...DRIVER_LOCALES]);
+    expect(draft.content.map((c) => c.locale)).toEqual([...values(DriverLocale)]);
     const flags = Object.fromEntries(draft.content.map((c) => [c.locale, c.translation]));
     expect(flags).toEqual(
       Object.fromEntries(
-        DRIVER_LOCALES.map((l) => [
+        values(DriverLocale).map((l) => [
           l,
           l === DriverLocale.de || l === DriverLocale.en ? 'source' : 'machine',
         ]),
       ),
     );
     for (const c of draft.content) {
-      expect(c.blocks.filter((b) => b.kind === 'pictogram')).toHaveLength(6);
+      expect(c.blocks.filter((b) => b.kind === BlockKind.pictogram)).toHaveLength(6);
       expect(c.questions).toHaveLength(3);
       expect(c.contentHash).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -112,15 +125,15 @@ describe('SF-01 author a briefing', () => {
     });
     expect(await json(edit, 409)).toEqual({
       error: {
-        code: 'conflict',
+        code: ErrorCode.conflict,
         message: 'Version is published',
-        details: { reason: 'invalid_transition', status: 'published' },
+        details: { reason: ConflictReason.invalid_transition, status: VersionStatus.published },
       },
     });
 
     const opened = await admin(w.A).post(`${base(w.A)}/instructions/${instruction.id}/versions`);
     const v2 = await json<VersionDetail>(opened, 201);
-    expect(v2).toMatchObject({ version: 2, status: 'draft', materialChange: false });
+    expect(v2).toMatchObject({ version: 2, status: VersionStatus.draft, materialChange: false });
     const published = await json<VersionDetail>(
       await admin(w.A).get(`${base(w.A)}/versions/${v1}`),
       200,
@@ -257,8 +270,8 @@ describe('SF-02 quiz', () => {
     await json(await put('hu', []), 200);
     expect(await json(await publish(w.A, draftId), 409)).toMatchObject({
       error: {
-        code: 'conflict',
-        details: { reason: 'quiz_incomplete', locales: ['ro', 'hu'], min: 3, max: 5 },
+        code: ErrorCode.conflict,
+        details: { reason: ConflictReason.quiz_incomplete, locales: ['ro', 'hu'], min: 3, max: 5 },
       },
     });
 
@@ -285,7 +298,7 @@ describe('SF-02 quiz', () => {
       body: contentFixture(),
     });
     expect(await json(res, 403)).toMatchObject({
-      error: { code: 'entitlement_required', details: { key: 'safety.quiz' } },
+      error: { code: ErrorCode.entitlement_required, details: { key: 'safety.quiz' } },
     });
     await json(
       await admin(w.B).put(`${base(w.B)}/versions/${draftId}/content/en`, {
@@ -307,7 +320,7 @@ describe('safety.max_briefing_templates', () => {
     });
     expect(await json(third, 409)).toEqual({
       error: {
-        code: 'limit_reached',
+        code: ErrorCode.limit_reached,
         message: 'Limit safety.max_briefing_templates of 2 reached',
         details: { key: 'safety.max_briefing_templates', limit: 2 },
       },
@@ -360,11 +373,11 @@ describe('recordAcknowledgement', () => {
     const uk = draft.content.find((c) => c.locale === DriverLocale.uk);
     expect(row).toMatchObject({
       versionId: draft.id,
-      locale: 'uk',
+      locale: DriverLocale.uk,
       statementShown: uk?.statement,
       score: 67,
       attempts: 2,
-      channel: 'link',
+      channel: DriverChannel.link,
       expiresAt: null,
     });
     expect(row?.contentHash.toString('hex')).toBe(uk?.contentHash);
@@ -379,8 +392,8 @@ describe('recordAcknowledgement', () => {
             acknowledgementId: ack.id,
             tenantId: side.tenantId,
             siteId: own.siteId,
-            via: 'completed',
-            linkedByParty: 'driver',
+            via: LinkVia.completed,
+            linkedByParty: ActorParty.driver,
           })
           .onConflictDoUpdate({
             target: [bookingAcknowledgement.bookingId, bookingAcknowledgement.instructionId],

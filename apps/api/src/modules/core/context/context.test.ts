@@ -1,10 +1,11 @@
 import { catalog, permissionsFor } from '@rampflow/shared';
+import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type {
   CarrierContext,
   PlatformContext,
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
-import { PackageId, Role } from '@rampflow/shared/values';
+import { Feature, Limit, PackageId, Role, SettingSource } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -34,19 +35,25 @@ describe('GET /api/t/:orgId/context', () => {
     expect(ctx.org.id).toBe(w.A.tenantId);
     expect(ctx.role).toBe('dispatcher');
     expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, Role.dispatcher));
-    expect(ctx.entitlements.limits['core.max_sites']).toBe(5);
-    expect(ctx.entitlements.features['safety.quiz']).toBe(true);
+    expect(ctx.entitlements.limits[Limit.core.max_sites]).toBe(5);
+    expect(ctx.entitlements.features[Feature.safety.quiz]).toBe(true);
     expect(ctx.sites.map((s) => s.id).sort()).toEqual(w.A.sites.map((s) => s.id).sort());
     const site = ctx.settings[w.A.sites[0].id];
-    expect(site?.['booking.slot_grid_minutes']).toEqual({ value: 30, source: 'default' });
-    expect(site?.['safety.quiz_pass_percent']).toEqual({ value: 100, source: 'default' });
+    expect(site?.['booking.slot_grid_minutes']).toEqual({
+      value: 30,
+      source: SettingSource.default,
+    });
+    expect(site?.['safety.quiz_pass_percent']).toEqual({
+      value: 100,
+      source: SettingSource.default,
+    });
   });
 
   it('leaves out settings whose entitlement is off (start has no quiz)', async () => {
     const ctx = await json<TenantContext>(
       await as(app, w.B.users.tenant_admin).get(`/api/t/${w.B.tenantId}/context`),
     );
-    expect(ctx.entitlements.features['safety.quiz']).toBe(false);
+    expect(ctx.entitlements.features[Feature.safety.quiz]).toBe(false);
     const site = ctx.settings[w.B.sites[0].id] ?? {};
     expect(Object.keys(site)).not.toContain('safety.quiz_pass_percent');
     expect(Object.keys(site)).toContain('booking.horizon_days');
@@ -75,7 +82,7 @@ describe('GET /api/c/:orgId/context', () => {
     const tenant = (await world()).A;
     await ownerDb()
       .update(tenantCarrierLink)
-      .set({ status: 'deactivated', deactivatedAt: new Date() })
+      .set({ status: CarrierLinkStatus.deactivated, deactivatedAt: new Date() })
       .where(
         and(
           eq(tenantCarrierLink.tenantId, tenant.tenantId),

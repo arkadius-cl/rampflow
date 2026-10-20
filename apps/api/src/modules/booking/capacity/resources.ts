@@ -4,8 +4,8 @@ import type {
   ResourceView,
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { Direction, DockBookingKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { ConflictReason, ErrorCode, Feature, values } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DockId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -13,18 +13,13 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { dock } from '../../core/schema.ts';
 import { requireSite } from '../../core/sites/sites.ts';
 import { conflictOnUnique, invalid, type TenantRequest } from '../../core/sites/tenant.ts';
-import {
-  bookableResource,
-  DIRECTIONS,
-  type ResourceId,
-  resourceDock,
-} from '../schema.resources.ts';
+import { bookableResource, type ResourceId, resourceDock } from '../schema.resources.ts';
 
 type ResourceRow = typeof bookableResource.$inferSelect;
 
 /** Pools need `booking.pools` to be created or changed; existing pools keep offering (ADR-0004). */
 function requirePools(req: TenantRequest, kind: ResourceRow['kind']): void {
-  if (kind === ResourceKind.pool && !req.entitlements.features['booking.pools']) {
+  if (kind === ResourceKind.pool && !req.entitlements.features[Feature.booking.pools]) {
     throw new ApiError(ErrorCode.entitlement_required, 'booking.pools is off', {
       key: 'booking.pools',
     });
@@ -230,7 +225,7 @@ export async function bookDock(
     .where(and(eq(resourceDock.tenantId, req.tenantId), eq(resourceDock.dockId, dockId)));
   const current = held?.bookable_resource;
   const pool =
-    input.as === ResourceKind.pool
+    input.as === DockBookingKind.pool
       ? await requireResource(tx, req.tenantId, input.resourceId as ResourceId)
       : null;
   if (pool && (pool.kind !== ResourceKind.pool || pool.siteId !== target.siteId)) {
@@ -239,12 +234,12 @@ export async function bookDock(
   if (current) requirePools(req, current.kind);
   if (pool) requirePools(req, pool.kind);
 
-  if (input.as === ResourceKind.single && current?.kind === ResourceKind.single) {
+  if (input.as === DockBookingKind.single && current?.kind === ResourceKind.single) {
     const directions = input.directions ?? current.directions;
     return updateResource(tx, req, current.id, { directions, active: true });
   }
   if (pool && current?.id === pool.id) return view(pool, await dockIdsOfOne(tx, pool));
-  if (input.as === 'none' && !current) return null;
+  if (input.as === DockBookingKind.none && !current) return null;
 
   if (current) {
     await tx
@@ -259,7 +254,7 @@ export async function bookDock(
         );
     }
   }
-  if (input.as === 'none') return null;
+  if (input.as === DockBookingKind.none) return null;
   const resource =
     input.as === ResourceKind.single
       ? await singleFor(tx, req, { ...target, directions: input.directions })
@@ -317,10 +312,10 @@ async function singleFor(
     : await tx
         .insert(bookableResource)
         .values({
-          directions: d.directions ?? [...DIRECTIONS],
+          directions: d.directions ?? [...values(Direction)],
           tenantId: req.tenantId,
           siteId: d.siteId,
-          kind: 'single',
+          kind: ResourceKind.single,
           name: d.code,
         })
         .returning();

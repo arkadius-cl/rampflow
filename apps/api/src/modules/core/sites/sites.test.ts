@@ -1,5 +1,6 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
-import { PackageId } from '@rampflow/shared/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { ConflictReason, ErrorCode, PackageId } from '@rampflow/shared/values';
 import { and, count, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -56,7 +57,7 @@ describe('MD-01 sites', () => {
     const res = await admin(w.A).post(sitesOf(w.A), { body: garching });
     expect(res.status).toBe(409);
     expect(await error(res)).toMatchObject({
-      code: 'limit_reached',
+      code: ErrorCode.limit_reached,
       details: { key: 'core.max_sites', limit: 1 },
     });
     const off = await admin(w.A).patch(`${sitesOf(w.A)}/${w.A.sites[1].id}`, {
@@ -84,6 +85,7 @@ describe('MD-01 sites', () => {
       'Palletised',
       'Parcel / van',
     ]);
+    // biome-ignore lint/plugin: a load type name, free text
     const palletised = types.find((t) => t.name.en === 'Palletised');
     if (!palletised) throw new Error('no Palletised');
     const withRules = { features: { 'booking.duration_rules': true } } as never;
@@ -113,8 +115,8 @@ describe('MD-02 halls and docks', () => {
   const dockBody = (hallId: string, code: string, status = 'active') => ({
     hallId,
     code,
-    doorType: 'ground_level',
-    temperatureZone: 'frozen',
+    doorType: DoorType.ground_level,
+    temperatureZone: TemperatureZone.frozen,
     adrAllowed: true,
     status,
   });
@@ -125,14 +127,15 @@ describe('MD-02 halls and docks', () => {
     const dup = await admin(w.B).post(docks(s0), { body: dockBody(s0.hallId, 'D-01') });
     expect(dup.status).toBe(409);
     expect(await error(dup)).toMatchObject({
-      code: 'conflict',
-      details: { reason: 'duplicate_code' },
+      code: ErrorCode.conflict,
+      details: { reason: ConflictReason.duplicate_code },
     });
     const other = await admin(w.B).post(docks(s1), { body: dockBody(s1.hallId, 'D-77') });
     expect(other.status).toBe(201);
     const same = await admin(w.B).post(docks(s0), { body: dockBody(s0.hallId, 'D-77') });
     expect(same.status).toBe(201);
     const rename = await admin(w.B).patch(`${docks(s0)}/${s0.dockIds[0]}`, {
+      // biome-ignore lint/plugin: a dock code, free text
       body: { code: 'D-02' },
     });
     expect(rename.status).toBe(409);
@@ -164,7 +167,7 @@ describe('MD-02 halls and docks', () => {
     const over = await admin(w.A).post(url, { body: dockBody(s0.hallId, 'A-9') });
     expect(over.status).toBe(409);
     expect(await error(over)).toMatchObject({
-      code: 'limit_reached',
+      code: ErrorCode.limit_reached,
       details: { key: 'core.max_docks' },
     });
     expect(
@@ -174,17 +177,22 @@ describe('MD-02 halls and docks', () => {
     const docks = (await (await admin(w.A).get(url)).json()) as {
       items: { id: string; code: string }[];
     };
+    // biome-ignore lint/plugin: a dock code, free text
     const inactive = docks.items.find((d) => d.code === 'X-1');
     const reactivate = await admin(w.A).patch(`${url}/${inactive?.id}`, {
-      body: { status: 'active' },
+      body: { status: DockStatus.active },
     });
     expect(reactivate.status).toBe(409);
     expect(
-      (await admin(w.A).patch(`${url}/${s0.dockIds[0]}`, { body: { status: 'inactive' } })).status,
+      (await admin(w.A).patch(`${url}/${s0.dockIds[0]}`, { body: { status: DockStatus.inactive } }))
+        .status,
     ).toBe(200);
     expect(
-      (await admin(w.A).patch(`${url}/${inactive?.id}`, { body: { status: 'maintenance' } }))
-        .status,
+      (
+        await admin(w.A).patch(`${url}/${inactive?.id}`, {
+          body: { status: DockStatus.maintenance },
+        })
+      ).status,
     ).toBe(200);
     const list = (await (await admin(w.A).get(sitesOf(w.A))).json()) as {
       items: { active: boolean }[];

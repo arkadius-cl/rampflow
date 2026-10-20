@@ -12,8 +12,8 @@ import {
   RescheduleBooking,
   SendDriverLink,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { CreatedParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, Feature, Permission, StoryId } from '@rampflow/shared/values';
+import { CommandName, CreateMode } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Feature, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type SiteId } from '../../../db/ids.ts';
@@ -59,7 +59,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BoardView>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('query', BoardQuery),
+    validate(ValidationTarget.query, BoardQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const q = c.req.valid('query');
@@ -81,7 +81,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingPage>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('query', BookingListQuery),
+    validate(ValidationTarget.query, BookingListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       return c.json(
@@ -99,7 +99,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('query', CarrierOptionsQuery),
+    validate(ValidationTarget.query, CarrierOptionsQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const items = await carrierOptions(ctx.tx, ctx.tenantId, c.req.valid('query').q);
@@ -115,7 +115,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingView>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => c.json(await view(c, c.req.valid('param').bookingId), 200),
   )
   .get(
@@ -127,8 +127,8 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.view),
-    validate('param', BookingParam),
-    validate('query', EventListQuery),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.query, EventListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const page = await loadBookingEvents(
@@ -150,11 +150,11 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingView>(), 201: type<BookingView>() },
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('json', CreateStaffBooking),
+    validate(ValidationTarget.json, CreateStaffBooking),
     async (c) => {
       const body = c.req.valid('json');
       const result = await createBooking(bookingContext(c), {
-        mode: CreatedParty.staff,
+        mode: CreateMode.staff,
         clientRequestId: body.clientRequestId,
         siteId: body.siteId as SiteId,
         resourceId: body.resourceId as ResourceId | undefined,
@@ -177,13 +177,13 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingView>() },
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('param', BookingParam),
-    validate('json', RescheduleBooking),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, RescheduleBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'reschedule',
+        type: CommandName.reschedule,
         startsAt: body.startsAt,
         resourceId: body.resourceId,
         version: body.version,
@@ -202,13 +202,13 @@ export const tenant = new Hono<AppEnv>()
     }),
     requirePermission(Permission.booking.staff_book),
     requireEntitlement(Feature.avis.basic),
-    validate('param', BookingParam),
-    validate('json', PutAvis),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, PutAvis),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'update_avis',
+        type: CommandName.update_avis,
         avis: body.avis,
         version: body.version,
       });
@@ -224,12 +224,12 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingView>() },
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('param', BookingParam),
-    validate('json', CancelBooking),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CancelBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const reason = c.req.valid('json').reason ?? null;
-      await transitionBooking(bookingContext(c), bookingId, { type: 'cancel', reason });
+      await transitionBooking(bookingContext(c), bookingId, { type: CommandName.cancel, reason });
       return c.json(await view(c, bookingId), 200);
     },
   )
@@ -242,7 +242,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => c.json(await driverLink(c, c.req.valid('param').bookingId), 200),
   )
   .post(
@@ -254,10 +254,12 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     requirePermission(Permission.booking.staff_book),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
-      await transitionBooking(bookingContext(c), bookingId, { type: 'regenerate_driver_link' });
+      await transitionBooking(bookingContext(c), bookingId, {
+        type: CommandName.regenerate_driver_link,
+      });
       return c.json(await driverLink(c, bookingId), 200);
     },
   )
@@ -271,12 +273,12 @@ export const tenant = new Hono<AppEnv>()
     }),
     requirePermission(Permission.booking.staff_book),
     requireEntitlement(Feature.notify.email),
-    validate('param', BookingParam),
-    validate('json', SendDriverLink),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, SendDriverLink),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'send_driver_link',
+        type: CommandName.send_driver_link,
         ...c.req.valid('json'),
       });
       return c.body(null, 202);

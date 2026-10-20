@@ -34,7 +34,7 @@ type RegistrationRow = typeof carrierRegistration.$inferSelect;
 type RegistrationId = RegistrationRow['id'];
 
 async function withinLimit(
-  bucket: 'registration_request' | 'registration_ip',
+  bucket: typeof RateLimitBucket.registration_request | typeof RateLimitBucket.registration_ip,
   key: string,
   now: Date,
 ): Promise<boolean> {
@@ -89,7 +89,7 @@ export async function submitRegistration(
     email: body.email,
     publicLinkSlug: o.slug,
     locale: body.locale ?? null,
-    status: 'pending_email',
+    status: RegistrationStatus.pending_email,
     tokenHash: tokenHashFor(TokenPurpose.registration, id),
     expiresAt: new Date(now.getTime() + REGISTRATION_TOKEN_MS),
   });
@@ -144,7 +144,9 @@ export async function listRegistrations(tx: Tx, tenantId: TenantId): Promise<Reg
   return rows.map((r) => view(r.registration, r.siteName, r.carrierName));
 }
 
-type Decision = { status: 'approved' } | { status: 'rejected'; reason: string };
+type Decision =
+  | { status: typeof RegistrationStatus.approved }
+  | { status: typeof RegistrationStatus.rejected; reason: string };
 
 /**
  * TN-04: approving links the carrier (reactivating a deactivated link, since the tenant decides)

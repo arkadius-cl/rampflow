@@ -1,5 +1,5 @@
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
-import { values } from '@rampflow/shared/values';
+import { PolicyCommand, ScopeParty, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { check, foreignKey, index, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
@@ -48,7 +48,7 @@ export const driverAccess = pgTable(
     index('driver_access_carrier_id_idx').on(t.carrierId),
     check('driver_access_channel_check', oneOf(t.channel, values(DriverChannel))),
     ...carrierOwnedPolicies(t, { update: true, driver: true }),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );

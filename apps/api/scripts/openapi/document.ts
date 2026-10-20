@@ -1,4 +1,11 @@
-import { ErrorCode, OrgKind } from '@rampflow/shared/values';
+import {
+  ApiParty,
+  BodyKind,
+  ErrorCode,
+  GuardKind,
+  JsonSchemaType,
+  SecuritySchemeType,
+} from '@rampflow/shared/values';
 import type { Guard } from '../../src/kernel/describe.ts';
 import { DEFAULT_MESSAGE, ERROR_STATUS } from '../../src/kernel/errors.ts';
 import { DRIVER_COOKIE, SESSION_COOKIE } from '../../src/kernel/scopes.ts';
@@ -21,12 +28,12 @@ export interface Operation {
 type Doc = Record<string, unknown>;
 
 const SESSION_PARTIES = new Set<Party>([
-  'user',
-  OrgKind.platform,
-  OrgKind.tenant,
-  OrgKind.carrier,
-  'carrier_at_tenant',
-  'driver',
+  ApiParty.user,
+  ApiParty.platform,
+  ApiParty.tenant,
+  ApiParty.carrier,
+  ApiParty.carrier_at_tenant,
+  ApiParty.driver,
 ]);
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -79,9 +86,11 @@ const ERROR_RESPONSES: Record<number, { name: string; code: ErrorCode; descripti
 };
 
 const permissions = (guards: readonly Guard[]) =>
-  guards.flatMap((g) => (g.kind === 'permission' ? [g.key] : []));
+  guards.flatMap((g) => (g.kind === GuardKind.permission ? [g.key] : []));
 const entitlements = (guards: readonly Guard[]) =>
-  guards.flatMap((g) => (g.kind === 'module' ? [g.id] : g.kind === 'entitlement' ? [g.key] : []));
+  guards.flatMap((g) =>
+    g.kind === GuardKind.module ? [g.id] : g.kind === GuardKind.entitlement ? [g.key] : [],
+  );
 
 /** `booking.capacity.listResources` reads "List resources". */
 export function summaryOf(id: string): string {
@@ -90,8 +99,8 @@ export function summaryOf(id: string): string {
 }
 
 function security(party: Party) {
-  if (party === 'anonymous' || party === 'public') return { security: [] };
-  if (party === 'driver') return { security: [{ driver: [] }] };
+  if (party === ApiParty.anonymous || party === ApiParty.public) return { security: [] };
+  if (party === ApiParty.driver) return { security: [{ driver: [] }] };
   return {};
 }
 
@@ -103,8 +112,8 @@ function operation(op: Operation, statics: StaticResult, summary: string): Doc {
   const statuses = new Set([...Object.keys(e.meta.responses).map(Number), ...bodies.keys()]);
   for (const status of [...statuses].sort((a, b) => a - b)) {
     const declared = e.meta.responses[status as keyof typeof e.meta.responses];
-    if (declared?.kind === 'empty') responses[status] = { description: 'No body.' };
-    else if (declared?.kind === 'file') {
+    if (declared?.kind === BodyKind.empty) responses[status] = { description: 'No body.' };
+    else if (declared?.kind === BodyKind.file) {
       const content = Object.fromEntries(
         declared.mediaTypes.map((type) => [type, { schema: { contentMediaType: type } }]),
       );
@@ -138,16 +147,19 @@ function operation(op: Operation, statics: StaticResult, summary: string): Doc {
 }
 
 const ERROR_SCHEMA: JsonSchema = {
-  type: 'object',
+  type: JsonSchemaType.object,
   required: ['error'],
   properties: {
     error: {
-      type: 'object',
+      type: JsonSchemaType.object,
       required: ['code', 'message'],
       properties: {
-        code: { type: 'string', enum: (Object.keys(ERROR_STATUS) as ErrorCode[]).sort(byText) },
-        message: { type: 'string' },
-        details: { type: 'object', additionalProperties: {} },
+        code: {
+          type: JsonSchemaType.string,
+          enum: (Object.keys(ERROR_STATUS) as ErrorCode[]).sort(byText),
+        },
+        message: { type: JsonSchemaType.string },
+        details: { type: JsonSchemaType.object, additionalProperties: {} },
       },
     },
   },
@@ -241,8 +253,8 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
         ]),
       ),
       securitySchemes: {
-        session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE },
-        driver: { type: 'apiKey', in: 'cookie', name: DRIVER_COOKIE },
+        session: { type: SecuritySchemeType.apiKey, in: 'cookie', name: SESSION_COOKIE },
+        driver: { type: SecuritySchemeType.apiKey, in: 'cookie', name: DRIVER_COOKIE },
       },
     },
   };

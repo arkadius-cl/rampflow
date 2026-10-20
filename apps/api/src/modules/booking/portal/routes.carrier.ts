@@ -5,8 +5,13 @@ import {
   type PortalDriverLink,
   type PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, Permission, StoryId } from '@rampflow/shared/values';
+import {
+  ErrorCode,
+  Permission,
+  ScopeParty,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type TenantId } from '../../../db/ids.ts';
@@ -22,7 +27,7 @@ export const BookingParam = z.object({ bookingId: idSchema<'booking'>() });
 
 function carrierOf(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== ActorParty.carrier) throw new Error(`portal read under party ${scope.party}`);
+  if (scope.party !== ScopeParty.carrier) throw new Error(`portal read under party ${scope.party}`);
   return scope;
 }
 
@@ -48,7 +53,7 @@ export const carrier = new Hono<AppEnv>()
       responses: { 200: type<PortalBookingPage>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('query', PortalBookingListQuery),
+    validate(ValidationTarget.query, PortalBookingListQuery),
     async (c) => {
       const page = await listPortalBookings(
         c.var.db,
@@ -68,13 +73,13 @@ export const carrier = new Hono<AppEnv>()
       responses: { 200: type<PortalBookingView>() },
     }),
     requirePermission(Permission.booking.view),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const scope = carrierOf(c);
       const { db, clock } = c.var;
       // Settings and entitlements of the booking's tenant, as the carrier acting there sees them.
       const atTenant = (tenantId: TenantId) =>
-        loadAccess(db, { ...scope, party: 'carrier_at_tenant', tenantId }, clock);
+        loadAccess(db, { ...scope, party: ScopeParty.carrier_at_tenant, tenantId }, clock);
       const view = await loadPortalBooking(
         db,
         scope.carrierId,
@@ -94,7 +99,7 @@ export const carrier = new Hono<AppEnv>()
       responses: { 200: type<PortalDriverLink>() },
     }),
     requirePermission(Permission.booking.book),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await requireOwnBooking(c.var.db, carrierOf(c).carrierId, bookingId);
@@ -111,7 +116,7 @@ export const carrier = new Hono<AppEnv>()
       responses: { 200: type<PortalRebook>() },
     }),
     requirePermission(Permission.booking.book),
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       return c.json(await rebookOf(c.var.db, carrierOf(c).carrierId, bookingId), 200);

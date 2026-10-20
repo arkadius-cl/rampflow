@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DriverLocale } from '../values/locales.ts';
+import { WallTimeFold } from '../values/time.ts';
 import {
   addDays,
   formatSiteTime,
@@ -94,7 +95,7 @@ describe('durations across the fold', () => {
 describe('a Bucharest site viewed from Berlin', () => {
   it('folds 03:00 to 04:00 Bucharest time, labels EEST and EET, hints Berlin an hour earlier', () => {
     const grid = slotGrid(d('2026-10-25'), BUCHAREST, 30);
-    expect(grid.filter((s) => s.fold === 'earlier').map((s) => s.wallTime)).toEqual([
+    expect(grid.filter((s) => s.fold === WallTimeFold.earlier).map((s) => s.wallTime)).toEqual([
       '03:00',
       '03:30',
     ]);

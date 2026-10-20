@@ -1,12 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
+  ErrorCode,
   Feature,
   Limit,
   Module,
   PackageId,
   Permission,
+  PromiseStatus,
+  Role,
+  ScopeParty,
   Setting,
+  SettingSource,
+  TenantActorKind,
   TenantRole,
 } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
@@ -39,12 +44,12 @@ beforeAll(async () => {
 
 const tenantOf = (
   side: World['A'],
-  userKey: 'dispatcher' | 'tenant_admin' = TenantRole.dispatcher,
+  userKey: typeof TenantRole.dispatcher | typeof TenantRole.tenant_admin = TenantRole.dispatcher,
 ): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: side.users[userKey].id, role: userKey },
+  actor: { kind: TenantActorKind.user, userId: side.users[userKey].id, role: userKey },
 });
 
 const override = (tenantId: World['A']['tenantId'], key: string, value: unknown) =>
@@ -85,7 +90,7 @@ describe('access middleware', () => {
     );
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({
-      error: { code: 'forbidden', message: 'Missing yard.gate' },
+      error: { code: ErrorCode.forbidden, message: 'Missing yard.gate' },
     });
     const ok = await as(gatedApp(), w.A.users.gate_operator).get(
       `/api/t/${w.A.tenantId}/yard/gate`,
@@ -100,7 +105,7 @@ describe('access middleware', () => {
     );
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
-      error: { code: 'entitlement_required', details: { key: 'yard.call_to_dock' } },
+      error: { code: ErrorCode.entitlement_required, details: { key: 'yard.call_to_dock' } },
     });
   });
 
@@ -111,7 +116,7 @@ describe('access middleware', () => {
     );
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
-      error: { code: 'entitlement_required', details: { key: 'yard.checkin_qr' } },
+      error: { code: ErrorCode.entitlement_required, details: { key: 'yard.checkin_qr' } },
     });
     // report depends on yard: its blocking feature is yard's enabling feature.
     const report = await as(gatedApp(), w.B.users.dispatcher).get(`/api/t/${w.B.tenantId}/report`);
@@ -142,7 +147,7 @@ describe('loadAccess', () => {
     const access = await withScope(tenantOf(w.B), (tx) =>
       loadAccess(tx, tenantOf(w.B), systemClock),
     );
-    expect(access.entitlements?.limits['core.max_sites']).toBeNull();
+    expect(access.entitlements?.limits[Limit.core.max_sites]).toBeNull();
     expect(access.entitlements?.sources['core.max_sites']).toBe('override');
     expect(
       await withScope(tenantOf(w.B), (tx) =>
@@ -150,7 +155,7 @@ describe('loadAccess', () => {
           a.setting(Setting.privacy.notice_url, null),
         ),
       ),
-    ).toEqual({ value: null, source: 'tenant' });
+    ).toEqual({ value: null, source: SettingSource.tenant });
   });
 
   it('resolves a site value over the tenant value', async () => {
@@ -180,8 +185,8 @@ describe('loadAccess', () => {
       ];
     });
     expect(resolved).toEqual([
-      { value: 25, source: 'site' },
-      { value: 20, source: 'tenant' },
+      { value: 25, source: SettingSource.site },
+      { value: 20, source: SettingSource.tenant },
     ]);
   });
 });
@@ -216,16 +221,19 @@ describe('withinLimit', () => {
           orgId: tenantId,
           orgKind: 'tenant',
           email: `limit-${randomUUID()}@access.test`,
-          role: 'dispatcher',
+          role: Role.dispatcher,
           tokenHash: Buffer.from(randomUUID()),
           expiresAt: new Date(Date.now() + 3600_000),
         });
       });
     const results = await Promise.allSettled([invite(), invite()]);
-    expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
-    const rejected = results.find((r) => r.status === 'rejected');
-    expect(rejected?.status === 'rejected' && rejected.reason).toMatchObject({
-      code: 'limit_reached',
+    expect(results.map((r) => r.status).sort()).toEqual([
+      PromiseStatus.fulfilled,
+      PromiseStatus.rejected,
+    ]);
+    const rejected = results.find((r) => r.status === PromiseStatus.rejected);
+    expect(rejected?.status === PromiseStatus.rejected && rejected.reason).toMatchObject({
+      code: ErrorCode.limit_reached,
       details: { key: 'core.max_internal_users', limit: before + 1 },
     });
     expect(await withScope(tenantOf(w.A, TenantRole.tenant_admin), countStaff)).toBe(before + 1);

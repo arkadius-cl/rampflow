@@ -13,7 +13,14 @@ import {
   type SettingsView,
 } from '@rampflow/shared/modules/core/api.settings';
 import type { InvitationView } from '@rampflow/shared/modules/core/api.staff';
-import { OrgKind, Permission, Setting, StoryId } from '@rampflow/shared/values';
+import {
+  Permission,
+  ScopeParty,
+  Setting,
+  SettingScope,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import * as z from 'zod';
@@ -39,11 +46,11 @@ const TenantParam = z.object({ tenantId: idSchema<'tenant'>() });
 const OverrideParam = TenantParam.extend({ key: z.string().min(1).max(100) });
 const KeyParam = z.object({ key: z.string().min(1).max(100) });
 
-const PLATFORM = { scope: 'platform' } as const;
+const PLATFORM = { scope: SettingScope.platform } as const;
 
 function platformUser(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== OrgKind.platform)
+  if (scope.party !== ScopeParty.platform)
     throw new Error(`platform route under party ${scope.party}`);
   return scope.userId;
 }
@@ -79,7 +86,7 @@ export const platform = new Hono<AppEnv>()
       responses: { 201: type<TenantDetail>() },
     }),
     tenants,
-    validate('json', CreateTenant),
+    validate(ValidationTarget.json, CreateTenant),
     async (c) => {
       const now = c.var.clock.now();
       const id = await createTenant(
@@ -100,7 +107,7 @@ export const platform = new Hono<AppEnv>()
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
-    validate('param', TenantParam),
+    validate(ValidationTarget.param, TenantParam),
     async (c) => {
       const { tenantId } = c.req.valid('param');
       return c.json(await tenantDetail(c.var.db, tenantId as TenantId, c.var.clock.now()), 200);
@@ -115,8 +122,8 @@ export const platform = new Hono<AppEnv>()
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
-    validate('param', TenantParam),
-    validate('json', UpdateTenant),
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, UpdateTenant),
     async (c) => {
       const tenantId = c.req.valid('param').tenantId as TenantId;
       const now = c.var.clock.now();
@@ -134,8 +141,8 @@ export const platform = new Hono<AppEnv>()
       responses: { 200: type<OverrideView>() },
     }),
     tenants,
-    validate('param', OverrideParam),
-    validate('json', PutOverride),
+    validate(ValidationTarget.param, OverrideParam),
+    validate(ValidationTarget.json, PutOverride),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       const view = await putOverride(
@@ -158,7 +165,7 @@ export const platform = new Hono<AppEnv>()
       responses: { 204: noBody },
     }),
     tenants,
-    validate('param', OverrideParam),
+    validate(ValidationTarget.param, OverrideParam),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       await deleteOverride(c.var.db, tenantId as TenantId, key);
@@ -175,8 +182,8 @@ export const platform = new Hono<AppEnv>()
       responses: { 201: type<InvitationView>() },
     }),
     tenants,
-    validate('param', TenantParam),
-    validate('json', InviteTenantAdmin),
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, InviteTenantAdmin),
     async (c) => {
       const now = c.var.clock.now();
       const row = await inviteTenantAdmin(
@@ -223,8 +230,8 @@ export const platform = new Hono<AppEnv>()
       responses: { 200: type<SettingEntry>() },
     }),
     settings,
-    validate('param', KeyParam),
-    validate('json', PutPlatformSetting),
+    validate(ValidationTarget.param, KeyParam),
+    validate(ValidationTarget.json, PutPlatformSetting),
     async (c) => {
       const entry = await writeSetting(
         c.var.db,
@@ -246,7 +253,7 @@ export const platform = new Hono<AppEnv>()
       responses: { 204: noBody },
     }),
     settings,
-    validate('param', KeyParam),
+    validate(ValidationTarget.param, KeyParam),
     async (c) => {
       await resetSetting(c.var.db, PLATFORM, c.req.valid('param').key);
       return c.body(null, 204);

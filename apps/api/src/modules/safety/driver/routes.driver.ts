@@ -7,7 +7,7 @@ import {
   type DriverBriefingContent,
   type DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
-import { Feature, StoryId } from '@rampflow/shared/values';
+import { Feature, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
@@ -48,8 +48,8 @@ export const driver = new Hono<AppEnv>()
         "`?locale=`; the published version in that locale, else en, else its first locale; `{ instructionId, version, locale, translation, title, blocks, questions, statement }`; questions without answers, and none while `safety.quiz` is off; 404 for an instruction that does not apply to the booking's site",
       responses: { 200: type<DriverBriefingContent>() },
     }),
-    validate('param', InstructionParam),
-    validate('query', BriefingQuery),
+    validate(ValidationTarget.param, InstructionParam),
+    validate(ValidationTarget.query, BriefingQuery),
     async (c) => {
       const { instructionId } = c.req.valid('param');
       const { locale } = c.req.valid('query');
@@ -66,8 +66,8 @@ export const driver = new Hono<AppEnv>()
       responses: { 200: type<AttemptResult>() },
     }),
     requireEntitlement(Feature.safety.quiz),
-    validate('param', InstructionParam),
-    validate('json', AttemptBody),
+    validate(ValidationTarget.param, InstructionParam),
+    validate(ValidationTarget.json, AttemptBody),
     async (c) => {
       const { instructionId } = c.req.valid('param');
       return c.json(
@@ -85,8 +85,8 @@ export const driver = new Hono<AppEnv>()
         "`{ locale, name, confirmed: true }` → 201 `{ expiresAt }`; with a quiz and `safety.quiz` on, 409 `conflict` reason `quiz_not_passed` until the latest attempt passed; stores the acknowledgement through `recordAcknowledgement` with the session's channel, links it (`link_acknowledgement` via `completed`); on a `link` session with an expiry it sets `rf_device` (one year, `Path=/api/driver`) when absent and upserts the `safety_pass`; a `staff` session (gate device, YD-02) never does",
       responses: { 201: type<AcknowledgementResult>() },
     }),
-    validate('param', InstructionParam),
-    validate('json', AcknowledgementBody),
+    validate(ValidationTarget.param, InstructionParam),
+    validate(ValidationTarget.json, AcknowledgementBody),
     async (c) => {
       const { instructionId } = c.req.valid('param');
       const result = await acknowledge(

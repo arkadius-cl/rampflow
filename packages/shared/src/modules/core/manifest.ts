@@ -1,4 +1,5 @@
 import { defineModule } from '../../contract/module.ts';
+import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
 
@@ -8,11 +9,11 @@ export const core = defineModule({
   enabledBy: null,
   locales: LocaleSet.staff,
   entitlements: {
-    'core.max_sites': { kind: 'limit' },
-    'core.max_docks': { kind: 'limit' },
-    'core.max_internal_users': { kind: 'limit' },
-    'core.sso': { kind: 'feature', reserved: true },
-    'core.audit_log': { kind: 'feature', reserved: true },
+    'core.max_sites': { kind: EntitlementKind.limit },
+    'core.max_docks': { kind: EntitlementKind.limit },
+    'core.max_internal_users': { kind: EntitlementKind.limit },
+    'core.sso': { kind: EntitlementKind.feature, reserved: true },
+    'core.audit_log': { kind: EntitlementKind.feature, reserved: true },
   },
   permissions: {
     'core.manage_tenants': { roles: [Role.platform_admin] },

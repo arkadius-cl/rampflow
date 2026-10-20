@@ -17,7 +17,15 @@ import type {
   TenantSummary,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
-import { ErrorCode, OrgKind, Role } from '@rampflow/shared/values';
+import {
+  EntitlementKind,
+  EntitlementSource,
+  ErrorCode,
+  OrgKind,
+  OverrideErrorCode,
+  Role,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -38,7 +46,7 @@ const ENTITLEMENT_DEFS = catalog.flatMap((m) =>
       key,
       module: m.id,
       kind: def.kind,
-      soft: def.kind === 'limit' && def.soft === true,
+      soft: def.kind === EntitlementKind.limit && def.soft === true,
     })),
 );
 
@@ -55,7 +63,9 @@ export interface NewTenant extends CreateTenant {
  */
 export async function createTenant(tx: Tx, input: NewTenant, now: Date): Promise<TenantId> {
   const id = randomUUID() as TenantId;
-  await tx.insert(org).values({ id: id as string as OrgId, kind: 'tenant', name: input.name });
+  await tx
+    .insert(org)
+    .values({ id: id as string as OrgId, kind: OrgKind.tenant, name: input.name });
   await tx.insert(tenantSubscription).values({
     tenantId: id,
     package: input.package,
@@ -125,7 +135,7 @@ function entitlementViews(pkg: PackageId, resolved: Entitlements): EntitlementVi
   return ENTITLEMENT_DEFS.map((d) => ({
     ...d,
     value: values[d.key] ?? null,
-    source: sources[d.key] ?? 'default',
+    source: sources[d.key] ?? EntitlementSource.default,
     ...(packaged[d.key] === undefined ? {} : { packageValue: packaged[d.key] }),
   }));
 }
@@ -202,10 +212,14 @@ export async function putOverride(
   const parsed = parseEntitlementOverride(catalog, { key, value: input.value, expiresAt });
   if (!parsed.ok) {
     const { error } = parsed;
-    if (error.code === 'invalid_value') {
+    if (error.code === OverrideErrorCode.invalid_value) {
       throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
         issues: [
-          { path: ['value'], code: 'invalid_type', message: `Expected a ${error.expected}` },
+          {
+            path: ['value'],
+            code: ZodIssueCode.invalid_type,
+            message: `Expected a ${error.expected}`,
+          },
         ],
       });
     }

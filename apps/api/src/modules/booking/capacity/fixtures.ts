@@ -1,12 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
-  ActorParty,
   BookingStatus,
+  CreatedParty,
   Direction,
+  DurationKind,
+  type LoadStatus,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { TimeZone } from '@rampflow/shared/time';
-import { TenantRole } from '@rampflow/shared/values';
+import { ScopeParty, TenantActorKind, TenantRole } from '@rampflow/shared/values';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import type { BookingId, DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -23,7 +26,7 @@ import {
   type ResourceId,
   resourceDock,
 } from '../schema.resources.ts';
-import { booking, type LOAD_STATUSES } from '../schema.ts';
+import { booking } from '../schema.ts';
 
 // Capacity fixtures, written as the owner: a site in a chosen zone with docks, one resource,
 // one fixed-duration load type linked to it, weekly hours, and bookings placed at instants.
@@ -41,7 +44,7 @@ export interface CapacitySiteOptions {
   zone?: string;
   subdivision?: string | null;
   docks?: number;
-  kind?: 'pool' | 'single';
+  kind?: ResourceKind;
   capacityCap?: number | null;
   dailyCap?: number | null;
   /** `[weekday, opens, closes]` site rows. */
@@ -79,9 +82,9 @@ export async function capacitySite(
       siteId,
       hallId,
       code: `D-${i + 1}`,
-      doorType: 'dock_leveler',
-      temperatureZone: 'ambient',
-      status: 'active',
+      doorType: DoorType.dock_leveler,
+      temperatureZone: TemperatureZone.ambient,
+      status: DockStatus.active,
     });
   }
   const kind = o.kind ?? ResourceKind.pool;
@@ -113,8 +116,8 @@ export async function capacitySite(
       tenantId,
       siteId,
       name: { de: 'Paletten', en: 'Pallets' },
-      direction: 'inbound',
-      duration: { kind: 'fixed', minutes: o.minutes ?? 60 },
+      direction: Direction.inbound,
+      duration: { kind: DurationKind.fixed, minutes: o.minutes ?? 60 },
       bufferMinutes: o.buffer ?? 0,
     })
     .returning();
@@ -137,7 +140,7 @@ export async function placeBooking(
   s: CapacitySite,
   startsAt: Date,
   minutes: number,
-  status: (typeof LOAD_STATUSES)[number] | 'cancelled' = BookingStatus.confirmed,
+  status: LoadStatus | 'cancelled' = BookingStatus.confirmed,
 ): Promise<BookingId> {
   const end = new Date(startsAt.getTime() + minutes * 60_000);
   const [row] = await ownerDb()
@@ -150,13 +153,13 @@ export async function placeBooking(
       carrierName: 'Spedition Test',
       code: randomBytes(4).toString('hex').toUpperCase(),
       status,
-      direction: 'inbound',
+      direction: Direction.inbound,
       startsAt,
       endsAt: end,
       blocksUntil: end,
       siteTimeZone: s.zone,
       loadUnits: 10,
-      createdParty: 'staff',
+      createdParty: CreatedParty.staff,
     })
     .returning({ id: booking.id });
   if (!row) throw new Error('no booking');
@@ -170,10 +173,14 @@ export function asTenantAdmin<T>(
   now = new Date('2026-10-19T08:00:00Z'),
 ): Promise<T> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId: side.tenantId,
     siteIds: 'all',
-    actor: { kind: 'user', userId: side.users.tenant_admin.id, role: TenantRole.tenant_admin },
+    actor: {
+      kind: TenantActorKind.user,
+      userId: side.users.tenant_admin.id,
+      role: TenantRole.tenant_admin,
+    },
   };
   return withScope(scope, async (tx) => fn(tx, await loadAccess(tx, scope, testClock(now))));
 }
