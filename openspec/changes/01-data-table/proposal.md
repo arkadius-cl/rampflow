@@ -29,7 +29,7 @@ None. `api-description` keeps its requirements: the tenant list gains a named re
 ## Impact
 
 - **Code:**
-  - Shared: new `packages/shared/src/contract/list.ts` (+ `list.test.ts`); new value sets per ADR-0019, `SortOrder` in `packages/shared/src/values/list.ts` and `TenantSortKey` in `packages/shared/src/modules/core/values.ts`; `packages/shared/src/modules/core/api.platform.ts` (`TenantListQuery`, `TenantList` extends `ListPage`, `TenantSummary.createdAt`).
+  - Shared: new `packages/shared/src/contract/list.ts` (+ `list.test.ts`); value sets per ADR-0019: `SortOrder` from 00 (`packages/shared/src/values/list.ts`) and the new `TenantSortKey` in `packages/shared/src/modules/core/values.ts`; `packages/shared/src/modules/core/api.platform.ts` (`TenantListQuery`, `TenantList` extends `ListPage`, `TenantSummary.createdAt`).
   - API: new `apps/api/src/kernel/list.ts` (+ `list.test.ts`); `apps/api/src/modules/core/platform/tenants.ts` (`listTenants` takes the query), `routes.platform.ts` (`validate('query', ...)`, `type<TenantList>()`), `platform.test.ts`; `apps/api/openapi.allowlist.json` loses `core.platform.listTenants`; `apps/api/openapi.gen.json` regenerated.
   - Web: new `apps/web/src/components/data-table/` (table, toolbar, faceted filter, column header, pagination, URL-state hook); `apps/web/src/routes/platform/tenants/index.tsx`; `apps/web/src/modules/core/queries.ts` (list query keyed by the search); `apps/web/src/modules/core/overrides.tsx` (invalidate the list prefix); `apps/web/src/routes/platform/tenants/$tenantId.tsx` (invalidate the list prefix, loader so an unknown id shows "no access").
   - Dependency: `@tanstack/react-table` 9.3.1 in `apps/web/package.json`, exact pin; `pnpm-lock.yaml`.
