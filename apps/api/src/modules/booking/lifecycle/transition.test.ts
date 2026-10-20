@@ -189,8 +189,7 @@ describe('idempotent repeats and the event log', () => {
     const updated = await withScope(scope, (tx) =>
       tx
         .update(bookingEvent)
-        // biome-ignore lint/plugin: an unknown event type on purpose
-        .set({ type: 'forged' })
+        .set({ type: BookingEventType.departed })
         .where(eq(bookingEvent.bookingId, b.id))
         .returning(),
     );

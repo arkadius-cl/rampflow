@@ -1,4 +1,4 @@
-import { LinkVia } from '@rampflow/shared/modules/booking/values';
+import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { TranslationState, VersionStatus } from '@rampflow/shared/modules/safety/values';
 import { PolicyCommand, PolicyReader, ScopeParty, values } from '@rampflow/shared/values';
@@ -214,7 +214,7 @@ export const bookingAcknowledgement = pgTable(
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     via: text('via', { enum: values(LinkVia) }).notNull(),
-    linkedByParty: text('linked_by_party').notNull(),
+    linkedByParty: text('linked_by_party', { enum: values(ActorParty) }).notNull(),
     linkedByUserId: uuid('linked_by_user_id').$type<UserId>(),
     createdAt: createdAt(),
   },
@@ -232,6 +232,10 @@ export const bookingAcknowledgement = pgTable(
     index('booking_acknowledgement_site_id_idx').on(t.siteId),
     index('booking_acknowledgement_acknowledgement_id_idx').on(t.acknowledgementId),
     check('booking_acknowledgement_via_check', oneOf(t.via, values(LinkVia))),
+    check(
+      'booking_acknowledgement_linked_by_party_check',
+      oneOf(t.linkedByParty, values(ActorParty)),
+    ),
     allow(ScopeParty.tenant, PolicyCommand.all, and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
     allow(
       ScopeParty.driver,

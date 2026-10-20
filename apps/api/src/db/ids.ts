@@ -53,9 +53,12 @@ export const instant = (name: string) =>
 
 export const createdAt = () => instant('created_at').notNull().defaultNow();
 
-/** `column in ('a', 'b')` for text enumerations, which stay `text` plus a check (data model). */
+/**
+ * `column in ('a', 'b')` for text enumerations, which stay `text` plus a check (data model). Dots
+ * and dashes pass for ids such as `booking.no-show`; neither can end the quoted literal.
+ */
 export function oneOf(column: AnyPgColumn, values: readonly string[]): SQL {
-  for (const v of values) if (!/^[a-z0-9_]+$/.test(v)) throw new Error(`Bad enum value ${v}`);
+  for (const v of values) if (!/^[a-z0-9_.-]+$/.test(v)) throw new Error(`Bad enum value ${v}`);
   return sql`${column} in (${sql.raw(values.map((v) => `'${v}'`).join(', '))})`;
 }
 

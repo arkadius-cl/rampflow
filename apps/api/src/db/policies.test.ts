@@ -3,6 +3,7 @@ import { BookingEventType, BookingStatus } from '@rampflow/shared/modules/bookin
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import {
   CarrierRole,
+  EmailTemplate,
   OrgKind,
   Role,
   ScopeParty,
@@ -186,7 +187,7 @@ describe('carrier company creation', () => {
 describe('outbox inserts', () => {
   const row = (tenantId: TenantId | null) => ({
     tenantId,
-    template: 'core.probe',
+    template: EmailTemplate.core_magic_link,
     toEmail: `${randomUUID()}@policies.test`,
     locale: StaffLocale.en,
     payload: {},

@@ -1,5 +1,6 @@
 import {
   ActorParty,
+  BookingEventType,
   BookingStatus,
   CreatedParty,
   Direction,
@@ -157,7 +158,7 @@ export const bookingEvent = pgTable(
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     bookingId: uuid('booking_id').$type<BookingId>().notNull(),
     carrierId: uuid('carrier_id').$type<CarrierId>(),
-    type: text('type').notNull(),
+    type: text('type', { enum: values(BookingEventType) }).notNull(),
     fromStatus: text('from_status', { enum: values(BookingStatus) }),
     toStatus: text('to_status', { enum: values(BookingStatus) }),
     at: instant('at').notNull(),
@@ -175,6 +176,7 @@ export const bookingEvent = pgTable(
     index('booking_event_tenant_id_idx').on(t.tenantId),
     index('booking_event_site_id_idx').on(t.siteId),
     index('booking_event_carrier_id_idx').on(t.carrierId),
+    check('booking_event_type_check', oneOf(t.type, values(BookingEventType))),
     check('booking_event_actor_party_check', oneOf(t.actorParty, values(ActorParty))),
     ...carrierOwnedPolicies(t, { update: false, driver: true }),
     allow(

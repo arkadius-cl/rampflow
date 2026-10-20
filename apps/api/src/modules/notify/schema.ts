@@ -1,7 +1,7 @@
-import { PolicyCommand, ScopeParty } from '@rampflow/shared/values';
+import { EmailTemplate, PolicyCommand, ScopeParty, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
-import { index, integer, jsonb, pgPolicy, pgTable, text, uuid } from 'drizzle-orm/pg-core';
-import { citext, createdAt, instant, primaryId, type TenantId } from '../../db/ids.ts';
+import { check, index, integer, jsonb, pgPolicy, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { citext, createdAt, instant, oneOf, primaryId, type TenantId } from '../../db/ids.ts';
 import { allow, always } from '../../db/rls.ts';
 import { org } from '../core/schema.ts';
 
@@ -13,7 +13,7 @@ export const outboxMessage = pgTable(
     tenantId: uuid('tenant_id')
       .$type<TenantId>()
       .references(() => org.id, { onDelete: 'cascade' }),
-    template: text('template').notNull(),
+    template: text('template', { enum: values(EmailTemplate) }).notNull(),
     toEmail: citext('to_email').notNull(),
     locale: text('locale').notNull(),
     payload: jsonb('payload').notNull(),
@@ -30,6 +30,7 @@ export const outboxMessage = pgTable(
       .on(t.nextAttemptAt)
       .where(sql`${t.sentAt} is null and ${t.failedAt} is null`),
     index('outbox_message_tenant_id_idx').on(t.tenantId),
+    check('outbox_template_check', oneOf(t.template, values(EmailTemplate))),
     pgPolicy('any_insert', {
       for: PolicyCommand.insert,
       withCheck: sql`(select app.party()) is not null and (${t.tenantId} is null or ${t.tenantId} = (select app.tenant_id()))`,
