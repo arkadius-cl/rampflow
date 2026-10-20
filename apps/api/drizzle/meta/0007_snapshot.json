@@ -1,5 +1,5 @@
 {
-  "id": "327bca04-f167-48e8-bfb9-99f0b399b80e",
+  "id": "8c9f79f8-f1be-4921-9024-719e026bd52b",
   "prevId": "b7a9dba9-1fc0-42f8-954b-69508feb74b9",
   "version": "7",
   "dialect": "postgresql",
@@ -5890,7 +5890,7 @@
       "checkConstraints": {
         "outbox_template_check": {
           "name": "outbox_template_check",
-          "value": "\"outbox_message\".\"template\" in ('core.invitation', 'core.magic-link', 'core.password-reset', 'booking.cancelled', 'booking.carrier-invitation', 'booking.changed', 'booking.confirmed', 'booking.no-show', 'booking.registration-approved', 'booking.registration-rejected', 'booking.registration-verify', 'booking.reminder', 'driver.link', 'privacy.inactive-notice')"
+          "value": "\"outbox_message\".\"template\" in ('core.invitation', 'core.magic-link', 'core.password-reset', 'core.signup-known-account', 'core.signup-verify', 'booking.cancelled', 'booking.carrier-invitation', 'booking.changed', 'booking.confirmed', 'booking.no-show', 'booking.registration-approved', 'booking.registration-rejected', 'booking.registration-verify', 'booking.reminder', 'driver.link', 'privacy.inactive-notice')"
         }
       },
       "isRLSEnabled": false

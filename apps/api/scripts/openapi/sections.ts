@@ -10,6 +10,7 @@ export const SECTIONS = {
     'modules/core/auth/routes.anonymous.ts',
     'modules/core/me/routes.user.ts',
     'modules/core/invitations/routes.public.ts',
+    'modules/core/signup/routes.public.ts',
     'modules/core/context/routes.tenant.ts',
     'modules/core/context/routes.carrier.ts',
     'modules/core/context/routes.platform.ts',

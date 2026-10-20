@@ -1,0 +1,25 @@
+{
+  "greeting": {
+    "mr": "Sehr geehrter Herr {{family}},",
+    "ms": "Sehr geehrte Frau {{family}},",
+    "none": "Guten Tag {{given}} {{family}},"
+  },
+  "email": {
+    "verify": {
+      "subject": "Bestätigen Sie die Registrierung von {{company}} bei rampflow",
+      "preview": "Ein Klick legt Ihr Unternehmen an. Der Link gilt 24 Stunden.",
+      "intro": "Bestätigen Sie Ihre E-Mail-Adresse, um {{company}} bei rampflow anzulegen. Sie werden Administrator des Unternehmens.",
+      "action": "Bestätigen und Unternehmen anlegen",
+      "expiry": "Der Link funktioniert einmal und 24 Stunden lang.",
+      "ignore": "Wenn Sie sich nicht registriert haben, ignorieren Sie diese E-Mail. Ohne den Klick wird nichts angelegt."
+    },
+    "known_account": {
+      "subject": "Sie haben bereits ein rampflow-Konto",
+      "preview": "Melden Sie sich mit Ihrem bestehenden Konto an.",
+      "intro": "Mit dieser E-Mail-Adresse wurde ein Unternehmen bei rampflow registriert. Für diese Adresse gibt es bereits ein Konto, daher wurde kein neues Unternehmen angelegt.",
+      "action": "Anmelden",
+      "reset": "Passwort vergessen? Setzen Sie es auf der Anmeldeseite zurück.",
+      "ignore": "Wenn Sie das nicht waren, ignorieren Sie diese E-Mail."
+    }
+  }
+}

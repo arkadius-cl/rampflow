@@ -54,14 +54,14 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1792538750173,
+      "when": 1792539339211,
       "tag": "0007_02-tenant-self-registration",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1792538754862,
+      "when": 1792539340133,
       "tag": "0008_02-tenant-self-registration-backfill",
       "breakpoints": true
     }

@@ -1,0 +1,25 @@
+{
+  "greeting": {
+    "mr": "Dear Mr {{family}},",
+    "ms": "Dear Ms {{family}},",
+    "none": "Hello {{given}} {{family}},"
+  },
+  "email": {
+    "verify": {
+      "subject": "Confirm the registration of {{company}} on rampflow",
+      "preview": "One click creates your company. The link works for 24 hours.",
+      "intro": "Confirm your email address to create {{company}} on rampflow. You become its administrator.",
+      "action": "Confirm and create company",
+      "expiry": "The link works once and for 24 hours.",
+      "ignore": "If you did not register, ignore this email. Nothing is created without the click."
+    },
+    "known_account": {
+      "subject": "You already have a rampflow account",
+      "preview": "Sign in with your existing account.",
+      "intro": "Someone registered a company on rampflow with this email address. This address already has an account, so no new company was created.",
+      "action": "Sign in",
+      "reset": "Forgot your password? Reset it on the sign-in page.",
+      "ignore": "If this was not you, ignore this email."
+    }
+  }
+}

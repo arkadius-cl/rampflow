@@ -53,6 +53,14 @@ Active bookings count against their bookable resource for the planned slot. Phys
 
 Each story ID names one Playwright `describe` block. Criteria about races or time run as Vitest integration tests on real Postgres with an injectable clock.
 
+### Prospective tenant
+
+1. **RG-01 Register a company.** A visitor opens `/signup` from the sign-in page and enters salutation (optional, "No answer" by default), first and last name, email, password, company name, EU country and tax id. A solved proof-of-work challenge is required, disposable email domains are refused, and the answer is always "Check your inbox". Only a pending registration and the verification email exist afterwards.
+2. **RG-02 Confirm the email.** The emailed link `/signup/verify#<token>` shows the email and the company and creates, on one click, the tenant in onboarding on the `start` package, the user and the `tenant_admin` membership, and signs the user in. The link works once and for 24 hours.
+3. **RG-03 Known email.** Registering with an email that already has an account answers like any registration, writes no registration and sends a "you already have an account" email instead of a verification email.
+4. **RG-04 Possible duplicate.** When another tenant has the same tax id or a member with the same company email domain, the verify page says the company may already use rampflow, without naming the tenant. Creating the company stays possible, and the tenant is flagged for the platform admin.
+5. **RG-05 Tax id checks.** Format, country and check digit of the tax id are checked before sending. EU VAT numbers are confirmed against VIES in the background, and a VIES outage blocks nothing.
+
 ### Platform admin
 
 1. **PL-01 Create a tenant.** Creating tenant Acme with a package and an admin email gives Acme that package's entitlements and sends an invitation. Accepting it makes the user `tenant_admin` of Acme only.

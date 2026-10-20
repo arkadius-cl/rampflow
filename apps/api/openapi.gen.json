@@ -5333,6 +5333,194 @@
         "x-router": "modules/booking/registration/routes.public.ts"
       }
     },
+    "/api/public/signups": {
+      "post": {
+        "operationId": "core.signup.createSignup",
+        "summary": "Create signup",
+        "description": "`SignupBody`; always 202 with an empty body once valid. 422 at `altcha` (`altcha_failed`) for a missing, wrong, expired or reused solution, at `email` (`disposable_email`) for a disposable domain, at `taxIdType` or `taxIdValue` (`tax_id_format`, `tax_id_checksum`, `tax_id_country`) for the tax id. A new email gets a pending registration and the `/signup/verify#<token>` email, superseding its earlier one; a known email gets a \"you already have an account\" email and no row. Limits `signup_request` (3 per hour per email) and `signup_ip` (20 per hour per client address); over either the answer is the same 202 and nothing is written",
+        "tags": [
+          "Auth, me and invitations"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "salutation": {
+                    "default": null,
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "mr",
+                          "ms"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "givenName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "familyName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 128
+                  },
+                  "companyName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "AT",
+                      "BE",
+                      "BG",
+                      "CY",
+                      "CZ",
+                      "DE",
+                      "DK",
+                      "EE",
+                      "ES",
+                      "FI",
+                      "FR",
+                      "GR",
+                      "HR",
+                      "HU",
+                      "IE",
+                      "IT",
+                      "LT",
+                      "LU",
+                      "LV",
+                      "MT",
+                      "NL",
+                      "PL",
+                      "PT",
+                      "RO",
+                      "SE",
+                      "SI",
+                      "SK"
+                    ]
+                  },
+                  "taxIdType": {
+                    "type": "string",
+                    "enum": [
+                      "eu_vat",
+                      "de_stn",
+                      "pl_nip"
+                    ]
+                  },
+                  "taxIdValue": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "locale": {
+                    "type": "string",
+                    "enum": [
+                      "de",
+                      "en",
+                      "pl"
+                    ]
+                  },
+                  "altcha": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8192
+                  }
+                },
+                "required": [
+                  "givenName",
+                  "familyName",
+                  "email",
+                  "password",
+                  "companyName",
+                  "country",
+                  "taxIdType",
+                  "taxIdValue",
+                  "altcha"
+                ]
+              },
+              "example": {
+                "givenName": "example",
+                "familyName": "example",
+                "email": "user@example.com",
+                "password": "examplexxx",
+                "companyName": "example",
+                "country": "AT",
+                "taxIdType": "eu_vat",
+                "taxIdValue": "example",
+                "altcha": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "No body."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "RG-01",
+          "RG-03"
+        ],
+        "x-router": "modules/core/signup/routes.public.ts"
+      }
+    },
+    "/api/public/signups/challenge": {
+      "get": {
+        "operationId": "core.signup.getChallenge",
+        "summary": "Get challenge",
+        "description": "A signed ALTCHA proof-of-work challenge for the registration form, valid for 10 minutes. The widget solves it in the browser and sends the result as `altcha`; no cookie, no third party",
+        "tags": [
+          "Auth, me and invitations"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupChallenge"
+                }
+              }
+            }
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "RG-01"
+        ],
+        "x-router": "modules/core/signup/routes.public.ts"
+      }
+    },
     "/api/t/{orgId}/bookings": {
       "get": {
         "operationId": "booking.staff.listBookings",
@@ -23873,6 +24061,84 @@
           "scope",
           "siteId",
           "items"
+        ]
+      },
+      "SignupChallenge": {
+        "type": "object",
+        "properties": {
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "nonce": {
+                "type": "string"
+              },
+              "salt": {
+                "type": "string"
+              },
+              "cost": {
+                "type": "number"
+              },
+              "keyLength": {
+                "type": "number"
+              },
+              "keyPrefix": {
+                "type": "string"
+              },
+              "keySignature": {
+                "type": "string"
+              },
+              "memoryCost": {
+                "type": "number"
+              },
+              "parallelism": {
+                "type": "number"
+              },
+              "expiresAt": {
+                "type": "number"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "boolean",
+                      "const": false
+                    },
+                    {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "algorithm",
+              "nonce",
+              "salt",
+              "cost",
+              "keyLength",
+              "keyPrefix"
+            ]
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "parameters"
         ]
       },
       "SiteView": {

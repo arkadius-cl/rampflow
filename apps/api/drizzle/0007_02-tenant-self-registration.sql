@@ -28,6 +28,7 @@ CREATE TABLE "tenant_signup" (
 );
 --> statement-breakpoint
 ALTER TABLE "rate_limit_event" DROP CONSTRAINT "rate_limit_event_bucket_check";--> statement-breakpoint
+ALTER TABLE "outbox_message" DROP CONSTRAINT "outbox_template_check";--> statement-breakpoint
 ALTER TABLE "app_user" ADD COLUMN "given_name" text;--> statement-breakpoint
 ALTER TABLE "app_user" ADD COLUMN "family_name" text;--> statement-breakpoint
 ALTER TABLE "app_user" ADD COLUMN "salutation" text;--> statement-breakpoint
@@ -48,5 +49,6 @@ ALTER TABLE "app_user" ADD CONSTRAINT "app_user_salutation_check" CHECK ("app_us
 ALTER TABLE "org" ADD CONSTRAINT "org_tenant_facts_check" CHECK ("org"."kind" in ('tenant') or ("org"."tax_id_type" is null and "org"."tax_id_value" is null and "org"."tax_id_status" is null and "org"."tax_id_checked_at" is null and not "org"."possible_duplicate" and "org"."activated_at" is null));--> statement-breakpoint
 ALTER TABLE "org" ADD CONSTRAINT "org_tax_id_check" CHECK ((("org"."tax_id_type" is null and "org"."tax_id_value" is null and "org"."tax_id_status" is null) or ("org"."tax_id_type" is not null and "org"."tax_id_value" is not null and "org"."tax_id_status" is not null)) and "org"."tax_id_type" in ('eu_vat', 'de_stn', 'pl_nip') and "org"."tax_id_status" in ('pending', 'verified', 'unverified', 'unavailable'));--> statement-breakpoint
 ALTER TABLE "rate_limit_event" ADD CONSTRAINT "rate_limit_event_bucket_check" CHECK ("rate_limit_event"."bucket" in ('login_failed', 'login_ip', 'magic_link_request', 'reset_request', 'driver_exchange', 'registration_request', 'registration_ip', 'signup_request', 'signup_ip', 'altcha_solution'));--> statement-breakpoint
+ALTER TABLE "outbox_message" ADD CONSTRAINT "outbox_template_check" CHECK ("outbox_message"."template" in ('core.invitation', 'core.magic-link', 'core.password-reset', 'core.signup-known-account', 'core.signup-verify', 'booking.cancelled', 'booking.carrier-invitation', 'booking.changed', 'booking.confirmed', 'booking.no-show', 'booking.registration-approved', 'booking.registration-rejected', 'booking.registration-verify', 'booking.reminder', 'driver.link', 'privacy.inactive-notice'));--> statement-breakpoint
 CREATE POLICY "token_insert" ON "tenant_subscription" AS PERMISSIVE FOR INSERT TO public WITH CHECK (((select app.party()) = 'token') and ("tenant_subscription"."package" in ('start')));--> statement-breakpoint
 ALTER POLICY "token_insert" ON "org" TO public WITH CHECK (((select app.party()) = 'token') and ("org"."kind" = 'carrier' or ("org"."kind" in ('tenant') and "org"."activated_at" is null)));
