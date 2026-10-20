@@ -9,12 +9,13 @@ import {
   CreateMode,
   Direction,
   LinkVia,
+  OnSiteStatus,
   ResourceKind,
   WalkInOutcome,
 } from '@rampflow/shared/modules/booking/values';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
-import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
 import {
   DriverLocale,
   OrgKind,
@@ -23,12 +24,13 @@ import {
   SeedOrg,
   SystemActorName,
   TenantActorKind,
+  values,
 } from '@rampflow/shared/values';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { BookingId, CarrierId, DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
 import type { Scope, Tx } from '../../src/db/scope.ts';
 import { loadAccess } from '../../src/kernel/access.ts';
-import { testClock } from '../../src/kernel/clock.ts';
+import { type Clock, systemClock, testClock } from '../../src/kernel/clock.ts';
 import { seedLoadTypes } from '../../src/modules/booking/capacity/load-types.ts';
 import type { BookingContext } from '../../src/modules/booking/lifecycle/context.ts';
 import {
@@ -44,6 +46,7 @@ import {
   openingHours,
   resourceDock,
 } from '../../src/modules/booking/schema.resources.ts';
+import { booking } from '../../src/modules/booking/schema.ts';
 import { appUser, dock, hall, site } from '../../src/modules/core/schema.ts';
 import { applicableInstructions } from '../../src/modules/safety/authoring/published.ts';
 import {
@@ -56,6 +59,7 @@ import { ACME, TRANS_POL } from './core.ts';
 // A demo day for Acme at "Lager Hamburg": bookings around the current time in every state of the
 // visit, created and moved through createBooking and transitionBooking like real requests.
 // Idempotent per site-local day: a booking whose deterministic clientRequestId exists is skipped.
+// Earlier demo days leave through the lifecycle before today's trucks reuse their docks.
 
 const SITE = 'Lager Hamburg';
 const ZONE = 'Europe/Berlin' as TimeZone;
@@ -245,6 +249,50 @@ function requestId(name: string): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
+async function departEarlierDemoVisits(
+  ctx: BookingContext,
+  siteId: SiteId,
+  day: LocalDate,
+  users: Record<Role, UserId>,
+): Promise<void> {
+  const rows = await ctx.tx
+    .select({
+      id: booking.id,
+      startsAt: booking.startsAt,
+      clientRequestId: booking.clientRequestId,
+      createdBy: booking.createdBy,
+    })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.tenantId, ctx.tenantId),
+        eq(booking.siteId, siteId),
+        inArray(booking.status, values(OnSiteStatus)),
+      ),
+    );
+  const plan = visits();
+  for (const row of rows) {
+    // The relative demo slots can start either side of their request's local date.
+    const startsDay = siteDay(row.startsAt, ZONE);
+    const days = [addDays(startsDay, -1), startsDay, addDays(startsDay, 1)];
+    const earlierDemo = days.some(
+      (d) =>
+        d < day &&
+        plan.some(
+          (v, i) =>
+            row.clientRequestId === requestId(`${d}:${i}`) &&
+            row.createdBy === (v.walkIn ? users.gate_operator : users.dispatcher),
+        ),
+    );
+    if (earlierDemo) {
+      await transitionBooking(ctx, row.id, {
+        type: CommandName.depart,
+        reason: 'Dev seed: close an earlier demo day',
+      });
+    }
+  }
+}
+
 async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
   const db = ctx.db;
   const [existing] = await db
@@ -339,7 +387,7 @@ async function userId(ctx: SeedContext, email: string): Promise<UserId> {
   return row.id;
 }
 
-export async function seed(ctx: SeedContext): Promise<void> {
+export async function seed(ctx: SeedContext, clock: Clock = systemClock): Promise<void> {
   const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
   const transpol = (await findOrg(ctx.db, OrgKind.carrier, TRANS_POL)) as CarrierId | null;
   if (!tenantId || !transpol) throw new Error('run the core seed first');
@@ -381,10 +429,11 @@ export async function seed(ctx: SeedContext): Promise<void> {
     return { tx, tenantId, actor, access: await loadAccess(tx, scope, testClock(now)), now };
   };
 
-  const now = new Date();
+  const now = clock.now();
   const slot = new Date(Math.floor(now.getTime() / (30 * MINUTE)) * 30 * MINUTE);
   const at = (minutes: number) => new Date(slot.getTime() + minutes * MINUTE);
   const day = siteDay(slot, ZONE);
+  await departEarlierDemoVisits(await context(SeedActor.gate_operator, now), siteId, day, users);
   let created = 0;
   for (const [i, v] of visits().entries()) {
     const avis = AvisInput.parse({
