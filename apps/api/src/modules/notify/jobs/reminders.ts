@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto';
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
 import { notify } from '@rampflow/shared/modules/notify/manifest';
-import { EmailTemplate, Setting } from '@rampflow/shared/values';
+import { EmailTemplate, Setting, StaffLocale, values } from '@rampflow/shared/values';
 import { and, eq, gt, lte } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
@@ -32,7 +31,7 @@ const dedupeKey = (bookingId: string, startsAt: Date, email: string) =>
   `reminder:${bookingId}:${startsAt.toISOString()}:${createHash('sha256').update(email.toLowerCase()).digest('hex').slice(0, 16)}`;
 
 const staffLocale = (l: string | null): l is StaffLocale =>
-  l !== null && (STAFF_LOCALES as readonly string[]).includes(l);
+  l !== null && (values(StaffLocale) as readonly string[]).includes(l);
 
 /**
  * BK-07 for one tenant: every `confirmed` booking whose reminder time has come and whose start

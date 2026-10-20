@@ -1,10 +1,15 @@
-import { SettingScope } from '../values/settings.ts';
+import { values } from '../values/define.ts';
+import {
+  SettingScope,
+  SettingSource as SettingSourceSet,
+  SettingWriteErrorCode,
+} from '../values/settings.ts';
 import { type Catalog, findSetting, type SettingKeyOf, type SettingValueOf } from './catalog.ts';
 import { blockingFeature, type ResolvedEntitlementsOf } from './entitlements.ts';
-import { SETTING_SCOPES } from './module.ts';
 import type { Result } from './result.ts';
 
-export type SettingSource = SettingScope | 'default';
+// An alias of its own, so the API description keeps its `SettingSource` component.
+export type SettingSource = Extract<SettingSourceSet, string>;
 
 export interface ResolvedSetting<T> {
   readonly value: T;
@@ -27,14 +32,14 @@ export function resolveSetting<C extends Catalog, K extends SettingKeyOf<C>>(
   const found = findSetting(catalog, key);
   if (!found) throw new Error(`Setting ${key} is not in the catalog`);
   const { def } = found;
-  for (const scope of SETTING_SCOPES) {
+  for (const scope of values(SettingScope)) {
     const raw = levels[scope];
     if (raw === undefined || !def.scopes.includes(scope)) continue;
     const parsed = def.schema.safeParse(raw);
     // K is a key of C, so its schema output is SettingValueOf<C, K>.
     if (parsed.success) return { value: parsed.data as SettingValueOf<C, K>, source: scope };
   }
-  return { value: def.default as SettingValueOf<C, K>, source: 'default' };
+  return { value: def.default as SettingValueOf<C, K>, source: SettingSourceSet.default };
 }
 
 /** The feature that hides a setting, or `null` when the setting is available. */
@@ -67,16 +72,20 @@ export interface SettingIssue {
 }
 
 export type SettingWriteError =
-  | { readonly code: 'unknown_key'; readonly key: string }
+  | { readonly code: typeof SettingWriteErrorCode.unknown_key; readonly key: string }
   | {
-      readonly code: 'scope_not_allowed';
+      readonly code: typeof SettingWriteErrorCode.scope_not_allowed;
       readonly key: string;
       readonly scope: SettingScope;
       readonly allowed: readonly SettingScope[];
     }
-  | { readonly code: 'entitlement_required'; readonly key: string; readonly entitlement: string }
   | {
-      readonly code: 'invalid_value';
+      readonly code: typeof SettingWriteErrorCode.entitlement_required;
+      readonly key: string;
+      readonly entitlement: string;
+    }
+  | {
+      readonly code: typeof SettingWriteErrorCode.invalid_value;
       readonly key: string;
       readonly issues: readonly SettingIssue[];
     };
@@ -98,12 +107,18 @@ export function parseSettingWrite<C extends Catalog>(
   write: SettingWrite,
 ): Result<SettingWrite<SettingKeyOf<C>>, SettingWriteError> {
   const found = findSetting(catalog, write.key);
-  if (!found) return { ok: false, error: { code: 'unknown_key', key: write.key } };
+  if (!found)
+    return { ok: false, error: { code: SettingWriteErrorCode.unknown_key, key: write.key } };
   const { def } = found;
   if (!def.scopes.includes(write.scope)) {
     return {
       ok: false,
-      error: { code: 'scope_not_allowed', key: write.key, scope: write.scope, allowed: def.scopes },
+      error: {
+        code: SettingWriteErrorCode.scope_not_allowed,
+        key: write.key,
+        scope: write.scope,
+        allowed: def.scopes,
+      },
     };
   }
   if (write.scope !== SettingScope.platform && entitlements === null) {
@@ -116,7 +131,11 @@ export function parseSettingWrite<C extends Catalog>(
   if (blockedBy) {
     return {
       ok: false,
-      error: { code: 'entitlement_required', key: write.key, entitlement: blockedBy },
+      error: {
+        code: SettingWriteErrorCode.entitlement_required,
+        key: write.key,
+        entitlement: blockedBy,
+      },
     };
   }
   const parsed = def.schema.safeParse(write.value);
@@ -126,7 +145,10 @@ export function parseSettingWrite<C extends Catalog>(
       code: i.code,
       message: i.message,
     }));
-    return { ok: false, error: { code: 'invalid_value', key: write.key, issues } };
+    return {
+      ok: false,
+      error: { code: SettingWriteErrorCode.invalid_value, key: write.key, issues },
+    };
   }
   // findSetting located the key in C.
   const key = write.key as SettingKeyOf<C>;

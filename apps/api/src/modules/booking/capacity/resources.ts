@@ -4,8 +4,8 @@ import type {
   ResourceView,
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { ConflictReason, ErrorCode, values } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DockId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -13,12 +13,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { dock } from '../../core/schema.ts';
 import { requireSite } from '../../core/sites/sites.ts';
 import { conflictOnUnique, invalid, type TenantRequest } from '../../core/sites/tenant.ts';
-import {
-  bookableResource,
-  DIRECTIONS,
-  type ResourceId,
-  resourceDock,
-} from '../schema.resources.ts';
+import { bookableResource, type ResourceId, resourceDock } from '../schema.resources.ts';
 
 type ResourceRow = typeof bookableResource.$inferSelect;
 
@@ -317,7 +312,7 @@ async function singleFor(
     : await tx
         .insert(bookableResource)
         .values({
-          directions: d.directions ?? [...DIRECTIONS],
+          directions: d.directions ?? [...values(Direction)],
           tenantId: req.tenantId,
           siteId: d.siteId,
           kind: 'single',

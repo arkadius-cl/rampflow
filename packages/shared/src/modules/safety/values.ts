@@ -53,3 +53,10 @@ export const InstructionSafety = {
   missing: SafetyStatus.missing,
 } as const;
 export type InstructionSafety = ValueOf<typeof InstructionSafety>;
+
+/** A block of briefing content: a paragraph, or a bundled pictogram. */
+export const BlockKind = {
+  text: 'text',
+  pictogram: 'pictogram',
+} as const;
+export type BlockKind = ValueOf<typeof BlockKind>;

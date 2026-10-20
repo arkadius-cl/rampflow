@@ -1,4 +1,3 @@
-import { DRIVER_LOCALES } from '@rampflow/shared';
 import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type {
@@ -7,7 +6,7 @@ import type {
   VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { isAcknowledgementValid } from '@rampflow/shared/modules/safety/validity';
-import { DriverLocale, PackageId, TenantRole } from '@rampflow/shared/values';
+import { DriverLocale, PackageId, TenantRole, values } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -79,11 +78,11 @@ describe('SF-01 author a briefing', () => {
     expect(instruction.draft?.version).toBe(1);
     const draft = await draftOf(w.A, instruction);
     expect(draft.status).toBe('draft');
-    expect(draft.content.map((c) => c.locale)).toEqual([...DRIVER_LOCALES]);
+    expect(draft.content.map((c) => c.locale)).toEqual([...values(DriverLocale)]);
     const flags = Object.fromEntries(draft.content.map((c) => [c.locale, c.translation]));
     expect(flags).toEqual(
       Object.fromEntries(
-        DRIVER_LOCALES.map((l) => [
+        values(DriverLocale).map((l) => [
           l,
           l === DriverLocale.de || l === DriverLocale.en ? 'source' : 'machine',
         ]),

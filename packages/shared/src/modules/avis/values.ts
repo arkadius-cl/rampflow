@@ -66,3 +66,10 @@ export const ReferenceType = {
   other: 'other',
 } as const;
 export type ReferenceType = ValueOf<typeof ReferenceType>;
+
+/** The unit of a dangerous goods quantity: kilograms or litres. */
+export const DangerousGoodsUnit = {
+  kg: 'kg',
+  l: 'l',
+} as const;
+export type DangerousGoodsUnit = ValueOf<typeof DangerousGoodsUnit>;

@@ -1,16 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import {
-  BOOKING_STATUSES,
-  COMMAND_NAMES,
   COMMANDS,
   type CommandDef,
   type CommandInput,
-  type CommandName,
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingParty, BookingStatus, LinkVia } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale } from '@rampflow/shared/values';
+import {
+  BookingParty,
+  BookingStatus,
+  CommandName,
+  LinkVia,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverLocale, values } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -53,7 +55,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
   beforeAll(async () => {
     site = await capacitySite(w.A.tenantId, { hours: [[1, '00:00', '24:00']], docks: 4 });
     const holding = ['called', 'at_dock', 'loading'];
-    for (const status of BOOKING_STATUSES) {
+    for (const status of values(BookingStatus)) {
       const b = await seedBooking(w.A, {
         site,
         startsAt: new Date('2026-11-02T07:00:00Z'),
@@ -98,10 +100,10 @@ describe('transitionBooking rejects every command from a state outside its sourc
     }
   };
 
-  for (const name of COMMAND_NAMES) {
+  for (const name of values(CommandName)) {
     const def: CommandDef = COMMANDS[name];
     const party = def.actors.staff ? 'staff' : 'system';
-    const invalid = BOOKING_STATUSES.filter(
+    const invalid = values(BookingStatus).filter(
       (s) => !sourceStates(name, party).includes(s) && s !== def.to,
     );
     it(`${name} from ${invalid.join(', ')}`, async () => {

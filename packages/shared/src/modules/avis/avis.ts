@@ -1,8 +1,15 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
 import { values } from '../../values/define.ts';
-import { REFERENCE_TYPES } from './manifest.ts';
-import { AdrClass, LoadUnitType, PackingGroup, VehicleType } from './values.ts';
+import { DriverLocale } from '../../values/locales.ts';
+import { ZodIssueCode } from '../../values/validation.ts';
+import {
+  AdrClass,
+  DangerousGoodsUnit,
+  LoadUnitType,
+  PackingGroup,
+  ReferenceType,
+  VehicleType,
+} from './values.ts';
 
 // The avis of a booking (AV-01): the fields of domain research §1 without loading method,
 // customs, SSCC and attachments. Parsing normalizes plates, phones and UN numbers, so the API
@@ -64,13 +71,13 @@ const unNumber = z
 const nullable = <T extends z.ZodType>(schema: T) => schema.nullable().default(null);
 
 const reference = z.object({
-  type: z.enum(REFERENCE_TYPES),
+  type: z.enum(ReferenceType),
   value: z.string().trim().min(1).max(35),
 });
 
 const loadUnit = z
   .object({
-    type: z.enum(LOAD_UNIT_TYPES),
+    type: z.enum(LoadUnitType),
     quantity: z.int().min(1).max(9999),
     stackable: z.boolean().optional(),
     label: z.string().trim().min(1).max(60).optional(),
@@ -82,10 +89,11 @@ const loadUnit = z
 
 const dangerousGoodsItem = z.object({
   unNumber,
-  adrClass: z.enum(ADR_CLASSES),
-  packingGroup: z.enum(PACKING_GROUPS).optional(),
+  // The tuple keeps the API description's order: zod keys a tuple by value, integer-like keys first.
+  adrClass: z.enum(values(AdrClass)),
+  packingGroup: z.enum(PackingGroup).optional(),
   quantity: z.number().positive().max(1_000_000).optional(),
-  unit: z.enum(['kg', 'l']).optional(),
+  unit: z.enum(DangerousGoodsUnit).optional(),
   limitedQuantity: z.boolean().optional(),
 });
 
@@ -121,7 +129,7 @@ export const AvisInput = z.object({
   palletExchange: nullable(z.boolean()),
   vehicle: z
     .object({
-      type: nullable(z.enum(VEHICLE_TYPES)),
+      type: nullable(z.enum(VehicleType)),
       plate: nullable(plateSchema),
       plateCountry: nullable(z.string().regex(/^[A-Z]{2}$/, 'ISO 3166-1 alpha-2')),
       trailerPlate: nullable(plateSchema),
@@ -131,7 +139,7 @@ export const AvisInput = z.object({
     .object({
       name: nullable(z.string().trim().min(1).max(120)),
       phone: nullable(phoneSchema),
-      locale: nullable(z.enum(DRIVER_LOCALES)),
+      locale: nullable(z.enum(DriverLocale)),
     })
     .default({ name: null, phone: null, locale: null }),
   dangerousGoods: z
@@ -154,7 +162,7 @@ export const totalLoadUnits = (avis: Pick<Avis, 'loadUnits'>) =>
 
 /** The settings that make avis fields required (AV-01), resolved for the booking's site. */
 export interface AvisRules {
-  requiredReferenceTypes: readonly (typeof REFERENCE_TYPES)[number][];
+  requiredReferenceTypes: readonly ReferenceType[];
   requireGrossWeight: boolean;
   requireDriverPhone: boolean;
   requirePlate: boolean;
@@ -170,7 +178,7 @@ export interface AvisIssue {
 export function avisRuleIssues(avis: Avis, rules: AvisRules): AvisIssue[] {
   const issues: AvisIssue[] = [];
   const issue = (path: (string | number)[], message: string) =>
-    issues.push({ path, code: 'custom', message });
+    issues.push({ path, code: ZodIssueCode.custom, message });
   for (const type of rules.requiredReferenceTypes) {
     if (!avis.references.some((r) => r.type === type)) {
       issue(['references'], `A reference of type ${type} is required`);

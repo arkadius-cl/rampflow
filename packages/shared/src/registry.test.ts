@@ -7,6 +7,7 @@ import { booking } from './modules/booking/manifest.ts';
 import { core } from './modules/core/manifest.ts';
 import { packages } from './packages.ts';
 import { catalog } from './registry.ts';
+import { EntitlementKind } from './values/entitlements.ts';
 import { Feature, Permission } from './values/keys.ts';
 import { OrgKind, Role } from './values/roles.ts';
 
@@ -34,7 +35,7 @@ describe('catalog', () => {
       id: 'extra',
       dependsOn: ['later'],
       enabledBy: 'extra.later',
-      entitlements: { 'extra.later': { kind: 'feature', reserved: true } },
+      entitlements: { 'extra.later': { kind: EntitlementKind.feature, reserved: true } },
       permissions: { 'extra.view': { roles: [Role.carrier_user] } },
       settings: {
         'extra.size': { ...booking.settings['booking.horizon_days'], default: 0, requires: 'x.y' },

@@ -1,13 +1,13 @@
-import {
-  COUNTED_DOCK_STATUSES,
-  type CreateDock,
-  type CreateHall,
-  type DockView,
-  type HallView,
-  type UpdateDock,
-  type UpdateHall,
+import type {
+  CreateDock,
+  CreateHall,
+  DockView,
+  HallView,
+  UpdateDock,
+  UpdateHall,
 } from '@rampflow/shared/modules/core/api.sites';
-import { ConflictReason, ErrorCode, Limit } from '@rampflow/shared/values';
+import { CountedDockStatus } from '@rampflow/shared/modules/core/values';
+import { ConflictReason, ErrorCode, Limit, values } from '@rampflow/shared/values';
 import { and, count, eq, inArray } from 'drizzle-orm';
 import type { DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -105,14 +105,14 @@ export async function listDocks(tx: Tx, tenantId: TenantId, siteId: SiteId): Pro
 }
 
 const isCounted = (status: DockRow['status']) =>
-  (COUNTED_DOCK_STATUSES as readonly string[]).includes(status);
+  (values(CountedDockStatus) as readonly string[]).includes(status);
 
 /** MD-02: `core.max_docks` counts active and maintenance docks of the whole tenant. */
 export const countCountedDocks = (tenantId: TenantId) => async (tx: Tx) => {
   const [row] = await tx
     .select({ n: count() })
     .from(dock)
-    .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...COUNTED_DOCK_STATUSES])));
+    .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...values(CountedDockStatus)])));
   return row?.n ?? 0;
 };
 

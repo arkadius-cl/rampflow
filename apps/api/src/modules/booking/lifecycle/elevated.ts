@@ -1,5 +1,5 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { CarrierRole, SystemActorName } from '@rampflow/shared/values';
+import { ActorParty, LoadStatus } from '@rampflow/shared/modules/booking/values';
+import { CarrierRole, SystemActorName, values } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne, or, type SQL } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import { oneOf } from '../../../db/ids.ts';
@@ -7,7 +7,7 @@ import { oneOf } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
 import { avisReference } from '../../avis/schema.ts';
 import { appUser, membership, org } from '../../core/schema.ts';
-import { booking, LOAD_STATUSES } from '../schema.ts';
+import { booking } from '../schema.ts';
 
 // Reads across a party boundary, in the request transaction (ADR-0002, like the capacity read
 // of ADR-0004). Nothing else in the booking module switches scope.
@@ -97,7 +97,7 @@ export async function referenceTaken(
             eq(avisReference.tenantId, where.tenantId),
             eq(avisReference.siteId, where.siteId),
             or(...matches),
-            oneOf(booking.status, LOAD_STATUSES),
+            oneOf(booking.status, values(LoadStatus)),
             where.excludeBookingId ? ne(booking.id, where.excludeBookingId) : undefined,
           ),
         )

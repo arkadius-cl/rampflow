@@ -1,6 +1,5 @@
-import { STAFF_LOCALES } from '@rampflow/shared';
 import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { EmailTemplate, OrgKind, Setting, StaffLocale } from '@rampflow/shared/values';
+import { EmailTemplate, OrgKind, Setting, StaffLocale, values } from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
 import type { AnyOrgId, UserId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -31,7 +30,7 @@ const PLATFORM: Scope = {
 };
 
 const isStaffLocale = (l: string | null): l is StaffLocale =>
-  l !== null && (STAFF_LOCALES as readonly string[]).includes(l);
+  l !== null && (values(StaffLocale) as readonly string[]).includes(l);
 
 /** A Postgres foreign-key violation: a row elsewhere still references this one. */
 const isReferenced = (e: unknown): boolean => {

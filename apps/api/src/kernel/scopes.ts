@@ -1,5 +1,5 @@
 import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, OrgKind, SiteLimitedRole } from '@rampflow/shared/values';
+import { ErrorCode, OrgKind, SiteLimitedRole, values } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -31,10 +31,7 @@ export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_TOUCH_MS = 5 * 60 * 1000;
 
-const SITE_LIMITED_ROLES: ReadonlySet<TenantRole> = new Set([
-  SiteLimitedRole.gate_operator,
-  SiteLimitedRole.dock_operator,
-]);
+const siteLimitedRoles: ReadonlySet<TenantRole> = new Set(values(SiteLimitedRole));
 const uuid = z.uuid();
 
 /** The signed-in user of the `rf_session` cookie, or `null`. Touches `last_seen_at` every 5 min. */
@@ -130,7 +127,7 @@ export const tenantScope: ScopeResolver = async (c) => {
   const m = await membershipIn(userId, tenantId, OrgKind.tenant);
   if (!m) throw new ApiError(ErrorCode.not_found);
   const role = m.role as TenantRole;
-  const limited = SITE_LIMITED_ROLES.has(role) && m.siteIds.length > 0;
+  const limited = siteLimitedRoles.has(role) && m.siteIds.length > 0;
   return {
     party: ActorParty.tenant,
     tenantId,

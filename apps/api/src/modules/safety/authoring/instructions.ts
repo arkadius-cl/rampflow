@@ -1,4 +1,4 @@
-import { DRIVER_LOCALES, type Entitlements } from '@rampflow/shared';
+import type { Entitlements } from '@rampflow/shared';
 import {
   type Block,
   type Content,
@@ -13,7 +13,7 @@ import {
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { ConflictReason, ErrorCode, Limit } from '@rampflow/shared/values';
+import { ConflictReason, DriverLocale, ErrorCode, Limit, values } from '@rampflow/shared/values';
 import { and, asc, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -34,7 +34,7 @@ import { contentHash } from './content.ts';
 type ContentRow = typeof safetyContent.$inferSelect;
 type VersionRow = typeof safetyVersion.$inferSelect;
 
-const LOCALE_ORDER = new Map<string, number>(DRIVER_LOCALES.map((l, i) => [l, i]));
+const LOCALE_ORDER = new Map<string, number>(values(DriverLocale).map((l, i) => [l, i]));
 const byLocale = (a: { locale: string }, b: { locale: string }) =>
   (LOCALE_ORDER.get(a.locale) ?? 99) - (LOCALE_ORDER.get(b.locale) ?? 99);
 
@@ -208,7 +208,7 @@ export async function createInstruction(
   await tx
     .insert(safetyContent)
     .values(
-      DRIVER_LOCALES.map((locale) =>
+      values(DriverLocale).map((locale) =>
         contentRow(tenantId, version.id, locale, templateContent(locale, { quiz })),
       ),
     );

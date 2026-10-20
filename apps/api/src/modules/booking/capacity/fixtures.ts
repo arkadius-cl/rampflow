@@ -3,6 +3,7 @@ import {
   ActorParty,
   BookingStatus,
   Direction,
+  type LoadStatus,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
@@ -23,7 +24,7 @@ import {
   type ResourceId,
   resourceDock,
 } from '../schema.resources.ts';
-import { booking, type LOAD_STATUSES } from '../schema.ts';
+import { booking } from '../schema.ts';
 
 // Capacity fixtures, written as the owner: a site in a chosen zone with docks, one resource,
 // one fixed-duration load type linked to it, weekly hours, and bookings placed at instants.
@@ -137,7 +138,7 @@ export async function placeBooking(
   s: CapacitySite,
   startsAt: Date,
   minutes: number,
-  status: (typeof LOAD_STATUSES)[number] | 'cancelled' = BookingStatus.confirmed,
+  status: LoadStatus | 'cancelled' = BookingStatus.confirmed,
 ): Promise<BookingId> {
   const end = new Date(startsAt.getTime() + minutes * 60_000);
   const [row] = await ownerDb()

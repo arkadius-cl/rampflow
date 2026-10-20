@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AvisInput, avisRuleIssues } from './avis.ts';
+import { LoadUnitType, ReferenceType } from './values.ts';
 
 const base = {
   references: [{ type: 'purchase_order', value: 'PO-1' }],
@@ -45,7 +46,11 @@ describe('avis normalization (AV-01)', () => {
 
   it('needs at least one reference and one load unit, and a label for "other"', () => {
     expect(
-      issuePaths({ ...base, references: [], loadUnits: [{ type: 'other', quantity: 1 }] }),
+      issuePaths({
+        ...base,
+        references: [],
+        loadUnits: [{ type: LoadUnitType.other, quantity: 1 }],
+      }),
     ).toEqual([['references'], ['loadUnits', 0, 'label']]);
   });
 
@@ -64,7 +69,7 @@ describe('avis normalization (AV-01)', () => {
 
 describe('avis rules from settings', () => {
   const rules = {
-    requiredReferenceTypes: ['delivery_note'] as const,
+    requiredReferenceTypes: [ReferenceType.delivery_note],
     requireGrossWeight: true,
     requireDriverPhone: true,
     requirePlate: true,
@@ -82,7 +87,7 @@ describe('avis rules from settings', () => {
   it('passes a complete avis', () => {
     const avis = AvisInput.parse({
       ...base,
-      references: [...base.references, { type: 'delivery_note', value: 'LS-9' }],
+      references: [...base.references, { type: ReferenceType.delivery_note, value: 'LS-9' }],
       grossWeightKg: 12000.04,
       vehicle: { plate: 'HH AB 1' },
       driver: { phone: '+49 151 2345678' },

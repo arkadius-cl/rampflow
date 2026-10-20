@@ -1,8 +1,16 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { type AnyModuleManifest, catalog, DRIVER_LOCALES } from '@rampflow/shared';
-import { ConflictReason, LocaleSet, OrgKind, StaffLocale, values } from '@rampflow/shared/values';
+import { type AnyModuleManifest, catalog, } from '@rampflow/shared';
+import {
+  ConflictReason,
+  DriverLocale,
+  EntitlementKind,
+  LocaleSet,
+  OrgKind,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkCatalogs, formatProblem, readCatalogs } from './check.ts';
 import { createServerI18n, LOCALES_DIR } from './server.ts';
@@ -25,8 +33,8 @@ describe('catalog check', () => {
       enabledBy: null,
       locales: LocaleSet.staff,
       entitlements: {
-        'yard.checkin_qr': { kind: 'feature' },
-        'yard.map': { kind: 'feature', reserved: true },
+        'yard.checkin_qr': { kind: EntitlementKind.feature },
+        'yard.map': { kind: EntitlementKind.feature, reserved: true },
       },
       permissions: {},
       settings: {},
@@ -40,7 +48,7 @@ describe('catalog check', () => {
         },
       ],
     };
-    const status = Object.fromEntries(DRIVER_LOCALES.map((l) => [l, 'machine']));
+    const status = Object.fromEntries(values(DriverLocale).map((l) => [l, 'machine']));
 
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

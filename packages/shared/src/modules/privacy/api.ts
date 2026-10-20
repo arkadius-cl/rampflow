@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { phoneSchema, plateSchema } from '../avis/avis.ts';
-import type { BOOKING_STATUSES } from '../booking/lifecycle.ts';
+import type { BookingStatus } from '../booking/values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/privacy (TN-06). The identifiers travel
 // in POST bodies, never in query strings (API conventions, "Requests").
@@ -33,7 +33,7 @@ export type EraseRequest = z.input<typeof EraseRequest>;
 export interface SubjectBooking {
   id: string;
   code: string;
-  status: (typeof BOOKING_STATUSES)[number];
+  status: BookingStatus;
   startsAt: string;
   site: { id: string; name: string; timeZone: string };
   carrierName: string;

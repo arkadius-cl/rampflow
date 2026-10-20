@@ -1,5 +1,5 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { DRIVER_LOCALES, STAFF_LOCALES } from '@rampflow/shared';
+import { DriverLocale, StaffLocale, values } from '@rampflow/shared/values';
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { loadTemplateFile } from '../../../kernel/outbox.ts';
@@ -8,10 +8,10 @@ import { driverLinkUrl } from '../../driver/access.ts';
 // Every template of U6a renders its example in every locale of its set, with no missing key.
 
 const TEMPLATES = [
-  { id: 'booking.confirmed', locales: STAFF_LOCALES },
-  { id: 'booking.changed', locales: STAFF_LOCALES },
-  { id: 'booking.cancelled', locales: STAFF_LOCALES },
-  { id: 'driver.link', locales: DRIVER_LOCALES },
+  { id: 'booking.confirmed', locales: values(StaffLocale) },
+  { id: 'booking.changed', locales: values(StaffLocale) },
+  { id: 'booking.cancelled', locales: values(StaffLocale) },
+  { id: 'driver.link', locales: values(DriverLocale) },
 ] as const;
 
 describe('booking email templates', () => {

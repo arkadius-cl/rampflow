@@ -1,4 +1,5 @@
-import { REFERENCE_TYPES } from '@rampflow/shared';
+import { ReferenceType } from '@rampflow/shared/modules/avis/values';
+import { values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -81,7 +82,7 @@ export const avisReference = pgTable(
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     carrierId: uuid('carrier_id').$type<CarrierId>(),
-    type: text('type', { enum: REFERENCE_TYPES }).notNull(),
+    type: text('type', { enum: values(ReferenceType) }).notNull(),
     value: text('value').notNull(),
     valueNorm: text('value_norm').notNull(),
     createdAt: createdAt(),
@@ -92,7 +93,7 @@ export const avisReference = pgTable(
     index('avis_reference_tenant_value_idx').on(t.tenantId, t.valueNorm),
     index('avis_reference_site_id_idx').on(t.siteId),
     index('avis_reference_carrier_id_idx').on(t.carrierId),
-    check('avis_reference_type_check', oneOf(t.type, REFERENCE_TYPES)),
+    check('avis_reference_type_check', oneOf(t.type, values(ReferenceType))),
     check('avis_reference_value_length', sql`char_length(${t.value}) between 1 and 35`),
     ...carrierOwnedPolicies(t, { update: true, driver: false }),
   ],

@@ -1,9 +1,10 @@
 import * as z from 'zod';
 import { type LocalDate, localDateSchema, type TimeZone } from '../../time/index.ts';
+import { SortOrder } from '../../values/list.ts';
 import { AvisInput, type AvisRules, type AvisView } from '../avis/avis.ts';
 import type { OfferedStart } from './api.capacity.ts';
 import type { BookingEventView, BookingSafety } from './api.staff.ts';
-import { BOOKING_STATUSES, type BookingStatus } from './lifecycle.ts';
+import { BookingPeriod, BookingStatus } from './values.ts';
 
 // Request schemas and response shapes of the carrier booking portal: /api/c/:orgId/bookings
 // (CR-05, CR-06, BK-06) and /api/c/:orgId/at/:tenantId (BK-04, BK-05, AV-01, AV-02, CR-06).
@@ -24,9 +25,9 @@ export const PortalBookingListQuery = z.object({
   siteId: z.uuid().optional(),
   from: localDateSchema.optional(),
   to: localDateSchema.optional(),
-  status: z.enum(BOOKING_STATUSES).optional(),
-  when: z.enum(['upcoming', 'past']).optional(),
-  order: z.enum(['asc', 'desc']).default('asc'),
+  status: z.enum(BookingStatus).optional(),
+  when: z.enum(BookingPeriod).optional(),
+  order: z.enum(SortOrder).default(SortOrder.asc),
   limit,
   cursor: z.string().max(200).optional(),
 });

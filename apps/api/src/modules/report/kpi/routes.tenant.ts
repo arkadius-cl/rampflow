@@ -1,12 +1,18 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import {
   type KpiReport,
   ReportFilter,
   type VisitPage,
   VisitQuery,
 } from '@rampflow/shared/modules/report/api';
-import { Feature, Permission, Setting, StoryId } from '@rampflow/shared/values';
+import {
+  Feature,
+  Permission,
+  Setting,
+  StaffLocale,
+  StoryId,
+  values,
+} from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
 import { file, op, type } from '../../../kernel/describe.ts';
@@ -30,7 +36,7 @@ function reportContext(c: Context<AppEnv>): ReportContext {
 }
 
 const isStaffLocale = (l: string | null | undefined): l is StaffLocale =>
-  (STAFF_LOCALES as readonly string[]).includes(l ?? '');
+  (values(StaffLocale) as readonly string[]).includes(l ?? '');
 
 /** The CSV language: the user's, else the tenant's `i18n.default_locale`. */
 async function csvLocale(c: Context<AppEnv>): Promise<StaffLocale> {

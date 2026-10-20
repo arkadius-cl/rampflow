@@ -5,8 +5,8 @@ import type {
   RegisterFilterOptions,
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
-import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
-import { DriverLocale, StaffLocale } from '@rampflow/shared/values';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import { DriverLocale, StaffLocale, values } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerDb } from '../../../../test/db.ts';
@@ -150,7 +150,7 @@ describe('SF-03 acknowledgement register', () => {
       await admin.post(`${base()}/instructions/${rules.id}/versions`)
     ).json()) as { id: string };
     await admin.post(`${base()}/versions/${draft.id}/publish`, { body: { materialChange: true } });
-    for (const status of ACK_STATUSES) {
+    for (const status of values(AckStatus)) {
       const { items } = await page({ status });
       expect(items.every((i) => i.status === status)).toBe(true);
     }

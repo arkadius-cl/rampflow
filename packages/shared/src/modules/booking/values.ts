@@ -1,5 +1,6 @@
 import type { ValueOf } from '../../values/define.ts';
 import { ConflictReason } from '../../values/errors.ts';
+import { SafetyStatus } from '../safety/values.ts';
 
 // The booking lifecycle's value sets (ADR-0005, docs/reference/booking-lifecycle.md).
 
@@ -223,3 +224,83 @@ export const BookingEventType = {
   safety_linked: 'safety_linked',
 } as const;
 export type BookingEventType = ValueOf<typeof BookingEventType>;
+
+/** The booking commands of docs/reference/booking-lifecycle.md; `COMMANDS` defines each. */
+export const CommandName = {
+  reschedule: 'reschedule',
+  update_avis: 'update_avis',
+  cancel: 'cancel',
+  regenerate_driver_link: 'regenerate_driver_link',
+  send_driver_link: 'send_driver_link',
+  mark_no_show: 'mark_no_show',
+  check_in: 'check_in',
+  turn_away: 'turn_away',
+  call: 'call',
+  uncall: 'uncall',
+  dock: 'dock',
+  start_loading: 'start_loading',
+  complete: 'complete',
+  depart: 'depart',
+  link_acknowledgement: 'link_acknowledgement',
+} as const;
+export type CommandName = ValueOf<typeof CommandName>;
+
+/** When a command takes `lockSiteCapacity` before reading load (ADR-0004). */
+export const SiteLock = {
+  always: 'always',
+  when_duration_changes: 'when_duration_changes',
+  never: 'never',
+} as const;
+export type SiteLock = ValueOf<typeof SiteLock>;
+
+/** How a booking comes about: a carrier books, staff book, or the gate takes a walk-in (YD-03). */
+export const CreateMode = {
+  carrier: CreatedParty.carrier,
+  staff: CreatedParty.staff,
+  walk_in: 'walk_in',
+} as const;
+export type CreateMode = ValueOf<typeof CreateMode>;
+
+/** What the gate does with a walk-in: let it in, or send it away. */
+export const WalkInOutcome = {
+  check_in: CommandName.check_in,
+  turn_away: CommandName.turn_away,
+} as const;
+export type WalkInOutcome = ValueOf<typeof WalkInOutcome>;
+
+/** `checked_in.safety`: `missing_warned` let a driver in without briefings while enforcement was off. */
+export const CheckInSafety = {
+  valid: SafetyStatus.valid,
+  missing_warned: 'missing_warned',
+  not_required: SafetyStatus.not_required,
+} as const;
+export type CheckInSafety = ValueOf<typeof CheckInSafety>;
+
+/** A load type's duration: one fixed value, or tiers by load units (MD-05). */
+export const DurationKind = {
+  fixed: 'fixed',
+  tiers: 'tiers',
+} as const;
+export type DurationKind = ValueOf<typeof DurationKind>;
+
+/** How a dock is booked (MD-03): not at all, as a single resource, or as a pool member. */
+export const DockBookingKind = {
+  none: 'none',
+  single: ResourceKind.single,
+  pool: ResourceKind.pool,
+} as const;
+export type DockBookingKind = ValueOf<typeof DockBookingKind>;
+
+/** The portal's booking list filter: bookings still to come, or past ones. */
+export const BookingPeriod = {
+  upcoming: 'upcoming',
+  past: 'past',
+} as const;
+export type BookingPeriod = ValueOf<typeof BookingPeriod>;
+
+/** What a `booking.changed` email reports: a new start time, or a changed avis. */
+export const BookingChange = {
+  rescheduled: BookingEventType.rescheduled,
+  avis: 'avis',
+} as const;
+export type BookingChange = ValueOf<typeof BookingChange>;

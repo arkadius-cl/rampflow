@@ -1,7 +1,6 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import { RegisterFilter, RegisterSearchBody } from '@rampflow/shared/modules/safety/api.register';
-import { Permission, StoryId } from '@rampflow/shared/values';
+import { Permission, StaffLocale, StoryId, values } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
 import { file, op } from '../../../kernel/describe.ts';
@@ -15,7 +14,7 @@ import { registerCsv } from './csv.ts';
 const view = requirePermission(Permission.safety.view_register);
 
 const isStaffLocale = (l: string | null | undefined): l is StaffLocale =>
-  (STAFF_LOCALES as readonly string[]).includes(l ?? '');
+  (values(StaffLocale) as readonly string[]).includes(l ?? '');
 
 /**
  * SF-03. Mounted at `/api/t/:orgId/safety` with `withModule('safety')`. Filters travel in POST

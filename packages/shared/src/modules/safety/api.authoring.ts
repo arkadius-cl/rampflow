@@ -1,7 +1,7 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
 import { values } from '../../values/define.ts';
-import { PictogramId, TranslationState, VersionStatus } from './values.ts';
+import { DriverLocale } from '../../values/locales.ts';
+import { BlockKind, PictogramId, TranslationState, VersionStatus } from './values.ts';
 
 export { PictogramId, TranslationState, VersionStatus };
 export const PICTOGRAM_IDS = values(PictogramId);
@@ -9,15 +9,15 @@ export const VERSION_STATUSES = values(VersionStatus);
 export const TRANSLATION_STATES = values(TranslationState);
 
 /** Briefing content exists in the driver languages. */
-export const SafetyLocale = z.enum(DRIVER_LOCALES);
+export const SafetyLocale = z.enum(DriverLocale);
 export type SafetyLocale = z.infer<typeof SafetyLocale>;
 
 /** With `safety.quiz`, every published locale has this many questions (SF-02). */
 export const QUIZ_QUESTIONS = { min: 3, max: 5 } as const;
 
 export const Block = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('text'), text: z.string().trim().min(1).max(2000) }),
-  z.object({ kind: z.literal('pictogram'), id: z.enum(PICTOGRAM_IDS) }),
+  z.object({ kind: z.literal(BlockKind.text), text: z.string().trim().min(1).max(2000) }),
+  z.object({ kind: z.literal(BlockKind.pictogram), id: z.enum(PictogramId) }),
 ]);
 export type Block = z.infer<typeof Block>;
 
@@ -47,7 +47,7 @@ export const ContentBody = z.object({
     .refine(uniqueIds, 'question ids must be unique')
     .default([]),
   statement: z.string().trim().min(1).max(1000),
-  translation: z.enum(TRANSLATION_STATES),
+  translation: z.enum(TranslationState),
 });
 export type ContentBody = z.infer<typeof ContentBody>;
 
@@ -100,7 +100,7 @@ export type Instruction = z.infer<typeof Instruction>;
 
 export const LocaleState = z.object({
   locale: SafetyLocale,
-  translation: z.enum(TRANSLATION_STATES),
+  translation: z.enum(TranslationState),
   questions: z.int(),
 });
 
@@ -108,7 +108,7 @@ export const VersionSummary = z.object({
   id: z.uuid(),
   instructionId: z.uuid(),
   version: z.int(),
-  status: z.enum(VERSION_STATUSES),
+  status: z.enum(VersionStatus),
   materialChange: z.boolean(),
   publishedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),

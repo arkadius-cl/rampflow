@@ -1,4 +1,4 @@
-import { PACKAGE_IDS, ROLE_PARTY, STAFF_LOCALES } from '@rampflow/shared';
+import { ROLE_PARTY } from '@rampflow/shared';
 import {
   ActorParty,
   CarrierLinkSource,
@@ -11,7 +11,7 @@ import {
   RateLimitBucket,
   TemperatureZone,
 } from '@rampflow/shared/modules/core/values';
-import { OrgKind, values } from '@rampflow/shared/values';
+import { OrgKind, PackageId, StaffLocale, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -117,7 +117,7 @@ export const appUser = pgTable(
     id: primaryId<'user'>(),
     email: citext('email').notNull().unique(),
     name: text('name').notNull(),
-    locale: text('locale', { enum: STAFF_LOCALES }),
+    locale: text('locale', { enum: values(StaffLocale) }),
     passwordHash: text('password_hash'),
     emailVerifiedAt: instant('email_verified_at'),
     lastSeenAt: instant('last_seen_at'),
@@ -127,7 +127,7 @@ export const appUser = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check('app_user_locale_check', oneOf(t.locale, STAFF_LOCALES)),
+    check('app_user_locale_check', oneOf(t.locale, values(StaffLocale))),
     check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
     allow(OrgKind.platform, 'all', always),
     allow('user', 'select', userIs(t.id)),
@@ -241,7 +241,7 @@ export const tenantSubscription = pgTable(
       .$type<TenantId>()
       .primaryKey()
       .references(() => org.id, { onDelete: 'cascade' }),
-    package: text('package', { enum: PACKAGE_IDS }).notNull(),
+    package: text('package', { enum: values(PackageId) }).notNull(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
     updatedBy: uuid('updated_by')
       .$type<UserId>()
@@ -250,7 +250,7 @@ export const tenantSubscription = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check('tenant_subscription_package_check', oneOf(t.package, PACKAGE_IDS)),
+    check('tenant_subscription_package_check', oneOf(t.package, values(PackageId))),
     ...tenantEntitlementPolicies(t),
   ],
 );
@@ -310,7 +310,7 @@ export const site = pgTable(
     country: char('country', { length: 2 }).notNull(),
     subdivision: text('subdivision'),
     timeZone: text('time_zone').notNull(),
-    defaultLocale: text('default_locale', { enum: STAFF_LOCALES }).notNull(),
+    defaultLocale: text('default_locale', { enum: values(StaffLocale) }).notNull(),
     phone: text('phone'),
     active: boolean('active').notNull().default(true),
     createdAt: createdAt(),
@@ -318,7 +318,7 @@ export const site = pgTable(
   (t) => [
     unique('site_id_tenant_key').on(t.id, t.tenantId),
     index('site_tenant_id_idx').on(t.tenantId),
-    check('site_default_locale_check', oneOf(t.defaultLocale, STAFF_LOCALES)),
+    check('site_default_locale_check', oneOf(t.defaultLocale, values(StaffLocale))),
     ...tenantPolicies(t, {
       site: t.id,
       readers: ['carrier', 'carrier_at_tenant', 'driver', 'public'],

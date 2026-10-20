@@ -1,5 +1,5 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES } from '@rampflow/shared';
+import { StaffLocale, values } from '@rampflow/shared/values';
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { loadTemplateFile } from '../../../kernel/outbox.ts';
@@ -8,10 +8,10 @@ import { loadTemplateFile } from '../../../kernel/outbox.ts';
 
 describe('job emails', () => {
   for (const id of ['booking.reminder', 'booking.no-show']) {
-    it(`${id} renders in ${STAFF_LOCALES.join(', ')} without a raw key`, async () => {
+    it(`${id} renders in ${values(StaffLocale).join(', ')} without a raw key`, async () => {
       const template = await loadTemplateFile(id);
       expect(template.category).toBe('booking');
-      for (const locale of STAFF_LOCALES) {
+      for (const locale of values(StaffLocale)) {
         const i18n = await createServerI18n(locale);
         const example = { ...(template.example as object), locale };
         const { subject, body } = template.render(example, i18n.getFixedT(locale, 'booking'));

@@ -2,11 +2,15 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   type AnyModuleManifest,
-  DRIVER_LOCALES,
   SOURCE_LOCALE,
-  STAFF_LOCALES,
 } from '@rampflow/shared';
-import { LocaleSet } from '@rampflow/shared/values';
+import {
+  CatalogProblemKind,
+  DriverLocale,
+  LocaleSet,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 
 // The CI check of ADR-0009, point 6. Catalogs live in <dir>/<locale>/<namespace>/<part>.json.
 
@@ -15,14 +19,31 @@ export type Part = ReadonlyMap<string, unknown>;
 export type Catalogs = ReadonlyMap<string, ReadonlyMap<string, ReadonlyMap<string, Part>>>;
 
 export type CatalogProblem =
-  | { kind: 'invalid_json'; file: string }
-  | { kind: 'unknown_namespace'; locale: string; ns: string }
-  | { kind: 'missing_part' | 'extra_part'; locale: string; ns: string; part: string }
-  | { kind: 'missing_key' | 'extra_key'; locale: string; ns: string; part: string; key: string }
-  | { kind: 'empty_value'; locale: string; ns: string; part: string; key: string }
-  | { kind: 'missing_derived_part'; ns: string; part: string }
-  | { kind: 'missing_derived_key'; ns: string; part: string; key: string }
-  | { kind: 'missing_status'; locale: string };
+  | { kind: typeof CatalogProblemKind.invalid_json; file: string }
+  | { kind: typeof CatalogProblemKind.unknown_namespace; locale: string; ns: string }
+  | {
+      kind: typeof CatalogProblemKind.missing_part | typeof CatalogProblemKind.extra_part;
+      locale: string;
+      ns: string;
+      part: string;
+    }
+  | {
+      kind: typeof CatalogProblemKind.missing_key | typeof CatalogProblemKind.extra_key;
+      locale: string;
+      ns: string;
+      part: string;
+      key: string;
+    }
+  | {
+      kind: typeof CatalogProblemKind.empty_value;
+      locale: string;
+      ns: string;
+      part: string;
+      key: string;
+    }
+  | { kind: typeof CatalogProblemKind.missing_derived_part; ns: string; part: string }
+  | { kind: typeof CatalogProblemKind.missing_derived_key; ns: string; part: string; key: string }
+  | { kind: typeof CatalogProblemKind.missing_status; locale: string };
 
 export interface DerivedPart {
   ns: string;
@@ -68,7 +89,7 @@ export function readCatalogs(dir: string, problems: CatalogProblem[] = []): Cata
           flatten(JSON.parse(readFileSync(path, 'utf8')), '', keys);
           parts.set(file.slice(0, -'.json'.length), keys);
         } catch {
-          problems.push({ kind: 'invalid_json', file: path });
+          problems.push({ kind: CatalogProblemKind.invalid_json, file: path });
         }
       }
       namespaces.set(ns, parts);
@@ -114,13 +135,13 @@ export function checkCatalogs(
   const catalogs = readCatalogs(dir, problems);
   const modules = new Map(catalog.map((m) => [m.id, m]));
   const localesOf = (m: AnyModuleManifest): readonly string[] =>
-    m.locales === LocaleSet.driver ? DRIVER_LOCALES : STAFF_LOCALES;
+    m.locales === LocaleSet.driver ? values(DriverLocale) : values(StaffLocale);
 
   for (const [locale, namespaces] of catalogs) {
     for (const ns of namespaces.keys()) {
       const m = modules.get(ns);
       if (!m || !localesOf(m).includes(locale))
-        problems.push({ kind: 'unknown_namespace', locale, ns });
+        problems.push({ kind: CatalogProblemKind.unknown_namespace, locale, ns });
     }
   }
 
@@ -129,24 +150,27 @@ export function checkCatalogs(
     for (const locale of localesOf(m)) {
       const parts = catalogs.get(locale)?.get(m.id) ?? new Map<string, Part>();
       for (const part of source.keys()) {
-        if (!parts.has(part)) problems.push({ kind: 'missing_part', locale, ns: m.id, part });
+        if (!parts.has(part))
+          problems.push({ kind: CatalogProblemKind.missing_part, locale, ns: m.id, part });
       }
       for (const [part, keys] of parts) {
         if (!source.has(part)) {
-          problems.push({ kind: 'extra_part', locale, ns: m.id, part });
+          problems.push({ kind: CatalogProblemKind.extra_part, locale, ns: m.id, part });
           continue;
         }
         const expected = baseKeys(source.get(part));
         const actual = baseKeys(keys);
         for (const key of expected) {
-          if (!actual.has(key)) problems.push({ kind: 'missing_key', locale, ns: m.id, part, key });
+          if (!actual.has(key))
+            problems.push({ kind: CatalogProblemKind.missing_key, locale, ns: m.id, part, key });
         }
         for (const key of actual) {
-          if (!expected.has(key)) problems.push({ kind: 'extra_key', locale, ns: m.id, part, key });
+          if (!expected.has(key))
+            problems.push({ kind: CatalogProblemKind.extra_key, locale, ns: m.id, part, key });
         }
         for (const [key, value] of keys) {
           if (typeof value !== 'string' || value.trim() === '') {
-            problems.push({ kind: 'empty_value', locale, ns: m.id, part, key });
+            problems.push({ kind: CatalogProblemKind.empty_value, locale, ns: m.id, part, key });
           }
         }
       }
@@ -157,13 +181,22 @@ export function checkCatalogs(
     const part = catalogs.get(SOURCE_LOCALE)?.get(derived.ns)?.get(derived.part);
     if (!part) {
       if (options.requireDerivedParts && derived.keys.length > 0) {
-        problems.push({ kind: 'missing_derived_part', ns: derived.ns, part: derived.part });
+        problems.push({
+          kind: CatalogProblemKind.missing_derived_part,
+          ns: derived.ns,
+          part: derived.part,
+        });
       }
       continue;
     }
     for (const key of derived.keys) {
       if (!part.has(key)) {
-        problems.push({ kind: 'missing_derived_key', ns: derived.ns, part: derived.part, key });
+        problems.push({
+          kind: CatalogProblemKind.missing_derived_key,
+          ns: derived.ns,
+          part: derived.part,
+          key,
+        });
       }
     }
   }
@@ -172,9 +205,9 @@ export function checkCatalogs(
   const status: Record<string, unknown> = existsSync(statusPath)
     ? JSON.parse(readFileSync(statusPath, 'utf8'))
     : {};
-  for (const locale of DRIVER_LOCALES) {
+  for (const locale of values(DriverLocale)) {
     if (!['source', 'machine', 'reviewed'].includes(String(status[locale]))) {
-      problems.push({ kind: 'missing_status', locale });
+      problems.push({ kind: CatalogProblemKind.missing_status, locale });
     }
   }
   return problems;
@@ -183,15 +216,15 @@ export function checkCatalogs(
 export function formatProblem(p: CatalogProblem): string {
   const where = 'ns' in p ? `${'locale' in p ? `${p.locale}/` : ''}${p.ns}` : '';
   switch (p.kind) {
-    case 'invalid_json':
+    case CatalogProblemKind.invalid_json:
       return `invalid JSON: ${p.file}`;
-    case 'missing_status':
+    case CatalogProblemKind.missing_status:
       return `status.json has no source, machine or reviewed entry for ${p.locale}`;
-    case 'unknown_namespace':
+    case CatalogProblemKind.unknown_namespace:
       return `${where}: no module ships this namespace in this locale`;
-    case 'missing_part':
-    case 'extra_part':
-    case 'missing_derived_part':
+    case CatalogProblemKind.missing_part:
+    case CatalogProblemKind.extra_part:
+    case CatalogProblemKind.missing_derived_part:
       return `${where}/${p.part}.json: ${p.kind.replaceAll('_', ' ')}`;
     default:
       return `${where}/${p.part}.json: ${p.kind.replaceAll('_', ' ')} ${p.key}`;

@@ -1,4 +1,4 @@
-import { ActorParty, ClosureSource } from '@rampflow/shared/modules/booking/values';
+import { ActorParty, ClosureSource, LoadStatus } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -10,7 +10,7 @@ import {
   localDayRange,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { ErrorCode, Setting, SystemActorName } from '@rampflow/shared/values';
+import { ErrorCode, Setting, SystemActorName, values } from '@rampflow/shared/values';
 import { and, eq, gt, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { type BookingId, oneOf, type SiteId, type TenantId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -25,7 +25,7 @@ import {
   type ResourceId,
   resourceDock,
 } from '../schema.resources.ts';
-import { booking, LOAD_STATUSES } from '../schema.ts';
+import { booking } from '../schema.ts';
 import { buildResourceDay, type Interval, OVERHANG_MS, type ResourceDay } from './timeline.ts';
 
 export type ResourceRow = typeof bookableResource.$inferSelect;
@@ -167,7 +167,7 @@ export async function loadDayTimeline(
           and(
             eq(booking.tenantId, req.tenantId),
             inArray(booking.resourceId, ids),
-            oneOf(booking.status, LOAD_STATUSES),
+            oneOf(booking.status, values(LoadStatus)),
             lt(booking.startsAt, windowEnd),
             gt(booking.blocksUntil, range.start),
             gte(booking.startsAt, new Date(range.start.getTime() - OVERHANG_MS)),

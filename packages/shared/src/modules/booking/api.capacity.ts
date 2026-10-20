@@ -10,7 +10,16 @@ import {
   type TimeZone,
 } from '../../time/index.ts';
 import { values } from '../../values/define.ts';
-import { ClosureKind, type ClosureSource, Direction, ResourceKind } from './values.ts';
+import type { WallTimeFold } from '../../values/time.ts';
+import { ZodIssueCode } from '../../values/validation.ts';
+import {
+  ClosureKind,
+  type ClosureSource,
+  Direction,
+  DockBookingKind,
+  DurationKind,
+  ResourceKind,
+} from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/capacity (MD-03, MD-04, MD-05).
 
@@ -26,9 +35,9 @@ export const MAX_BUFFER_MINUTES = 240;
 const minutes = z.int().min(5).max(MAX_DURATION_MINUTES).multipleOf(5);
 
 export const LoadTypeDuration = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('fixed'), minutes }),
+  z.object({ kind: z.literal(DurationKind.fixed), minutes }),
   z.object({
-    kind: z.literal('tiers'),
+    kind: z.literal(DurationKind.tiers),
     tiers: z
       .array(z.object({ upTo: z.int().min(1).nullable(), minutes }))
       .min(1)
@@ -50,7 +59,7 @@ export const LoadTypeDuration = z.discriminatedUnion('kind', [
 export type LoadTypeDuration = z.infer<typeof LoadTypeDuration>;
 
 const directions = z
-  .array(z.enum(DIRECTIONS))
+  .array(z.enum(Direction))
   .min(1)
   .refine((d) => new Set(d).size === d.length, 'Each direction once');
 
@@ -59,7 +68,7 @@ const ids = z.array(z.uuid()).refine((d) => new Set(d).size === d.length, 'Each 
 export const CreateResource = z
   .object({
     siteId: z.uuid(),
-    kind: z.enum(RESOURCE_KINDS),
+    kind: z.enum(ResourceKind),
     name: z.string().trim().min(1).max(80),
     directions,
     capacityCap: z.int().min(1).nullable().optional(),
@@ -96,10 +105,10 @@ export const PutResourceDocks = z.object({ dockIds: ids.min(1) });
  * one pool. `PUT /capacity/docks/:dockId/booking` moves the dock in one transaction.
  */
 export const DockBooking = z.discriminatedUnion('as', [
-  z.object({ as: z.literal('none') }),
+  z.object({ as: z.literal(DockBookingKind.none) }),
   // Without directions a reused single keeps its own and a new one serves both.
-  z.object({ as: z.literal('single'), directions: directions.optional() }),
-  z.object({ as: z.literal('pool'), resourceId: z.uuid() }),
+  z.object({ as: z.literal(DockBookingKind.single), directions: directions.optional() }),
+  z.object({ as: z.literal(DockBookingKind.pool), resourceId: z.uuid() }),
 ]);
 export type DockBooking = z.infer<typeof DockBooking>;
 
@@ -138,7 +147,11 @@ export const PutHours = z.object({
             row.opens < other.closes,
         );
         if (overlaps) {
-          ctx.addIssue({ code: 'custom', message: 'Overlaps another window', path: [i] });
+          ctx.addIssue({
+            code: ZodIssueCode.custom,
+            message: 'Overlaps another window',
+            path: [i],
+          });
         }
       });
     }),
@@ -160,7 +173,7 @@ export const CreateClosure = z
   .object({
     siteId: z.uuid(),
     resourceId: z.uuid().nullable().default(null),
-    kind: z.enum(CLOSURE_KINDS),
+    kind: z.enum(ClosureKind),
     startsLocal: localDateTimeSchema,
     endsLocal: localDateTimeSchema,
     reason: z.string().trim().max(200).nullable().optional(),
@@ -192,7 +205,7 @@ const localizedName = z.object({
 
 const loadTypeFields = {
   name: localizedName,
-  direction: z.enum(DIRECTIONS),
+  direction: z.enum(Direction),
   duration: LoadTypeDuration,
   bufferMinutes: z.int().min(0).max(MAX_BUFFER_MINUTES).multipleOf(5),
   carrierBookable: z.boolean(),
@@ -242,7 +255,7 @@ export interface OfferedStart {
   /** ISO 8601 UTC instant. */
   startsAt: string;
   wallTime: LocalTime;
-  fold: 'earlier' | 'later' | null;
+  fold: WallTimeFold | null;
 }
 
 /** Offered start times of one load type on one site-local day (MD-04, BK-02, BK-04). */

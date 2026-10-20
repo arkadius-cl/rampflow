@@ -8,10 +8,13 @@ import type {
   PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
-import { FINAL_STATUSES, ON_SITE_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
-import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  CarrierLinkStatus,
+  FinalBookingStatus,
+  OnSiteStatus,
+} from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Setting, values } from '@rampflow/shared/values';
 import { and, asc, desc, eq, inArray, not, type SQL, sql } from 'drizzle-orm';
 import type * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -111,7 +114,7 @@ const localDay = sql`(${booking.startsAt} at time zone ${booking.siteTimeZone}):
 
 /** CR-05 `when=upcoming`: on site, or not final and starting today or later in site time. */
 const upcoming = (now: Date): SQL =>
-  sql`(${inArray(booking.status, ON_SITE_STATUSES)} or (${not(inArray(booking.status, FINAL_STATUSES))} and ${localDay} >= (${now}::timestamptz at time zone ${booking.siteTimeZone})::date))`;
+  sql`(${inArray(booking.status, values(OnSiteStatus))} or (${not(inArray(booking.status, values(FinalBookingStatus)))} and ${localDay} >= (${now}::timestamptz at time zone ${booking.siteTimeZone})::date))`;
 
 /** CR-05: the carrier's bookings at every tenant, by start, with the filters of the list. */
 export async function listPortalBookings(

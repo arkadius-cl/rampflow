@@ -1,5 +1,6 @@
 import type * as z from 'zod';
 import { values } from '../values/define.ts';
+import type { EntitlementKind } from '../values/entitlements.ts';
 import { LocaleSet } from '../values/locales.ts';
 import { OrgKind, Role } from '../values/roles.ts';
 import { SettingScope } from '../values/settings.ts';
@@ -33,8 +34,15 @@ export const ROLE_INCLUDES = {
 
 export const SETTING_SCOPES = values(SettingScope);
 
-export type FeatureDef = { readonly kind: 'feature'; readonly reserved?: true };
-export type LimitDef = { readonly kind: 'limit'; readonly soft?: true; readonly reserved?: true };
+export type FeatureDef = {
+  readonly kind: typeof EntitlementKind.feature;
+  readonly reserved?: true;
+};
+export type LimitDef = {
+  readonly kind: typeof EntitlementKind.limit;
+  readonly soft?: true;
+  readonly reserved?: true;
+};
 export type EntitlementDef = FeatureDef | LimitDef;
 /** A numeric entitlement value. `null` means unlimited. */
 export type Limit = number | null;
@@ -75,7 +83,7 @@ export type SettingDefs = { readonly [key: string]: SettingDef };
 
 /** Non-reserved feature keys of one module's entitlement record. */
 export type ImplementedFeatureIn<E> = {
-  [K in keyof E]: E[K] extends { kind: 'feature' }
+  [K in keyof E]: E[K] extends { kind: typeof EntitlementKind.feature }
     ? E[K] extends { reserved: true }
       ? never
       : K

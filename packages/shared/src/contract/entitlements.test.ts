@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { UsageKey } from '../modules/core/values.ts';
 import { packages } from '../packages.ts';
 import { catalog, type EntitlementOverride } from '../registry.ts';
+import { OverrideErrorCode } from '../values/entitlements.ts';
 import { Feature, Module } from '../values/keys.ts';
 import { PackageId } from '../values/packages.ts';
 import { blockingFeature, parseEntitlementOverride, resolveEntitlements } from './entitlements.ts';
@@ -94,11 +95,11 @@ describe('parseEntitlementOverride', () => {
   it('rejects unknown and reserved keys', () => {
     expect(parse('booking.teleport', true)).toEqual({
       ok: false,
-      error: { code: 'unknown_key', key: 'booking.teleport' },
+      error: { code: OverrideErrorCode.unknown_key, key: 'booking.teleport' },
     });
     expect(parse('booking.guest_link', true)).toEqual({
       ok: false,
-      error: { code: 'reserved_key', key: 'booking.guest_link' },
+      error: { code: OverrideErrorCode.reserved_key, key: 'booking.guest_link' },
     });
   });
 
@@ -107,7 +108,7 @@ describe('parseEntitlementOverride', () => {
     expect(parse('core.max_sites', -1)).toMatchObject({ ok: false, error: { expected: 'limit' } });
     expect(parse('core.max_sites', 1.5)).toMatchObject({
       ok: false,
-      error: { code: 'invalid_value' },
+      error: { code: OverrideErrorCode.invalid_value },
     });
   });
 

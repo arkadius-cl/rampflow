@@ -1,15 +1,15 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES } from '@rampflow/shared';
+import { StaffLocale, values } from '@rampflow/shared/values';
 import { render } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
 import { loadTemplateFile } from '../../../kernel/outbox.ts';
 
 describe('privacy.inactive-notice (PL-05)', () => {
-  it(`is an account email that renders in ${STAFF_LOCALES.join(', ')} with the deletion date`, async () => {
+  it(`is an account email that renders in ${values(StaffLocale).join(', ')} with the deletion date`, async () => {
     const template = await loadTemplateFile('privacy.inactive-notice');
     expect(template.category).toBe('account');
-    for (const locale of STAFF_LOCALES) {
+    for (const locale of values(StaffLocale)) {
       const i18n = await createServerI18n(locale);
       const { subject, body } = template.render(
         { locale, deletesOn: '2026-12-01' },

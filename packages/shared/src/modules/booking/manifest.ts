@@ -1,9 +1,11 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
 import { EmailCategory } from '../../values/emails.ts';
+import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
 import { everyScope, SettingScope } from '../../values/settings.ts';
+import { RegistrationMode } from './values.ts';
 
 export const booking = defineModule({
   id: EmailCategory.booking,
@@ -11,16 +13,16 @@ export const booking = defineModule({
   enabledBy: null,
   locales: LocaleSet.staff,
   entitlements: {
-    'booking.carrier_portal': { kind: 'feature' },
-    'booking.public_link': { kind: 'feature' },
-    'booking.pools': { kind: 'feature' },
-    'booking.duration_rules': { kind: 'feature' },
-    'booking.max_bookings_per_month': { kind: 'limit', soft: true },
-    'booking.guest_link': { kind: 'feature', reserved: true },
-    'booking.recurring': { kind: 'feature', reserved: true },
-    'booking.carrier_quotas': { kind: 'feature', reserved: true },
-    'booking.approval': { kind: 'feature', reserved: true },
-    'booking.late_policy': { kind: 'feature', reserved: true },
+    'booking.carrier_portal': { kind: EntitlementKind.feature },
+    'booking.public_link': { kind: EntitlementKind.feature },
+    'booking.pools': { kind: EntitlementKind.feature },
+    'booking.duration_rules': { kind: EntitlementKind.feature },
+    'booking.max_bookings_per_month': { kind: EntitlementKind.limit, soft: true },
+    'booking.guest_link': { kind: EntitlementKind.feature, reserved: true },
+    'booking.recurring': { kind: EntitlementKind.feature, reserved: true },
+    'booking.carrier_quotas': { kind: EntitlementKind.feature, reserved: true },
+    'booking.approval': { kind: EntitlementKind.feature, reserved: true },
+    'booking.late_policy': { kind: EntitlementKind.feature, reserved: true },
   },
   permissions: {
     'booking.view': { roles: [Role.gate_operator, Role.dock_operator, Role.carrier_user] },
@@ -58,7 +60,7 @@ export const booking = defineModule({
       requires: 'booking.public_link',
     },
     'booking.public_registration_mode': {
-      schema: z.enum(['auto_approve', 'approval_required']),
+      schema: z.enum(RegistrationMode),
       default: 'approval_required',
       scopes: [SettingScope.tenant, SettingScope.site],
       requires: 'booking.public_link',
