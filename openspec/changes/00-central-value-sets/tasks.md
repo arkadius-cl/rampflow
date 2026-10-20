@@ -16,9 +16,9 @@
 
 ## 3. Type-aware check and fixer
 
-- [ ] 3.1 Write `scripts/values-check.ts` with `typescript-6` per design D7: programs for `apps/api`, `apps/web`, `apps/driver`, `packages/shared`, `packages/i18n` and `e2e`; contextual-type detection for unions declared in project source; resolution to the declaring value set; report with file, line and `X.member` or "create a value set"; `// values-check-ignore: <reason>` counted and printed; run time printed. Verify with fixture tests: a comparison, an argument, a property, a JSX prop and a return value are reported with the right set; Hono's `sameSite: 'Lax'` and a shadcn `variant` are not; an inline union is reported as "create a value set".
-- [ ] 3.2 Add `--fix`: rewrite reported literals that have a set to `X.member` and add the import (relative inside `packages/shared`, package path elsewhere). Verify with fixture tests that a fixed file type-checks and that a second `--fix` run changes nothing.
-- [ ] 3.3 Add the root script `pnpm values:check` (and `--fix`). Verify it runs on the whole repo and prints counts per package.
+- [x] 3.1 Write `scripts/values-check.ts` with `typescript-6` per design D7: programs for `apps/api`, `apps/web`, `apps/driver`, `packages/shared`, `packages/i18n` and `e2e`; contextual-type detection for unions declared in project source; resolution to the declaring value set; report with file, line and `X.member` or "create a value set"; `// values-check-ignore: <reason>` counted and printed; run time printed. Verify with fixture tests: a comparison, an argument, a property, a JSX prop and a return value are reported with the right set; Hono's `sameSite: 'Lax'` and a shadcn `variant` are not; an inline union is reported as "create a value set".
+- [x] 3.2 Add `--fix`: rewrite reported literals that have a set to `X.member` and add the import (relative inside `packages/shared`, package path elsewhere). Verify with fixture tests that a fixed file type-checks and that a second `--fix` run changes nothing.
+- [x] 3.3 Add the root script `pnpm values:check` (and `--fix`). Verify it runs on the whole repo and prints counts per package.
 
 ## 4. Migration of the use sites
 
