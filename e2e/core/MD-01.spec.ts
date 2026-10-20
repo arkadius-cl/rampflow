@@ -72,4 +72,35 @@ test.describe('MD-01 Sites', () => {
     await page.goto(`/t/${w.A.tenantId}/sites/${w.A.sites[0]?.id}`);
     await expect(page.getByText('No access')).toBeVisible();
   });
+
+  test('each site tab has its own URL, back returns to the previous tab, a foreign site shows no access', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await signInAs(context, w.A.users.tenant_admin);
+    const site = `/t/${w.A.tenantId}/sites/${w.A.sites[0]?.id}`;
+    const tabs = page.getByRole('navigation', { name: 'Site sections' });
+
+    await page.goto(`${site}/hours`);
+    await expect(tabs.getByRole('link', { name: 'Hours and closures' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await page.goto(site);
+    await tabs.getByRole('link', { name: 'Load types' }).click();
+    await expect(page).toHaveURL(new RegExp(`${site}/load-types$`));
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${site}$`));
+    await expect(tabs.getByRole('link', { name: 'Halls, docks and pools' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await page.goto(`/t/${w.A.tenantId}/sites/${w.B.sites[0]?.id}`);
+    await expect(page.getByText('No access')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Site sections' })).toHaveCount(0);
+  });
 });

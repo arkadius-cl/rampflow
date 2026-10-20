@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
+import { setPassword } from '../support/db.ts';
 
 test.describe('PL-02 Packages and overrides', () => {
   const group = (page: Page, name: string) =>
@@ -162,5 +163,22 @@ test.describe('PL-02 Packages and overrides', () => {
       tenantPage.locator('[data-slot="sidebar-content"]').getByRole('link', { name: 'Logo' }),
     ).toBeVisible();
     await admin.close();
+  });
+
+  test('a tenant view link opened signed out leads back to the same tenant after sign-in', async ({
+    page,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await setPassword(w.platformAdmin.id, 'platform password 1');
+    const view = `/platform/tenants/${w.A.tenantId}`;
+
+    await page.goto(view);
+    await expect(page).toHaveURL(/\/login/);
+    await page.getByLabel('Email').fill(w.platformAdmin.email);
+    await page.getByLabel('Password', { exact: true }).fill('platform password 1');
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${view}$`));
+    await expect(page.getByRole('heading', { name: /Tenant A/ })).toBeVisible();
   });
 });
