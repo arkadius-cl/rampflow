@@ -10,6 +10,7 @@
       "**",
       "!docs",
       "!.audit",
+      "!lint/fixtures",
       "!**/routeTree.gen.ts",
       "!apps/api/openapi.gen.json",
       "!apps/web/src/components/ui",

@@ -1,0 +1,74 @@
+// Closed value sets are written once, in packages/shared values files, and used as `X.member`
+// everywhere else (openspec/changes/00-central-value-sets, design D1, D2, D6).
+language js(typescript, jsx)
+
+// A plain string: '...', "..." or a template literal without substitutions.
+pattern string_literal() {
+  or {
+    JsStringLiteralExpression(),
+    JsTemplateExpression(tag=.) as $template where {
+      $template <: r"`[^`]*`",
+      not $template <: contains JsTemplateElement()
+    }
+  }
+}
+
+pattern empty_string() { r"''|\"\"|``" }
+
+// `a: 'a'` or `'a': 'a'`.
+pattern self_keyed_member() {
+  JsPropertyObjectMember(name=$key, value=$entry) where {
+    $entry <: r"['\"]([^'\"]*)['\"]"($text),
+    $key <: r"['\"]?([^'\"]*)['\"]?"($key_text),
+    $key_text <: $text
+  }
+}
+
+or {
+  or {
+    `$left === $right`,
+    `$left !== $right`,
+    `$left == $right`,
+    `$left != $right`
+  } as $comparison where {
+    or {
+      and { $left <: string_literal(), not $left <: empty_string(), not $right <: `typeof $_` },
+      and { $right <: string_literal(), not $right <: empty_string(), not $left <: `typeof $_` }
+    },
+    register_diagnostic(span=$comparison, message="Compare against the central value set member (`X.member` from `@rampflow/shared/...`), not a string literal; see AGENTS.md, Value sets.")
+  },
+  JsCaseClause(test=$label) where {
+    $label <: string_literal(),
+    register_diagnostic(span=$label, message="Use the central value set member as the case label (`case X.member:` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  },
+  `z.enum([$members])` as $schema where {
+    $members <: some string_literal(),
+    register_diagnostic(span=$schema, message="Pass the central value set to zod (`z.enum(X)` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  },
+  // In a call snippet the argument binds as a list, so match its elements.
+  `z.literal($argument)` as $schema where {
+    $argument <: some string_literal(),
+    register_diagnostic(span=$schema, message="Use the central value set member (`z.literal(X.member)` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  },
+  `[$elements] as const` as $list where {
+    $elements <: some string_literal(),
+    register_diagnostic(span=$list, message="Define the value set once as a self-keyed object in a `values.ts` and use it (`X`, `values(X)` or `X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  },
+  JsPropertyObjectMember(name=$name, value=$value) as $member where {
+    $name <: r"['\"]?(?:kind|status|type|as|reason|role|code|party|state|source|channel|mode|direction|via|tab|view|step)['\"]?",
+    $value <: string_literal(),
+    not $member <: within `$_ as const`,
+    register_diagnostic(span=$member, message="Use the central value set member for this field (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  },
+  `$set as const` as $definition where {
+    not $filename <: or {
+      r".*/values\.ts",
+      r".*/values/[^/]+\.ts"
+    },
+    $set <: JsObjectExpression(members=$properties),
+    $properties <: some self_keyed_member(),
+    // A map such as `{ staff: 'tenant', carrier: 'carrier' }` is not a set.
+    not $properties <: some not self_keyed_member(),
+    register_diagnostic(span=$definition, message="Value sets live in a `values.ts` of `packages/shared`: move this set there and import it (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "plugins": ["./value-literals.grit"],
+  "files": { "includes": ["lint/fixtures/**"] },
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "linter": { "rules": { "recommended": false } }
+}
