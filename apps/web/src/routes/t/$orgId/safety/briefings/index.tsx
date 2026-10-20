@@ -50,7 +50,10 @@ export const Route = createFileRoute('/t/$orgId/safety/briefings/')({
   component: BriefingsPage,
 });
 
-type Dialog = { kind: 'create' } | { kind: 'edit'; instruction: Instruction } | null;
+type Dialog =
+  | { kind: typeof EditMode.create }
+  | { kind: typeof EditMode.edit; instruction: Instruction }
+  | null;
 
 function BriefingsPage() {
   const { t } = useTranslation('safety');

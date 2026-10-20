@@ -27,9 +27,9 @@ export function useFragmentToken(): string | null {
 const exchanges = new Map<string, Promise<unknown>>();
 
 export type Exchange<T> =
-  | { status: 'pending' }
-  | { status: 'done'; value: T }
-  | { status: 'failed'; error: unknown };
+  | { status: typeof TokenExchangeStatus.pending }
+  | { status: typeof TokenExchangeStatus.done; value: T }
+  | { status: typeof TokenExchangeStatus.failed; error: unknown };
 
 /**
  * Posts a single-use token exactly once per page load, however often the component mounts:

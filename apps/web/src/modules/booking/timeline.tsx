@@ -105,7 +105,10 @@ export function BookingTimeline({
   );
 }
 
-type Note = { kind: 'none' } | { kind: 'reason'; text: string } | { kind: 'moved'; from: string };
+type Note =
+  | { kind: typeof TimelineNote.none }
+  | { kind: typeof TimelineNote.reason; text: string }
+  | { kind: typeof TimelineNote.moved; from: string };
 
 function noteOf(e: BookingEventView): Note {
   const data = e.data as Record<string, unknown>;

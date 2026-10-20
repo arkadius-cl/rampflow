@@ -31,7 +31,7 @@ export interface BookingFilters {
   when?: PortalBookingListQuery['when'];
   from?: LocalDate;
   to?: LocalDate;
-  order: 'asc' | 'desc';
+  order: NonNullable<PortalBookingListQuery['order']>;
 }
 
 export const portalBookingsQuery = (orgId: string, f: BookingFilters) =>

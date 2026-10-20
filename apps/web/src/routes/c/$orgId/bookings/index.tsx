@@ -78,12 +78,12 @@ const todayHere = () => new Date().toLocaleDateString('sv-SE') as LocalDate;
 function filtersOf(s: Search): BookingFilters {
   const today = todayHere();
   const base = { tenantId: s.tenant, siteId: s.site, status: s.status };
-  const range =
+  const range: Pick<BookingFilters, 'from' | 'to' | 'when' | 'order'> =
     s.tab === CarrierBookingsTab.today
-      ? { from: today, to: today, order: 'asc' as const }
+      ? { from: today, to: today, order: 'asc' }
       : s.tab === CarrierBookingsTab.past
-        ? { when: 'past' as const, order: 'desc' as const }
-        : { when: 'upcoming' as const, order: 'asc' as const };
+        ? { when: 'past', order: 'desc' }
+        : { when: 'upcoming', order: 'asc' };
   return { ...base, ...range, ...(s.from ? { from: s.from } : {}), ...(s.to ? { to: s.to } : {}) };
 }
 

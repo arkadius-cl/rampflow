@@ -7,11 +7,11 @@ import * as z from 'zod';
 // gets a fitting control without screen code (TN-02, PL-03).
 
 export type ControlSpec =
-  | { kind: 'switch' }
-  | { kind: 'select'; options: readonly (string | number)[] }
-  | { kind: 'number'; min: number; max: number }
-  | { kind: 'list'; options: readonly string[] }
-  | { kind: 'url' };
+  | { kind: typeof SettingControl.switch }
+  | { kind: typeof SettingControl.select; options: readonly (string | number)[] }
+  | { kind: typeof SettingControl.number; min: number; max: number }
+  | { kind: typeof SettingControl.list; options: readonly string[] }
+  | { kind: typeof SettingControl.url };
 
 export function controlOf(schema: z.ZodType): ControlSpec {
   if (schema instanceof z.ZodReadonly) return controlOf(schema.unwrap() as z.ZodType);
