@@ -108,6 +108,8 @@ Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has a
 
 Unit U2. Router files in `apps/api/src/modules/core/`.
 
+<!-- routes:auth-me-and-invitations:start -->
+
 | Method | Path | Party | Permission | Story | Notes |
 |---|---|---|---|---|---|
 | GET | `/api/health` | none | none | | U1 |
@@ -126,9 +128,13 @@ Unit U2. Router files in `apps/api/src/modules/core/`.
 | GET | `/api/c/:orgId/context` | carrier | member | | `core/context/routes.carrier.ts` |
 | GET | `/api/platform/context` | platform | member | | `core/context/routes.platform.ts` |
 
+<!-- routes:auth-me-and-invitations:end -->
+
 ## Platform administration
 
 Unit U3. `core/platform/routes.platform.ts`, mounted at the platform root. Schemas in `packages/shared/src/modules/core/api.platform.ts` and `api.settings.ts`.
+
+<!-- routes:platform-administration:start -->
 
 | Method | Path | Permission | Story | Notes |
 |---|---|---|---|---|
@@ -144,9 +150,13 @@ Unit U3. `core/platform/routes.platform.ts`, mounted at the platform root. Schem
 | PUT | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | `{ value }` → the field. 400 for an unknown key or one without platform scope; 422 with the zod path under `["value", ...]`. Tenant and site rows stay |
 | DELETE | `/api/platform/settings/:key` | `core.manage_platform_settings` | PL-03 | 204; back to the code default |
 
+<!-- routes:platform-administration:end -->
+
 ## Tenant administration
 
 Schemas in `packages/shared/src/modules/core/api.staff.ts`, `api.settings.ts` and `packages/shared/src/modules/brand/api.ts`.
+
+<!-- routes:tenant-administration:start -->
 
 | Method | Path | Permission | Entitlement | Story | Router (unit) |
 |---|---|---|---|---|---|
@@ -168,9 +178,13 @@ Schemas in `packages/shared/src/modules/core/api.staff.ts`, `api.settings.ts` an
 | PATCH | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same; `{ role }` |
 | DELETE | `/api/c/:orgId/users/:membershipId` | `core.manage_carrier_users` | | CR-04 | same |
 
+<!-- routes:tenant-administration:end -->
+
 ## Master data and capacity
 
 Unit U4.
+
+<!-- routes:master-data-and-capacity:start -->
 
 | Method | Path | Permission | Entitlement | Story | Router |
 |---|---|---|---|---|---|
@@ -201,11 +215,15 @@ Unit U4.
 | PUT | `/api/t/:orgId/capacity/load-types/:loadTypeId/resources` | `booking.manage_resources` | | MD-05 | same |
 | GET | `/api/t/:orgId/capacity/availability` | `booking.view` | | MD-04, BK-02 | same; `?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource and their union (`Offers` in `api.capacity.ts`), staff view without lead time and horizon |
 
+<!-- routes:master-data-and-capacity:end -->
+
 Request schemas and response shapes live in `packages/shared/src/modules/core/api.sites.ts` and `packages/shared/src/modules/booking/api.capacity.ts`. Capacity writers in other units call `lockSiteCapacity`, `loadDayTimeline`, `checkFit`, `offersFor` and `isOverCapacity` from `apps/api/src/modules/booking/capacity/` ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)); `offersFor` with `audience: 'carrier'` applies `booking.min_lead_minutes` and `booking.horizon_days`.
 
 ## Safety authoring and register
 
 Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule('safety')`. Schemas in `packages/shared/src/modules/safety/api.authoring.ts` and `api.register.ts`.
+
+<!-- routes:safety-authoring-and-register:start -->
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -221,11 +239,15 @@ Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.
 | POST | `/api/t/:orgId/safety/acknowledgements/search` | `safety.view_register` | | SF-03 | `{ siteId?, carrierId?, driverName?, instructionId?, versionId?, status?, limit?, cursor? }`; newest first, paginated; `status` is `valid`, `visit_only`, `expired` or `outdated` from `acknowledgementStatus`; restricted rows (TN-06) are left out |
 | POST | `/api/t/:orgId/safety/acknowledgements.csv` | `safety.view_register` | | SF-03 | same filters without paging, up to 50,000 rows; CSV format of [Time and formats](#time-and-formats) |
 
+<!-- routes:safety-authoring-and-register:end -->
+
 The register routes take their filters in a POST body, not a query string, because the driver name is a personal search term ([Requests](#requests)).
 
 ## Bookings (staff)
 
 Unit U6a, built. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creates, reschedules and duration-changing avis edits take the site capacity lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)). Request schemas and response shapes live in `packages/shared/src/modules/booking/api.staff.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Reads and commands answer the `BookingView` (booking, avis, safety status, driver link state).
+
+<!-- routes:bookings-staff:start -->
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -242,9 +264,13 @@ Unit U6a, built. `booking/staff/routes.tenant.ts`, mounted at `/bookings`. Creat
 | POST | `/api/t/:orgId/bookings/:bookingId/driver-link` | `booking.staff_book` | | CR-06 | regenerate; answers the new `{ url, expiresAt }` |
 | POST | `/api/t/:orgId/bookings/:bookingId/driver-link/email` | `booking.staff_book` | `notify.email` | CR-06 | `{ email, locale }`; 202 |
 
+<!-- routes:bookings-staff:end -->
+
 ## Carrier network
 
 Unit U7. Router files in `apps/api/src/modules/booking/{carriers,registration}/`; shapes in `packages/shared/src/modules/booking/api.carriers.ts`.
+
+<!-- routes:carrier-network:start -->
 
 | Method | Path | Party | Permission | Entitlement | Story | Router |
 |---|---|---|---|---|---|---|
@@ -265,6 +291,8 @@ Unit U7. Router files in `apps/api/src/modules/booking/{carriers,registration}/`
 | POST | `/api/public/carrier-invitations/inspect` | token | token | | TN-03, CR-01 | `booking/carriers/routes.public.ts`; `{ token }` → `{ tenantName, logoUrl, companyName, email, hasAccount }`; `logoUrl` as for `/api/public/links/:slug` |
 | POST | `/api/public/carrier-invitations/accept` | token, then user | token | | TN-03, CR-01 | same; `{ token, name?, password?, companyName?, locale? }` → `{ carrierId }`. A new user needs `name` and `password` (422 without) and becomes carrier admin of a new org; a user signed in with the invited email links the carrier org they administer, and one who is only `carrier_user` answers 403 `forbidden` with `reason: 'carrier_admin_required'` and leaves the invitation pending; an email with an account answers 401 `sign_in_required` with `email`. The link is active, also when the tenant deactivated it before sending this invitation; a deactivation after it stays. Single use, 7 days. Service: `acceptCarrierInvitation` in `accept.redeem.ts` |
 
+<!-- routes:carrier-network:end -->
+
 `assertActiveLink(tx, tenantId, carrierId)` in `booking/carriers/links.ts` throws 403 `forbidden` with `reason: 'link_inactive'` unless the link is active. Booking creation and reschedules call it (U8); reads and cancel do not, so a deactivated carrier keeps seeing its bookings.
 
 ## Carrier booking portal
@@ -272,6 +300,8 @@ Unit U7. Router files in `apps/api/src/modules/booking/{carriers,registration}/`
 Unit U8, built. Carrier reads in `booking/portal/routes.carrier.ts` at `/api/c/:orgId/bookings` (party `carrier`, every tenant the carrier has bookings at); writes and the wizard's reads in `booking/portal/routes.carrier-at-tenant.ts` at `/api/c/:orgId/at/:tenantId` (party `carrier_at_tenant`). Request schemas and response shapes live in `packages/shared/src/modules/booking/api.portal.ts`. Every `at` route needs an active link (else 403 `forbidden`, reason `link_inactive`), except `cancel`, which a deactivated link still allows. Another carrier's booking, at the same tenant or not, answers 404.
 
 Bookings answer `PortalBookingView`: the summary (tenant, site, slot with `timeZone`, load type, load units, plate, first reference, `checkedInAt`, `departedAt`, `cutoffAt`, `version`) plus the site's address and phone, `linkActive`, dock code, the visit timestamps, the avis, the safety status, the driver link state and the events without actors. `cutoffAt` is `startsAt - booking.cancel_cutoff_minutes` of the booking's site. Offers answer `PortalOffers`: the site's offered starts of one day with `durationMinutes`, without the resources, which stay internal; a 409 with `offers` carries the same shape.
+
+<!-- routes:carrier-booking-portal:start -->
 
 | Method | Path | Permission | Entitlement (tenant's) | Story | Notes |
 |---|---|---|---|---|---|
@@ -289,9 +319,13 @@ Bookings answer `PortalBookingView`: the summary (tenant, site, slot with `timeZ
 | POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link` | `booking.book` | | CR-06 | regenerate; `{ url, expiresAt }` |
 | POST | `/api/c/:orgId/at/:tenantId/bookings/:bookingId/driver-link/email` | `booking.book` | `notify.email` | CR-06 | `{ email, locale }` with one of the 12 driver locales; 202 |
 
+<!-- routes:carrier-booking-portal:end -->
+
 ## Yard
 
 Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`). Request schemas and response shapes live in `packages/shared/src/modules/yard/api.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Lists and commands answer `YardTruck`: carrier, plate (seen at the gate, else announced), driver phone, load type, load units, resource, slot, safety status, punctuality, dock with code and hall, the visit timestamps, `since` (when the current status began) and `version`. Every route is site-scoped: an operator of another site gets 404.
+
+<!-- routes:yard:start -->
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -312,11 +346,15 @@ Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('ya
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/loading` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ dockId? }`, as `dock` |
 | POST | `/api/t/:orgId/yard/bookings/:bookingId/complete` | `yard.dock` | `yard.call_to_dock` | YD-08 | `{ actualLoadUnits, discrepancyNote? }` |
 
+<!-- routes:yard:end -->
+
 The driver view reads the called dock from `booking.dock_id`, which `call` sets and `uncall` clears; its code and hall name come from `dock` and `hall` (DR-03). The event log of a visit is `GET /api/t/:orgId/bookings/:bookingId/events` (YD-08).
 
 ## Driver
 
 Unit U10, built. Response shapes and request schemas live in `packages/shared/src/modules/driver/api.ts` (`ExchangeBody`, `DriverBookingView`) and `packages/shared/src/modules/safety/api.driver.ts` (briefing list, content, attempt and acknowledgement). No answer of these routes carries the driver's name, phone or plate, and none carries a token ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)).
+
+<!-- routes:driver:start -->
 
 | Method | Path | Party | Entitlement | Story | Router |
 |---|---|---|---|---|---|
@@ -328,11 +366,15 @@ Unit U10, built. Response shapes and request schemas live in `packages/shared/sr
 | POST | `/api/driver/briefings/:instructionId/attempts` | driver | `safety.quiz` | SF-04, SF-02 | `{ locale, answers: { <questionId>: <option index> } }` → `{ score, passed, attempts, wrong }`; passes at `safety.quiz_pass_percent`; counts every attempt in `safety_attempt` per booking and version; the latest attempt decides |
 | POST | `/api/driver/briefings/:instructionId/acknowledgement` | driver | module `safety` | SF-04 | `{ locale, name, confirmed: true }` → 201 `{ expiresAt }`; with a quiz and `safety.quiz` on, 409 `conflict` reason `quiz_not_passed` until the latest attempt passed; stores the acknowledgement through `recordAcknowledgement` with the session's channel, links it (`link_acknowledgement` via `completed`); on a `link` session with an expiry it sets `rf_device` (one year, `Path=/api/driver`) when absent and upserts the `safety_pass`; a `staff` session (gate device, YD-02) never does |
 
+<!-- routes:driver:end -->
+
 The exchange has an account case with credential `none`: the harness's `token` credential refuses a driver token as a wrong party, which is this route's only valid token. `driver/session/session.test.ts` covers unknown, expired and revoked tokens and the limit.
 
 ## Reports
 
 Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule('report')`.
+
+<!-- routes:reports:start -->
 
 | Method | Path | Permission | Entitlement | Story | Notes |
 |---|---|---|---|---|---|
@@ -340,6 +382,8 @@ Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule(
 | GET | `/api/t/:orgId/reports/kpis.csv` | `report.view` | `report.export` | RP-02 | |
 | GET | `/api/t/:orgId/reports/visits` | `report.view` | | RP-02 | paginated visit list with all timestamps |
 | GET | `/api/t/:orgId/reports/visits.csv` | `report.view` | `report.export` | RP-02 | |
+
+<!-- routes:reports:end -->
 
 As built (U11):
 
@@ -353,11 +397,15 @@ As built (U11):
 
 Unit U11. `privacy/requests/routes.tenant.ts`, mounted at `/privacy`.
 
+<!-- routes:privacy:start -->
+
 | Method | Path | Permission | Story | Notes |
 |---|---|---|---|---|
 | POST | `/api/t/:orgId/privacy/search` | `privacy.manage_requests` | TN-06 | `{ name?, phone?, plate? }`; matching bookings and acknowledgements |
 | POST | `/api/t/:orgId/privacy/export` | `privacy.manage_requests` | TN-06 | same body; JSON download |
 | POST | `/api/t/:orgId/privacy/erase` | `privacy.manage_requests` | TN-06 | same body plus `{ confirm: true }`; pseudonymizes bookings, restricts acknowledgements under retention |
+
+<!-- routes:privacy:end -->
 
 As built (U11):
 

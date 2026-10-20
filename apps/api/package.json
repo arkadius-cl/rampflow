@@ -20,7 +20,8 @@
     "db:regen": "tsx scripts/db-regen.ts",
     "admin:create": "node ../../scripts/checkout-env.mjs run -- tsx scripts/admin-create.ts",
     "db:seed": "node ../../scripts/checkout-env.mjs run -- tsx scripts/seed-dev.ts",
-    "retention:run": "node ../../scripts/checkout-env.mjs run -- tsx scripts/retention-run.ts"
+    "retention:run": "node ../../scripts/checkout-env.mjs run -- tsx scripts/retention-run.ts",
+    "api:docs": "node ../../scripts/checkout-env.mjs run -- tsx scripts/openapi.ts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
@@ -44,6 +45,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@seriousme/openapi-schema-validator": "2.11.0",
     "@types/node": "^26.6.5",
     "@types/nodemailer": "8.0.2",
     "@types/pg": "8.15.6",
