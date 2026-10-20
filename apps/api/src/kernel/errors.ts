@@ -1,3 +1,4 @@
+import type { ErrorCode } from '@rampflow/shared/values';
 import { DrizzleQueryError } from 'drizzle-orm';
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
@@ -15,16 +16,15 @@ export const ERROR_STATUS = {
   validation_failed: 422,
   rate_limited: 429,
   internal_error: 500,
-} as const satisfies Record<string, ContentfulStatusCode>;
+} as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
-export type ErrorCode = keyof typeof ERROR_STATUS;
 export type ErrorDetails = Readonly<Record<string, unknown>>;
 
 export interface ErrorBody {
   error: { code: ErrorCode; message: string; details?: ErrorDetails };
 }
 
-export const DEFAULT_MESSAGE: Record<ErrorCode, string> = {
+export const DEFAULT_MESSAGE = {
   bad_request: 'Bad request',
   unauthorized: 'Sign in required',
   forbidden: 'Not allowed',
@@ -35,7 +35,7 @@ export const DEFAULT_MESSAGE: Record<ErrorCode, string> = {
   validation_failed: 'Validation failed',
   rate_limited: 'Too many requests',
   internal_error: 'Internal server error',
-};
+} as const satisfies Record<ErrorCode, string>;
 
 /** Throw from handlers and services. The scoped transaction rolls back; the client gets the envelope. */
 export class ApiError extends Error {

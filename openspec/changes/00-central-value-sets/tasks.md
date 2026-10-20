@@ -9,7 +9,7 @@
 
 ## 2. Missing value sets
 
-- [ ] 2.1 Move `ErrorCode` to `values/errors.ts`, make `ERROR_STATUS` and `DEFAULT_MESSAGE` in `kernel/errors.ts` `satisfies Record<ErrorCode, ...>`, and delete the web's copy in `apps/web/src/lib/api.ts`. Verify `pnpm typecheck` and `apps/api/src/kernel/errors` tests pass.
+- [x] 2.1 Move `ErrorCode` to `values/errors.ts`, make `ERROR_STATUS` and `DEFAULT_MESSAGE` in `kernel/errors.ts` `satisfies Record<ErrorCode, ...>`, and delete the web's copy in `apps/web/src/lib/api.ts`. Verify `pnpm typecheck` and `apps/api/src/kernel/errors` tests pass.
 - [ ] 2.2 Add `ConflictReason` with the 32 reasons used in `apps/api/src`, type `details.reason` of `conflict` through an `ApiError` overload, and type the web's reason as `ConflictReason | undefined`. Add an i18n test that every `ConflictReason` has `core:errors.conflict.<reason>` in de, en and pl. Verify the test passes and fails for a reason without a string.
 - [ ] 2.3 Add `BookingEventType`, `EmailTemplate`, `JobName`, `SystemActorName`, `TokenPurpose` (merging `AuthTokenKind`), `DriverChannel` (one definition instead of two), `EmailCategory`, `KpiUnit`, `AckChannel`, `SafetyStatus`, `ActorParty`, `ClosureSource`, `PrivacyRequestKind`, `OrgKind` and `RateLimitBucket` per design D4. Replace the union-only types and the API schema duplicates with them. Verify with a type test that `EmailTemplate` and the `EmailTemplates` interface cover the same names, and with `pnpm typecheck` and `pnpm test`.
 - [ ] 2.4 Add `NodeEnv`, `HttpMethod`, `SqlState`, `KeyboardKey` and `VisibilityState` to `packages/shared/src/values/`, and make `kernel/env.ts` use `z.enum(NodeEnv)`. Verify `pnpm typecheck`.

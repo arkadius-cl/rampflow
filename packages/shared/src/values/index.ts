@@ -1,4 +1,5 @@
 export { type ValueOf, values } from './define.ts';
+export * from './errors.ts';
 export * from './keys.ts';
 export * from './locales.ts';
 export * from './packages.ts';

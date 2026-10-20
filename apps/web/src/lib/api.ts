@@ -1,21 +1,9 @@
 import type { AppType } from '@rampflow/api';
+import type { ErrorCode } from '@rampflow/shared/values';
 import { hc } from 'hono/client';
 
 /** The typed API client. Same origin: Vite proxies /api in dev, one host serves both in production. */
 export const api = hc<AppType>('/').api;
-
-/** Every error code of docs/reference/api-routes.md. The UI shows `core:errors.<code>`. */
-export type ErrorCode =
-  | 'bad_request'
-  | 'unauthorized'
-  | 'forbidden'
-  | 'entitlement_required'
-  | 'not_found'
-  | 'conflict'
-  | 'limit_reached'
-  | 'validation_failed'
-  | 'rate_limited'
-  | 'internal_error';
 
 export interface ValidationIssue {
   path: (string | number)[];

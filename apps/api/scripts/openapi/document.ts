@@ -1,5 +1,6 @@
+import type { ErrorCode } from '@rampflow/shared/values';
 import type { Guard } from '../../src/kernel/describe.ts';
-import { DEFAULT_MESSAGE, ERROR_STATUS, type ErrorCode } from '../../src/kernel/errors.ts';
+import { DEFAULT_MESSAGE, ERROR_STATUS } from '../../src/kernel/errors.ts';
 import { DRIVER_COOKIE, SESSION_COOKIE } from '../../src/kernel/scopes.ts';
 import { byText } from './converter.ts';
 import type { Endpoint, Party } from './model.ts';
