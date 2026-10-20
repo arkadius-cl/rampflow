@@ -60,6 +60,7 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 - Use the original shadcn components first: `pnpm dlx shadcn@latest add <component>` from the app directory. Compose them before writing a new primitive.
 - Forms: react-hook-form with `Controller` and shadcn `Field`, `FieldLabel`, `FieldDescription`, `FieldError`; zod schemas from `packages/shared` through `zodResolver`.
 - Gate routes with `guard({ permission, entitlement })` and actions with `useAccess()`; build the sidebar with `navFor` (module contract, "Web gating").
+- Office screens (carrier, tenant office, platform admin) target 1920 × 1080; screenshots and the `staff` Playwright project use that viewport.
 - Show times in site time with the zone label. Touch targets on gate, dock and driver screens are at least 44 CSS px. Status never relies on color alone.
 
 ## Tests

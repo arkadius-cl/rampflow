@@ -10,6 +10,8 @@ const reuseExistingServer = !process.env.CI;
 const apiPort = Number(process.env.API_PORT ?? 3000);
 const webPort = Number(process.env.WEB_PORT ?? 5173);
 const driverPort = Number(process.env.DRIVER_PORT ?? 5174);
+// Office screens are laid out for 1920 × 1080 (docs/explanation/ux-concept.md).
+const office = { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } };
 
 export default defineConfig({
   testDir: './e2e',
@@ -23,7 +25,7 @@ export default defineConfig({
   },
   projects: [
     // Office and station screens of staff and carriers (U2).
-    { name: 'staff', testIgnore: /(driver|core-loop)\//, use: { ...devices['Desktop Chrome'] } },
+    { name: 'staff', testIgnore: /(driver|core-loop)\//, use: office },
     // The driver PWA on a phone (U10), through the web dev server's /d proxy.
     { name: 'driver', testMatch: /driver\//, use: { ...devices['Pixel 7'] } },
     // The core loop (U12) pins the one API clock that every spec shares, so it runs alone after
@@ -35,7 +37,7 @@ export default defineConfig({
       workers: 1,
       // One long story on a shared machine: a stuck step fails with its locator, not the timeout.
       expect: { timeout: 15_000 },
-      use: { ...devices['Desktop Chrome'], actionTimeout: 30_000 },
+      use: { ...office, actionTimeout: 30_000 },
     },
   ],
   webServer: [
