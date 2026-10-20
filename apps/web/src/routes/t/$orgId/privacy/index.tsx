@@ -5,7 +5,13 @@ import {
   type SubjectMatches,
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
-import { BadgeSize, EmailCategory, HtmlInputType, Permission } from '@rampflow/shared/values';
+import {
+  BadgeSize,
+  EmailCategory,
+  HtmlInputType,
+  Permission,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { DownloadIcon, EraserIcon, SearchIcon, UserSearchIcon } from 'lucide-react';
@@ -97,7 +103,7 @@ function PrivacyPage() {
   };
   const message = (field: keyof Values, error: FormFieldError | undefined) => {
     if (!error) return undefined;
-    if (field === IDENTIFIER_FIELD && error.type === 'custom')
+    if (field === IDENTIFIER_FIELD && error.type === ZodIssueCode.custom)
       return t(($) => $.requests.errors.identifier);
     return t(($) => $.requests.errors[field]);
   };

@@ -3,6 +3,7 @@ import { availableCommands, type BookingStatus } from '@rampflow/shared/modules/
 import {
   BookingParty,
   ChangeLock,
+  CommandName,
   OnSiteStatus,
   RescheduleProblem,
 } from '@rampflow/shared/modules/booking/values';
@@ -59,16 +60,16 @@ export function useChangeAccess(status: BookingStatus) {
   const commands = availableCommands(status, BookingParty.staff, access.can);
   const lock: ChangeLock | null = !access.can(Permission.booking.staff_book)
     ? ChangeLock.no_permission
-    : commands.includes('reschedule')
+    : commands.includes(CommandName.reschedule)
       ? null
       : isValueOf(OnSiteStatus, status)
         ? ChangeLock.on_site
         : ChangeLock.closed;
   return {
     lock,
-    canReschedule: commands.includes('reschedule'),
-    canCancel: commands.includes('cancel'),
-    canEditAvis: commands.includes('update_avis') && access.has(Feature.avis.basic),
+    canReschedule: commands.includes(CommandName.reschedule),
+    canCancel: commands.includes(CommandName.cancel),
+    canEditAvis: commands.includes(CommandName.update_avis) && access.has(Feature.avis.basic),
   };
 }
 

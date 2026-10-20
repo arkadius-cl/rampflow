@@ -85,7 +85,6 @@ describe('MD-01 sites', () => {
       'Palletised',
       'Parcel / van',
     ]);
-    // biome-ignore lint/plugin: a load type name, free text
     const palletised = types.find((t) => t.name.en === 'Palletised');
     if (!palletised) throw new Error('no Palletised');
     const withRules = { features: { 'booking.duration_rules': true } } as never;
@@ -135,7 +134,6 @@ describe('MD-02 halls and docks', () => {
     const same = await admin(w.B).post(docks(s0), { body: dockBody(s0.hallId, 'D-77') });
     expect(same.status).toBe(201);
     const rename = await admin(w.B).patch(`${docks(s0)}/${s0.dockIds[0]}`, {
-      // biome-ignore lint/plugin: a dock code, free text
       body: { code: 'D-02' },
     });
     expect(rename.status).toBe(409);
@@ -177,7 +175,6 @@ describe('MD-02 halls and docks', () => {
     const docks = (await (await admin(w.A).get(url)).json()) as {
       items: { id: string; code: string }[];
     };
-    // biome-ignore lint/plugin: a dock code, free text
     const inactive = docks.items.find((d) => d.code === 'X-1');
     const reactivate = await admin(w.A).patch(`${url}/${inactive?.id}`, {
       body: { status: DockStatus.active },

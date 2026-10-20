@@ -1,5 +1,5 @@
 import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
-import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
+import { BriefingState } from '@rampflow/shared/modules/safety/values';
 import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
@@ -117,7 +117,7 @@ function GateScreen() {
 
 function ExpectedRow({ booking: b }: { booking: Booking }) {
   const late = b.status === BookingStatus.confirmed && b.start < NOW;
-  const blocked = b.safety !== InstructionSafety.valid;
+  const blocked = b.safety !== BriefingState.valid;
   return (
     <li
       className={cn(
@@ -166,7 +166,7 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
 }
 
 function CheckInDialog({ booking: b }: { booking: Booking }) {
-  const blocked = b.safety !== InstructionSafety.valid;
+  const blocked = b.safety !== BriefingState.valid;
   return (
     <DialogContent className="sm:max-w-2xl" data-density="touch">
       <DialogHeader>

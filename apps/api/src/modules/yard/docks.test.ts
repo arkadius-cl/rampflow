@@ -106,7 +106,6 @@ describe('YD-07 assign and call', () => {
     expect([a?.id, b?.id]).toContain(occupied?.id);
     expect(occupied).toMatchObject({
       status: BookingStatus.called,
-      // biome-ignore lint/plugin: a dock code, free text
       dock: { code: 'D-01', hall: 'Hall 1' },
     });
     const winner = occupied?.id as string;
@@ -127,7 +126,6 @@ describe('YD-07 assign and call', () => {
     );
     expect(moved).toMatchObject({
       outsideResource: true,
-      // biome-ignore lint/plugin: a dock code, free text
       truck: { status: BookingStatus.called, dock: { code: 'B-01', hall: 'Hall 2' } },
     });
     const refused = await post(w.A.users.dock_operator, `${b.id}/call`, { dockId: maintenance });
@@ -159,7 +157,6 @@ describe('YD-08 dock progress', () => {
     const dockOp = w.A.users.dock_operator;
     expect((await post(dockOp, `${b.id}/loading`)).status).toBe(422);
     const loading = await json<YardTruck>(await post(dockOp, `${b.id}/loading`, { dockId }));
-    // biome-ignore lint/plugin: a dock code, free text
     expect(loading).toMatchObject({ status: BookingStatus.loading, dock: { code: 'D-02' } });
     expect((await post(dockOp, `${b.id}/complete`, { actualLoadUnits: -1 })).status).toBe(422);
     const done = await json<YardTruck>(

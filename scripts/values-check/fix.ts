@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import ts from 'typescript-6';
+import { VerdictKind } from '../../packages/shared/src/values/cli.ts';
 import type { CheckResult, Finding } from './check.ts';
 import { resolve } from './imports.ts';
 import type { ValueSet } from './sets.ts';
@@ -40,7 +41,7 @@ export function fix(root: string, result: CheckResult): FixResult {
   const done = new Set<Finding>();
   const clashes = new Map<Finding, string>();
   const byFile = Map.groupBy(
-    result.findings.filter((f) => f.verdict.kind === 'set' && !f.ignored),
+    result.findings.filter((f) => f.verdict.kind === VerdictKind.set && !f.ignored),
     (f) => f.file,
   );
   for (const [file, findings] of byFile) {
@@ -62,7 +63,7 @@ export function fix(root: string, result: CheckResult): FixResult {
     const missing = new Map<string, string[]>();
     const usable = new Map<string, string | undefined>();
     for (const f of findings) {
-      if (f.verdict.kind !== 'set') continue;
+      if (f.verdict.kind !== VerdictKind.set) continue;
       const set = f.verdict.set;
       if (!usable.has(set.name)) {
         const binding = bindingOf(program, checker, source, set);
@@ -193,7 +194,7 @@ function rewrite(source: ts.SourceFile, declaration: ts.ImportDeclaration, plan:
     .concat(plan.added);
   const start = declaration.getStart(source);
   if (!names.length && !clause.name) {
-    const newline = source.text[declaration.end] === '\n' ? 1 : 0;
+    const newline = source.text.startsWith('\n', declaration.end) ? 1 : 0;
     return { start, end: declaration.end + newline, text: '' };
   }
   const head = clause.name ? `${clause.name.text}${names.length ? ', ' : ''}` : '';

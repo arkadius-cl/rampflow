@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect } from '@playwright/test';
 import pg from 'pg';
 import { LoadUnitType, ReferenceType } from '../../packages/shared/src/modules/avis/values.ts';
+import { DurationKind } from '../../packages/shared/src/modules/booking/values.ts';
 import {
   firstInstantFrom,
   type LocalDate,
@@ -129,7 +130,7 @@ export async function siteSetting(
 export async function tieredLoadType(loadTypeId: string): Promise<void> {
   await db().query('update load_type set duration = $1 where id = $2', [
     JSON.stringify({
-      kind: 'tiers',
+      kind: DurationKind.tiers,
       tiers: [
         { upTo: 10, minutes: 30 },
         { upTo: null, minutes: 120 },

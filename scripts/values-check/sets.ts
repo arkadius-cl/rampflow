@@ -1,4 +1,5 @@
 import ts from 'typescript-6';
+import { VerdictKind } from '../../packages/shared/src/values/cli.ts';
 
 /** An exported `{...} as const` of string literals, or a key tree such as `Permission`. */
 export interface ValueSet {
@@ -57,8 +58,8 @@ function collect(
 }
 
 export type Verdict =
-  | { kind: 'set'; set: ValueSet; access: string }
-  | { kind: 'create'; union: readonly string[] };
+  | { kind: typeof VerdictKind.set; set: ValueSet; access: string }
+  | { kind: typeof VerdictKind.create; union: readonly string[] };
 
 /**
  * The set a literal belongs to under its contextual union: the smallest set covering the union
@@ -77,8 +78,8 @@ export function resolve(
   const set =
     pick(covering, alias, Math.min(...covering.map((s) => s.members.size))) ??
     pick(contained, alias, Math.max(...contained.map((s) => s.members.size)));
-  if (!set) return { kind: 'create', union };
-  return { kind: 'set', set, access: set.members.get(literal) as string };
+  if (!set) return { kind: VerdictKind.create, union };
+  return { kind: VerdictKind.set, set, access: set.members.get(literal) as string };
 }
 
 function pick(sets: readonly ValueSet[], alias: string | undefined, size: number) {

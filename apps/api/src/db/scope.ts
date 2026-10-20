@@ -60,7 +60,6 @@ export interface SessionVariables {
 }
 
 const EMPTY: SessionVariables = {
-  // biome-ignore lint/plugin: '' is an unset session variable, not a set member
   party: '',
   user_id: '',
   tenant_id: '',

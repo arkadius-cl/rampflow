@@ -21,6 +21,7 @@ import {
   Setting,
   values,
   YesNo,
+  ZodIssueCode,
 } from '@rampflow/shared/values';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
@@ -274,36 +275,43 @@ export function useAvisMessage() {
   const { t } = useTranslation('booking');
   const { t: tAvis } = useTranslation('avis');
   const plate = (type: IssueType) =>
-    type === 'invalid_format' ? t(($) => $.plan.validation.plate) : undefined;
+    type === ZodIssueCode.invalid_format ? t(($) => $.plan.validation.plate) : undefined;
   // A field's own message, which wins over the messages every field shares.
   const own = new Map<string, (type: IssueType) => string | undefined>([
     ['plate', plate],
     ['trailerPlate', plate],
-    ['phone', (type) => (type === 'invalid_format' ? tAvis(($) => $.avis.hint.phone) : undefined)],
+    [
+      'phone',
+      (type) =>
+        type === ZodIssueCode.invalid_format ? tAvis(($) => $.avis.hint.phone) : undefined,
+    ],
     [
       'unNumber',
-      (type) => (type === 'invalid_format' ? tAvis(($) => $.avis.hint.unNumber) : undefined),
+      (type) =>
+        type === ZodIssueCode.invalid_format ? tAvis(($) => $.avis.hint.unNumber) : undefined,
     ],
     ['plateCountry', () => t(($) => $.plan.validation.country)],
     ['label', () => tAvis(($) => $.avis.hint.otherLabel)],
     [
       'maxC',
-      (type) => (type === 'custom' ? t(($) => $.plan.validation.temperature_order) : undefined),
+      (type) =>
+        type === ZodIssueCode.custom ? t(($) => $.plan.validation.temperature_order) : undefined,
     ],
     [
       'references',
-      (type) => (type === 'custom' ? t(($) => $.plan.validation.reference_type) : undefined),
+      (type) =>
+        type === ZodIssueCode.custom ? t(($) => $.plan.validation.reference_type) : undefined,
     ],
   ]);
   return (error: { type?: string | number } | undefined, field: string): string | undefined => {
     if (!error) return undefined;
     const specific = own.get(field)?.(error.type);
     if (specific) return specific;
-    if (error.type === 'custom') return t(($) => $.plan.validation.required_here);
-    if (error.type === 'too_big') return t(($) => $.plan.validation.too_big);
-    if (error.type === 'too_small' && POSITIVE_FIELDS.has(field))
+    if (error.type === ZodIssueCode.custom) return t(($) => $.plan.validation.required_here);
+    if (error.type === ZodIssueCode.too_big) return t(($) => $.plan.validation.too_big);
+    if (error.type === ZodIssueCode.too_small && POSITIVE_FIELDS.has(field))
       return t(($) => $.plan.validation.positive);
-    if (error.type === 'invalid_type' && !CHOICE_FIELDS.has(field))
+    if (error.type === ZodIssueCode.invalid_type && !CHOICE_FIELDS.has(field))
       return t(($) => $.plan.validation.number);
     return t(($) => $.plan.validation.required);
   };

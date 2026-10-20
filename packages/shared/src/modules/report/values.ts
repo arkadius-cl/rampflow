@@ -42,3 +42,20 @@ export const ReportExport = {
   visits: 'visits',
 } as const;
 export type ReportExport = ValueOf<typeof ReportExport>;
+
+/** The KPIs of RP-01 (docs/reference/booking-lifecycle.md, "KPIs"), in display order. */
+export const KpiKey = {
+  bookingsDue: 'bookingsDue',
+  noShowRate: 'noShowRate',
+  lateCancellationRate: 'lateCancellationRate',
+  onTimeRate: 'onTimeRate',
+  earlyRate: 'earlyRate',
+  lateRate: 'lateRate',
+  waitMinutes: 'waitMinutes',
+  dockDwellMinutes: 'dockDwellMinutes',
+  turnaroundMinutes: 'turnaroundMinutes',
+  dockUtilisation: 'dockUtilisation',
+  portalAdoption: 'portalAdoption',
+  standgeldVisits: 'standgeldVisits',
+} as const;
+export type KpiKey = ValueOf<typeof KpiKey>;

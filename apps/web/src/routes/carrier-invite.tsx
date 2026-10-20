@@ -5,7 +5,12 @@ import type {
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
 import { RefinementMessage } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
+import {
+  ErrorCode,
+  ForbiddenReason,
+  TokenExchangeStatus,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -116,7 +121,7 @@ function Invitation({
       await navigate({ to: '/c/$orgId/tenants', params: { orgId: carrierId }, replace: true });
     },
     onError: (e) => {
-      if (isFailure(e, ErrorCode.unauthorized) && e.reason === 'sign_in_required')
+      if (isFailure(e, ErrorCode.unauthorized) && e.reason === UnauthorizedReason.sign_in_required)
         setNeedsSignIn(true);
     },
   });
@@ -137,14 +142,14 @@ function Invitation({
           <span className="truncate">{invitation.email}</span>
         </div>
         {failure &&
-        failure.reason !== 'sign_in_required' &&
+        failure.reason !== UnauthorizedReason.sign_in_required &&
         failure.code !== ErrorCode.validation_failed ? (
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
               {failure.code === ErrorCode.unauthorized
                 ? t(($) => $.carriers.accept.invalid)
-                : failure.reason === 'carrier_admin_required'
+                : failure.reason === ForbiddenReason.carrier_admin_required
                   ? t(($) => $.carriers.accept.admin_required, { tenant: invitation.tenantName })
                   : errorText(core, failure)}
             </AlertTitle>

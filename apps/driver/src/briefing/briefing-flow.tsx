@@ -6,6 +6,7 @@ import {
   type DriverBriefingContent,
 } from '@rampflow/shared/modules/safety/api.driver';
 import {
+  BlockKind,
   BriefingStep,
   InstructionSafety,
   TranslationState,
@@ -45,7 +46,7 @@ export function rulesOf(blocks: readonly Block[]): Rule[] {
   const rules: Rule[] = [];
   for (const block of blocks) {
     const last = rules.at(-1);
-    if (block.kind === 'pictogram') rules.push({ pictogram: block.id });
+    if (block.kind === BlockKind.pictogram) rules.push({ pictogram: block.id });
     else if (last && last.text === undefined) last.text = block.text;
     else rules.push({ text: block.text });
   }

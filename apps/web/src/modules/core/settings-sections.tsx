@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { ModuleId, SettingKey, SettingScope } from '@rampflow/shared';
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
 import { SettingControl } from '@rampflow/shared/modules/core/values';
-import { DisplayNamesType, LabelPart, Setting } from '@rampflow/shared/values';
+import { DisplayNamesType, LabelPart, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
@@ -303,7 +303,7 @@ function useSettingMessage(spec: ControlSpec) {
       });
     }
     if (spec.kind === SettingControl.url) return t(($) => $['settings-ui'].validation.url);
-    if (spec.kind === SettingControl.list && error.type === 'custom') {
+    if (spec.kind === SettingControl.list && error.type === ZodIssueCode.custom) {
       return t(($) => $['settings-ui'].validation.duplicate);
     }
     return t(($) => $['settings-ui'].validation.invalid);

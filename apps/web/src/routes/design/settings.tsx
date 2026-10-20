@@ -1,4 +1,4 @@
-import { PrototypeScreen, Setting, SettingScope } from '@rampflow/shared/values';
+import { PrototypeScreen, Setting, SettingSource } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
 import { UpsellHint } from '@/components/entitlement-gate';
@@ -94,7 +94,7 @@ function SettingsScreen() {
                     label={row.label}
                     description={row.description}
                     source={row.source}
-                    scope={SettingScope.site}
+                    scope={SettingSource.site}
                     inheritedValue={inheritedValue(row)}
                     control={<Control row={row} />}
                   />
@@ -110,7 +110,7 @@ function SettingsScreen() {
 }
 
 function inheritedValue(row: SettingRow): string | undefined {
-  if (row.source !== SettingScope.site) return undefined;
+  if (row.source !== SettingSource.site) return undefined;
   return row.key === Setting.booking.horizon_days ? '30 days' : '15 min';
 }
 

@@ -113,7 +113,6 @@ export const cases = defineRouteCases([
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
     body: (w) => ({
       hallId: w.A.sites[0].hallId,
-      // biome-ignore lint/plugin: a dock code, free text
       code: 'D-99',
       doorType: DoorType.dock_leveler,
       temperatureZone: TemperatureZone.chilled,

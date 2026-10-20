@@ -1,5 +1,5 @@
 import type { DockBooking, ResourceView } from '@rampflow/shared/modules/booking/api.capacity';
-import { ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { DockBookingKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { Feature } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
@@ -21,9 +21,9 @@ const choiceOf = (holder: ResourceView | undefined): Choice =>
   !holder ? 'none' : holder.kind === ResourceKind.single ? 'single' : `pool:${holder.id}`;
 
 function bookingOf(choice: Choice): DockBooking {
-  if (choice === 'none') return { as: 'none' };
-  if (choice === 'single') return { as: ResourceKind.single };
-  return { as: ResourceKind.pool, resourceId: choice.slice('pool:'.length) };
+  if (choice === DockBookingKind.none) return { as: DockBookingKind.none };
+  if (choice === DockBookingKind.single) return { as: DockBookingKind.single };
+  return { as: DockBookingKind.pool, resourceId: choice.slice('pool:'.length) };
 }
 
 /** The resource name of a dock's holder with its kind icon, for read-only views. */

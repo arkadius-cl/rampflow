@@ -1,4 +1,4 @@
-import { InputKind } from '@rampflow/shared/values';
+import { InputKind, ZodIssueCode } from '@rampflow/shared/values';
 import type { FieldError } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Resources } from '@/lib/i18n-resources.gen';
@@ -21,17 +21,17 @@ const CUSTOM: Readonly<Record<string, Validation>> = {
 
 function validationOf(error: FieldError, kind: InputKind): Validation {
   switch (error.type) {
-    case 'too_small':
+    case ZodIssueCode.too_small:
       return kind === InputKind.text ? 'required' : 'too_small';
-    case 'too_big':
+    case ZodIssueCode.too_big:
       return kind === InputKind.text ? 'too_long' : 'too_big';
-    case 'invalid_type':
+    case ZodIssueCode.invalid_type:
       return 'required';
-    case 'invalid_format':
+    case ZodIssueCode.invalid_format:
       return 'format';
-    case 'not_multiple_of':
+    case ZodIssueCode.not_multiple_of:
       return 'multiple_of_5';
-    case 'custom':
+    case ZodIssueCode.custom:
       return CUSTOM[error.message ?? ''] ?? 'invalid';
     default:
       return 'invalid';

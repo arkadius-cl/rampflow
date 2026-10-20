@@ -19,7 +19,6 @@
       "!apps/web/src/hooks/use-mobile.ts"
     ]
   },
-  "plugins": [{ "path": "./lint/value-literals.grit", "includes": ["**", "!**/*.gen.ts"] }],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

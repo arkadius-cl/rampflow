@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
-import { TurnAwayReason } from '@rampflow/shared/modules/booking/values';
+import { TurnAwayReason, WalkInOutcome } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { WalkInBody } from '@rampflow/shared/modules/yard/api';
-import { ErrorCode, HtmlInputType, values } from '@rampflow/shared/values';
+import { ErrorCode, HtmlInputType, values, ZodIssueCode } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { LogInIcon, OctagonXIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -36,7 +36,7 @@ const optional = (schema: z.ZodType) => z.union([z.literal(''), schema]);
 
 const WalkInForm = z
   .object({
-    outcome: z.enum(['check_in', 'turn_away']),
+    outcome: z.enum(WalkInOutcome),
     carrierName: z.string().trim().min(1).max(120),
     loadTypeId: z.uuid(),
     plateSeen: plateSchema,
@@ -51,8 +51,14 @@ const WalkInForm = z
   })
   .superRefine((f, ctx) => {
     const required = (path: Path<WalkInFormInput>) =>
-      ctx.addIssue({ code: 'too_small', minimum: 1, origin: 'string', input: '', path: [path] });
-    if (f.outcome === 'turn_away') {
+      ctx.addIssue({
+        code: ZodIssueCode.too_small,
+        minimum: 1,
+        origin: 'string',
+        input: '',
+        path: [path],
+      });
+    if (f.outcome === WalkInOutcome.turn_away) {
       if (f.reason === '') required('reason');
       return;
     }
@@ -71,16 +77,16 @@ function bodyOf(f: WalkInFormOutput, siteId: string, clientRequestId: string): W
     carrier: { name: f.carrierName },
     plateSeen: f.plateSeen,
   };
-  if (f.outcome === 'turn_away') {
+  if (f.outcome === WalkInOutcome.turn_away) {
     return {
       ...base,
-      outcome: 'turn_away',
+      outcome: WalkInOutcome.turn_away,
       reason: f.reason === '' ? TurnAwayReason.other : f.reason,
     };
   }
   return {
     ...base,
-    outcome: 'check_in',
+    outcome: WalkInOutcome.check_in,
     avis: {
       references: [{ type: f.referenceType, value: f.referenceValue }],
       counterpartyName: f.counterpartyName,
@@ -134,7 +140,7 @@ export function WalkInDialog({
   const form = useForm<WalkInFormInput, unknown, WalkInFormOutput>({
     resolver: zodResolver(WalkInForm),
     defaultValues: {
-      outcome: 'check_in',
+      outcome: WalkInOutcome.check_in,
       carrierName: '',
       loadTypeId: '',
       plateSeen: '',
@@ -221,7 +227,7 @@ export function WalkInDialog({
             ))}
           </NativeSelect>
           <FieldError>
-            {refinement && fieldState.error?.type === 'custom'
+            {refinement && fieldState.error?.type === ZodIssueCode.custom
               ? refinement
               : message(fieldState.error)}
           </FieldError>
@@ -325,7 +331,7 @@ export function WalkInDialog({
               size="lg"
               className="h-12"
               disabled={!online || walkIn.isPending}
-              onClick={() => submit('turn_away')}
+              onClick={() => submit(WalkInOutcome.turn_away)}
             >
               <OctagonXIcon /> {t(($) => $.gate.walk_in.turn_away)}
             </Button>
@@ -344,7 +350,7 @@ export function WalkInDialog({
             size="lg"
             className="h-12 min-w-44"
             disabled={!online || walkIn.isPending}
-            onClick={() => submit('check_in')}
+            onClick={() => submit(WalkInOutcome.check_in)}
           >
             <LogInIcon /> {t(($) => $.gate.walk_in.check_in_now)}
           </Button>

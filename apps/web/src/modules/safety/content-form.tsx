@@ -4,7 +4,7 @@ import {
   ContentBody,
   QUIZ_QUESTIONS,
 } from '@rampflow/shared/modules/safety/api.authoring';
-import { PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
+import { BlockKind, PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
 import { values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -149,7 +149,7 @@ export function ContentForm({
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">
                     {t(($) => $.editor.block.label, { n: index + 1 })} ·{' '}
-                    {block.kind === 'text'
+                    {block.kind === BlockKind.text
                       ? t(($) => $.editor.block.text)
                       : t(($) => $.editor.block.pictogram)}
                   </span>
@@ -188,7 +188,7 @@ export function ContentForm({
                     </div>
                   )}
                 </div>
-                {block.kind === 'text' ? (
+                {block.kind === BlockKind.text ? (
                   <TextBlock control={form.control} index={index} label={id(`block-${index}`)} />
                 ) : (
                   <PictogramBlock
@@ -206,7 +206,7 @@ export function ContentForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => blocks.append({ kind: 'text', text: '' })}
+                onClick={() => blocks.append({ kind: BlockKind.text, text: '' })}
               >
                 <TextIcon /> {t(($) => $.editor.block.add_text)}
               </Button>
@@ -214,7 +214,9 @@ export function ContentForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => blocks.append({ kind: 'pictogram', id: values(PictogramId)[0] })}
+                onClick={() =>
+                  blocks.append({ kind: BlockKind.pictogram, id: values(PictogramId)[0] })
+                }
               >
                 <ImageIcon /> {t(($) => $.editor.block.add_pictogram)}
               </Button>

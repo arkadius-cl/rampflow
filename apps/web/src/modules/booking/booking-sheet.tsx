@@ -3,7 +3,7 @@ import { type Avis, AvisInput } from '@rampflow/shared/modules/avis/avis';
 import type { BookingView, CreateStaffBooking } from '@rampflow/shared/modules/booking/api.staff';
 import { CarrierChoice, Direction } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { ConflictReason, ErrorCode, Permission } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, Permission, ZodIssueCode } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -77,10 +77,14 @@ const SheetFields = z
   })
   .superRefine((v, ctx) => {
     if (v.carrierKind === CarrierChoice.linked && v.carrierId === '') {
-      ctx.addIssue({ code: 'custom', path: ['carrierId'], message: 'Choose a carrier' });
+      ctx.addIssue({ code: ZodIssueCode.custom, path: ['carrierId'], message: 'Choose a carrier' });
     }
     if (v.carrierKind === CarrierChoice.other && v.carrierName === '') {
-      ctx.addIssue({ code: 'custom', path: ['carrierName'], message: 'Name the carrier' });
+      ctx.addIssue({
+        code: ZodIssueCode.custom,
+        path: ['carrierName'],
+        message: 'Name the carrier',
+      });
     }
   });
 type SheetInput = z.input<typeof SheetFields>;
@@ -254,7 +258,7 @@ function SheetForm({
     if (!fieldsOk || !avisOk) return;
     const v = SheetFields.parse(form.getValues());
     if (forcing && v.forceReason === '') {
-      form.setError('forceReason', { type: 'too_small' });
+      form.setError('forceReason', { type: ZodIssueCode.too_small });
       return;
     }
     create.mutate({

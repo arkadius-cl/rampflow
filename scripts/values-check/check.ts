@@ -1,6 +1,7 @@
 import { globSync } from 'node:fs';
 import { dirname, join, relative, resolve as resolvePath, sep } from 'node:path';
 import ts from 'typescript-6';
+import { VerdictKind } from '../../packages/shared/src/values/cli.ts';
 import {
   type Context,
   contextOf,
@@ -144,6 +145,26 @@ function scan(
   const found: Finding[] = [];
   const lines = source.text.split('\n');
   const visit = (node: ts.Node): void => {
+    const misplaced = misplacedMember(root, checker, node, sets);
+    if (misplaced) {
+      const start = node.getStart(source);
+      const { line, character } = source.getLineAndCharacterOfPosition(start);
+      const ignored = (lines[line]?.match(IGNORE) ?? lines[line - 1]?.match(IGNORE))?.[1];
+      found.push({
+        pkg,
+        tsconfig,
+        file: source.fileName,
+        line: line + 1,
+        col: character + 1,
+        start,
+        end: node.end,
+        literal: misplaced.value,
+        jsx: false,
+        verdict: misplaced.verdict,
+        ...(ignored === undefined ? {} : { ignored: ignored.trim() }),
+      });
+      return;
+    }
     if (
       (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
       node.text !== '' &&
@@ -153,7 +174,8 @@ function scan(
       const verdict = context && judge(root, checker, context, node.text, sets);
       // A manifest declares the keys that `Permission` is derived from; it keeps its literals.
       const defines =
-        verdict?.kind === 'set' && dependencies(program, verdict.set.file).has(source.fileName);
+        verdict?.kind === VerdictKind.set &&
+        dependencies(program, verdict.set.file).has(source.fileName);
       if (verdict && !defines) {
         const start = node.getStart(source);
         const { line, character } = source.getLineAndCharacterOfPosition(start);
@@ -182,6 +204,50 @@ function scan(
   return found;
 }
 
+/**
+ * `X.member` where `X` is a value set that does not cover the union the member is checked against,
+ * such as `ActorParty.tenant` in a switch over a `ScopeParty`: the member's value is right, its set
+ * is not. The verdict names the set the literal itself would get. Only the outermost access of a
+ * key tree path (`Permission.booking.view`) is looked at.
+ */
+function misplacedMember(
+  root: string,
+  checker: ts.TypeChecker,
+  node: ts.Node,
+  sets: readonly ValueSet[],
+): { value: string; verdict: Verdict } | undefined {
+  if (!ts.isPropertyAccessExpression(node) || ts.isPropertyAccessExpression(node.parent)) return;
+  let head: ts.Expression = node;
+  while (ts.isPropertyAccessExpression(head)) head = head.expression;
+  if (!ts.isIdentifier(head)) return;
+  const type = checker.getTypeAtLocation(node);
+  if (!type.isStringLiteral()) return;
+  const text = node.getText().replace(/\s+/g, '');
+  const own = sets.find((s) => s.name === head.text && s.members.get(type.value) === text);
+  if (!own) return;
+  const context = contextOf(checker, node as unknown as Parameters<typeof contextOf>[1]);
+  if (!context) return;
+  const verdict = judge(root, checker, context, type.value, sets);
+  if (!verdict) return;
+  const union = verdict.kind === VerdictKind.set ? undefined : verdict.union;
+  const covers = (set: ValueSet, values: readonly string[]) =>
+    values.every((v) => set.members.has(v));
+  if (verdict.kind === VerdictKind.set) {
+    if (verdict.set === own) return;
+    const parts = context.parts.filter((t) => t.isStringLiteral()) as ts.StringLiteralType[];
+    if (
+      covers(
+        own,
+        parts.map((t) => t.value),
+      )
+    )
+      return;
+  } else if (union && covers(own, union)) {
+    return;
+  }
+  return { value: type.value, verdict };
+}
+
 /** The verdict for a literal whose contextual type is a union of string literals from our source. */
 function judge(
   root: string,
@@ -203,7 +269,8 @@ function judge(
   if (!isOurs(root, checker, context, union, sets)) return undefined;
   const verdict = resolve(sets, literal, union, context.alias?.name);
   // Field names are not a set, unless the object is keyed by one (`keyof Record<BookingStatus, _>`).
-  if (verdict.kind === 'create' && isPropertyNames(checker, context, union)) return undefined;
+  if (verdict.kind === VerdictKind.create && isPropertyNames(checker, context, union))
+    return undefined;
   return verdict;
 }
 

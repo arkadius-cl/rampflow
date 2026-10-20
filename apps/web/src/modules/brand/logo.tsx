@@ -1,6 +1,6 @@
 import { LOGO_MAX_BYTES, type LogoResponse } from '@rampflow/shared/modules/brand/api';
 import { LogoContentType, LogoProblem } from '@rampflow/shared/modules/brand/values';
-import { ErrorCode, isValueOf, values } from '@rampflow/shared/values';
+import { ErrorCode, isValueOf, values, ZodIssueCode } from '@rampflow/shared/values';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, TrashIcon, UploadIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
@@ -62,7 +62,9 @@ export function LogoScreen({ orgId }: { orgId: string }) {
     },
     onError: (e) => {
       if (!isFailure(e, ErrorCode.validation_failed)) return;
-      setProblem(e.issues.some((i) => i.code === 'too_big') ? LogoProblem.size : LogoProblem.type);
+      setProblem(
+        e.issues.some((i) => i.code === ZodIssueCode.too_big) ? LogoProblem.size : LogoProblem.type,
+      );
     },
   });
   const remove = async () => {

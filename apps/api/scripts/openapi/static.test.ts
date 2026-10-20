@@ -11,7 +11,6 @@ const fixtures = at('./fixtures/');
 function run(allowlist: string[]) {
   return analyze({
     tsconfig: at('../../tsconfig.json'),
-    // biome-ignore lint/plugin: a TypeScript type name, not a value set
     app: { file: at('./fixtures/app.ts'), type: 'FixtureApp' },
     sources: [at('./fixtures/app.ts')],
     root: fixtures,

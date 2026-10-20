@@ -1,4 +1,3 @@
-import type { SettingSource } from '@rampflow/shared/contract/settings';
 import {
   BookingStatus,
   Direction,
@@ -6,8 +5,8 @@ import {
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
-import { BriefingState, InstructionSafety } from '@rampflow/shared/modules/safety/values';
-import { PackageId, SettingScope } from '@rampflow/shared/values';
+import { BriefingState } from '@rampflow/shared/modules/safety/values';
+import { PackageId, SettingSource } from '@rampflow/shared/values';
 import type { BookableResource, Booking, Dock, Hall, Site } from '@/lib/domain';
 
 export const TODAY = '2026-10-19';
@@ -205,7 +204,7 @@ export const bookings: Booking[] = [
     start: '06:30',
     end: '08:00',
     status: BookingStatus.departed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.on_time,
     timeline: [
       { status: BookingStatus.confirmed, at: '2026-10-12 14:02', actor: 'carrier' },
@@ -230,7 +229,7 @@ export const bookings: Booking[] = [
     start: '09:00',
     end: '10:00',
     status: BookingStatus.loading,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.early,
     driverPhone: '+370 612 34567',
     timeline: [
@@ -254,7 +253,7 @@ export const bookings: Booking[] = [
     start: '09:30',
     end: '10:30',
     status: BookingStatus.at_dock,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.late,
     driverPhone: '+49 171 5550123',
     timeline: [
@@ -276,7 +275,7 @@ export const bookings: Booking[] = [
     start: '10:30',
     end: '11:30',
     status: BookingStatus.checked_in,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.on_time,
     driverPhone: '+48 601 222 333',
     timeline: [
@@ -296,7 +295,7 @@ export const bookings: Booking[] = [
     start: '10:30',
     end: '12:00',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.missing,
+    safety: BriefingState.missing,
     timeline: [{ status: BookingStatus.confirmed, at: '2026-10-18 16:30', actor: 'carrier' }],
   }),
   booking({
@@ -310,7 +309,7 @@ export const bookings: Booking[] = [
     start: '11:00',
     end: '11:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     overCapacity: true,
   }),
   booking({
@@ -338,7 +337,7 @@ export const bookings: Booking[] = [
     start: '14:30',
     end: '15:00',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
   }),
   booking({
     id: 'b9',
@@ -353,7 +352,7 @@ export const bookings: Booking[] = [
     start: '08:00',
     end: '09:30',
     status: BookingStatus.done,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.on_time,
     timeline: [
       { status: BookingStatus.confirmed, at: '2026-10-13 10:10', actor: 'carrier' },
@@ -377,7 +376,7 @@ export const bookings: Booking[] = [
     start: '10:00',
     end: '11:00',
     status: BookingStatus.called,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.on_time,
     driverPhone: '+370 699 11223',
     timeline: [
@@ -397,7 +396,7 @@ export const bookings: Booking[] = [
     start: '11:30',
     end: '12:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
   }),
   booking({
     id: 'b12',
@@ -410,7 +409,7 @@ export const bookings: Booking[] = [
     start: '14:00',
     end: '15:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.missing,
+    safety: BriefingState.missing,
   }),
   booking({
     id: 'b13',
@@ -425,7 +424,7 @@ export const bookings: Booking[] = [
     start: '07:30',
     end: '09:00',
     status: BookingStatus.no_show,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     timeline: [
       { status: BookingStatus.confirmed, at: '2026-10-11 12:00', actor: 'carrier' },
       { status: BookingStatus.no_show, at: '08:30', actor: 'system' },
@@ -443,7 +442,7 @@ export const bookings: Booking[] = [
     start: '11:00',
     end: '12:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
   }),
   booking({
     id: 'b15',
@@ -458,7 +457,7 @@ export const bookings: Booking[] = [
     start: '09:00',
     end: '10:30',
     status: BookingStatus.cancelled,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     timeline: [
       { status: BookingStatus.confirmed, at: '2026-10-10 15:45', actor: 'carrier' },
       { status: BookingStatus.cancelled, at: '2026-10-18 17:02', actor: 'carrier' },
@@ -477,7 +476,7 @@ export const bookings: Booking[] = [
     start: '13:30',
     end: '15:00',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
   }),
 ];
 
@@ -508,7 +507,7 @@ export const carrierBookings: Booking[] = [
     start: '14:00',
     end: '15:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.missing,
+    safety: BriefingState.missing,
   }),
   booking({
     id: 'c4',
@@ -523,7 +522,7 @@ export const carrierBookings: Booking[] = [
     start: '09:00',
     end: '10:30',
     status: BookingStatus.confirmed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
   }),
   booking({
     id: 'c5',
@@ -539,7 +538,7 @@ export const carrierBookings: Booking[] = [
     start: '07:00',
     end: '08:30',
     status: BookingStatus.departed,
-    safety: InstructionSafety.valid,
+    safety: BriefingState.valid,
     punctuality: Punctuality.late,
   }),
 ];
@@ -564,7 +563,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Slot grid',
     description: 'Start times are offered on this grid.',
     value: '30 min',
-    source: SettingScope.platform,
+    source: SettingSource.platform,
     entitled: true,
   },
   {
@@ -572,7 +571,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Minimum lead time',
     description: 'Carriers cannot book closer to the start than this.',
     value: '240 min',
-    source: SettingScope.tenant,
+    source: SettingSource.tenant,
     entitled: true,
   },
   {
@@ -580,7 +579,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Booking horizon',
     description: 'How far ahead carriers can book.',
     value: '21 days',
-    source: SettingScope.site,
+    source: SettingSource.site,
     entitled: true,
   },
   {
@@ -588,7 +587,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Carrier cancel cutoff',
     description: 'After this point carriers must call the site.',
     value: '120 min',
-    source: 'default',
+    source: SettingSource.default,
     entitled: true,
   },
   {
@@ -596,7 +595,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Close on public holidays',
     description: 'Imports the subdivision holidays as closures.',
     value: SWITCH_ON,
-    source: 'default',
+    source: SettingSource.default,
     entitled: true,
   },
   {
@@ -604,7 +603,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Early tolerance',
     description: 'Arrivals this early still count as on time.',
     value: '30 min',
-    source: 'default',
+    source: SettingSource.default,
     entitled: true,
   },
   {
@@ -612,7 +611,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Grace period',
     description: 'Arrivals this late still count as on time.',
     value: '10 min',
-    source: SettingScope.site,
+    source: SettingSource.site,
     entitled: true,
   },
   {
@@ -620,7 +619,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Detention flag',
     description: 'Visits longer than this are flagged (ADSp/VBGL 2 h).',
     value: '120 min',
-    source: SettingScope.platform,
+    source: SettingSource.platform,
     entitled: true,
   },
   {
@@ -628,7 +627,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Briefing validity',
     description: '0 means every visit needs a new acknowledgement.',
     value: '365 days',
-    source: SettingScope.tenant,
+    source: SettingSource.tenant,
     entitled: true,
   },
   {
@@ -636,7 +635,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Require briefing at check-in',
     description: 'Gate check-in stays disabled until a valid acknowledgement is linked.',
     value: SWITCH_ON,
-    source: SettingScope.tenant,
+    source: SettingSource.tenant,
     entitlement: 'safety.gate_enforcement',
     entitled: true,
   },
@@ -645,7 +644,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Quiz pass mark',
     description: 'Share of questions a driver must answer correctly.',
     value: '100 %',
-    source: 'default',
+    source: SettingSource.default,
     entitlement: 'safety.quiz',
     entitled: false,
   },
@@ -654,7 +653,7 @@ export const siteSettings: SettingRow[] = [
     label: 'Reminder lead time',
     description: 'Hours before the slot that the carrier is reminded.',
     value: '24 h',
-    source: 'default',
+    source: SettingSource.default,
     entitlement: 'notify.reminders',
     entitled: true,
   },

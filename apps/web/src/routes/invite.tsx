@@ -5,7 +5,12 @@ import {
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
 import { RefinementMessage, SignInMode } from '@rampflow/shared/modules/core/values';
-import { ConflictReason, ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  ErrorCode,
+  TokenExchangeStatus,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -118,7 +123,7 @@ function Invitation({
       });
     },
     onError: (e) => {
-      if (isFailure(e, ErrorCode.unauthorized) && e.reason === 'sign_in_required')
+      if (isFailure(e, ErrorCode.unauthorized) && e.reason === UnauthorizedReason.sign_in_required)
         setNeedsSignIn(true);
     },
   });
@@ -136,7 +141,7 @@ function Invitation({
           <span className="truncate">{invitation.email}</span>
         </div>
         {failure &&
-        failure.reason !== 'sign_in_required' &&
+        failure.reason !== UnauthorizedReason.sign_in_required &&
         failure.code !== ErrorCode.validation_failed ? (
           <Alert variant="destructive">
             <CircleAlertIcon />

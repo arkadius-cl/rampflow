@@ -1,12 +1,13 @@
 import type { PortalBookingSummary } from '@rampflow/shared/modules/booking/api.portal';
 import {
+  BookingPeriod,
   BookingStatus,
   BookingWizardStep,
   CarrierBookingsTab,
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { BadgeSize, isValueOf, Permission, values } from '@rampflow/shared/values';
+import { BadgeSize, isValueOf, Permission, SortOrder, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -80,10 +81,10 @@ function filtersOf(s: Search): BookingFilters {
   const base = { tenantId: s.tenant, siteId: s.site, status: s.status };
   const range: Pick<BookingFilters, 'from' | 'to' | 'when' | 'order'> =
     s.tab === CarrierBookingsTab.today
-      ? { from: today, to: today, order: 'asc' }
+      ? { from: today, to: today, order: SortOrder.asc }
       : s.tab === CarrierBookingsTab.past
-        ? { when: 'past', order: 'desc' }
-        : { when: 'upcoming', order: 'asc' };
+        ? { when: BookingPeriod.past, order: SortOrder.desc }
+        : { when: BookingPeriod.upcoming, order: SortOrder.asc };
   return { ...base, ...range, ...(s.from ? { from: s.from } : {}), ...(s.to ? { to: s.to } : {}) };
 }
 

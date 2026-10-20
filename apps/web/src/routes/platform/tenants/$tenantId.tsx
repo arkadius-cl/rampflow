@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { EntitlementSource } from '@rampflow/shared';
 import {
   InviteTenantAdmin,
   type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
-import { PackageId, Permission, values } from '@rampflow/shared/values';
+import { EntitlementSource, PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
@@ -225,7 +224,7 @@ function EntitlementsCard({ tenant }: { tenant: TenantDetail }) {
                 {valueText(e.packageValue)}
               </TableCell>
               <TableCell className="pr-6">
-                <Badge variant={e.source === 'override' ? 'default' : 'outline'}>
+                <Badge variant={e.source === EntitlementSource.override ? 'default' : 'outline'}>
                   {sourceText(e.source)}
                 </Badge>
               </TableCell>

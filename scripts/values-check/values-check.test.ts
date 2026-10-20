@@ -5,6 +5,7 @@ import { join, relative } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-6';
+import { FixtureMark, VerdictKind } from '../../packages/shared/src/values/cli.ts';
 import { check, createProgram, type Finding } from './check.ts';
 import { fix } from './fix.ts';
 
@@ -26,7 +27,7 @@ function copy(): string {
 
 const run = (root: string) => check({ root, packages: ['.'] });
 const sources = (root: string) =>
-  globSync('**/*.{ts,tsx}', { cwd: root, exclude: (f) => f === 'node_modules' }).sort();
+  globSync('**/*.{ts,tsx}', { cwd: root, exclude: (f) => f.endsWith('node_modules') }).sort();
 
 function expected(root: string): Map<string, string> {
   const marks = new Map<string, string>();
@@ -35,7 +36,7 @@ function expected(root: string): Map<string, string> {
       .split('\n')
       .forEach((line, i) => {
         const mark = line.match(/\/\/ → (.+)$/)?.[1];
-        if (mark && mark !== 'silent') marks.set(`${file}:${i + 1}`, mark);
+        if (mark && mark !== FixtureMark.silent) marks.set(`${file}:${i + 1}`, mark);
       });
   }
   return marks;
@@ -47,7 +48,7 @@ function actual(root: string, findings: readonly Finding[]): Map<string, string>
       `${relative(root, f.file)}:${f.line}`,
       f.ignored !== undefined
         ? 'ignored'
-        : f.verdict.kind === 'set'
+        : f.verdict.kind === VerdictKind.set
           ? f.verdict.access
           : `create ${f.verdict.union.map((v) => `'${v}'`).join(' | ')}`,
     ]),
@@ -122,7 +123,7 @@ test('a second --fix changes nothing', () => {
   const again = run(root);
   assert.deepEqual(
     again.findings
-      .map((f) => f.verdict.kind === 'set' && !f.ignored && f.verdict.access)
+      .map((f) => f.verdict.kind === VerdictKind.set && !f.ignored && f.verdict.access)
       .filter(Boolean)
       .sort(),
     ['Role.admin'],

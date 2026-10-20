@@ -1,6 +1,6 @@
 import type { StaffLocale } from '@rampflow/shared';
-import { KPIS, type KpiKey, type KpiReport } from '@rampflow/shared/modules/report/api';
-import { KpiUnit } from '@rampflow/shared/modules/report/values';
+import { KPIS, type KpiReport } from '@rampflow/shared/modules/report/api';
+import { KpiKey, KpiUnit } from '@rampflow/shared/modules/report/values';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocale } from '@/lib/i18n';
@@ -29,7 +29,7 @@ export function useFormatKpi() {
 }
 
 /** Early and late are shown inside the on-time tile, "reported apart" (RP-01). */
-const TILES = KPIS.filter((k) => k.key !== 'earlyRate' && k.key !== 'lateRate');
+const TILES = KPIS.filter((k) => k.key !== KpiKey.earlyRate && k.key !== KpiKey.lateRate);
 const unitOf = (key: KpiKey) => KPIS.find((k) => k.key === key)?.unit ?? KpiUnit.count;
 
 export function KpiTiles({ report }: { report: KpiReport }) {
@@ -63,16 +63,16 @@ export function KpiTiles({ report }: { report: KpiReport }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground">
-              {key === 'onTimeRate' ? (
+              {key === KpiKey.onTimeRate ? (
                 <p className="font-medium text-foreground">
                   {t(($) => $.kpi.early_late, {
-                    early: format(kpis.earlyRate, unitOf('earlyRate')),
-                    late: format(kpis.lateRate, unitOf('lateRate')),
+                    early: format(kpis.earlyRate, unitOf(KpiKey.earlyRate)),
+                    late: format(kpis.lateRate, unitOf(KpiKey.lateRate)),
                   })}
                 </p>
               ) : null}
               <p>
-                {key === 'standgeldVisits'
+                {key === KpiKey.standgeldVisits
                   ? t(($) => $.kpi.hint.standgeldVisits, { minutes: report.standgeldMinutes })
                   : t(($) => $.kpi.hint[key])}
               </p>

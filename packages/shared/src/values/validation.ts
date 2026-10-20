@@ -8,6 +8,7 @@ export const ZodIssueCode = {
   invalid_value: 'invalid_value',
   too_big: 'too_big',
   too_small: 'too_small',
+  not_multiple_of: 'not_multiple_of',
   unrecognized_keys: 'unrecognized_keys',
 } as const;
 export type ZodIssueCode = ValueOf<typeof ZodIssueCode>;

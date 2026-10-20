@@ -5,6 +5,7 @@ import {
   PutOverride,
   type TenantDetail,
 } from '@rampflow/shared/modules/core/api.platform';
+import { EntitlementKind } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CalendarIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -199,7 +200,7 @@ export function AddOverrideCard({ tenant }: { tenant: TenantDetail }) {
   const refresh = useRefreshTenant(tenant.id);
   const first = tenant.entitlements[0];
   const startValue = (e: EntitlementView | undefined): Pick<OverrideForm, 'value' | 'unlimited'> =>
-    e?.kind === 'feature'
+    e?.kind === EntitlementKind.feature
       ? { value: String(e.value !== true), unlimited: false }
       : {
           value: typeof e?.value === 'number' ? String(e.value) : '',
@@ -219,7 +220,7 @@ export function AddOverrideCard({ tenant }: { tenant: TenantDetail }) {
           param: { tenantId: tenant.id, key: v.key },
           json: {
             value:
-              entitlement?.kind === 'feature'
+              entitlement?.kind === EntitlementKind.feature
                 ? v.value === String(true)
                 : v.unlimited
                   ? null
@@ -279,7 +280,7 @@ export function AddOverrideCard({ tenant }: { tenant: TenantDetail }) {
               </Field>
             )}
           />
-          {entitlement?.kind === 'feature' ? (
+          {entitlement?.kind === EntitlementKind.feature ? (
             <Controller
               name="value"
               control={form.control}

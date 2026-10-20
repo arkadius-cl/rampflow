@@ -2,7 +2,9 @@ import * as z from 'zod';
 import { type LocalDate, localDateSchema } from '../../time/index.ts';
 import { ZodIssueCode } from '../../values/validation.ts';
 import { BookingStatus, CreatedParty, Punctuality } from '../booking/values.ts';
-import { KpiUnit } from './values.ts';
+import { KpiKey, KpiUnit } from './values.ts';
+
+export { KpiKey };
 
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
 // definitions are binding in docs/reference/booking-lifecycle.md, "KPIs".
@@ -59,20 +61,19 @@ export type VisitQuery = z.infer<typeof VisitQuery>;
  * empty denominator, shown as "–".
  */
 export const KPIS = [
-  { key: 'bookingsDue', unit: KpiUnit.count },
-  { key: 'noShowRate', unit: KpiUnit.percent },
-  { key: 'lateCancellationRate', unit: KpiUnit.percent },
-  { key: 'onTimeRate', unit: KpiUnit.percent },
-  { key: 'earlyRate', unit: KpiUnit.percent },
-  { key: 'lateRate', unit: KpiUnit.percent },
-  { key: 'waitMinutes', unit: KpiUnit.minutes },
-  { key: 'dockDwellMinutes', unit: KpiUnit.minutes },
-  { key: 'turnaroundMinutes', unit: KpiUnit.minutes },
-  { key: 'dockUtilisation', unit: KpiUnit.percent },
-  { key: 'portalAdoption', unit: KpiUnit.percent },
-  { key: 'standgeldVisits', unit: KpiUnit.count },
-] as const satisfies readonly { key: string; unit: KpiUnit }[];
-export type KpiKey = (typeof KPIS)[number]['key'];
+  { key: KpiKey.bookingsDue, unit: KpiUnit.count },
+  { key: KpiKey.noShowRate, unit: KpiUnit.percent },
+  { key: KpiKey.lateCancellationRate, unit: KpiUnit.percent },
+  { key: KpiKey.onTimeRate, unit: KpiUnit.percent },
+  { key: KpiKey.earlyRate, unit: KpiUnit.percent },
+  { key: KpiKey.lateRate, unit: KpiUnit.percent },
+  { key: KpiKey.waitMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.dockDwellMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.turnaroundMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.dockUtilisation, unit: KpiUnit.percent },
+  { key: KpiKey.portalAdoption, unit: KpiUnit.percent },
+  { key: KpiKey.standgeldVisits, unit: KpiUnit.count },
+] as const satisfies readonly { key: KpiKey; unit: KpiUnit }[];
 
 export type Kpis = { [K in KpiKey]: number | null };
 

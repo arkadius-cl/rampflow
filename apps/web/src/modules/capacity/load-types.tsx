@@ -6,7 +6,7 @@ import {
   type ResourceView,
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { Direction } from '@rampflow/shared/modules/booking/values';
+import { Direction, DurationKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { Feature, InputKind, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
@@ -84,14 +84,14 @@ const LoadTypeForm = UpdateLoadType.pick({
 })
   .required()
   .extend({
-    durationKind: z.enum(['fixed', 'tiers']),
+    durationKind: z.enum(DurationKind),
     minutes: z.number().nullable(),
     tiers: z.array(z.object({ upTo: z.number().nullable(), minutes: z.number().nullable() })),
     resourceIds: PutLoadTypeResources.shape.resourceIds,
   })
   .superRefine((v, ctx) => {
     const [path, parsed] =
-      v.durationKind === 'fixed'
+      v.durationKind === DurationKind.fixed
         ? [['minutes'], FixedDuration.shape.minutes.safeParse(v.minutes)]
         : [['tiers'], TieredDuration.shape.tiers.safeParse(v.tiers)];
     for (const issue of parsed.error?.issues ?? []) {
@@ -101,9 +101,12 @@ const LoadTypeForm = UpdateLoadType.pick({
 type LoadTypeValues = z.infer<typeof LoadTypeForm>;
 
 const durationOf = (v: LoadTypeValues): LoadTypeDuration =>
-  v.durationKind === 'fixed'
-    ? { kind: 'fixed', minutes: v.minutes ?? 0 }
-    : { kind: 'tiers', tiers: v.tiers.map((t) => ({ upTo: t.upTo, minutes: t.minutes ?? 0 })) };
+  v.durationKind === DurationKind.fixed
+    ? { kind: DurationKind.fixed, minutes: v.minutes ?? 0 }
+    : {
+        kind: DurationKind.tiers,
+        tiers: v.tiers.map((t) => ({ upTo: t.upTo, minutes: t.minutes ?? 0 })),
+      };
 
 const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
   name: lt?.name ?? { de: '', en: '' },
@@ -111,10 +114,10 @@ const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
   bufferMinutes: lt?.bufferMinutes ?? 0,
   carrierBookable: lt?.carrierBookable ?? true,
   active: lt?.active ?? true,
-  durationKind: lt?.duration.kind ?? 'fixed',
-  minutes: lt?.duration.kind === 'fixed' ? lt.duration.minutes : 60,
+  durationKind: lt?.duration.kind ?? DurationKind.fixed,
+  minutes: lt?.duration.kind === DurationKind.fixed ? lt.duration.minutes : 60,
   tiers:
-    lt?.duration.kind === 'tiers'
+    lt?.duration.kind === DurationKind.tiers
       ? lt.duration.tiers
       : [
           { upTo: 16, minutes: 30 },
@@ -125,7 +128,7 @@ const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
 
 function DurationText({ duration }: { duration: LoadTypeDuration }) {
   const { t } = useTranslation('booking');
-  if (duration.kind === 'fixed') {
+  if (duration.kind === DurationKind.fixed) {
     return <>{t(($) => $.capacity.load_types.minutes, { n: duration.minutes })}</>;
   }
   return (
@@ -438,7 +441,10 @@ function LoadTypeFormView({
                 <ToggleGroupItem value="fixed">
                   {t(($) => $.capacity.load_types.fixed)}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="tiers" disabled={!tiersOn && field.value !== 'tiers'}>
+                <ToggleGroupItem
+                  value="tiers"
+                  disabled={!tiersOn && field.value !== DurationKind.tiers}
+                >
                   {t(($) => $.capacity.load_types.tiered)}
                 </ToggleGroupItem>
               </ToggleGroup>
@@ -451,7 +457,7 @@ function LoadTypeFormView({
             </FieldSet>
           )}
         />
-        {kind === 'fixed' ? (
+        {kind === DurationKind.fixed ? (
           minutesInput(
             'minutes',
             t(($) => $.capacity.load_types.fields.minutes),

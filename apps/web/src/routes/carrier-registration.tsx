@@ -1,6 +1,11 @@
 import type { RegistrationVerified } from '@rampflow/shared/modules/booking/api.carriers';
 import { SignInMode } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
+import {
+  ErrorCode,
+  ForbiddenReason,
+  TokenExchangeStatus,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon } from 'lucide-react';
@@ -44,7 +49,7 @@ function VerifyRegistrationPage() {
   const failure = retry.error ?? (first.status === TokenExchangeStatus.failed ? first.error : null);
   const signInEmail =
     isFailure(failure, ErrorCode.unauthorized) &&
-    failure.reason === 'sign_in_required' &&
+    failure.reason === UnauthorizedReason.sign_in_required &&
     typeof failure.details.email === 'string'
       ? failure.details.email
       : null;
@@ -70,7 +75,8 @@ function VerifyRegistrationPage() {
     );
   }
   const adminRequired =
-    isFailure(failure, ErrorCode.forbidden) && failure.reason === 'carrier_admin_required';
+    isFailure(failure, ErrorCode.forbidden) &&
+    failure.reason === ForbiddenReason.carrier_admin_required;
   return (
     <AuthLayout title={t(($) => $.registration.verify.title)}>
       <Alert variant="destructive">

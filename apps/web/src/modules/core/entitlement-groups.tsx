@@ -1,5 +1,6 @@
 import { catalog, type ModuleId } from '@rampflow/shared';
 import type { UiPrefKey } from '@rampflow/shared/modules/core/ui-prefs';
+import { EntitlementKind } from '@rampflow/shared/values';
 import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -133,7 +134,7 @@ export function ModuleGroupTable<R extends EntitlementRow>({
       <TableBody>
         {groups.map((group) => {
           const open = state.isOpen(group.module);
-          const features = group.rows.filter((r) => r.kind === 'feature');
+          const features = group.rows.filter((r) => r.kind === EntitlementKind.feature);
           const Chevron = open ? ChevronDownIcon : ChevronRightIcon;
           return (
             <Fragment key={group.module}>

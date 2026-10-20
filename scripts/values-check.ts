@@ -9,6 +9,8 @@ import { execFile } from 'node:child_process';
 import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { CheckedPackage, VerdictKind } from '../packages/shared/src/values/cli.ts';
+import { values } from '../packages/shared/src/values/define.ts';
 import { check } from './values-check/check.ts';
 import { fix } from './values-check/fix.ts';
 
@@ -30,14 +32,7 @@ interface Row {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
 const SELF = fileURLToPath(import.meta.url);
-const PACKAGES = [
-  'packages/shared',
-  'packages/i18n',
-  'apps/api',
-  'apps/web',
-  'apps/driver',
-  'e2e',
-] as const;
+const PACKAGES = values(CheckedPackage);
 
 const args = process.argv.slice(2);
 const flags = args.filter((a) => a.startsWith('--'));
@@ -66,7 +61,7 @@ function rowsOf(pkgs: string[]): Row[] {
     pkg: f.pkg,
     where: `${relative(ROOT, f.file)}:${f.line}:${f.col}`,
     literal: f.literal,
-    ...(f.verdict.kind === 'set'
+    ...(f.verdict.kind === VerdictKind.set
       ? {
           access: f.verdict.access,
           set: f.verdict.set.name,

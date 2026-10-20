@@ -31,7 +31,6 @@ export const render: EmailTemplateModule<BookingEmailPayload>['render'] = (p, t)
 export const example: BookingEmailPayload = {
   locale: StaffLocale.de,
   bookingId: '00000000-0000-0000-0000-000000000000',
-  // biome-ignore lint/plugin: a booking code, free text
   code: 'K7M2Q9XA',
   site: {
     name: 'Lager Hamburg',
