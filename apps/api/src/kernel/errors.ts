@@ -24,7 +24,7 @@ export interface ErrorBody {
   error: { code: ErrorCode; message: string; details?: ErrorDetails };
 }
 
-const DEFAULT_MESSAGE: Record<ErrorCode, string> = {
+export const DEFAULT_MESSAGE: Record<ErrorCode, string> = {
   bad_request: 'Bad request',
   unauthorized: 'Sign in required',
   forbidden: 'Not allowed',

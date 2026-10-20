@@ -8,7 +8,7 @@
   "servers": [
     {
       "url": "{appOrigin}",
-      "description": "The web app origin; its dev server proxies /api to the API.",
+      "description": "Web app",
       "variables": {
         "appOrigin": {
           "default": "http://localhost:5173"
@@ -269,6 +269,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -333,6 +336,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -465,6 +471,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -482,7 +491,7 @@
     "/api/c/{orgId}/at/{tenantId}/availability": {
       "get": {
         "operationId": "booking.portal.getAvailability",
-        "summary": "Get availability",
+        "summary": "Get availability (booking.portal)",
         "description": "`?siteId&loadTypeId&date&loadUnits`; `PortalOffers` with lead time and horizon applied; 404 for a load type carriers cannot book",
         "tags": [
           "Carrier booking portal"
@@ -583,7 +592,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings": {
       "post": {
         "operationId": "booking.portal.createBooking",
-        "summary": "Create booking",
+        "summary": "Create booking (booking.portal)",
         "description": "`{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 201 `PortalBookingView`, 200 for a repeated `clientRequestId`; 409 with `offers` when the last unit went elsewhere",
         "tags": [
           "Carrier booking portal"
@@ -1078,7 +1087,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings/{bookingId}": {
       "patch": {
         "operationId": "booking.portal.updateBooking",
-        "summary": "Update booking",
+        "summary": "Update booking (booking.portal)",
         "description": "`{ startsAt, version }`; before the cutoff, else 409 `cutoff_passed`",
         "tags": [
           "Carrier booking portal"
@@ -1181,7 +1190,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings/{bookingId}/avis": {
       "put": {
         "operationId": "booking.portal.putAvis",
-        "summary": "Put avis",
+        "summary": "Put avis (booking.portal)",
         "description": "`{ avis, version }`; before the cutoff; 409 when the new duration does not fit, and the avis stays",
         "tags": [
           "Carrier booking portal"
@@ -1657,7 +1666,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings/{bookingId}/cancel": {
       "post": {
         "operationId": "booking.portal.cancelBooking",
-        "summary": "Cancel booking",
+        "summary": "Cancel booking (booking.portal)",
         "description": "`{ reason? }`; before the cutoff; revokes the driver link",
         "tags": [
           "Carrier booking portal"
@@ -1749,7 +1758,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings/{bookingId}/driver-link": {
       "post": {
         "operationId": "booking.portal.regenerateDriverLink",
-        "summary": "Regenerate driver link",
+        "summary": "Regenerate driver link (booking.portal)",
         "description": "regenerate; `{ url, expiresAt }`",
         "tags": [
           "Carrier booking portal"
@@ -1817,7 +1826,7 @@
     "/api/c/{orgId}/at/{tenantId}/bookings/{bookingId}/driver-link/email": {
       "post": {
         "operationId": "booking.portal.emailDriverLink",
-        "summary": "Email driver link",
+        "summary": "Email driver link (booking.portal)",
         "description": "`{ email, locale }` with one of the 12 driver locales; 202",
         "tags": [
           "Carrier booking portal"
@@ -1926,7 +1935,7 @@
     "/api/c/{orgId}/at/{tenantId}/load-types": {
       "get": {
         "operationId": "booking.portal.listLoadTypes",
-        "summary": "List load types",
+        "summary": "List load types (booking.portal)",
         "description": "`?siteId=`; active, carrier-bookable only: `{ items: [{ id, name, direction }] }`",
         "tags": [
           "Carrier booking portal"
@@ -2043,7 +2052,7 @@
     "/api/c/{orgId}/at/{tenantId}/sites": {
       "get": {
         "operationId": "booking.portal.listSites",
-        "summary": "List sites",
+        "summary": "List sites (booking.portal)",
         "description": "`{ items }`: active sites with address, phone, `timeZone`, `cutoffMinutes`, `leadMinutes`, `horizonDays` and `avisRules`",
         "tags": [
           "Carrier booking portal"
@@ -2219,7 +2228,7 @@
     "/api/c/{orgId}/bookings": {
       "get": {
         "operationId": "booking.portal.listBookings",
-        "summary": "List bookings",
+        "summary": "List bookings (booking.portal)",
         "description": "all tenants; `?tenantId&siteId&from&to&status&when&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `when=upcoming` keeps trucks on site and requested or confirmed bookings starting today or later in site time, `when=past` keeps the rest (every final booking, and pending ones from earlier days); `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }`",
         "tags": [
           "Carrier booking portal"
@@ -2372,7 +2381,7 @@
     "/api/c/{orgId}/bookings/{bookingId}": {
       "get": {
         "operationId": "booking.portal.getBooking",
-        "summary": "Get booking",
+        "summary": "Get booking (booking.portal)",
         "description": "`PortalBookingView`",
         "tags": [
           "Carrier booking portal"
@@ -2431,7 +2440,7 @@
     "/api/c/{orgId}/bookings/{bookingId}/driver-link": {
       "get": {
         "operationId": "booking.portal.getDriverLink",
-        "summary": "Get driver link",
+        "summary": "Get driver link (booking.portal)",
         "description": "`{ url, expiresAt }`; 404 without an active link",
         "tags": [
           "Carrier booking portal"
@@ -2771,7 +2780,7 @@
     "/api/c/{orgId}/users/invitations": {
       "post": {
         "operationId": "core.carrier-users.createInvitation",
-        "summary": "Create invitation",
+        "summary": "Create invitation (core.carrier-users)",
         "description": "`{ email, role }` → 201; the email goes out in the inviter's locale",
         "tags": [
           "Tenant administration"
@@ -2856,7 +2865,7 @@
     "/api/c/{orgId}/users/invitations/{invitationId}": {
       "delete": {
         "operationId": "core.carrier-users.deleteInvitation",
-        "summary": "Delete invitation",
+        "summary": "Delete invitation (core.carrier-users)",
         "description": "Revokes an invitation; the link stops working.",
         "tags": [
           "Tenant administration"
@@ -2908,7 +2917,7 @@
     "/api/c/{orgId}/users/{membershipId}": {
       "patch": {
         "operationId": "core.carrier-users.updateMember",
-        "summary": "Update member",
+        "summary": "Update member (core.carrier-users)",
         "description": "`{ role }`",
         "tags": [
           "Tenant administration"
@@ -2993,7 +3002,7 @@
       },
       "delete": {
         "operationId": "core.carrier-users.deleteMember",
-        "summary": "Delete member",
+        "summary": "Delete member (core.carrier-users)",
         "description": "Removes a member from the carrier.",
         "tags": [
           "Tenant administration"
@@ -3045,7 +3054,7 @@
     "/api/driver/booking": {
       "get": {
         "operationId": "driver.view.getBooking",
-        "summary": "Get booking",
+        "summary": "Get booking (driver.view)",
         "description": "`DriverBookingView`: `asOf`, `channel`, tenant name and logo URL, site name, address lines, map link, zone and phone, code, status, slot and check-in and call instants, `dock` (`{ code, hall }` while called, at the dock or loading), safety `{ status, validUntil }`, `privacyNoticeUrl`, `linkExpiresAt`; polled every 15 s; writes nothing",
         "tags": [
           "Driver"
@@ -3797,7 +3806,7 @@
     "/api/platform/settings": {
       "get": {
         "operationId": "core.platform.listSettings",
-        "summary": "List settings",
+        "summary": "List settings (core.platform)",
         "description": "`{ scope: 'platform', siteId: null, items }`: every key with platform scope, shaped as in the tenant settings read",
         "tags": [
           "Platform administration"
@@ -3833,7 +3842,7 @@
     "/api/platform/settings/{key}": {
       "put": {
         "operationId": "core.platform.putSetting",
-        "summary": "Put setting",
+        "summary": "Put setting (core.platform)",
         "description": "`{ value }` → the field. 400 for an unknown key or one without platform scope; 422 with the zod path under `[\"value\", ...]`. Tenant and site rows stay",
         "tags": [
           "Platform administration"
@@ -3904,7 +3913,7 @@
       },
       "delete": {
         "operationId": "core.platform.deleteSetting",
-        "summary": "Delete setting",
+        "summary": "Delete setting (core.platform)",
         "description": "204; back to the code default",
         "tags": [
           "Platform administration"
@@ -4643,6 +4652,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4701,6 +4713,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4751,6 +4766,9 @@
         "responses": {
           "204": {
             "description": "No body."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -4854,6 +4872,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4951,6 +4972,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -5076,7 +5100,7 @@
               },
               "example": {
                 "companyName": "example",
-                "country": "example",
+                "country": "DE",
                 "contactName": "example",
                 "email": "user@example.com"
               }
@@ -5219,6 +5243,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -5236,7 +5263,7 @@
     "/api/t/{orgId}/bookings": {
       "get": {
         "operationId": "booking.staff.listBookings",
-        "summary": "List bookings",
+        "summary": "List bookings (booking.staff)",
         "description": "`?siteId&date&status&limit&cursor`; list view with the same summaries, by start",
         "tags": [
           "Bookings (staff)"
@@ -5344,7 +5371,7 @@
       },
       "post": {
         "operationId": "booking.staff.createBooking",
-        "summary": "Create booking",
+        "summary": "Create booking (booking.staff)",
         "description": "Needs `booking.force` when `force` is set. `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } | { name }, avis, force?, forceReason? }`; 201, or 200 with the first booking for a repeated `clientRequestId`; `forceReason` required with `force`",
         "tags": [
           "Bookings (staff)"
@@ -6030,7 +6057,7 @@
     "/api/t/{orgId}/bookings/{bookingId}": {
       "get": {
         "operationId": "booking.staff.getBooking",
-        "summary": "Get booking",
+        "summary": "Get booking (booking.staff)",
         "description": "booking, avis, safety status",
         "tags": [
           "Bookings (staff)"
@@ -6088,7 +6115,7 @@
       },
       "patch": {
         "operationId": "booking.staff.updateBooking",
-        "summary": "Update booking",
+        "summary": "Update booking (booking.staff)",
         "description": "Needs `booking.force` when `force` is set. Reschedule `{ startsAt, resourceId?, version, force?, forceReason? }`; moves the driver link expiry to the new start plus 7 days",
         "tags": [
           "Bookings (staff)"
@@ -6192,7 +6219,7 @@
     "/api/t/{orgId}/bookings/{bookingId}/avis": {
       "put": {
         "operationId": "booking.staff.putAvis",
-        "summary": "Put avis",
+        "summary": "Put avis (booking.staff)",
         "description": "`{ avis, version }`; from `checked_in` on, no capacity check",
         "tags": [
           "Bookings (staff)"
@@ -6659,7 +6686,7 @@
     "/api/t/{orgId}/bookings/{bookingId}/cancel": {
       "post": {
         "operationId": "booking.staff.cancelBooking",
-        "summary": "Cancel booking",
+        "summary": "Cancel booking (booking.staff)",
         "description": "`{ reason? }` (send `{}` without one)",
         "tags": [
           "Bookings (staff)"
@@ -6739,7 +6766,7 @@
     "/api/t/{orgId}/bookings/{bookingId}/driver-link": {
       "get": {
         "operationId": "booking.staff.getDriverLink",
-        "summary": "Get driver link",
+        "summary": "Get driver link (booking.staff)",
         "description": "`{ url, expiresAt }`; 404 once the link is revoked",
         "tags": [
           "Bookings (staff)"
@@ -6808,7 +6835,7 @@
       },
       "post": {
         "operationId": "booking.staff.regenerateDriverLink",
-        "summary": "Regenerate driver link",
+        "summary": "Regenerate driver link (booking.staff)",
         "description": "regenerate; answers the new `{ url, expiresAt }`",
         "tags": [
           "Bookings (staff)"
@@ -6879,7 +6906,7 @@
     "/api/t/{orgId}/bookings/{bookingId}/driver-link/email": {
       "post": {
         "operationId": "booking.staff.emailDriverLink",
-        "summary": "Email driver link",
+        "summary": "Email driver link (booking.staff)",
         "description": "`{ email, locale }`; 202",
         "tags": [
           "Bookings (staff)"
@@ -7426,7 +7453,7 @@
     "/api/t/{orgId}/capacity/availability": {
       "get": {
         "operationId": "booking.capacity.getAvailability",
-        "summary": "Get availability",
+        "summary": "Get availability (booking.capacity)",
         "description": "`?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource and their union (`Offers` in `api.capacity.ts`), staff view without lead time and horizon",
         "tags": [
           "Master data and capacity"
@@ -8370,7 +8397,7 @@
     "/api/t/{orgId}/capacity/load-types": {
       "get": {
         "operationId": "booking.capacity.listLoadTypes",
-        "summary": "List load types",
+        "summary": "List load types (booking.capacity)",
         "description": "`?siteId=`",
         "tags": [
           "Master data and capacity"
@@ -13898,7 +13925,7 @@
     "/api/t/{orgId}/settings": {
       "get": {
         "operationId": "core.settings.listSettings",
-        "summary": "List settings",
+        "summary": "List settings (core.settings)",
         "description": "`?siteId=` reads the site level, without it the tenant level: `{ scope, siteId, items: [{ key, module, scopes, value, source, inherited: { value, source } }] }` for every available key the level may hold",
         "tags": [
           "Tenant administration"
@@ -13960,7 +13987,7 @@
     "/api/t/{orgId}/settings/{key}": {
       "put": {
         "operationId": "core.settings.putSetting",
-        "summary": "Put setting",
+        "summary": "Put setting (core.settings)",
         "description": "Needs the entitlement that the key's `requires` names. `{ siteId: uuid | null, value }` → the field. 400 for an unknown key or a level the key lacks (`scope_not_allowed`, `allowed`), 403 `entitlement_required` with the blocking feature, 422 under `[\"value\", ...]`, 404 for another tenant's site",
         "tags": [
           "Tenant administration"
@@ -14054,7 +14081,7 @@
       },
       "delete": {
         "operationId": "core.settings.deleteSetting",
-        "summary": "Delete setting",
+        "summary": "Delete setting (core.settings)",
         "description": "`?siteId=`; \"Reset to inherited\"",
         "tags": [
           "Tenant administration"
@@ -14119,7 +14146,7 @@
     "/api/t/{orgId}/sites": {
       "get": {
         "operationId": "core.sites.listSites",
-        "summary": "List sites",
+        "summary": "List sites (core.sites)",
         "description": "a site-limited operator sees only its sites; `{ items, usage: { sites, docks } }` counts active sites and active and maintenance docks against `core.max_sites` and `core.max_docks`",
         "tags": [
           "Master data and capacity"
@@ -14363,8 +14390,8 @@
                 "addressLine1": "example",
                 "postalCode": "example",
                 "city": "example",
-                "country": "example",
-                "timeZone": "example",
+                "country": "DE",
+                "timeZone": "Europe/Berlin",
                 "defaultLocale": "de"
               }
             }
@@ -14618,7 +14645,7 @@
     "/api/t/{orgId}/sites/{siteId}/docks": {
       "get": {
         "operationId": "core.sites.listDocks",
-        "summary": "List docks",
+        "summary": "List docks (core.sites)",
         "description": "The docks of a site.",
         "tags": [
           "Master data and capacity"
@@ -15329,7 +15356,7 @@
     "/api/t/{orgId}/staff/invitations": {
       "post": {
         "operationId": "core.staff.createInvitation",
-        "summary": "Create invitation",
+        "summary": "Create invitation (core.staff)",
         "description": "The limit `core.max_internal_users` counts members plus pending invitations. `{ email, role, siteIds? }` → 201 invitation. `siteIds` only for gate and dock operators (422 on `[\"siteIds\"]` otherwise, on `[\"siteIds\", i]` for another tenant's site). A pending invitation to the same email is replaced and does not count twice; a member's email answers 409 `conflict` `already_member`",
         "tags": [
           "Tenant administration"
@@ -15431,7 +15458,7 @@
     "/api/t/{orgId}/staff/invitations/{invitationId}": {
       "delete": {
         "operationId": "core.staff.deleteInvitation",
-        "summary": "Delete invitation",
+        "summary": "Delete invitation (core.staff)",
         "description": "204, the link stops working",
         "tags": [
           "Tenant administration"
@@ -15483,7 +15510,7 @@
     "/api/t/{orgId}/staff/{membershipId}": {
       "patch": {
         "operationId": "core.staff.updateMember",
-        "summary": "Update member",
+        "summary": "Update member (core.staff)",
         "description": "`{ role?, siteIds? }` → the member; a role without a site list drops its `membership_site` rows",
         "tags": [
           "Tenant administration"
@@ -15573,7 +15600,7 @@
       },
       "delete": {
         "operationId": "core.staff.deleteMember",
-        "summary": "Delete member",
+        "summary": "Delete member (core.staff)",
         "description": "access ends on the member's next request",
         "tags": [
           "Tenant administration"
@@ -16852,7 +16879,7 @@
     "/api/t/{orgId}/yard/docks": {
       "get": {
         "operationId": "yard.dock.listDocks",
-        "summary": "List docks",
+        "summary": "List docks (yard.dock)",
         "description": "`?siteId`; `{ halls: [{ id, name, docks: [{ id, code, status, temperatureZone, adrAllowed, resourceId, occupant }] }], queue }`; inactive docks left out, maintenance docks kept; the queue holds `checked_in` trucks by slot start, with waits",
         "tags": [
           "Yard"
@@ -24983,6 +25010,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "unauthorized",
+                "message": "Sign in required"
+              }
             }
           }
         }
@@ -24993,6 +25026,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "forbidden",
+                "message": "Not allowed"
+              }
             }
           }
         }
@@ -25003,6 +25042,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "not_found",
+                "message": "Not found"
+              }
             }
           }
         }
@@ -25013,6 +25058,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "limit_reached",
+                "message": "Package limit reached"
+              }
             }
           }
         }
@@ -25023,6 +25074,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "validation_failed",
+                "message": "Validation failed"
+              }
             }
           }
         }

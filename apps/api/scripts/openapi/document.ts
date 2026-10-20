@@ -1,5 +1,5 @@
 import type { Guard } from '../../src/kernel/describe.ts';
-import { ERROR_STATUS, type ErrorCode } from '../../src/kernel/errors.ts';
+import { DEFAULT_MESSAGE, ERROR_STATUS, type ErrorCode } from '../../src/kernel/errors.ts';
 import { DRIVER_COOKIE, SESSION_COOKIE } from '../../src/kernel/scopes.ts';
 import { byText } from './converter.ts';
 import type { Endpoint, Party } from './model.ts';
@@ -29,10 +29,16 @@ const SESSION_PARTIES = new Set<Party>([
 ]);
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/** A public or anonymous route that takes a token in its body, which can be unknown or used. */
+export function takesToken(e: Endpoint): boolean {
+  const body = e.validators.json;
+  return body !== undefined && 'shape' in body && 'token' in (body.shape as object);
+}
+
 /** The error statuses an operation can answer from its guards and validators alone. */
 export function errorStatuses(e: Endpoint): number[] {
   const statuses: number[] = [];
-  if (SESSION_PARTIES.has(e.party)) statuses.push(401);
+  if (SESSION_PARTIES.has(e.party) || takesToken(e)) statuses.push(401);
   if (e.guards.length || MUTATING.has(e.method)) statuses.push(403);
   if (e.path.includes('/:')) statuses.push(404);
   if (e.meta.limits?.length) statuses.push(409);
@@ -40,24 +46,32 @@ export function errorStatuses(e: Endpoint): number[] {
   return statuses;
 }
 
-const ERROR_RESPONSES: Record<number, { name: string; description: string }> = {
-  401: { name: 'Unauthorized', description: '`unauthorized`: no valid session or driver link.' },
+const ERROR_RESPONSES: Record<number, { name: string; code: ErrorCode; description: string }> = {
+  401: {
+    name: 'Unauthorized',
+    code: 'unauthorized',
+    description: '`unauthorized`: no valid session or driver link.',
+  },
   403: {
     name: 'Forbidden',
+    code: 'forbidden',
     description:
       '`forbidden` without the permission or from a foreign `Origin`, `entitlement_required` when the package does not include the module or feature (`details.key`).',
   },
   404: {
     name: 'NotFound',
+    code: 'not_found',
     description:
       '`not_found`: an unknown or malformed id, or an org the caller does not belong to.',
   },
   409: {
     name: 'LimitReached',
+    code: 'limit_reached',
     description: '`limit_reached` at a hard limit of the package (`details.key`, `details.limit`).',
   },
   422: {
     name: 'ValidationFailed',
+    code: 'validation_failed',
     description:
       '`validation_failed` with the zod issues in `details.issues` (`path`, `code`, `message`).',
   },
@@ -80,7 +94,7 @@ function security(party: Party) {
   return {};
 }
 
-function operation(op: Operation, statics: StaticResult): Doc {
+function operation(op: Operation, statics: StaticResult, summary: string): Doc {
   const e = op.endpoint;
   const { parameters, requestBody } = describeRequest(e);
   const bodies = statics.responses.get(e.meta.id) ?? new Map<number, JsonSchema>();
@@ -106,7 +120,7 @@ function operation(op: Operation, statics: StaticResult): Doc {
   const ents = entitlements(e.guards);
   return {
     operationId: e.meta.id,
-    summary: summaryOf(e.meta.id),
+    summary,
     description: e.meta.description,
     tags: [op.section],
     ...security(e.party),
@@ -156,11 +170,29 @@ export function operations(endpoints: readonly Endpoint[], statics: StaticResult
   return { ops, problems };
 }
 
+/** The summary, with the module and area added where two operations would read the same. */
+function summaries(ops: readonly Operation[]): Map<string, string> {
+  const count = new Map<string, number>();
+  for (const op of ops) {
+    const s = summaryOf(op.endpoint.meta.id);
+    count.set(s, (count.get(s) ?? 0) + 1);
+  }
+  return new Map(
+    ops.map(({ endpoint: { meta } }) => {
+      const s = summaryOf(meta.id);
+      const area = meta.id.split('.').slice(0, -1).join('.');
+      return [meta.id, (count.get(s) ?? 0) > 1 ? `${s} (${area})` : s];
+    }),
+  );
+}
+
 export function buildDocument(ops: readonly Operation[], statics: StaticResult): Doc {
   const paths: Record<string, Record<string, unknown>> = {};
+  const summary = summaries(ops);
   for (const op of ops) {
     const path = openApiPath(op.endpoint.path);
-    paths[path] = { ...paths[path], [op.endpoint.method.toLowerCase()]: operation(op, statics) };
+    const doc = operation(op, statics, summary.get(op.endpoint.meta.id) ?? '');
+    paths[path] = { ...paths[path], [op.endpoint.method.toLowerCase()]: doc };
   }
   const order = ['get', 'post', 'put', 'patch', 'delete'];
   const sortedPaths = Object.fromEntries(
@@ -180,7 +212,7 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
     servers: [
       {
         url: '{appOrigin}',
-        description: 'The web app origin; its dev server proxies /api to the API.',
+        description: 'Web app',
         variables: { appOrigin: { default: 'http://localhost:5173' } },
       },
     ],
@@ -194,11 +226,16 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
           .map((k) => [k, schemas[k]]),
       ),
       responses: Object.fromEntries(
-        Object.values(ERROR_RESPONSES).map(({ name, description }) => [
+        Object.values(ERROR_RESPONSES).map(({ name, code, description }) => [
           name,
           {
             description,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+                example: { error: { code, message: DEFAULT_MESSAGE[code] } },
+              },
+            },
           },
         ]),
       ),

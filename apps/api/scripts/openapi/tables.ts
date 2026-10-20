@@ -1,4 +1,4 @@
-import type { Operation } from './document.ts';
+import { type Operation, takesToken } from './document.ts';
 import { markers, SECTIONS, type Section } from './sections.ts';
 
 // The route tables of docs/reference/api-routes.md, rendered between markers (design D11).
@@ -18,9 +18,7 @@ function permissionCell({ endpoint: e }: Operation): string {
   if (keys.length) return keys.join(' and ');
   if (MEMBER_PARTIES.has(e.party)) return 'member';
   if (e.party === 'driver') return 'driver';
-  const body = e.validators.json;
-  const shape = body && 'shape' in body ? (body.shape as Record<string, unknown>) : undefined;
-  return shape && 'token' in shape ? 'token' : 'none';
+  return takesToken(e) ? 'token' : 'none';
 }
 
 function entitlementCell({ endpoint: e }: Operation): string {

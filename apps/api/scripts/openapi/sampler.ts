@@ -17,12 +17,22 @@ const BY_PATTERN: Record<string, string> = {
   '^([01]\\d|2[0-3]):[0-5]\\d$': '08:00',
   '^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$': '16:00',
   '^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d$': '2026-01-05T08:00',
+  '^[A-Z]{2}$': 'DE',
 };
 
-export function sample(schema: JsonSchema, components: Record<string, JsonSchema> = {}): unknown {
+/** Strings whose rule lives in a refinement, which JSON Schema does not carry. */
+const BY_NAME: Record<string, string> = {
+  timeZone: 'Europe/Berlin',
+};
+
+export function sample(
+  schema: JsonSchema,
+  components: Record<string, JsonSchema> = {},
+  name?: string,
+): unknown {
   if (schema.$ref) {
     const target = components[schema.$ref.replace('#/components/schemas/', '')];
-    return target ? sample(target, components) : null;
+    return target ? sample(target, components, name) : null;
   }
   if (schema.default !== undefined) return schema.default;
   if (schema.const !== undefined) return schema.const;
@@ -30,12 +40,12 @@ export function sample(schema: JsonSchema, components: Record<string, JsonSchema
   const alternatives = schema.anyOf ?? schema.oneOf;
   if (alternatives) {
     const first = alternatives.find((s) => s.type !== 'null') ?? alternatives[0];
-    return first ? sample(first, components) : null;
+    return first ? sample(first, components, name) : null;
   }
   const type = Array.isArray(schema.type) ? schema.type.find((t) => t !== 'null') : schema.type;
   switch (type) {
     case 'string':
-      return sampleString(schema);
+      return sampleString(schema, name);
     case 'integer':
     case 'number':
       return schema.minimum ?? (schema.exclusiveMinimum ?? 0) + 1;
@@ -51,7 +61,7 @@ export function sample(schema: JsonSchema, components: Record<string, JsonSchema
       const out: Record<string, unknown> = {};
       for (const name of schema.required ?? []) {
         const property = schema.properties?.[name];
-        if (property) out[name] = sample(property, components);
+        if (property) out[name] = sample(property, components, name);
       }
       return out;
     }
@@ -60,7 +70,8 @@ export function sample(schema: JsonSchema, components: Record<string, JsonSchema
   }
 }
 
-function sampleString(schema: JsonSchema): string {
+function sampleString(schema: JsonSchema, name?: string): string {
+  if (name && BY_NAME[name]) return BY_NAME[name] as string;
   if (schema.format && BY_FORMAT[schema.format]) return BY_FORMAT[schema.format] as string;
   if (schema.pattern && BY_PATTERN[schema.pattern]) return BY_PATTERN[schema.pattern] as string;
   const min = schema.minLength ?? 1;

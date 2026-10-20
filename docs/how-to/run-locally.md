@@ -138,7 +138,7 @@ Test these three features on `localhost` or behind HTTPS.
 
 The API describes itself in `apps/api/openapi.gen.json` ([ADR-0013](../decisions/ADR-0013-openapi-from-routes-and-typescript.md)). In development it serves the description in Swagger UI.
 
-1. Check that `.env` has `ENABLE_API_DOCS=1`. `.env.example` sets it, and `node scripts/checkout-env.mjs --write` adds it to an older `.env`. The API refuses to start with the flag and `NODE_ENV=production`.
+1. Check that `.env` has `ENABLE_API_DOCS=1`. `.env.example` sets it; in an older `.env`, add the line by hand. Do not run `node scripts/checkout-env.mjs --write` for this in a seeded checkout: it replaces the example `TOKEN_SECRET`, and the driver links, invitations and other tokens already in the database then answer 401. The API refuses to start with the flag and `NODE_ENV=production`.
 2. Start `pnpm dev` and sign in to the web app at `APP_ORIGIN` (or `http://localhost:5173`).
 3. Open `/api/docs` on the same address, for example `http://localhost:5173/api/docs`. Do not use the API port (`API_PORT`, 3000).
 4. To run a route, open it, choose **Try it out**, fill the path parameters and choose **Execute**. The `orgId` of a tenant is in the web app's URL (`/t/<orgId>/...`).
@@ -149,14 +149,14 @@ Swagger UI must run on the web app's address, because there its requests behave 
 
 1. Import the description into the client:
    - **Bruno**: import a collection, choose OpenAPI V3, and select `apps/api/openapi.gen.json`. Group the requests by tags.
-   - **Postman**: choose **Import** and select the same file. While `pnpm dev` runs, you can import `<APP_ORIGIN>/api/openapi.json` by URL instead.
+   - **Postman**: choose **Import**, select the same file, open **View Import Settings**, and set **Folder organization** to **Tags** and **Parameter generation** to **Example**. Without these settings the folders follow the URL paths and the bodies hold placeholders such as `<string>`. While `pnpm dev` runs, you can import `<APP_ORIGIN>/api/openapi.json` by URL instead.
 
    Each section of [API routes](../reference/api-routes.md) becomes a folder, and each JSON body comes with an example.
-2. Set the variables. `appOrigin` is the web app's address, `http://localhost:5173` by default; `baseUrl` refers to it. Path parameters such as `orgId` are empty after the import. Set them per request, or write `{{orgId}}` into them and define an `orgId` variable.
-3. Set the collection auth to **No Auth**. Both clients import the session cookie as an API key header `rf_session`, which the API ignores. The session travels in the client's cookie jar instead.
-4. Add the collection header `Origin: {{appOrigin}}`. Every mutating request needs it, the sign-in included.
+2. Set the variables. `appOrigin` is the web app's address, `http://localhost:5173` by default; `baseUrl` refers to it. In Bruno they live in the imported environment **Web app**: select it, or every URL stays `{{baseUrl}}`. In Postman they are collection variables. Bruno leaves path parameters such as `orgId` and required query parameters such as `siteId` empty; Postman fills them with sample values. Set them per request, or write `{{orgId}}` into them and define an `orgId` variable. In Postman, untick the optional query parameters you do not want to send.
+3. Set the collection auth to **No Auth**. Both clients import the session cookie as an API key header `rf_session`, which the API ignores. The session travels in the client's cookie jar instead. The requests in the **Driver** folder keep their own API key auth `rf_driver`; leave it or set it to inherit, because the API reads the `rf_driver` cookie, not the header.
+4. Send `Origin: {{appOrigin}}` with every request. In Bruno, add it as a collection header. Postman has no collection headers; add this collection pre-request script instead: `pm.request.headers.upsert({ key: 'Origin', value: pm.variables.replaceIn('{{appOrigin}}') });`. Every mutating request needs the header, the sign-in included; without it the API answers 403 `forbidden`.
 5. Sign in. Run `POST /api/auth/login` with a seed account from [Set up the checkout](#set-up-the-checkout), for example `admin@acme.local` and `rampflow-demo`. The client stores the `rf_session` cookie and sends it with the following requests to the same address.
-6. For driver routes, run `POST /api/public/driver-session` with the token of a driver link (the part after `/d/`). The client then sends the `rf_driver` cookie with requests under `/api/driver`.
+6. For driver routes, get the booking's link with `GET /api/t/{orgId}/bookings/{bookingId}/driver-link` and copy the part after `#`. Do not use the `POST` on the same path: it issues a new link and revokes the one the driver has. Run `POST /api/public/driver-session` with `{ "token": "<token>" }`. The client then sends the `rf_driver` cookie with requests under `/api/driver`, and `DELETE /api/driver/session` clears it. A 401 for a seeded booking means the checkout's `TOKEN_SECRET` changed after `pnpm db:seed`; reset the database and seed again.
 
 Import again after `pnpm api:docs` changes the file. Neither client updates an imported collection by itself.
 
