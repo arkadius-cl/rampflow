@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, driver, pwa, security, gdpr, safety]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/explanation/mvp-scope.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
@@ -52,7 +52,7 @@ Two requirements pull against each other. "The server stores SHA-256 hashes only
 1. The PWA reads `location.hash`, posts `{ token }` to `POST /api/public/driver-session`, and calls `history.replaceState(null, '', '/d')`. The exchange sits under `/api/public` because the driver scope middleware covers all of `/api/driver/*`.
 2. The API applies the `driver_exchange` rate limit (10 per minute per IP, [ADR-0003](ADR-0003-authentication-self-built-sessions.md)), hashes the token, and reads the row under the `token` party.
 3. Unknown, expired and revoked tokens all answer 401 `unauthorized`. The PWA shows one generic "This link is no longer valid" message (DR-01).
-4. A valid token sets `rf_driver=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/driver; Max-Age=<seconds to expiry>`.
+4. A valid token sets `rf_driver=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/driver; Max-Age=<seconds to expiry>`. `Secure` on `rf_driver` and `rf_device` is off only when `NODE_ENV=development`, as for the session cookie ([ADR-0003](ADR-0003-authentication-self-built-sessions.md)), so the PWA works on a phone at the plain-http LAN dev origin.
 5. Every `/api/driver/*` request resolves the cookie the same way and runs under the `driver` party for that booking ([ADR-0002](ADR-0002-tenancy-isolation-rls.md)). The cookie holds the same token as the link; the exchange exists to move it out of the URL and out of JavaScript's reach.
 6. Request logging records method, route pattern and status only. A test in U10 captures the log output of an exchange and asserts that neither the token nor the cookie appears.
 

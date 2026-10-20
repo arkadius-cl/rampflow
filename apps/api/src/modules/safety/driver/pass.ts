@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { hashToken, type TokenHash } from '../../../db/ids.ts';
+import { env } from '../../../kernel/env.ts';
 
 // The phone's device id for safety passes (ADR-0008): 32 random bytes in an HttpOnly cookie;
 // `safety_pass` stores only their SHA-256.
@@ -21,7 +22,7 @@ export function ensureDevice(c: Context): TokenHash {
   const token = randomBytes(32).toString('base64url');
   setCookie(c, DEVICE_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: env.NODE_ENV !== 'development',
     sameSite: 'Strict',
     path: '/api/driver',
     maxAge: ONE_YEAR_SECONDS,
