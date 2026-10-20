@@ -22,6 +22,11 @@ export const RATE_LIMITS = {
   // Public-link registrations (CR-02): per email, and per client address against mass sign-ups.
   registration_request: { limit: 5, windowSeconds: 60 * 60 },
   registration_ip: { limit: 100, windowSeconds: 60 * 60 },
+  // Tenant self-registration (RG-01): per email against email bombing, per client address.
+  signup_request: { limit: 3, windowSeconds: 60 * 60 },
+  signup_ip: { limit: 20, windowSeconds: 60 * 60 },
+  // One use per solved ALTCHA challenge, keyed by its signature, for the challenge's lifetime.
+  altcha_solution: { limit: 1, windowSeconds: 10 * 60 },
 } as const satisfies Record<RateLimitBucket, { limit: number; windowSeconds: number }>;
 
 export type RateLimitState = { limited: false } | { limited: true; retryAfterSeconds: number };

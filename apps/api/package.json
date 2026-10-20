@@ -31,6 +31,7 @@
     "@rampflow/shared": "workspace:*",
     "@react-email/components": "1.0.12",
     "@react-email/render": "2.1.1",
+    "altcha-lib": "2.6.0",
     "date-fns": "4.4.0",
     "date-holidays": "3.37.0",
     "drizzle-orm": "0.45.4",
