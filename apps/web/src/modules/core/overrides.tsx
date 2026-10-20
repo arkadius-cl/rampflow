@@ -220,7 +220,7 @@ export function AddOverrideCard({ tenant }: { tenant: TenantDetail }) {
           json: {
             value:
               entitlement?.kind === 'feature'
-                ? v.value === 'true'
+                ? v.value === String(true)
                 : v.unlimited
                   ? null
                   : Number(v.value),

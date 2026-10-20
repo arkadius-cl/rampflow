@@ -4,7 +4,7 @@ import {
   type InvitationInspectResponse,
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
-import { SignInMode } from '@rampflow/shared/modules/core/values';
+import { RefinementMessage, SignInMode } from '@rampflow/shared/modules/core/values';
 import { ConflictReason, ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -35,7 +35,10 @@ export const Route = createFileRoute('/invite')({
 
 const NewAccount = z
   .object({ name: z.string().trim().min(1).max(120), password: Password, confirm: z.string() })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'password_match' });
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: RefinementMessage.password_match,
+  });
 type NewAccount = z.infer<typeof NewAccount>;
 
 const SignIn = z.object({ password: z.string().min(1) });

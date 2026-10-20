@@ -91,3 +91,16 @@ export const EmailLinkMode = {
   reset: SignInMode.reset,
 } as const;
 export type EmailLinkMode = ValueOf<typeof EmailLinkMode>;
+
+/** The sign-in and account form fields whose errors have a message of their own. */
+export const CredentialField = {
+  email: 'email',
+  password: 'password',
+} as const;
+export type CredentialField = ValueOf<typeof CredentialField>;
+
+/** The message codes the web's own refinements set; the UI translates them. */
+export const RefinementMessage = {
+  password_match: 'password_match',
+} as const;
+export type RefinementMessage = ValueOf<typeof RefinementMessage>;

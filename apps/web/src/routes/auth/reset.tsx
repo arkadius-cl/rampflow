@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
-import { SignInMode } from '@rampflow/shared/modules/core/values';
+import { RefinementMessage, SignInMode } from '@rampflow/shared/modules/core/values';
 import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -23,7 +23,10 @@ import { api, call, isFailure } from '@/lib/api';
 
 const NewPassword = z
   .object({ password: Password, confirm: z.string() })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'password_match' });
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: RefinementMessage.password_match,
+  });
 type NewPassword = z.infer<typeof NewPassword>;
 
 export const Route = createFileRoute('/auth/reset')({

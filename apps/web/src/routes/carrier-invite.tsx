@@ -4,6 +4,7 @@ import type {
   CarrierInvitationInspect,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
+import { RefinementMessage } from '@rampflow/shared/modules/core/values';
 import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -39,7 +40,10 @@ const NewAccount = z
     password: Password,
     confirm: z.string(),
   })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'password_match' });
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: RefinementMessage.password_match,
+  });
 type NewAccount = z.infer<typeof NewAccount>;
 
 function CarrierInvitePage() {

@@ -62,7 +62,7 @@ export function LogoScreen({ orgId }: { orgId: string }) {
     },
     onError: (e) => {
       if (!isFailure(e, ErrorCode.validation_failed)) return;
-      setProblem(e.issues.some((i) => i.code === 'too_big') ? 'size' : 'type');
+      setProblem(e.issues.some((i) => i.code === 'too_big') ? LogoProblem.size : LogoProblem.type);
     },
   });
   const remove = async () => {
