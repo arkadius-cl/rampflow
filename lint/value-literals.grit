@@ -47,7 +47,8 @@ or {
   },
   // In a call snippet the argument binds as a list, so match its elements.
   `z.literal($argument)` as $schema where {
-    $argument <: some string_literal(),
+    // `z.literal('')` is a form's empty value, exempt as `''` is from comparisons.
+    $argument <: some and { string_literal(), not empty_string() },
     register_diagnostic(span=$schema, message="Use the central value set member (`z.literal(X.member)` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },
   // Only lists of plain strings: a query key such as `['tenant', orgId] as const` is not a set.

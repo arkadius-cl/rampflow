@@ -24,6 +24,7 @@ export function rank(status: BookingStatus): number {
 
 export const statusSchema = z.enum(BookingStatus);
 export const requestedSchema = z.literal(BookingStatus.requested);
+export const emptySchema = z.literal('');
 export const textSchema = z.string().min(1, 'Required');
 
 export const transitions = { status: 'requested', next: 'confirmed' } as const;
