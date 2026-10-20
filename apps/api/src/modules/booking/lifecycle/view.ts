@@ -4,7 +4,7 @@ import type {
   BookingView,
 } from '@rampflow/shared/modules/booking/api.staff';
 import type { TimeZone } from '@rampflow/shared/time';
-import { ErrorCode, Permission } from '@rampflow/shared/values';
+import { ErrorCode, Permission, ZodIssueCode } from '@rampflow/shared/values';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import * as z from 'zod';
 import type { BookingId, TenantId, UserId } from '../../../db/ids.ts';
@@ -118,7 +118,7 @@ export function decodeCursor(cursor: string): { at: Date; id: string } {
     return { at: new Date(c.t), id: c.id };
   } catch {
     throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
-      issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
+      issues: [{ path: ['cursor'], code: ZodIssueCode.custom, message: 'Invalid cursor' }],
     });
   }
 }

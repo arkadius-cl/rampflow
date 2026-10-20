@@ -315,7 +315,7 @@ async function singleFor(
           directions: d.directions ?? [...values(Direction)],
           tenantId: req.tenantId,
           siteId: d.siteId,
-          kind: 'single',
+          kind: ResourceKind.single,
           name: d.code,
         })
         .returning();

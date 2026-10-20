@@ -1,5 +1,6 @@
 import { TranslationState } from '@rampflow/shared/modules/safety/values';
 import {
+  DriverLocale,
   Feature,
   ForeignOutcome,
   HttpMethod,
@@ -72,7 +73,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.PUT,
     path: `${P}/versions/:versionId/content/:locale`,
     entitlement: Feature.safety.quiz,
-    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: 'pl' }),
+    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: DriverLocale.pl }),
     body: () => contentFixture({ translation: TranslationState.machine }),
   },
   {

@@ -1,3 +1,4 @@
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
 import { Module, OrgKind, Role, SeedOrg, StaffLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
@@ -159,12 +160,12 @@ export async function seed(ctx: SeedContext): Promise<void> {
     .values({
       tenantId: orgs.acme as TenantId,
       carrierId: orgs.transpol as CarrierId,
-      status: 'active',
-      source: 'invitation',
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.invitation,
     })
     .onConflictDoUpdate({
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-      set: { status: 'active', deactivatedAt: null },
+      set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
   ctx.log(`${DEMO_USERS.length} accounts ready`);
 }

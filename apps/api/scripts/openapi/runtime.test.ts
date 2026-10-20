@@ -1,8 +1,10 @@
 import {
+  ApiParty,
   DescribedKind,
   GuardKind,
   HttpMethod,
   Permission,
+  RouteMethod,
   StoryId,
   ValidationTarget,
 } from '@rampflow/shared/values';
@@ -16,7 +18,7 @@ import { GeneratorError } from './model.ts';
 import { collectEndpoints, partyOf, patternMatches } from './runtime.ts';
 
 /** A guard that only marks the response, so the test can see which guards Hono ran. */
-const marker = (guard: Guard & { kind: 'permission' }): MiddlewareHandler =>
+const marker = (guard: Guard & { kind: typeof GuardKind.permission }): MiddlewareHandler =>
   register<MiddlewareHandler>(
     async (c, next) => {
       await next();
@@ -48,15 +50,15 @@ describe('collectEndpoints', () => {
       collectEndpoints(toy.routes).map((e) => [`${e.method} ${e.path}`, e.guards]),
     );
     expect(byKey).toEqual({
-      'GET /api/t/:orgId/s/a': [{ kind: 'permission', key: 'core.manage_staff' }],
+      'GET /api/t/:orgId/s/a': [{ kind: GuardKind.permission, key: 'core.manage_staff' }],
       'GET /api/t/:orgId/s/b': [
-        { kind: 'permission', key: 'core.manage_staff' },
-        { kind: 'permission', key: 'booking.view' },
+        { kind: GuardKind.permission, key: 'core.manage_staff' },
+        { kind: GuardKind.permission, key: 'booking.view' },
       ],
-      'POST /api/t/:orgId/s/b': [{ kind: 'permission', key: 'core.manage_staff' }],
+      'POST /api/t/:orgId/s/b': [{ kind: GuardKind.permission, key: 'core.manage_staff' }],
     });
     const ran = async (method: string, path: string) => {
-      const body = method === 'GET' ? undefined : '{"name":"x"}';
+      const body = method === HttpMethod.GET ? undefined : '{"name":"x"}';
       const headers = { 'Content-Type': 'application/json' };
       const res = await toy.request(path, { method, body, headers });
       return res.headers.get('x-guards')?.split(', ').sort();
@@ -70,7 +72,7 @@ describe('collectEndpoints', () => {
     const post = collectEndpoints(toy.routes).find((e) => e.method === HttpMethod.POST);
     expect(post).toMatchObject({
       path: '/api/t/:orgId/s/b',
-      party: 'tenant',
+      party: ApiParty.tenant,
       meta: { id: 'toy.second.createB' },
       validators: { json: Body },
     });
@@ -101,7 +103,7 @@ describe('collectEndpoints', () => {
     expect(paths.filter((p) => excluded.some((x) => p.startsWith(x)))).toEqual([]);
     const routes = new Set(
       app.routes
-        .filter((r) => r.method !== 'ALL' && !excluded.some((x) => r.path.startsWith(x)))
+        .filter((r) => r.method !== RouteMethod.ALL && !excluded.some((x) => r.path.startsWith(x)))
         .map((r) => `${r.method} ${r.path}`),
     );
     expect(paths.length).toBe(routes.size);
@@ -111,7 +113,7 @@ describe('collectEndpoints', () => {
 describe('partyOf', () => {
   it('maps every route of the app to a party', () => {
     const unmatched = createApp({ testRoutes: false })
-      .routes.filter((r) => r.method !== 'ALL' && partyOf(r.path) === null)
+      .routes.filter((r) => r.method !== RouteMethod.ALL && partyOf(r.path) === null)
       .map((r) => `${r.method} ${r.path}`);
     expect(unmatched).toEqual([]);
   });

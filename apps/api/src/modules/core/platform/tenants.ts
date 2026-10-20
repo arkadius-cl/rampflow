@@ -24,6 +24,7 @@ import {
   OrgKind,
   OverrideErrorCode,
   Role,
+  ZodIssueCode,
 } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
@@ -62,7 +63,9 @@ export interface NewTenant extends CreateTenant {
  */
 export async function createTenant(tx: Tx, input: NewTenant, now: Date): Promise<TenantId> {
   const id = randomUUID() as TenantId;
-  await tx.insert(org).values({ id: id as string as OrgId, kind: 'tenant', name: input.name });
+  await tx
+    .insert(org)
+    .values({ id: id as string as OrgId, kind: OrgKind.tenant, name: input.name });
   await tx.insert(tenantSubscription).values({
     tenantId: id,
     package: input.package,
@@ -212,7 +215,11 @@ export async function putOverride(
     if (error.code === OverrideErrorCode.invalid_value) {
       throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
         issues: [
-          { path: ['value'], code: 'invalid_type', message: `Expected a ${error.expected}` },
+          {
+            path: ['value'],
+            code: ZodIssueCode.invalid_type,
+            message: `Expected a ${error.expected}`,
+          },
         ],
       });
     }

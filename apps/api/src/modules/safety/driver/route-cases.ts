@@ -1,4 +1,5 @@
 import {
+  DriverLocale,
   Feature,
   ForeignOutcome,
   HttpMethod,
@@ -39,14 +40,14 @@ export const cases = defineRouteCases([
     path: `${P}/:instructionId/attempts`,
     entitlement: Feature.safety.quiz,
     params: instruction,
-    body: () => ({ locale: 'en', answers: allRight }),
+    body: () => ({ locale: DriverLocale.en, answers: allRight }),
   },
   {
     ...base,
     method: HttpMethod.POST,
     path: `${P}/:instructionId/acknowledgement`,
     params: instruction,
-    body: () => ({ locale: 'en', name: 'Dana Driver', confirmed: true }),
+    body: () => ({ locale: DriverLocale.en, name: 'Dana Driver', confirmed: true }),
     setup: async (w, o) => {
       await base.setup(w, o);
       // Both drivers at tenant A passed the quiz, so the rival's call reaches the handler too.

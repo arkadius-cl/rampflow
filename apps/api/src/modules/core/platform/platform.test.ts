@@ -1,10 +1,21 @@
+import { catalog } from '@rampflow/shared';
 import type {
   PackageList,
   TenantDetail,
   TenantList,
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
-import { PackageId, Setting } from '@rampflow/shared/values';
+import {
+  BadRequestReason,
+  EntitlementSource,
+  ErrorCode,
+  Feature,
+  Limit,
+  PackageId,
+  Role,
+  Setting,
+  SettingSource,
+} from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -36,7 +47,7 @@ const overridePath = (tenantId: string, key: string) =>
   `/api/platform/tenants/${tenantId}/overrides/${key}`;
 const invite = (side: World['A'], email = inviteeEmail('staff')) =>
   as(app, side.users.tenant_admin).post(`/api/t/${side.tenantId}/staff/invitations`, {
-    body: { email, role: 'dispatcher' },
+    body: { email, role: Role.dispatcher },
   });
 
 describe('PL-01 create a tenant', () => {
@@ -50,20 +61,24 @@ describe('PL-01 create a tenant', () => {
     expect(res.status).toBe(201);
     const created = (await res.json()) as TenantDetail;
     expect(created).toMatchObject({ name, package: 'start' });
-    const portal = created.entitlements.find((e) => e.key === 'booking.carrier_portal');
-    expect(portal).toMatchObject({ value: true, source: 'package' });
-    expect(created.entitlements.find((e) => e.key === 'safety.quiz')).toMatchObject({
+    const portal = created.entitlements.find((e) => e.key === Feature.booking.carrier_portal);
+    expect(portal).toMatchObject({ value: true, source: EntitlementSource.package });
+    expect(created.entitlements.find((e) => e.key === Feature.safety.quiz)).toMatchObject({
       value: false,
-      source: 'default',
+      source: EntitlementSource.default,
     });
     expect(created.adminInvitations).toEqual([expect.objectContaining({ email: adminEmail })]);
 
     const sent = await sentInvitation(ownerDb(), adminEmail);
-    expect(sent.row).toMatchObject({ orgId: created.id, role: 'tenant_admin', orgKind: 'tenant' });
+    expect(sent.row).toMatchObject({
+      orgId: created.id,
+      role: Role.tenant_admin,
+      orgKind: 'tenant',
+    });
     expect(sent.mail?.payload).toEqual({
       invitationId: sent.row.id,
       orgName: name,
-      role: 'tenant_admin',
+      role: Role.tenant_admin,
       inviterName: null,
     });
 
@@ -76,7 +91,7 @@ describe('PL-01 create a tenant', () => {
       .select({ orgId: membership.orgId, role: membership.role })
       .from(membership)
       .where(eq(membership.userId, user?.id as never));
-    expect(memberships).toEqual([{ orgId: created.id, role: 'tenant_admin' }]);
+    expect(memberships).toEqual([{ orgId: created.id, role: Role.tenant_admin }]);
   });
 
   it('re-invites a tenant admin: the earlier link stops working', async () => {
@@ -120,7 +135,14 @@ describe('PL-02 packages and overrides', () => {
       items.find((p) => p.id === id)?.values.find((v) => v.key === key)?.value;
     expect(limit('start', 'core.max_sites')).toBe(1);
     expect(limit('enterprise', 'core.max_sites')).toBeNull();
-    expect(items.flatMap((p) => p.values).some((v) => v.key === 'core.sso')).toBe(false);
+    const reserved = new Set(
+      catalog.flatMap((m) =>
+        Object.entries(m.entitlements)
+          .filter(([, d]) => 'reserved' in d)
+          .map(([key]) => key),
+      ),
+    );
+    expect(items.flatMap((p) => p.values).some((v) => reserved.has(v.key))).toBe(false);
   });
 
   it('a raising and a lowering override change a gated answer on the next request', async () => {
@@ -135,7 +157,7 @@ describe('PL-02 packages and overrides', () => {
     const blocked = await admin.get(logo);
     expect(blocked.status).toBe(403);
     expect(await errorOf(blocked)).toMatchObject({
-      code: 'entitlement_required',
+      code: ErrorCode.entitlement_required,
       details: { key: 'brand.logo' },
     });
 
@@ -152,9 +174,9 @@ describe('PL-02 packages and overrides', () => {
     const detail = (await (
       await as(app, t.platformAdmin).get(`/api/platform/tenants/${t.A.tenantId}`)
     ).json()) as TenantDetail;
-    expect(detail.entitlements.find((e) => e.key === 'core.max_internal_users')).toMatchObject({
+    expect(detail.entitlements.find((e) => e.key === Limit.core.max_internal_users)).toMatchObject({
       value: 11,
-      source: 'override',
+      source: EntitlementSource.override,
       packageValue: 10,
     });
     expect(detail.overrides).toEqual(
@@ -181,7 +203,7 @@ describe('PL-02 packages and overrides', () => {
       const res = await invite(t.A);
       expect(res.status).toBe(409);
       expect(await errorOf(res)).toMatchObject({
-        code: 'limit_reached',
+        code: ErrorCode.limit_reached,
         details: { key: 'core.max_internal_users', limit: 10 },
       });
       const detail = (await (
@@ -198,12 +220,16 @@ describe('PL-02 packages and overrides', () => {
       body: { value: 3 },
     });
     expect(unknown.status).toBe(400);
-    expect(await errorOf(unknown)).toMatchObject({ details: { reason: 'unknown_key' } });
+    expect(await errorOf(unknown)).toMatchObject({
+      details: { reason: BadRequestReason.unknown_key },
+    });
     const reserved = await platform().put(overridePath(w.A.tenantId, 'core.sso'), {
       body: { value: true },
     });
     expect(reserved.status).toBe(400);
-    expect(await errorOf(reserved)).toMatchObject({ details: { reason: 'reserved_key' } });
+    expect(await errorOf(reserved)).toMatchObject({
+      details: { reason: BadRequestReason.reserved_key },
+    });
     const wrongKind = await platform().put(overridePath(w.A.tenantId, 'brand.logo'), {
       body: { value: 5 },
     });
@@ -239,7 +265,7 @@ describe('PL-03 platform defaults', () => {
     expect(keys).not.toContain('booking.public_link_enabled');
     expect(view.items.find((i) => i.key === Setting.booking.horizon_days)).toMatchObject({
       value: 30,
-      source: 'default',
+      source: SettingSource.default,
     });
   });
 
@@ -264,15 +290,18 @@ describe('PL-03 platform defaults', () => {
     expect(tenantPut.status).toBe(200);
     const res = await platform().put(settingPath('yard.grace_minutes'), { body: { value: 25 } });
     expect(res.status).toBe(200);
-    expect((await res.json()) as SettingEntry).toMatchObject({ value: 25, source: 'platform' });
+    expect((await res.json()) as SettingEntry).toMatchObject({
+      value: 25,
+      source: SettingSource.platform,
+    });
 
     const view = (await (
       await as(app, w.B.users.tenant_admin).get(tenantSettings)
     ).json()) as SettingsView;
     expect(view.items.find((i) => i.key === Setting.yard.grace_minutes)).toMatchObject({
       value: 20,
-      source: 'tenant',
-      inherited: { value: 25, source: 'platform' },
+      source: SettingSource.tenant,
+      inherited: { value: 25, source: SettingSource.platform },
     });
 
     expect((await platform().delete(settingPath('yard.grace_minutes'))).status).toBe(204);

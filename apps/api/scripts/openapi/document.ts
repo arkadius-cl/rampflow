@@ -1,4 +1,11 @@
-import { ApiParty, BodyKind, ErrorCode, GuardKind } from '@rampflow/shared/values';
+import {
+  ApiParty,
+  BodyKind,
+  ErrorCode,
+  GuardKind,
+  JsonSchemaType,
+  SecuritySchemeType,
+} from '@rampflow/shared/values';
 import type { Guard } from '../../src/kernel/describe.ts';
 import { DEFAULT_MESSAGE, ERROR_STATUS } from '../../src/kernel/errors.ts';
 import { DRIVER_COOKIE, SESSION_COOKIE } from '../../src/kernel/scopes.ts';
@@ -140,16 +147,19 @@ function operation(op: Operation, statics: StaticResult, summary: string): Doc {
 }
 
 const ERROR_SCHEMA: JsonSchema = {
-  type: 'object',
+  type: JsonSchemaType.object,
   required: ['error'],
   properties: {
     error: {
-      type: 'object',
+      type: JsonSchemaType.object,
       required: ['code', 'message'],
       properties: {
-        code: { type: 'string', enum: (Object.keys(ERROR_STATUS) as ErrorCode[]).sort(byText) },
-        message: { type: 'string' },
-        details: { type: 'object', additionalProperties: {} },
+        code: {
+          type: JsonSchemaType.string,
+          enum: (Object.keys(ERROR_STATUS) as ErrorCode[]).sort(byText),
+        },
+        message: { type: JsonSchemaType.string },
+        details: { type: JsonSchemaType.object, additionalProperties: {} },
       },
     },
   },
@@ -243,8 +253,8 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
         ]),
       ),
       securitySchemes: {
-        session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE },
-        driver: { type: 'apiKey', in: 'cookie', name: DRIVER_COOKIE },
+        session: { type: SecuritySchemeType.apiKey, in: 'cookie', name: SESSION_COOKIE },
+        driver: { type: SecuritySchemeType.apiKey, in: 'cookie', name: DRIVER_COOKIE },
       },
     },
   };

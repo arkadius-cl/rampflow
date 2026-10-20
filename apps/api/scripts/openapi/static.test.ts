@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { JsonSchemaType } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import { fixtureApp } from './fixtures/app.ts';
 import { collectEndpoints } from './runtime.ts';
@@ -10,6 +11,7 @@ const fixtures = at('./fixtures/');
 function run(allowlist: string[]) {
   return analyze({
     tsconfig: at('../../tsconfig.json'),
+    // biome-ignore lint/plugin: a TypeScript type name, not a value set
     app: { file: at('./fixtures/app.ts'), type: 'FixtureApp' },
     sources: [at('./fixtures/app.ts')],
     root: fixtures,
@@ -43,30 +45,30 @@ describe('analyze', () => {
       new Map([[200, { $ref: '#/components/schemas/ThingView' }]]),
     );
     expect(result.components.ThingView).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: {
-        id: { type: 'string' },
-        name: { type: 'string' },
-        createdAt: { type: 'string', format: 'date-time' },
+        id: { type: JsonSchemaType.string },
+        name: { type: JsonSchemaType.string },
+        createdAt: { type: JsonSchemaType.string, format: 'date-time' },
       },
       required: ['id', 'name', 'createdAt'],
     });
     expect(result.responses.get('toy.things.legacy')?.get(200)).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: {
         items: {
-          type: 'array',
+          type: JsonSchemaType.array,
           items: {
-            type: 'object',
+            type: JsonSchemaType.object,
             properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-              createdAt: { type: 'string' },
+              id: { type: JsonSchemaType.string },
+              name: { type: JsonSchemaType.string },
+              createdAt: { type: JsonSchemaType.string },
             },
             required: ['id', 'name', 'createdAt'],
           },
         },
-        at: { type: 'string' },
+        at: { type: JsonSchemaType.string },
       },
       required: ['items', 'at'],
     });

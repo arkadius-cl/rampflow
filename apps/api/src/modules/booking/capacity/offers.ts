@@ -28,7 +28,7 @@ export interface OfferRequest {
   /** Only this resource, if it is eligible. */
   resourceId?: ResourceId;
   /** Carriers see starts inside `[now + min lead, now + horizon]` only (BK-04); staff do not. */
-  audience: 'staff' | 'carrier';
+  audience: CreatedParty;
   excludeBookingId?: BookingId;
 }
 

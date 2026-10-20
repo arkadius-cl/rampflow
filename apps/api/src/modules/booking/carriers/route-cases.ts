@@ -1,4 +1,4 @@
-import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import {
   AccountCredential,
@@ -75,7 +75,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.PATCH,
     path: `${P}/:carrierId`,
     params: (w) => ({ ...org(w), carrierId: w.A.carrierId }),
-    body: () => ({ status: 'deactivated' }),
+    body: () => ({ status: CarrierLinkStatus.deactivated }),
   },
   {
     ...base,

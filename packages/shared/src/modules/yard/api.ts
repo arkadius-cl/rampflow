@@ -3,7 +3,8 @@ import { type LocalDate, localDateSchema, type TimeZone } from '../../time/index
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import { CarrierRef } from '../booking/api.staff.ts';
 import type { BookingStatus, Punctuality } from '../booking/lifecycle.ts';
-import { TurnAwayReason, WalkInOutcome } from '../booking/values.ts';
+import { type ResourceKind, TurnAwayReason, WalkInOutcome } from '../booking/values.ts';
+import type { DockStatus, TemperatureZone } from '../core/values.ts';
 import type { SafetyStatus } from '../safety/values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/yard (YD-01 to YD-08, BK-02 walk-in).
@@ -80,7 +81,7 @@ export interface YardTruck {
   driverPhone: string | null;
   loadType: { id: string; name: { de: string; en: string } };
   loadUnits: number;
-  resource: { id: string; name: string; kind: 'pool' | 'single' };
+  resource: { id: string; name: string; kind: ResourceKind };
   startsAt: string;
   endsAt: string;
   timeZone: TimeZone;
@@ -135,8 +136,8 @@ export interface SearchView {
 export interface YardDock {
   id: string;
   code: string;
-  status: 'active' | 'maintenance' | 'inactive';
-  temperatureZone: 'ambient' | 'chilled' | 'frozen';
+  status: DockStatus;
+  temperatureZone: TemperatureZone;
   adrAllowed: boolean;
   /** The bookable resource the dock belongs to, if any. */
   resourceId: string | null;

@@ -65,9 +65,9 @@ function toyAccountApp(defect: AccountHarnessDefect) {
       defect === AccountHarnessDefect.driver_is_user &&
       c.req.header('Cookie')?.startsWith('rf_driver=')
     ) {
-      return { party: 'anonymous' } as const;
+      return { party: ScopeParty.anonymous } as const;
     }
-    if (defect === AccountHarnessDefect.no_session) return { party: 'anonymous' } as const;
+    if (defect === AccountHarnessDefect.no_session) return { party: ScopeParty.anonymous } as const;
     return userScope(c);
   };
   const me = new Hono<AppEnv>().use(scoped(resolve)).get('/', async (c) => {
@@ -245,7 +245,7 @@ describe('the harness', () => {
   });
 
   it('fails a case whose actor never reaches the handler', async () => {
-    const wrongActor = { ...dockCase, as: 'carrier_user' as const };
+    const wrongActor = { ...dockCase, as: RouteCaseActor.carrier_user };
     expect(await checks(RouteHarnessDefect.none, wrongActor)).toContain('control');
   });
 });

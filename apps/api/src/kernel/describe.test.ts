@@ -1,5 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { Feature, Module, Permission, ValidationTarget } from '@rampflow/shared/values';
+import {
+  DescribedKind,
+  ErrorCode,
+  Feature,
+  GuardKind,
+  Module,
+  Permission,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
@@ -22,7 +30,7 @@ describe('op()', () => {
     const res = await app.request('/things');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ items: ['a'] });
-    expect(describedBy(mw)).toEqual({ kind: 'op', meta });
+    expect(describedBy(mw)).toEqual({ kind: DescribedKind.op, meta });
   });
 
   it('knows exactly the story IDs of mvp-scope.md', () => {
@@ -65,19 +73,19 @@ describe('validate()', () => {
   it('answers 404 not_found for a malformed path parameter', async () => {
     const res = await post('/things/nope?limit=1', { name: 'x' });
     expect(res.status).toBe(404);
-    expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+    expect(await res.json()).toMatchObject({ error: { code: ErrorCode.not_found } });
   });
 
   it('answers 422 with the zod paths for a bad query and a bad body', async () => {
     const query = await post(`/things/${thingId}?limit=0`, { name: 'x' });
     expect(query.status).toBe(422);
     expect(await query.json()).toMatchObject({
-      error: { code: 'validation_failed', details: { issues: [{ path: ['limit'] }] } },
+      error: { code: ErrorCode.validation_failed, details: { issues: [{ path: ['limit'] }] } },
     });
     const body = await post(`/things/${thingId}?limit=1`, { name: '' });
     expect(body.status).toBe(422);
     expect(await body.json()).toMatchObject({
-      error: { code: 'validation_failed', details: { issues: [{ path: ['name'] }] } },
+      error: { code: ErrorCode.validation_failed, details: { issues: [{ path: ['name'] }] } },
     });
   });
 
@@ -87,9 +95,21 @@ describe('validate()', () => {
   });
 
   it('records the target and the schema', () => {
-    expect(describedBy(byParam)).toEqual({ kind: 'validator', target: 'param', schema: Param });
-    expect(describedBy(byQuery)).toEqual({ kind: 'validator', target: 'query', schema: Query });
-    expect(describedBy(byJson)).toEqual({ kind: 'validator', target: 'json', schema: Body });
+    expect(describedBy(byParam)).toEqual({
+      kind: DescribedKind.validator,
+      target: 'param',
+      schema: Param,
+    });
+    expect(describedBy(byQuery)).toEqual({
+      kind: DescribedKind.validator,
+      target: 'query',
+      schema: Query,
+    });
+    expect(describedBy(byJson)).toEqual({
+      kind: DescribedKind.validator,
+      target: 'json',
+      schema: Body,
+    });
   });
 });
 
@@ -104,9 +124,12 @@ describe('guards', () => {
         (c) => c.body(null, 204),
       );
     expect(app.routes.map((r) => describedBy(r.handler))).toEqual([
-      { kind: 'guard', guard: { kind: 'module', id: 'yard' } },
-      { kind: 'guard', guard: { kind: 'permission', key: 'yard.gate' } },
-      { kind: 'guard', guard: { kind: 'entitlement', key: 'yard.call_to_dock' } },
+      { kind: DescribedKind.guard, guard: { kind: GuardKind.module, id: 'yard' } },
+      { kind: DescribedKind.guard, guard: { kind: GuardKind.permission, key: 'yard.gate' } },
+      {
+        kind: DescribedKind.guard,
+        guard: { kind: GuardKind.entitlement, key: 'yard.call_to_dock' },
+      },
       undefined,
     ]);
   });

@@ -17,7 +17,7 @@ import { type LoadTypeId, loadType, type ResourceId } from '../schema.resources.
 // hold `lockSiteCapacity` before calling `findFit`.
 
 export type LoadTypeRow = typeof loadType.$inferSelect;
-export type Audience = 'staff' | 'carrier';
+export type Audience = CreatedParty;
 
 export async function loadTypeAt(
   tx: Tx,

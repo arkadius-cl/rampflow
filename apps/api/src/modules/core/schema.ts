@@ -8,6 +8,7 @@ import {
   TemperatureZone,
 } from '@rampflow/shared/modules/core/values';
 import {
+  ColumnMode,
   OrgKind,
   PackageId,
   PolicyCommand,
@@ -191,7 +192,7 @@ export const authToken = pgTable(
 export const rateLimitEvent = pgTable(
   'rate_limit_event',
   {
-    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    id: bigint('id', { mode: ColumnMode.number }).primaryKey().generatedAlwaysAsIdentity(),
     bucket: text('bucket', { enum: values(RateLimitBucket) }).notNull(),
     keyHash: bytea('key_hash').notNull(),
     at: instant('at').notNull(),
@@ -541,7 +542,7 @@ export const tenantCarrierLink = pgTable(
 export const jobRun = pgTable(
   'job_run',
   {
-    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    id: bigint('id', { mode: ColumnMode.number }).primaryKey().generatedAlwaysAsIdentity(),
     job: text('job').notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>(),
     startedAt: instant('started_at').notNull(),

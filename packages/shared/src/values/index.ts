@@ -15,6 +15,7 @@ export * from './locales.ts';
 export * from './packages.ts';
 export * from './roles.ts';
 export * from './route-cases.ts';
+export * from './runtime.ts';
 export * from './scope.ts';
 export * from './seed.ts';
 export * from './settings.ts';

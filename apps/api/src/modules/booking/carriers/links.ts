@@ -50,13 +50,16 @@ export async function linkCarrier(
     reactivateDeactivatedBefore: Date | null;
   },
 ): Promise<void> {
-  const insert = tx
-    .insert(tenantCarrierLink)
-    .values({ tenantId: o.tenantId, carrierId: o.carrierId, status: 'active', source: o.source });
+  const insert = tx.insert(tenantCarrierLink).values({
+    tenantId: o.tenantId,
+    carrierId: o.carrierId,
+    status: CarrierLinkStatus.active,
+    source: o.source,
+  });
   await (o.reactivateDeactivatedBefore
     ? insert.onConflictDoUpdate({
         target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-        set: { status: 'active', deactivatedAt: null },
+        set: { status: CarrierLinkStatus.active, deactivatedAt: null },
         setWhere: lt(tenantCarrierLink.deactivatedAt, o.reactivateDeactivatedBefore),
       })
     : insert.onConflictDoNothing());

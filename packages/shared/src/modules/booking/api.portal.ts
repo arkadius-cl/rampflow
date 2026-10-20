@@ -4,7 +4,7 @@ import { SortOrder } from '../../values/list.ts';
 import { AvisInput, type AvisRules, type AvisView } from '../avis/avis.ts';
 import type { OfferedStart } from './api.capacity.ts';
 import type { BookingEventView, BookingSafety } from './api.staff.ts';
-import { BookingPeriod, BookingStatus } from './values.ts';
+import { BookingPeriod, BookingStatus, type Direction } from './values.ts';
 
 // Request schemas and response shapes of the carrier booking portal: /api/c/:orgId/bookings
 // (CR-05, CR-06, BK-06) and /api/c/:orgId/at/:tenantId (BK-04, BK-05, AV-01, AV-02, CR-06).
@@ -83,7 +83,7 @@ export interface PortalSite {
 export interface PortalLoadType {
   id: string;
   name: { de: string; en: string };
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
 }
 
 /** Offered starts of one site-local day. Resources stay internal: carriers book the site. */
@@ -107,7 +107,7 @@ export interface PortalBookingSummary {
   startsAt: string;
   endsAt: string;
   loadType: { id: string; name: { de: string; en: string } };
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
   loadUnits: number;
   plate: string | null;
   reference: string | null;

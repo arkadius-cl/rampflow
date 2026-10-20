@@ -1,4 +1,10 @@
-import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingStatus,
+  CreatedParty,
+  Direction,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -46,14 +52,14 @@ async function insertBookings(
           carrierName: 'Bench',
           // Unique per tenant (booking_tenant_code_key); random codes collide at this volume.
           code: `B${String(codes++).padStart(7, '0')}`,
-          status: 'confirmed' as const,
-          direction: 'inbound' as const,
+          status: BookingStatus.confirmed,
+          direction: Direction.inbound,
           startsAt,
           endsAt,
           blocksUntil: endsAt,
           siteTimeZone: s.zone,
           loadUnits: 20,
-          createdParty: 'staff' as const,
+          createdParty: CreatedParty.staff,
         });
       }
     }
@@ -79,7 +85,7 @@ async function addResources(s: CapacitySite, n: number): Promise<string[]> {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: `Tor ${i}`,
         directions: [Direction.inbound],
         sort: i,
@@ -92,9 +98,9 @@ async function addResources(s: CapacitySite, n: number): Promise<string[]> {
         siteId: s.siteId,
         hallId: first.hallId,
         code: `B-${i}`,
-        doorType: 'dock_leveler',
-        temperatureZone: 'ambient',
-        status: 'active',
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
+        status: DockStatus.active,
       })
       .returning();
     if (!r || !d) throw new Error('seed failed');

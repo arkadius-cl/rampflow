@@ -99,13 +99,13 @@ describe('SF-03 acknowledgement register', () => {
     expect(nextCursor).toBeNull();
     expect(items[3]).toMatchObject({
       driverName: 'Jan Kowalski',
-      status: 'valid',
+      status: AckStatus.valid,
       instruction: { id: rules.id, name: 'Site rules' },
       version: { version: 1 },
       booking: { id: side.bookings.own.id, code: side.bookings.own.code },
       carrierId: side.carrierId,
       site: { id: side.sites[0].id, timeZone: 'Europe/Berlin' },
-      locale: 'pl',
+      locale: DriverLocale.pl,
     });
   });
 
@@ -118,9 +118,9 @@ describe('SF-03 acknowledgement register', () => {
     expect(await ids({ versionId: acks.kowalski.versionId, siteId: side.sites[0].id })).toEqual(
       sorted(acks.expired, acks.kowalski, acks.rival, acks.perVisit),
     );
-    expect(await ids({ status: 'expired' })).toEqual(sorted(acks.expired));
-    expect(await ids({ status: 'visit_only' })).toEqual(sorted(acks.perVisit));
-    expect(await ids({ status: 'valid' })).toEqual(
+    expect(await ids({ status: AckStatus.expired })).toEqual(sorted(acks.expired));
+    expect(await ids({ status: AckStatus.visit_only })).toEqual(sorted(acks.perVisit));
+    expect(await ids({ status: AckStatus.valid })).toEqual(
       sorted(acks.kowalski, acks.rival, acks.otherSite),
     );
   });
@@ -153,7 +153,7 @@ describe('SF-03 acknowledgement register', () => {
       const { items } = await page({ status });
       expect(items.every((i) => i.status === status)).toBe(true);
     }
-    expect((await page({ status: 'outdated' })).items).toHaveLength(5);
+    expect((await page({ status: AckStatus.outdated })).items).toHaveLength(5);
   });
 
   it('pages with an opaque cursor', async () => {

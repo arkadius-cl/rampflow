@@ -201,7 +201,7 @@ export async function createInstruction(
   await replaceSites(tx, tenantId, created.id, body.siteIds);
   const [version] = await tx
     .insert(safetyVersion)
-    .values({ tenantId, instructionId: created.id, version: 1, status: 'draft' })
+    .values({ tenantId, instructionId: created.id, version: 1, status: VersionStatus.draft })
     .returning({ id: safetyVersion.id });
   if (!version) throw new Error('safety_version insert returned no row');
   const quiz = quizOn(entitlements);
@@ -370,7 +370,7 @@ export async function openDraft(
   if (!latest) throw new Error(`instruction ${instructionId} has no version`);
   const [next] = await tx
     .insert(safetyVersion)
-    .values({ tenantId, instructionId, version: latest.version + 1, status: 'draft' })
+    .values({ tenantId, instructionId, version: latest.version + 1, status: VersionStatus.draft })
     .returning({ id: safetyVersion.id });
   if (!next) throw new Error('safety_version insert returned no row');
   const source = await tx
@@ -484,7 +484,7 @@ export async function publishVersion(
   }
   await tx
     .update(safetyVersion)
-    .set({ status: 'retired' })
+    .set({ status: VersionStatus.retired })
     .where(
       and(
         eq(safetyVersion.tenantId, tenantId),
@@ -494,7 +494,7 @@ export async function publishVersion(
     );
   await tx
     .update(safetyVersion)
-    .set({ status: 'published', materialChange, publishedAt: now, publishedBy: userId })
+    .set({ status: VersionStatus.published, materialChange, publishedAt: now, publishedBy: userId })
     .where(and(eq(safetyVersion.tenantId, tenantId), eq(safetyVersion.id, versionId)));
   return getVersion(tx, tenantId, versionId);
 }

@@ -4,7 +4,7 @@ import type { SystemActorName } from '@rampflow/shared/values';
 import {
   type CarrierRole,
   ScopeParty,
-  type SiteAccess,
+  SiteAccess,
   TenantActorKind,
   type TenantRole,
 } from '@rampflow/shared/values';
@@ -60,6 +60,7 @@ export interface SessionVariables {
 }
 
 const EMPTY: SessionVariables = {
+  // biome-ignore lint/plugin: '' is an unset session variable, not a set member
   party: '',
   user_id: '',
   tenant_id: '',
@@ -84,7 +85,7 @@ export function sessionVariables(scope: Scope): SessionVariables {
         ...v,
         tenant_id: scope.tenantId,
         user_id: scope.actor.kind === TenantActorKind.user ? scope.actor.userId : '',
-        site_ids: scope.siteIds === 'all' ? '*' : scope.siteIds.join(','),
+        site_ids: scope.siteIds === SiteAccess.all ? '*' : scope.siteIds.join(','),
       };
     case ScopeParty.carrier:
       return { ...v, carrier_id: scope.carrierId, user_id: scope.userId };

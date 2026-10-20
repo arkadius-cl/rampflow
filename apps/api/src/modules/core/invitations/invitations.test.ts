@@ -1,4 +1,11 @@
-import { OrgKind, Role } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  ErrorCode,
+  OrgKind,
+  Role,
+  StaffLocale,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -61,13 +68,18 @@ describe('a new user accepts', () => {
     expect(await seen.json()).toEqual({
       orgKind: 'tenant',
       orgName: expect.stringMatching(/^Tenant A /),
-      role: 'gate_operator',
+      role: Role.gate_operator,
       email: inv.email,
       hasAccount: false,
     });
 
     const res = await anon.post('/api/public/invitations/accept', {
-      body: { token: inv.token, name: 'Gina Gate', password: 'gate password 2026', locale: 'pl' },
+      body: {
+        token: inv.token,
+        name: 'Gina Gate',
+        password: 'gate password 2026',
+        locale: StaffLocale.pl,
+      },
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ orgId: w.A.tenantId, orgKind: 'tenant' });
@@ -75,11 +87,11 @@ describe('a new user accepts', () => {
     expect(session).not.toBeNull();
 
     const [user] = await ownerDb().select().from(appUser).where(eq(appUser.email, inv.email));
-    expect(user).toMatchObject({ name: 'Gina Gate', locale: 'pl' });
+    expect(user).toMatchObject({ name: 'Gina Gate', locale: StaffLocale.pl });
     expect(user?.emailVerifiedAt).toBeInstanceOf(Date);
     const userId = user?.id as UserId;
     const [m] = await membershipsOf(userId);
-    expect(m).toMatchObject({ orgId: w.A.tenantId, role: 'gate_operator' });
+    expect(m).toMatchObject({ orgId: w.A.tenantId, role: Role.gate_operator });
     expect(
       await ownerDb()
         .select({ siteId: membershipSite.siteId })
@@ -172,7 +184,10 @@ describe('an existing user accepts', () => {
     });
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({
-      error: { code: 'unauthorized', details: { reason: 'sign_in_required' } },
+      error: {
+        code: ErrorCode.unauthorized,
+        details: { reason: UnauthorizedReason.sign_in_required },
+      },
     });
     expect(await isPending(inv.id)).toBe(true);
 
@@ -186,7 +201,7 @@ describe('an existing user accepts', () => {
     expect(res.status).toBe(200);
     expect(sessionOf(res)).toBeNull();
     expect(await membershipsOf(existing.id)).toEqual([
-      expect.objectContaining({ orgId: w.A.tenantId, role: 'dispatcher' }),
+      expect.objectContaining({ orgId: w.A.tenantId, role: Role.dispatcher }),
     ]);
   });
 
@@ -203,7 +218,9 @@ describe('an existing user accepts', () => {
       body: { token: inv.token },
     });
     expect(res.status).toBe(409);
-    expect(await res.json()).toMatchObject({ error: { details: { reason: 'already_member' } } });
+    expect(await res.json()).toMatchObject({
+      error: { details: { reason: ConflictReason.already_member } },
+    });
     expect(await isPending(inv.id)).toBe(true);
   });
 });
@@ -281,7 +298,7 @@ describe('removing a member (TN-01)', () => {
       userId: user.id,
       orgId: own.B.tenantId,
       orgKind: 'tenant',
-      role: 'dispatcher',
+      role: Role.dispatcher,
     });
     const asUser = as(app, user);
     expect((await asUser.get(`/api/t/${own.A.tenantId}/context`)).status).toBe(200);

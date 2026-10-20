@@ -1,5 +1,10 @@
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
-import { CommandName, OnSiteStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  CommandName,
+  OnSiteStatus,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
 import {
   Feature,
   ForeignOutcome,
@@ -91,7 +96,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/turn-away',
     params: own,
-    body: () => ({ reason: 'documents_missing' }),
+    body: () => ({ reason: TurnAwayReason.documents_missing }),
   },
   {
     ...gate,
@@ -112,7 +117,7 @@ export const cases = defineRouteCases([
       loadTypeId: w.A.sites[0].loadTypeId,
       carrier: { id: w.A.carrierId },
       plateSeen: 'HH-WI 42',
-      outcome: 'check_in',
+      outcome: WalkInOutcome.check_in,
       avis: avisInput(),
     }),
     setup: async (w, db) => {

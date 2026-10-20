@@ -1,4 +1,4 @@
-import { ClosureKind, ClosureSource } from '@rampflow/shared/modules/booking/values';
+import { ClosureKind, ClosureSource, HolidayType } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   type LocalDate,
@@ -33,7 +33,7 @@ function calendar(country: string, subdivision: string | null): Holidays {
   const key = `${country}-${region ?? ''}`;
   let hd = calendars.get(key);
   if (!hd) {
-    hd = new Holidays(country, region ?? '', { types: ['public'] });
+    hd = new Holidays(country, region ?? '', { types: [HolidayType.public] });
     calendars.set(key, hd);
   }
   return hd;
@@ -50,7 +50,7 @@ export function publicHolidays(
   const out = new Map<LocalDate, string>();
   for (let year = Number(from.slice(0, 4)); year <= Number(to.slice(0, 4)); year++) {
     for (const h of hd.getHolidays(year, s.defaultLocale) || []) {
-      if (h.type !== 'public') continue;
+      if (h.type !== HolidayType.public) continue;
       const date = h.date.slice(0, 10) as LocalDate;
       if (date < from || date >= to) continue;
       const known = out.get(date);

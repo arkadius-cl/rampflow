@@ -4,6 +4,7 @@ import {
   HttpMethod,
   Permission,
   RouteCaseActor,
+  StaffLocale,
 } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
@@ -162,6 +163,6 @@ export const cases = defineRouteCases([
     path: `${AT}/bookings/:bookingId/driver-link/email`,
     entitlement: Feature.notify.email,
     params: own,
-    body: () => ({ email: 'driver@example.test', locale: 'pl' }),
+    body: () => ({ email: 'driver@example.test', locale: StaffLocale.pl }),
   },
 ]);

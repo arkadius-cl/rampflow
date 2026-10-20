@@ -54,3 +54,9 @@ export const JsonSchemaType = {
   object: 'object',
 } as const;
 export type JsonSchemaType = ValueOf<typeof JsonSchemaType>;
+
+/** The `type` of an OpenAPI security scheme; the API's sessions are cookies, so `apiKey`. */
+export const SecuritySchemeType = {
+  apiKey: 'apiKey',
+} as const;
+export type SecuritySchemeType = ValueOf<typeof SecuritySchemeType>;

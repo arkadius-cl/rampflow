@@ -13,12 +13,14 @@ import {
   AccountCaseCheck,
   AccountCredential,
   EntitlementKind,
+  ErrorCode,
   ForeignOutcome,
   Role,
   RouteCaseActor,
   RouteCaseCheck,
   RouteCaseGrant,
   RouteCaseParty,
+  RouteMethod,
 } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
@@ -153,7 +155,7 @@ export function coverage(
 ): Coverage {
   const handlers = new Set(
     routes
-      .filter((r) => r.method !== 'ALL' && guarded.test(r.path))
+      .filter((r) => r.method !== RouteMethod.ALL && guarded.test(r.path))
       .map((r) => routeKey(r.method, r.path)),
   );
   const covered = new Set(cases.map((c) => routeKey(c.method, c.path)));
@@ -263,7 +265,9 @@ async function withFeaturesOff<T>(
 /** The feature named by a 403 `entitlement_required` body, or `null` for any other 403. */
 function requiredFeature(text: string): string | null {
   const { error } = JSON.parse(text) as { error?: { code?: string; details?: { key?: string } } };
-  return error?.code === 'entitlement_required' ? (error.details?.key ?? 'a feature') : null;
+  return error?.code === ErrorCode.entitlement_required
+    ? (error.details?.key ?? 'a feature')
+    : null;
 }
 
 const MODULE_FEATURES = new Set<string>(catalog.flatMap((m) => m.enabledBy ?? []));

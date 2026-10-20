@@ -33,6 +33,7 @@ export function generate(): Generated {
   const allowlist = Allowlist.parse(JSON.parse(readFileSync(FILES.allowlist, 'utf8'))).operations;
   const statics = analyze({
     tsconfig: `${API}tsconfig.json`,
+    // biome-ignore lint/plugin: a TypeScript type name, not a value set
     app: { file: `${SRC}app.ts`, type: 'AppType' },
     sources: globSync('**/*.ts', { cwd: SRC })
       .filter((f) => !f.endsWith('.test.ts'))

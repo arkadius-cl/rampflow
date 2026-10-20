@@ -79,7 +79,7 @@ describe('parseSettingWrite', () => {
   it('rejects retention above the platform maximum', () => {
     const write = {
       key: 'privacy.retention.driver_phone_days',
-      scope: 'tenant',
+      scope: SettingScope.tenant,
       value: 31,
     } as const;
     expect(parseSettingWrite(catalog, start, write)).toMatchObject({
@@ -91,7 +91,7 @@ describe('parseSettingWrite', () => {
   it('rejects a scope the setting does not allow', () => {
     const write = {
       key: 'privacy.retention.driver_link_hours',
-      scope: 'tenant',
+      scope: SettingScope.tenant,
       value: 12,
     } as const;
     expect(parseSettingWrite(catalog, start, write)).toMatchObject({
@@ -101,7 +101,11 @@ describe('parseSettingWrite', () => {
   });
 
   it('rejects writes while the required entitlement or the module is off', () => {
-    const gated = { key: 'safety.require_for_checkin', scope: 'site', value: false } as const;
+    const gated = {
+      key: 'safety.require_for_checkin',
+      scope: SettingScope.site,
+      value: false,
+    } as const;
     expect(parseSettingWrite(catalog, start, gated)).toMatchObject({
       ok: false,
       error: {
@@ -117,7 +121,11 @@ describe('parseSettingWrite', () => {
       [{ key: Feature.yard.checkin_qr, value: false, expiresAt: null }],
       now,
     );
-    const yardSetting = { key: 'yard.grace_minutes', scope: 'tenant', value: 10 } as const;
+    const yardSetting = {
+      key: 'yard.grace_minutes',
+      scope: SettingScope.tenant,
+      value: 10,
+    } as const;
     expect(parseSettingWrite(catalog, noYard, yardSetting)).toMatchObject({
       error: { code: SettingWriteErrorCode.entitlement_required, entitlement: 'yard.checkin_qr' },
     });
@@ -126,9 +134,13 @@ describe('parseSettingWrite', () => {
   });
 
   it('accepts platform writes without tenant entitlements, gated keys included', () => {
-    const gated = { key: 'safety.require_for_checkin', scope: 'platform', value: false } as const;
+    const gated = {
+      key: 'safety.require_for_checkin',
+      scope: SettingScope.platform,
+      value: false,
+    } as const;
     expect(parseSettingWrite(catalog, null, gated)).toEqual({ ok: true, value: gated });
-    const tooBig = { key: 'yard.grace_minutes', scope: 'platform', value: 241 } as const;
+    const tooBig = { key: 'yard.grace_minutes', scope: SettingScope.platform, value: 241 } as const;
     expect(parseSettingWrite(catalog, null, tooBig)).toMatchObject({
       ok: false,
       error: { code: SettingWriteErrorCode.invalid_value },
@@ -156,6 +168,9 @@ describe('parseSettingWrite', () => {
         scope: SettingScope.site,
         value: 14,
       }),
-    ).toEqual({ ok: true, value: { key: 'booking.horizon_days', scope: 'site', value: 14 } });
+    ).toEqual({
+      ok: true,
+      value: { key: 'booking.horizon_days', scope: SettingScope.site, value: 14 },
+    });
   });
 });

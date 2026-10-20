@@ -3,6 +3,7 @@ import {
   EmailCategory,
   EmailTemplate,
   ScopeParty,
+  StaffLocale,
   TenantActorKind,
   TenantRole,
   TokenPurpose,
@@ -96,7 +97,7 @@ const enqueueProbe = (to: string, tenantId: TenantId | null, extra: { dedupeKey?
       {
         template: EmailTemplate.core_magic_link,
         to,
-        locale: 'en',
+        locale: StaffLocale.en,
         payload: { authTokenId: randomUUID() },
         tenantId,
         ...extra,
@@ -116,7 +117,7 @@ describe('enqueueEmail', () => {
           {
             template: EmailTemplate.core_magic_link,
             to,
-            locale: 'en',
+            locale: StaffLocale.en,
             payload: { authTokenId: randomUUID() },
             tenantId: null,
           },
@@ -148,7 +149,7 @@ describe('enqueueEmail', () => {
             {
               template: EmailTemplate.booking_confirmed,
               to,
-              locale: 'de',
+              locale: StaffLocale.de,
               payload: { ...confirmedExample, bookingId: w.A.bookings.own.id },
               tenantId: w.A.tenantId,
             },
@@ -160,7 +161,7 @@ describe('enqueueEmail', () => {
             {
               template: EmailTemplate.core_magic_link,
               to,
-              locale: 'de',
+              locale: StaffLocale.de,
               payload: { authTokenId: randomUUID() },
               tenantId: w.A.tenantId,
             },
@@ -193,7 +194,7 @@ describe('enqueueEmail', () => {
         {
           template: EmailTemplate.core_magic_link,
           to,
-          locale: 'en',
+          locale: StaffLocale.en,
           payload: { authTokenId },
           tenantId: null,
         },
@@ -229,7 +230,7 @@ describe('outbox worker', () => {
         {
           template: EmailTemplate.core_magic_link,
           to,
-          locale: 'en',
+          locale: StaffLocale.en,
           payload: { authTokenId },
           tenantId: null,
         },

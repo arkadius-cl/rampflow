@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { ConflictReason, ErrorCode, Role, ScopeParty } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -32,7 +33,7 @@ function toyApp() {
     })
     .post('/returns-409', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');
-      return c.json({ error: { code: 'conflict' } }, 409);
+      return c.json({ error: { code: ErrorCode.conflict } }, 409);
     })
     .post('/commits', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');
@@ -68,7 +69,11 @@ describe('scoped(): one transaction per request', () => {
     });
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({
-      error: { code: 'conflict', message: 'after a write', details: { reason: 'stale_version' } },
+      error: {
+        code: ErrorCode.conflict,
+        message: 'after a write',
+        details: { reason: ConflictReason.stale_version },
+      },
     });
     expect(await hallsNamed(name)).toEqual([]);
   });
@@ -111,14 +116,14 @@ describe('scope resolution', () => {
       await as(app, w.A.users.gate_operator).get(`/api/t/${w.A.tenantId}/scope`)
     ).json();
     expect(gate).toMatchObject({
-      party: 'tenant',
+      party: ScopeParty.tenant,
       tenantId: w.A.tenantId,
       siteIds: [w.A.sites[0].id],
     });
     const dispatcher = await (
       await as(app, w.A.users.dispatcher).get(`/api/t/${w.A.tenantId}/scope`)
     ).json();
-    expect(dispatcher).toMatchObject({ siteIds: 'all', actor: { role: 'dispatcher' } });
+    expect(dispatcher).toMatchObject({ siteIds: 'all', actor: { role: Role.dispatcher } });
   });
 
   it('resolves carrier_at_tenant under /at/:tenantId only for a linked tenant', async () => {
@@ -126,14 +131,14 @@ describe('scope resolution', () => {
     const user = w.A.users.carrier_user;
     const base = `/api/c/${w.A.carrierId}`;
     expect(await (await as(app, user).get(`${base}/scope`)).json()).toMatchObject({
-      party: 'carrier',
+      party: ScopeParty.carrier,
       carrierId: w.A.carrierId,
-      role: 'carrier_user',
+      role: Role.carrier_user,
     });
     expect(
       await (await as(app, user).get(`${base}/at/${w.A.tenantId}/scope`)).json(),
     ).toMatchObject({
-      party: 'carrier_at_tenant',
+      party: ScopeParty.carrier_at_tenant,
       carrierId: w.A.carrierId,
       tenantId: w.A.tenantId,
     });
@@ -144,10 +149,10 @@ describe('scope resolution', () => {
     const app = toyApp();
     const own = w.A.bookings.own;
     expect(await (await as(app, own).get('/api/driver/scope')).json()).toEqual({
-      party: 'driver',
+      party: ScopeParty.driver,
       tenantId: w.A.tenantId,
       bookingId: own.id,
-      channel: 'link',
+      channel: DriverChannel.link,
     });
     expect((await as(app, { driverToken: 'forged' }).get('/api/driver/scope')).status).toBe(401);
     expect((await as(app, null).get('/api/driver/scope')).status).toBe(401);

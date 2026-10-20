@@ -5,6 +5,8 @@ import {
   CarrierRole,
   ErrorCode,
   ForbiddenReason,
+  OrgKind,
+  Role,
   ScopeParty,
   UnauthorizedReason,
 } from '@rampflow/shared/values';
@@ -97,7 +99,7 @@ export async function carrierOfUser(
       .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'carrier')))
       .orderBy(asc(membership.createdAt)),
   );
-  const administered = memberships.find((m) => m.role === 'carrier_admin');
+  const administered = memberships.find((m) => m.role === Role.carrier_admin);
   if (administered) return administered.orgId as CarrierId;
   if (memberships.length > 0) {
     throw new ApiError(ErrorCode.forbidden, 'Only a carrier admin can link the company', {
@@ -108,7 +110,7 @@ export async function carrierOfUser(
   const carrierId = randomUUID() as CarrierId;
   await tx
     .insert(org)
-    .values({ id: carrierId, kind: 'carrier', name: company.name, country: company.country });
+    .values({ id: carrierId, kind: OrgKind.carrier, name: company.name, country: company.country });
   await asScope(
     tx,
     { party: ScopeParty.carrier, carrierId, userId, role: CarrierRole.carrier_admin },
@@ -118,7 +120,7 @@ export async function carrierOfUser(
         userId,
         orgId: carrierId,
         orgKind: 'carrier',
-        role: 'carrier_admin',
+        role: Role.carrier_admin,
       });
     },
   );

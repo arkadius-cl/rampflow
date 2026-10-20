@@ -1,4 +1,5 @@
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { ConsoleMethod, ErrorCode, StaffLocale, values } from '@rampflow/shared/values';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -98,7 +99,7 @@ describe('password sign-in (CR-03)', () => {
       expect(res.status).toBe(401);
       expect(sessionOf(res)).toBeNull();
       expect(await res.json()).toEqual({
-        error: { code: 'unauthorized', message: 'Wrong email or password' },
+        error: { code: ErrorCode.unauthorized, message: 'Wrong email or password' },
       });
     }
     expect(await sessionsOf(unverified.id)).toBe(0);
@@ -148,7 +149,7 @@ describe('password sign-in (CR-03)', () => {
     }
     const blocked = await login(a.email, a.password, ip);
     expect(blocked.status).toBe(429);
-    expect(await blocked.json()).toMatchObject({ error: { code: 'rate_limited' } });
+    expect(await blocked.json()).toMatchObject({ error: { code: ErrorCode.rate_limited } });
     expect((await login(a.email, a.password, '203.0.113.31')).status).toBe(200);
   });
 
@@ -273,7 +274,9 @@ describe('password reset (CR-03)', () => {
     const phone = sessionOf(await login(a.email, a.password)) ?? '';
     expect(await sessionsOf(a.id)).toBe(2);
 
-    await request('POST', '/api/auth/password-reset', { body: { email: a.email, locale: 'pl' } });
+    await request('POST', '/api/auth/password-reset', {
+      body: { email: a.email, locale: StaffLocale.pl },
+    });
     const token = await linkTokenTo(a.email, AuthTokenKind.password_reset);
     const done = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token, password: 'a brand new secret' },
@@ -324,7 +327,7 @@ describe('password reset (CR-03)', () => {
     });
     expect(short.status).toBe(422);
     expect(await short.json()).toMatchObject({
-      error: { code: 'validation_failed', details: { issues: [{ path: ['password'] }] } },
+      error: { code: ErrorCode.validation_failed, details: { issues: [{ path: ['password'] }] } },
     });
     const ok = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token, password: 'long enough now' },
@@ -349,7 +352,7 @@ describe('logs', () => {
   const lines: string[] = [];
   beforeEach(() => {
     lines.length = 0;
-    for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+    for (const level of values(ConsoleMethod)) {
       vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
         lines.push(
           args.map((a) => (a instanceof Error ? `${a.message} ${a.stack}` : String(a))).join(' '),

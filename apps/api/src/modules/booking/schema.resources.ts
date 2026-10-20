@@ -5,7 +5,7 @@ import {
   Direction,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
-import { PolicyReader, values } from '@rampflow/shared/values';
+import { ColumnMode, PolicyReader, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -150,11 +150,11 @@ export const closure = pgTable(
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     resourceId: uuid('resource_id').$type<ResourceId>(),
     kind: text('kind', { enum: values(ClosureKind) }).notNull(),
-    startsLocal: timestamp('starts_local', { mode: 'string' }).notNull(),
-    endsLocal: timestamp('ends_local', { mode: 'string' }).notNull(),
+    startsLocal: timestamp('starts_local', { mode: ColumnMode.string }).notNull(),
+    endsLocal: timestamp('ends_local', { mode: ColumnMode.string }).notNull(),
     reason: text('reason'),
     source: text('source', { enum: values(ClosureSource) }).notNull(),
-    holidayDate: date('holiday_date', { mode: 'string' }),
+    holidayDate: date('holiday_date', { mode: ColumnMode.string }),
     holidayName: text('holiday_name'),
     reopenedAt: instant('reopened_at'),
     createdBy: uuid('created_by').$type<UserId>(),

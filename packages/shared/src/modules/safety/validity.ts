@@ -26,7 +26,7 @@ export interface ValidityContext {
 
 export interface VersionFacts {
   version: number;
-  status: 'draft' | 'published' | 'retired';
+  status: VersionStatus;
   materialChange: boolean;
 }
 

@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import {
+  ClosureKind,
+  ClosureSource,
+  Direction,
+  DockBookingKind,
+  DurationKind,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import {
   Feature,
   ForeignOutcome,
   HttpMethod,
@@ -18,21 +26,21 @@ async function closureFixtures(w: World, db: OwnerDb): Promise<void> {
   const ids = { manual: randomUUID(), holiday: randomUUID() };
   for (const side of [w.A, w.B]) {
     const own = side === w.A;
-    const base = { tenantId: side.tenantId, siteId: side.sites[0].id, kind: 'closed' as const };
+    const base = { tenantId: side.tenantId, siteId: side.sites[0].id, kind: ClosureKind.closed };
     await db.insert(closure).values([
       {
         ...base,
         id: own ? (ids.manual as never) : undefined,
         startsLocal: '2026-11-11T06:00',
         endsLocal: '2026-11-11T10:00',
-        source: 'manual',
+        source: ClosureSource.manual,
       },
       {
         ...base,
         id: own ? (ids.holiday as never) : undefined,
         startsLocal: '2026-12-25T00:00',
         endsLocal: '2026-12-26T00:00',
-        source: 'holiday',
+        source: ClosureSource.holiday,
         holidayDate: '2026-12-25',
         holidayName: '1. Weihnachtstag',
       },
@@ -59,7 +67,7 @@ async function eligibility(w: World, db: OwnerDb): Promise<void> {
 
 const site0 = (w: World) => ({ siteId: w.A.sites[0].id });
 const tiers = {
-  kind: 'tiers',
+  kind: DurationKind.tiers,
   tiers: [
     { upTo: 16, minutes: 30 },
     { upTo: null, minutes: 60 },
@@ -87,7 +95,7 @@ export const cases = defineRouteCases([
     params: (w) => ({ orgId: w.A.tenantId }),
     body: (w) => ({
       siteId: w.A.sites[0].id,
-      kind: 'pool',
+      kind: ResourceKind.pool,
       name: 'Rampen 1-2',
       directions: ['inbound'],
       dockIds: [...w.A.sites[0].dockIds],
@@ -124,7 +132,7 @@ export const cases = defineRouteCases([
     permission: Permission.booking.manage_resources,
     entitlement: Feature.booking.pools,
     params: (w) => ({ orgId: w.A.tenantId, dockId: w.A.sites[0].dockIds[0] }),
-    body: (w) => ({ as: 'pool', resourceId: w.A.sites[0].resourceId }),
+    body: (w) => ({ as: DockBookingKind.pool, resourceId: w.A.sites[0].resourceId }),
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },
@@ -176,7 +184,7 @@ export const cases = defineRouteCases([
     body: (w) => ({
       siteId: w.A.sites[0].id,
       resourceId: w.A.sites[0].resourceId,
-      kind: 'blocked',
+      kind: ClosureKind.blocked,
       startsLocal: '2026-11-12T08:00',
       endsLocal: '2026-11-12T12:00',
       reason: 'Inventur',
@@ -227,7 +235,7 @@ export const cases = defineRouteCases([
     body: (w) => ({
       siteId: w.A.sites[0].id,
       name: { de: 'Kühlware', en: 'Chilled goods' },
-      direction: 'inbound',
+      direction: Direction.inbound,
       duration: tiers,
       bufferMinutes: 15,
       resourceIds: [w.A.sites[0].resourceId],

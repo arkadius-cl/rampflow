@@ -12,7 +12,7 @@ import type { InstructionSafety as InstructionSafetySet, SafetyStatus } from '..
 import type { BookingEventData } from './events.ts';
 import type { Punctuality, TurnAwayReason } from './lifecycle.ts';
 import type { ActorParty, BookingEventType } from './values.ts';
-import { BookingStatus } from './values.ts';
+import { BookingStatus, type CreatedParty, type Direction, type ResourceKind } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/bookings (BK-01, BK-02, BK-03, AV-01,
 // AV-02, CR-06, YD-08).
@@ -97,7 +97,7 @@ export interface BookingSummary {
   loadTypeId: string;
   carrierId: string | null;
   carrierName: string;
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
   startsAt: string;
   endsAt: string;
   blocksUntil: string;
@@ -130,7 +130,7 @@ export interface BoardSlot {
 export interface BoardResource {
   id: string;
   name: string;
-  kind: 'pool' | 'single';
+  kind: ResourceKind;
   dailyCap: number | null;
   slots: BoardSlot[];
   bookings: BookingSummary[];
@@ -168,7 +168,7 @@ export interface BookingView extends Omit<BookingSummary, 'overCapacity'> {
   resource: { id: string; name: string };
   loadType: { id: string; name: { de: string; en: string } };
   dock: { id: string; code: string } | null;
-  createdParty: 'carrier' | 'staff';
+  createdParty: CreatedParty;
   punctualityMinutes: number | null;
   checkedInAt: string | null;
   calledAt: string | null;

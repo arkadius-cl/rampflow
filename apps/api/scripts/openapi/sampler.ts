@@ -40,7 +40,7 @@ export function sample(
   if (schema.enum) return schema.enum[0];
   const alternatives = schema.anyOf ?? schema.oneOf;
   if (alternatives) {
-    const first = alternatives.find((s) => s.type !== 'null') ?? alternatives[0];
+    const first = alternatives.find((s) => s.type !== JsonSchemaType.null) ?? alternatives[0];
     return first ? sample(first, components, name) : null;
   }
   const type = Array.isArray(schema.type)

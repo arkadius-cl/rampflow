@@ -1,3 +1,4 @@
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import { OrgKind } from '@rampflow/shared/values';
 import { and, asc, eq, ilike, isNull } from 'drizzle-orm';
 import {
@@ -31,7 +32,7 @@ async function ensureCarrier(ctx: SeedContext, name: string, country: string) {
   if (found) return found as CarrierId;
   const [row] = await ctx.db
     .insert(org)
-    .values({ kind: 'carrier', name, country })
+    .values({ kind: OrgKind.carrier, name, country })
     .returning({ id: org.id });
   ctx.log(`created carrier ${name}`);
   return row?.id as CarrierId;
@@ -40,10 +41,15 @@ async function ensureCarrier(ctx: SeedContext, name: string, country: string) {
 async function linkActive(ctx: SeedContext, tenantId: TenantId, carrierId: CarrierId) {
   await ctx.db
     .insert(tenantCarrierLink)
-    .values({ tenantId, carrierId, status: 'active', source: 'invitation' })
+    .values({
+      tenantId,
+      carrierId,
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.invitation,
+    })
     .onConflictDoUpdate({
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-      set: { status: 'active', deactivatedAt: null },
+      set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
 }
 

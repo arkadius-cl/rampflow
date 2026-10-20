@@ -4,7 +4,7 @@ import {
   type MemberList,
   type MemberView,
 } from '@rampflow/shared/modules/core/api.staff';
-import { ErrorCode, OrgKind } from '@rampflow/shared/values';
+import { ErrorCode, OrgKind, ZodIssueCode } from '@rampflow/shared/values';
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { AnyOrgId, MembershipId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -125,7 +125,7 @@ export async function requireTenantSites(
   const index = siteIds.findIndex((id) => !known.has(id));
   if (index >= 0) {
     throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
-      issues: [{ path: ['siteIds', index], code: 'custom', message: 'No such site' }],
+      issues: [{ path: ['siteIds', index], code: ZodIssueCode.custom, message: 'No such site' }],
     });
   }
   return unique as SiteId[];
@@ -164,7 +164,7 @@ export async function updateMember<R extends string>(
       issues: [
         {
           path: ['siteIds'],
-          code: 'custom',
+          code: ZodIssueCode.custom,
           message: 'Only gate and dock operators have a site list',
         },
       ],

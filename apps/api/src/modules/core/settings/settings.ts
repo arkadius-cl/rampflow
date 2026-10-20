@@ -25,9 +25,9 @@ import { settingValue } from '../schema.ts';
 
 /** Where a write lands: the platform, a tenant, or one site of a tenant. */
 export type SettingTarget =
-  | { scope: 'platform' }
-  | { scope: 'tenant'; tenantId: TenantId }
-  | { scope: 'site'; tenantId: TenantId; siteId: SiteId };
+  | { scope: typeof SettingScope.platform }
+  | { scope: typeof SettingScope.tenant; tenantId: TenantId }
+  | { scope: typeof SettingScope.site; tenantId: TenantId; siteId: SiteId };
 
 const ALL_SETTINGS = catalog.flatMap((m) =>
   Object.entries(m.settings).map(([key, def]) => ({ key: key as SettingKey, module: m.id, def })),

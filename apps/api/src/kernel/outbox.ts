@@ -1,6 +1,11 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import type { Entitlements } from '@rampflow/shared';
-import { EmailCategory, type EnqueueResult, SystemActorName } from '@rampflow/shared/values';
+import {
+  EmailCategory,
+  type EnqueueResult,
+  ScopeParty,
+  SystemActorName,
+} from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { and, asc, eq, isNull, lte } from 'drizzle-orm';
 import type { TFunction } from 'i18next';
@@ -125,7 +130,7 @@ export interface DeliverOptions {
  */
 function emailBrand(tx: Tx, tenantId: TenantId, now: Date): Promise<EmailBrand | null> {
   const scope = {
-    party: 'tenant',
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: [],
     actor: systemActor(SystemActorName.outbox),

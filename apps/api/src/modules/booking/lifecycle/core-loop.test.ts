@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { ActorParty, CommandName, CreateMode } from '@rampflow/shared/modules/booking/values';
+import {
+  ActorParty,
+  BookingEventType,
+  BookingStatus,
+  CommandName,
+  CreateMode,
+  Punctuality,
+} from '@rampflow/shared/modules/booking/values';
 import { TenantRole } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -70,8 +77,8 @@ describe('core loop: create, check in, call, uncall, call, dock, load, complete,
     await step(TenantRole.gate_operator, '2026-11-02T09:00:00Z', { type: CommandName.depart });
 
     expect(await bookingRow(id)).toMatchObject({
-      status: 'departed',
-      punctuality: 'on_time',
+      status: BookingStatus.departed,
+      punctuality: Punctuality.on_time,
       punctualityMinutes: -10,
       checkedInAt: at('2026-11-02T07:50:00Z'),
       calledAt: at('2026-11-02T08:02:00Z'),
@@ -99,7 +106,7 @@ describe('core loop: create, check in, call, uncall, call, dock, load, complete,
       ['done', 'loading', 'done'],
       ['departed', 'done', 'departed'],
     ]);
-    expect(events.find((e) => e.type === 'done')?.data).toEqual({
+    expect(events.find((e) => e.type === BookingEventType.done)?.data).toEqual({
       dockId: dock2,
       actualLoadUnits: 9,
       discrepancy: true,

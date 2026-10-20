@@ -1,8 +1,11 @@
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { VersionStatus } from '@rampflow/shared/modules/safety/values';
 import {
   CarrierRole,
+  OrgKind,
   PolicyReader,
   ScopeParty,
+  SiteAccess,
   SystemActorName,
   TenantActorKind,
   TenantRole,
@@ -54,12 +57,12 @@ type Rule = (c: Ctx, r: Row, rel: Relations) => boolean;
 
 const is = (c: Ctx, ...parties: Party[]) => parties.includes(c.party);
 const siteOk = (c: Ctx, site: unknown) =>
-  c.sites === 'all' || (c.sites ?? []).includes(String(site));
+  c.sites === SiteAccess.all || (c.sites ?? []).includes(String(site));
 const linked = (c: Ctx, rel: Relations, tenant: unknown) =>
   rel.links.some((l) => l.tenant_id === tenant && l.carrier_id === c.carrier);
 const sameTenant = (c: Ctx, r: Row) => r.tenant_id === c.tenant;
 
-type Reader = 'carrier' | 'carrier_at_tenant' | 'driver' | 'public';
+type Reader = PolicyReader;
 const tenantRef =
   (readers: readonly Reader[], siteColumn?: string): Rule =>
   (c, r, rel) =>
@@ -89,7 +92,7 @@ const sharesOrg = (c: Ctx, rel: Relations, user: unknown) =>
       ((is(c, ScopeParty.tenant) && m.org_id === c.tenant) ||
         (is(c, ScopeParty.carrier, ScopeParty.carrier_at_tenant) && m.org_id === c.carrier) ||
         (is(c, ScopeParty.tenant) &&
-          m.org_kind === 'carrier' &&
+          m.org_kind === OrgKind.carrier &&
           rel.links.some((l) => l.tenant_id === c.tenant && l.carrier_id === m.org_id))),
   );
 
@@ -191,12 +194,12 @@ const ORACLE: Record<string, Rule> = {
   safety_instruction_site: tenantRef([PolicyReader.driver]),
   safety_version: (c, r) =>
     tenantPrivate(c, r, never) ||
-    (is(c, ScopeParty.driver) && sameTenant(c, r) && r.status !== 'draft'),
+    (is(c, ScopeParty.driver) && sameTenant(c, r) && r.status !== VersionStatus.draft),
   safety_content: (c, r, rel) =>
     tenantPrivate(c, r, rel) ||
     (is(c, ScopeParty.driver) &&
       sameTenant(c, r) &&
-      rel.versionStatus.get(String(r.version_id)) === 'published'),
+      rel.versionStatus.get(String(r.version_id)) === VersionStatus.published),
   safety_acknowledgement: (c, r) => tenantPrivate(c, r, never) || driverOwn(c, r, never),
   booking_acknowledgement: (c, r) =>
     (is(c, ScopeParty.tenant) && sameTenant(c, r) && siteOk(c, r.site_id)) ||

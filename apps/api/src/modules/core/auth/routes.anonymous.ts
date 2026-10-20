@@ -6,7 +6,13 @@ import {
   TokenBody,
 } from '@rampflow/shared/modules/core/api.auth';
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, ScopeParty, StoryId, ValidationTarget } from '@rampflow/shared/values';
+import {
+  EmailTemplate,
+  ErrorCode,
+  ScopeParty,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { noBody, op } from '../../../kernel/describe.ts';
@@ -32,8 +38,8 @@ import { claimAuthToken, issueAuthToken } from './tokens.ts';
 const DEFAULT_EMAIL_LOCALE = 'de';
 
 const LINK_EMAIL = {
-  magic_link: { template: 'core.magic-link', bucket: 'magic_link_request' },
-  password_reset: { template: 'core.password-reset', bucket: 'reset_request' },
+  magic_link: { template: EmailTemplate.core_magic_link, bucket: 'magic_link_request' },
+  password_reset: { template: EmailTemplate.core_password_reset, bucket: 'reset_request' },
 } as const;
 
 /** Whether one more link email to this address fits in 5 per hour; records it when it does. */

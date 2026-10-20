@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   OrgKind,
+  Role,
   ScopeParty,
   SiteLimitedRole,
   TenantActorKind,
@@ -117,9 +118,9 @@ export const platformScope: ScopeResolver = async (c) => {
     tx
       .select({ role: membership.role })
       .from(membership)
-      .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'platform'))),
+      .where(and(eq(membership.userId, userId), eq(membership.orgKind, OrgKind.platform))),
   );
-  if (!found.some((m) => m.role === 'platform_admin')) throw new ApiError(ErrorCode.not_found);
+  if (!found.some((m) => m.role === Role.platform_admin)) throw new ApiError(ErrorCode.not_found);
   return { party: ScopeParty.platform, userId };
 };
 

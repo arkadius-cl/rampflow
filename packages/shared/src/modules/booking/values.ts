@@ -319,3 +319,13 @@ export const CarrierRedeemActor = {
   registration: SystemActorName.registration,
 } as const;
 export type CarrierRedeemActor = ValueOf<typeof CarrierRedeemActor>;
+
+/** A holiday's `type` in the `date-holidays` data; the import takes only `public` ones (MD-04). */
+export const HolidayType = {
+  public: 'public',
+  bank: 'bank',
+  optional: 'optional',
+  school: 'school',
+  observance: 'observance',
+} as const;
+export type HolidayType = ValueOf<typeof HolidayType>;

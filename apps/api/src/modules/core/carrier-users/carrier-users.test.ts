@@ -1,4 +1,5 @@
 import type { CarrierUserList } from '@rampflow/shared/modules/core/api.staff';
+import { Role, StaffLocale } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -25,21 +26,21 @@ describe('CR-04 carrier users', () => {
   it('a carrier admin invites a colleague, who joins the carrier org', async () => {
     const email = inviteeEmail('colleague');
     const res = await as(app, w.A.users.carrier_admin).post(`${users(w.A)}/invitations`, {
-      body: { email, role: 'carrier_user' },
+      body: { email, role: Role.carrier_user },
     });
     expect(res.status).toBe(201);
     const sent = await sentInvitation(ownerDb(), email);
-    expect(sent.mail).toMatchObject({ tenantId: null, locale: 'en' });
+    expect(sent.mail).toMatchObject({ tenantId: null, locale: StaffLocale.en });
     expect(sent.mail?.payload).toMatchObject({
       orgName: expect.stringMatching(/^Carrier A /),
-      role: 'carrier_user',
+      role: Role.carrier_user,
       inviterName: expect.any(String),
     });
 
     const inspected = await as(app, null).post('/api/public/invitations/inspect', {
       body: { token: sent.token },
     });
-    expect(await inspected.json()).toMatchObject({ orgKind: 'carrier', role: 'carrier_user' });
+    expect(await inspected.json()).toMatchObject({ orgKind: 'carrier', role: Role.carrier_user });
     const accepted = await as(app, null).post('/api/public/invitations/accept', {
       body: { token: sent.token, name: 'Marta Kowalska', password: 'colleague password 1' },
     });
@@ -49,7 +50,7 @@ describe('CR-04 carrier users', () => {
       .select({ orgId: membership.orgId, role: membership.role })
       .from(membership)
       .where(eq(membership.userId, user?.id as never));
-    expect(rows).toEqual([{ orgId: w.A.carrierId, role: 'carrier_user' }]);
+    expect(rows).toEqual([{ orgId: w.A.carrierId, role: Role.carrier_user }]);
 
     const list = (await (
       await as(app, w.A.users.carrier_admin).get(users(w.A))
@@ -60,7 +61,7 @@ describe('CR-04 carrier users', () => {
 
   it('a carrier user cannot invite (403)', async () => {
     const res = await as(app, w.A.users.carrier_user).post(`${users(w.A)}/invitations`, {
-      body: { email: inviteeEmail(), role: 'carrier_user' },
+      body: { email: inviteeEmail(), role: Role.carrier_user },
     });
     expect(res.status).toBe(403);
     expect((await errorOf(res)).code).toBe('forbidden');
@@ -71,13 +72,13 @@ describe('CR-04 carrier users', () => {
     const id = await membershipOf(ownerDb(), t.A.users.carrier_user.id);
     const rival = await as(app, t.A.users.rival_admin).patch(
       `/api/c/${t.A.rivalCarrierId}/users/${id}`,
-      { body: { role: 'carrier_admin' } },
+      { body: { role: Role.carrier_admin } },
     );
     expect(rival.status).toBe(404);
     const promoted = await as(app, t.A.users.carrier_admin).patch(`${users(t.A)}/${id}`, {
-      body: { role: 'carrier_admin' },
+      body: { role: Role.carrier_admin },
     });
-    expect(await promoted.json()).toMatchObject({ role: 'carrier_admin', siteIds: [] });
+    expect(await promoted.json()).toMatchObject({ role: Role.carrier_admin, siteIds: [] });
 
     const context = `/api/c/${t.A.carrierId}/context`;
     expect((await as(app, t.A.users.carrier_user).get(context)).status).toBe(200);

@@ -17,6 +17,7 @@ import {
   Permission,
   ScopeParty,
   Setting,
+  SettingScope,
   StoryId,
   ValidationTarget,
 } from '@rampflow/shared/values';
@@ -45,7 +46,7 @@ const TenantParam = z.object({ tenantId: idSchema<'tenant'>() });
 const OverrideParam = TenantParam.extend({ key: z.string().min(1).max(100) });
 const KeyParam = z.object({ key: z.string().min(1).max(100) });
 
-const PLATFORM = { scope: 'platform' } as const;
+const PLATFORM = { scope: SettingScope.platform } as const;
 
 function platformUser(c: Context<AppEnv>) {
   const { scope } = c.var;

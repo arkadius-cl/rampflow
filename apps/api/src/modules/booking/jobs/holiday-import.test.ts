@@ -1,3 +1,4 @@
+import { ClosureKind } from '@rampflow/shared/modules/booking/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -60,7 +61,7 @@ describe('holiday import (MD-04)', () => {
       '2027-11-01',
     ]);
     expect(rows[1]).toMatchObject({
-      kind: 'closed',
+      kind: ClosureKind.closed,
       startsLocal: '2026-12-25 00:00:00',
       endsLocal: '2026-12-26 00:00:00',
       holidayName: '1. Weihnachtstag',

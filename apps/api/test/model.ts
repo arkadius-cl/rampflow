@@ -1,4 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  ActorParty,
+  ClosureKind,
+  ClosureSource,
+  LinkVia,
+  RegistrationStatus,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
+import { BlockKind, TranslationState, VersionStatus } from '@rampflow/shared/modules/safety/values';
+import { EmailTemplate, Role, StaffLocale } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { hashToken, wrapJson } from '../src/db/ids.ts';
 import {
@@ -49,7 +60,7 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       orgId: s.tenantId,
       orgKind: 'tenant',
       email: `invitee-${label}-${randomUUID()}@model.test`,
-      role: 'dispatcher',
+      role: Role.dispatcher,
       tokenHash: hashToken(token),
       expiresAt,
     },
@@ -57,7 +68,7 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       orgId: s.carrierId,
       orgKind: 'carrier',
       email: `carrier-invitee-${randomUUID()}@model.test`,
-      role: 'carrier_user',
+      role: Role.carrier_user,
       tokenHash: hashToken(`${token}-carrier`),
       expiresAt,
     },
@@ -103,10 +114,10 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
     await o.insert(closure).values({
       tenantId: s.tenantId,
       siteId: site.id,
-      kind: 'closed',
+      kind: ClosureKind.closed,
       startsLocal: '2026-12-24 00:00:00',
       endsLocal: '2026-12-25 00:00:00',
-      source: 'manual',
+      source: ClosureSource.manual,
     });
     await o.insert(loadTypeResource).values({
       loadTypeId: site.loadTypeId,
@@ -136,7 +147,7 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
     contactName: 'Contact Person',
     email: `reg-${randomUUID()}@model.test`,
     carrierId: s.carrierId,
-    status: 'approved',
+    status: RegistrationStatus.approved,
   });
 
   const instructionId = randomUUID();
@@ -159,25 +170,25 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       tenantId: s.tenantId,
       instructionId: instructionId as never,
       version: 1,
-      status: 'published',
+      status: VersionStatus.published,
     },
     {
       id: draft as never,
       tenantId: s.tenantId,
       instructionId: instructionId as never,
       version: 2,
-      status: 'draft',
+      status: VersionStatus.draft,
     },
   ]);
   for (const versionId of [published, draft]) {
     await o.insert(safetyContent).values({
       versionId: versionId as never,
-      locale: 'en',
+      locale: StaffLocale.en,
       tenantId: s.tenantId,
       title: 'Rules',
-      blocks: [{ kind: 'text', text: 'Wear a vest.' }],
+      blocks: [{ kind: BlockKind.text, text: 'Wear a vest.' }],
       statement: 'I understood.',
-      translation: 'source',
+      translation: TranslationState.source,
       contentHash: hashToken(versionId),
     });
   }
@@ -190,13 +201,13 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       tenantId: s.tenantId,
       instructionId: instructionId as never,
       versionId: published as never,
-      locale: 'en',
+      locale: StaffLocale.en,
       contentHash: hashToken(published),
       bookingId: b.id,
       carrierId: b.carrierId,
       driverName: `Driver ${b.code}`,
       statementShown: 'I understood.',
-      channel: 'link',
+      channel: DriverChannel.link,
       completedAt: new Date(),
     });
     await o.insert(bookingAcknowledgement).values({
@@ -205,8 +216,8 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       acknowledgementId: id as never,
       tenantId: s.tenantId,
       siteId: b.siteId,
-      via: 'completed',
-      linkedByParty: 'driver',
+      via: LinkVia.completed,
+      linkedByParty: ActorParty.driver,
     });
     await o.insert(safetyAttempt).values({
       bookingId: b.id,
@@ -231,16 +242,16 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
   });
   await o.insert(privacyRequestLog).values({
     tenantId: s.tenantId,
-    kind: 'export',
+    kind: PrivacyRequestKind.export,
     matchedBookings: 1,
     matchedAcknowledgements: 0,
     actorUserId: s.users.tenant_admin.id,
   });
   await o.insert(outboxMessage).values({
     tenantId: s.tenantId,
-    template: 'booking.confirmed',
+    template: EmailTemplate.booking_confirmed,
     toEmail: `driver-${label}@model.test`,
-    locale: 'de',
+    locale: StaffLocale.de,
     payload: { bookingId: s.bookings.own.id },
   });
   return token;
@@ -263,9 +274,9 @@ export async function seedModel(o: OwnerDb, w: World): Promise<ModelTokens> {
   const outbox = await o
     .insert(outboxMessage)
     .values({
-      template: 'core.magic-link',
+      template: EmailTemplate.core_magic_link,
       toEmail: `someone-${randomUUID()}@model.test`,
-      locale: 'en',
+      locale: StaffLocale.en,
       payload: { authTokenId: randomUUID() },
     })
     .returning({ id: outboxMessage.id });

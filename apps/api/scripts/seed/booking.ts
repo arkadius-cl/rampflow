@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType, VehicleType } from '@rampflow/shared/modules/avis/values';
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
 import {
+  BookingParty,
   CarrierLinkStatus,
   CommandName,
   CreateMode,
@@ -18,6 +20,7 @@ import {
   OrgKind,
   ScopeParty,
   SeedActor,
+  SeedOrg,
   SystemActorName,
   TenantActorKind,
 } from '@rampflow/shared/values';
@@ -289,7 +292,7 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
     .values({
       tenantId,
       siteId,
-      kind: 'pool',
+      kind: ResourceKind.pool,
       name: 'Rampen 1–6',
       directions: [Direction.inbound, Direction.outbound],
     })
@@ -373,8 +376,8 @@ export async function seed(ctx: SeedContext): Promise<void> {
           };
     const actor =
       as === SeedActor.system
-        ? ({ party: 'system', job: 'no_show' } as const)
-        : ({ party: 'staff', userId: users[as] } as const);
+        ? ({ party: BookingParty.system, job: 'no_show' } as const)
+        : ({ party: BookingParty.staff, userId: users[as] } as const);
     return { tx, tenantId, actor, access: await loadAccess(tx, scope, testClock(now)), now };
   };
 
@@ -385,12 +388,14 @@ export async function seed(ctx: SeedContext): Promise<void> {
   let created = 0;
   for (const [i, v] of visits().entries()) {
     const avis = AvisInput.parse({
-      references: [{ type: 'purchase_order', value: `PO-${day.replaceAll('-', '')}-${i + 1}` }],
+      references: [
+        { type: ReferenceType.purchase_order, value: `PO-${day.replaceAll('-', '')}-${i + 1}` },
+      ],
       counterpartyName: v.start % 60 === 0 ? 'Elektro Nord AG' : 'Möbelhaus Süd GmbH',
-      loadUnits: [{ type: 'eur_pallet', quantity: v.units }],
-      vehicle: { type: 'semi_trailer', plate: v.plate },
+      loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: v.units }],
+      vehicle: { type: VehicleType.semi_trailer, plate: v.plate },
     });
-    const carrier = v.carrier === 'transpol' ? { id: transpol } : { name: v.carrier };
+    const carrier = v.carrier === SeedOrg.transpol ? { id: transpol } : { name: v.carrier };
     const base = {
       clientRequestId: requestId(`${day}:${i}`),
       siteId,

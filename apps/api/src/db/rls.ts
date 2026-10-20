@@ -110,7 +110,7 @@ export function carrierOwnedPolicies(
   return [
     ...(o.update
       ? [allow(ScopeParty.tenant, PolicyCommand.all, tenant)]
-      : (['select', 'insert', 'delete'] as const).map((cmd) =>
+      : [PolicyCommand.select, PolicyCommand.insert, PolicyCommand.delete].map((cmd) =>
           allow(ScopeParty.tenant, cmd, tenant),
         )),
     allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),

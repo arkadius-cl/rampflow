@@ -3,7 +3,7 @@ import type {
   CarrierInvitationInspect,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkSource } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, TokenPurpose } from '@rampflow/shared/values';
+import { ErrorCode, TokenPurpose, ZodIssueCode } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { type CarrierId, hashToken, type UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -55,7 +55,7 @@ export async function inspectCarrierInvitation(
 
 const missing = (path: 'name' | 'password') => ({
   path: [path],
-  code: 'invalid_type',
+  code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
 });
 

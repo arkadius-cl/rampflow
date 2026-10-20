@@ -81,7 +81,7 @@ describe('rate limits', () => {
     const last = await as(app, null).post('/exchange');
     expect(last.status).toBe(429);
     expect(await last.json()).toMatchObject({
-      error: { code: 'rate_limited', details: { retryAfterSeconds: 60 } },
+      error: { code: ErrorCode.rate_limited, details: { retryAfterSeconds: 60 } },
     });
   });
 });

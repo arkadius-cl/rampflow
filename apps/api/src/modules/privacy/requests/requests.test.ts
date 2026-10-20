@@ -1,5 +1,6 @@
 import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { EraseResult, SubjectMatches } from '@rampflow/shared/modules/privacy/api';
+import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -115,7 +116,7 @@ describe('TN-06 data subject requests', () => {
       .where(eq(privacyRequestLog.tenantId, w.A.tenantId));
     expect(logs).toEqual([
       expect.objectContaining({
-        kind: 'export',
+        kind: PrivacyRequestKind.export,
         matchedBookings: 1,
         matchedAcknowledgements: 3,
         actorUserId: w.A.users.tenant_admin.id,

@@ -37,7 +37,7 @@ export type NavContext<C extends Catalog> =
       readonly entitlements: ResolvedEntitlementsOf<C>;
     }
   | {
-      readonly area: 'carrier' | 'platform';
+      readonly area: typeof OrgKind.carrier | typeof OrgKind.platform;
       readonly permissions: ReadonlySet<PermissionKeyOf<C>>;
     };
 

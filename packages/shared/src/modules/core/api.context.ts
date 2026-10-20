@@ -1,4 +1,5 @@
 import type { Entitlements, PermissionKey, Role, SettingKey, SettingSource } from '../../index.ts';
+import type { CarrierLinkStatus } from '../booking/values.ts';
 
 // Bodies of the three context endpoints (module contract, "Context endpoints"). The layouts of
 // apps/web fetch them once per org and gate routes, navigation and actions from them.
@@ -33,7 +34,7 @@ export interface TenantContext {
 export interface CarrierContextTenant {
   id: string;
   name: string;
-  linkStatus: 'active' | 'deactivated';
+  linkStatus: CarrierLinkStatus;
   /** The tenant's `booking.carrier_portal` entitlement. */
   carrierPortal: boolean;
   logoUrl: string | null;

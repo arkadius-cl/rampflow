@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { CreateMode } from '@rampflow/shared/modules/booking/values';
+import { LoadUnitType, ReferenceType, VehicleType } from '@rampflow/shared/modules/avis/values';
+import { BookingParty, CreateMode } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -8,7 +9,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { CarrierRole, OrgKind, ScopeParty } from '@rampflow/shared/values';
+import { CarrierRole, OrgKind, ScopeParty, StaffLocale } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Scope, Tx } from '../../src/db/scope.ts';
@@ -70,7 +71,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
   const bookingContext = {
     tx,
     tenantId,
-    actor: { party: 'carrier' as const, userId: user.id, carrierId },
+    actor: { party: BookingParty.carrier, userId: user.id, carrierId },
     access: await loadAccess(tx, scope, testClock(now)),
     now,
   };
@@ -84,11 +85,13 @@ export async function seed(ctx: SeedContext): Promise<void> {
       loadTypeId: palletised.id,
       startsAt: firstInstantFrom(day, p.at as LocalTime, zone),
       avis: AvisInput.parse({
-        references: [{ type: 'purchase_order', value: `PO-${day.replaceAll('-', '')}-TP` }],
+        references: [
+          { type: ReferenceType.purchase_order, value: `PO-${day.replaceAll('-', '')}-TP` },
+        ],
         counterpartyName: 'Elektro Nord AG',
-        loadUnits: [{ type: 'eur_pallet', quantity: p.units }],
-        vehicle: { type: 'semi_trailer', plate: p.plate, plateCountry: 'PL' },
-        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: 'pl' },
+        loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: p.units }],
+        vehicle: { type: VehicleType.semi_trailer, plate: p.plate, plateCountry: 'PL' },
+        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: StaffLocale.pl },
       }),
     });
     if (result.created) created++;

@@ -3,9 +3,9 @@ import { AvisInput, avisRuleIssues } from './avis.ts';
 import { LoadUnitType, ReferenceType } from './values.ts';
 
 const base = {
-  references: [{ type: 'purchase_order', value: 'PO-1' }],
+  references: [{ type: ReferenceType.purchase_order, value: 'PO-1' }],
   counterpartyName: 'Lieferant GmbH',
-  loadUnits: [{ type: 'eur_pallet', quantity: 12 }],
+  loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 12 }],
 } as const;
 
 const issuePaths = (input: unknown) => {

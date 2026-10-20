@@ -1,7 +1,7 @@
 import { dirname, join, relative } from 'node:path';
-import { BodyKind } from '@rampflow/shared/values';
+import { BodyKind, ResponseFormat } from '@rampflow/shared/values';
 import ts from 'typescript-6';
-import type { SuccessStatus } from '../../src/kernel/describe.ts';
+import { op, type SuccessStatus, type } from '../../src/kernel/describe.ts';
 import { ConversionError, Converter, type ConverterOptions } from './converter.ts';
 import { type Endpoint, endpointKey } from './model.ts';
 import type { JsonSchema } from './schema.ts';
@@ -137,7 +137,7 @@ export function analyze(input: StaticInput): StaticResult {
     for (const [status, out] of outputs) {
       if (!STATUSES.has(status)) continue;
       const meta = e.meta.responses[status as SuccessStatus];
-      const json = out.format === 'json';
+      const json = out.format === ResponseFormat.json;
       if (!meta) {
         if (json && input.allowlist.has(id)) {
           const label = `${id} ${status}`;
@@ -185,7 +185,9 @@ export function analyze(input: StaticInput): StaticResult {
     }
     const allJsonNamed = [...outputs].every(
       ([status, out]) =>
-        out.format !== 'json' || !STATUSES.has(status) || declared.some((d) => d.status === status),
+        out.format !== ResponseFormat.json ||
+        !STATUSES.has(status) ||
+        declared.some((d) => d.status === status),
     );
     if (input.allowlist.has(id) && allJsonNamed) {
       problems.push(`${id}: every JSON response has a named type; remove it from the allowlist`);
@@ -382,7 +384,9 @@ function importsOf(source: ts.SourceFile) {
 
 function isOpCall(node: ts.Node): node is ts.CallExpression {
   return (
-    ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'op'
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === op.name
   );
 }
 
@@ -409,7 +413,7 @@ function declaredTypes(obj: ts.ObjectLiteralExpression): [SuccessStatus, ts.Type
     if (!ts.isPropertyAssignment(p) || !ts.isNumericLiteral(p.name)) continue;
     const init = p.initializer;
     if (!ts.isCallExpression(init) || !ts.isIdentifier(init.expression)) continue;
-    if (init.expression.text !== 'type') continue;
+    if (init.expression.text !== type.name) continue;
     const [typeNode] = init.typeArguments ?? [];
     if (typeNode) out.push([Number(p.name.text) as SuccessStatus, typeNode]);
   }

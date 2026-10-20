@@ -7,12 +7,26 @@ import {
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
 import {
+  ActorParty,
+  BookingEventType,
   BookingParty,
   BookingStatus,
   CommandName,
   LinkVia,
+  Punctuality,
+  TurnAwayReason,
 } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale, HealthStatus, values } from '@rampflow/shared/values';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  ErrorCode,
+  HealthStatus,
+  Role,
+  ScopeParty,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -84,7 +98,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
       case CommandName.send_driver_link:
         return { type: name, email: 'driver@example.test', locale: DriverLocale.ro };
       case CommandName.turn_away:
-        return { type: name, reason: 'other' };
+        return { type: name, reason: TurnAwayReason.other };
       case CommandName.call:
       case CommandName.dock:
       case CommandName.start_loading:
@@ -117,8 +131,8 @@ describe('transitionBooking rejects every command from a state outside its sourc
             : asSystem(w.A, NOW, (ctx) => transitionBooking(ctx, id, input(name)));
         expect({ status, ...(await outcome(run)) }).toEqual({
           status,
-          code: 'conflict',
-          reason: 'invalid_transition',
+          code: ErrorCode.conflict,
+          reason: ConflictReason.invalid_transition,
         });
       }
       expect((await bookingRow(byStatus.get(BookingStatus.departed) as never)).version).toBe(1);
@@ -133,14 +147,14 @@ describe('transitionBooking rejects every command from a state outside its sourc
           transitionBooking(ctx, id, { type: CommandName.mark_no_show }),
         ),
       ),
-    ).toEqual({ code: 'forbidden' });
+    ).toEqual({ code: ErrorCode.forbidden });
     expect(
       await outcome(
         asStaff(w.A, w.A.users.dock_operator, NOW, (ctx) =>
           transitionBooking(ctx, w.A.bookings.own.id, { type: CommandName.check_in }),
         ),
       ),
-    ).toEqual({ code: 'forbidden' });
+    ).toEqual({ code: ErrorCode.forbidden });
   });
 });
 
@@ -163,14 +177,19 @@ describe('idempotent repeats and the event log', () => {
       transitionBooking(ctx, b.id, { type: CommandName.cancel }),
     );
     const scope = {
-      party: 'tenant',
+      party: ScopeParty.tenant,
       tenantId: w.A.tenantId,
       siteIds: 'all',
-      actor: { kind: 'user', userId: w.A.users.tenant_admin.id, role: 'tenant_admin' },
+      actor: {
+        kind: TenantActorKind.user,
+        userId: w.A.users.tenant_admin.id,
+        role: Role.tenant_admin,
+      },
     } as const;
     const updated = await withScope(scope, (tx) =>
       tx
         .update(bookingEvent)
+        // biome-ignore lint/plugin: an unknown event type on purpose
         .set({ type: 'forged' })
         .where(eq(bookingEvent.bookingId, b.id))
         .returning(),
@@ -192,15 +211,18 @@ describe('idempotent repeats and the event log', () => {
       ).items;
     const [forAdmin] = await events(w.A.users.tenant_admin);
     expect(forAdmin).toMatchObject({
-      type: 'cancelled',
+      type: BookingEventType.cancelled,
       actor: {
-        party: 'tenant',
+        party: ActorParty.tenant,
         userId: w.A.users.dispatcher.id,
         name: expect.stringMatching(/^dispatcher /),
       },
     });
     const [forDispatcher] = await events(w.A.users.dispatcher);
-    expect(forDispatcher).toMatchObject({ type: 'cancelled', data: { late: false } });
+    expect(forDispatcher).toMatchObject({
+      type: BookingEventType.cancelled,
+      data: { late: false },
+    });
     expect(forDispatcher).not.toHaveProperty('actor');
     expect(JSON.stringify(forDispatcher)).not.toContain(w.A.users.dispatcher.id);
   });
@@ -223,15 +245,15 @@ describe('yard commands', () => {
       const r = await asSystem(w.A, markedAt, (ctx) =>
         transitionBooking(ctx, b.id, { type: CommandName.mark_no_show }),
       );
-      expect(r.booking).toMatchObject({ status: 'no_show', noShowAt: markedAt });
+      expect(r.booking).toMatchObject({ status: BookingStatus.no_show, noShowAt: markedAt });
     }
     const at0040 = new Date('2026-11-03T23:40:00Z');
     const checkedIn = await gate(at0040, (ctx) =>
       transitionBooking(ctx, early.id, { type: CommandName.check_in, plateSeen: 'hh ab 1' }),
     );
     expect(checkedIn.booking).toMatchObject({
-      status: 'checked_in',
-      punctuality: 'late',
+      status: BookingStatus.checked_in,
+      punctuality: Punctuality.late,
       punctualityMinutes: 70,
     });
     const nextDay = new Date('2026-11-04T23:10:00Z'); // Thursday 00:10 CET
@@ -239,8 +261,14 @@ describe('yard commands', () => {
       await outcome(
         gate(nextDay, (ctx) => transitionBooking(ctx, late.id, { type: CommandName.check_in })),
       ),
-    ).toEqual({ code: 'conflict', reason: 'invalid_transition', status: 'no_show' });
-    const [checkInEvent] = (await eventsOf(early.id)).filter((e) => e.type === 'checked_in');
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.invalid_transition,
+      status: BookingStatus.no_show,
+    });
+    const [checkInEvent] = (await eventsOf(early.id)).filter(
+      (e) => e.type === BookingEventType.checked_in,
+    );
     expect(checkInEvent?.data).toMatchObject({ fromNoShow: true, plateRecorded: true });
     expect(await ownerCount('avis', sql`booking_id = ${early.id} and plate_seen = 'HHAB1'`)).toBe(
       1,
@@ -255,7 +283,7 @@ describe('yard commands', () => {
           transitionBooking(ctx, b.id, { type: CommandName.mark_no_show }),
         ),
       ),
-    ).toMatchObject({ code: 'conflict', reason: 'not_due' });
+    ).toMatchObject({ code: ErrorCode.conflict, reason: ConflictReason.not_due });
   });
 
   it('computes punctuality against the tolerance and grace settings', async () => {
@@ -281,7 +309,7 @@ describe('yard commands', () => {
     const b = await seedBooking(w.A, { startsAt });
     const at = new Date(startsAt.getTime() - (30 * 60 + 20) * 1000);
     const r = await gate(at, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.check_in }));
-    expect(r.booking).toMatchObject({ punctuality: 'early', punctualityMinutes: -30 });
+    expect(r.booking).toMatchObject({ punctuality: Punctuality.early, punctualityMinutes: -30 });
   });
 
   it('answers 409, not a no-op, for a repeat-looking command on a final booking', async () => {
@@ -297,7 +325,11 @@ describe('yard commands', () => {
           }),
         ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'invalid_transition', status: 'cancelled' });
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.invalid_transition,
+      status: BookingStatus.cancelled,
+    });
   });
 
   it('turns a truck away after check-in and shortens its driver link', async () => {
@@ -305,9 +337,15 @@ describe('yard commands', () => {
     const b = await seedBooking(w.A, { startsAt, status: BookingStatus.checked_in });
     const at = new Date('2026-11-07T08:20:00Z');
     const r = await gate(at, (ctx) =>
-      transitionBooking(ctx, b.id, { type: CommandName.turn_away, reason: 'wrong_load' }),
+      transitionBooking(ctx, b.id, {
+        type: CommandName.turn_away,
+        reason: TurnAwayReason.wrong_load,
+      }),
     );
-    expect(r.booking).toMatchObject({ status: 'turned_away', turnAwayReason: 'wrong_load' });
+    expect(r.booking).toMatchObject({
+      status: BookingStatus.turned_away,
+      turnAwayReason: 'wrong_load',
+    });
     const expiry = new Date(at.getTime() + 24 * 3_600_000);
     expect(
       await ownerCount('driver_access', sql`booking_id = ${b.id} and expires_at = ${expiry}`),
@@ -326,15 +364,19 @@ describe('yard commands', () => {
           transitionBooking(ctx, second.id, { type: CommandName.call, dockId: dock1() }),
         ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'dock_occupied' });
+    ).toEqual({ code: ErrorCode.conflict, reason: ConflictReason.dock_occupied });
     const uncalled = await dockOp(NOW, (ctx) =>
       transitionBooking(ctx, first.id, { type: CommandName.uncall }),
     );
-    expect(uncalled.booking).toMatchObject({ status: 'checked_in', dockId: null, calledAt: null });
+    expect(uncalled.booking).toMatchObject({
+      status: BookingStatus.checked_in,
+      dockId: null,
+      calledAt: null,
+    });
     const called = await dockOp(NOW, (ctx) =>
       transitionBooking(ctx, second.id, { type: CommandName.call, dockId: dock1() }),
     );
-    expect(called.booking).toMatchObject({ status: 'called', dockId: dock1() });
+    expect(called.booking).toMatchObject({ status: BookingStatus.called, dockId: dock1() });
     await dockOp(NOW, (ctx) =>
       transitionBooking(ctx, second.id, { type: CommandName.complete, actualLoadUnits: 10 }),
     );
@@ -355,8 +397,8 @@ describe('yard commands', () => {
       return { err, status: row?.status };
     });
     expect(afterwards).toEqual({
-      err: { code: 'conflict', reason: 'dock_occupied' },
-      status: 'checked_in',
+      err: { code: ErrorCode.conflict, reason: ConflictReason.dock_occupied },
+      status: BookingStatus.checked_in,
     });
     await dockOp(NOW, (ctx) =>
       transitionBooking(ctx, holder.id, { type: CommandName.complete, actualLoadUnits: 10 }),
@@ -367,10 +409,10 @@ describe('yard commands', () => {
     const b = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     expect(
       await outcome(gate(NOW, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.depart }))),
-    ).toMatchObject({ code: 'validation_failed' });
+    ).toMatchObject({ code: ErrorCode.validation_failed });
     expect(
       await outcome(dockOp(NOW, (ctx) => transitionBooking(ctx, b.id, { type: CommandName.dock }))),
-    ).toMatchObject({ code: 'validation_failed' });
+    ).toMatchObject({ code: ErrorCode.validation_failed });
   });
 });
 
@@ -385,8 +427,8 @@ describe('check-in under safety enforcement (YD-02)', () => {
     expect(
       await outcome(gate((ctx) => transitionBooking(ctx, b.id, { type: CommandName.check_in }))),
     ).toEqual({
-      code: 'conflict',
-      reason: 'safety_missing',
+      code: ErrorCode.conflict,
+      reason: ConflictReason.safety_missing,
       instructionIds: [briefing.instructionId],
     });
     const linked = await gate((ctx) =>
@@ -405,7 +447,7 @@ describe('check-in under safety enforcement (YD-02)', () => {
         {
           instructionId: briefing.instructionId,
           acknowledgementId: briefing.acknowledgementId,
-          via: 'gate_lookup',
+          via: LinkVia.gate_lookup,
         },
       ],
       ['checked_in', expect.objectContaining({ safety: 'valid' })],
@@ -430,6 +472,10 @@ describe('check-in under safety enforcement (YD-02)', () => {
           }),
         ),
       ),
-    ).toEqual({ code: 'conflict', reason: 'acknowledgement_invalid', status: 'expired' });
+    ).toEqual({
+      code: ErrorCode.conflict,
+      reason: ConflictReason.acknowledgement_invalid,
+      status: AckStatus.expired,
+    });
   });
 });

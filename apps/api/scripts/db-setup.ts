@@ -6,7 +6,7 @@
 // Roles are cluster-wide, so every checkout converges the same role. Databases are per checkout
 // (scripts/checkout-env.mjs), so this never touches another checkout's database.
 import { fileURLToPath } from 'node:url';
-import { DatabaseUrlVar } from '@rampflow/shared/values';
+import { DatabaseUrlVar, EnsureDatabaseResult, SqlState } from '@rampflow/shared/values';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
@@ -58,15 +58,17 @@ export async function ensureDatabase(
   admin: pg.Client,
   name: string,
   template?: string,
-): Promise<'created' | 'exists'> {
+): Promise<EnsureDatabaseResult> {
   const { rowCount } = await admin.query('select 1 from pg_database where datname = $1', [name]);
-  if (rowCount) return 'exists';
+  if (rowCount) return EnsureDatabaseResult.exists;
   try {
     const from = template ? ` TEMPLATE ${quoteIdent(template)}` : '';
     await admin.query(`CREATE DATABASE ${quoteIdent(name)}${from}`);
-    return 'created';
+    return EnsureDatabaseResult.created;
   } catch (e) {
-    if ((e as { code?: string }).code === '42P04') return 'exists';
+    if ((e as { code?: string }).code === SqlState.duplicate_database) {
+      return EnsureDatabaseResult.exists;
+    }
     throw e;
   }
 }

@@ -45,3 +45,11 @@ export const DatabaseHealth = {
   error: 'error',
 } as const;
 export type DatabaseHealth = ValueOf<typeof DatabaseHealth>;
+
+/** How a Hono handler builds its response (`outputFormat`); any other string is a raw body. */
+export const ResponseFormat = {
+  json: 'json',
+  text: 'text',
+  redirect: 'redirect',
+} as const;
+export type ResponseFormat = ValueOf<typeof ResponseFormat>;

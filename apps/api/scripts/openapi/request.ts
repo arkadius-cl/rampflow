@@ -1,4 +1,4 @@
-import { ParameterLocation } from '@rampflow/shared/values';
+import { JsonSchemaType, ParameterLocation } from '@rampflow/shared/values';
 import * as z from 'zod';
 import type { Endpoint } from './model.ts';
 import { sample } from './sampler.ts';
@@ -44,7 +44,7 @@ export const openApiPath = (path: string) => path.replace(/:(\w+)/g, '{$1}');
 const pathParams = (path: string) => [...path.matchAll(/:(\w+)/g)].map((m) => m[1] as string);
 
 /** A UUID unless the route validates the parameter (design D7). */
-const UNVALIDATED_PARAM: JsonSchema = { type: 'string', format: 'uuid' };
+const UNVALIDATED_PARAM: JsonSchema = { type: JsonSchemaType.string, format: 'uuid' };
 
 export function describeRequest(e: Endpoint): RequestDescription {
   const param = e.validators.param && inputSchema(e.validators.param);

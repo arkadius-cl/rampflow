@@ -6,11 +6,16 @@ import type { Clock } from './clock.ts';
 
 const flag = z.enum(EnvFlag).transform((v) => v === EnvFlag.on);
 
+const ROOT_PATH = '/';
+
 /** A bare http(s) origin such as `http://192.168.0.10:5173`, normalized without a trailing slash. */
 const origin = z
   .url({ protocol: /^https?$/ })
   .transform((u) => new URL(u))
-  .refine((u) => u.pathname === '/' && !u.search && !u.hash, 'Expected an origin without a path')
+  .refine(
+    (u) => u.pathname === ROOT_PATH && !u.search && !u.hash,
+    'Expected an origin without a path',
+  )
   .transform((u) => u.origin);
 
 /** Comma-separated origins, e.g. the LAN addresses of a dev machine (scripts/checkout-env.mjs). */

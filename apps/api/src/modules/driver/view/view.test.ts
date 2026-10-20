@@ -1,4 +1,7 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -31,16 +34,16 @@ describe('DR-01 and DR-03 the booking view', () => {
     const view = JSON.parse(text) as DriverBookingView;
     expect(view).toMatchObject({
       asOf: '2026-11-02T07:00:00.000Z',
-      channel: 'link',
+      channel: DriverChannel.link,
       site: { name: s?.name, timeZone: s?.timeZone },
       booking: {
         code: own.code,
-        status: 'confirmed',
+        status: BookingStatus.confirmed,
         startsAt: '2026-11-02T08:00:00.000Z',
         endsAt: '2026-11-02T08:30:00.000Z',
       },
       dock: null,
-      safety: { status: 'not_required', validUntil: null },
+      safety: { status: SafetyStatus.not_required, validUntil: null },
       privacyNoticeUrl: null,
       linkExpiresAt: '2026-11-09T08:00:00.000Z',
     });
@@ -60,7 +63,7 @@ describe('DR-01 and DR-03 the booking view', () => {
     await ownerDb()
       .update(booking)
       .set({
-        status: 'called',
+        status: BookingStatus.called,
         dockId: w.A.sites[0].dockIds[0],
         checkedInAt: new Date('2026-11-02T07:50:00Z'),
         calledAt: new Date('2026-11-02T08:05:00Z'),
@@ -70,7 +73,7 @@ describe('DR-01 and DR-03 the booking view', () => {
       await request('GET', '/api/driver/booking', { jar })
     ).json()) as DriverBookingView;
     expect(view.booking).toMatchObject({
-      status: 'called',
+      status: BookingStatus.called,
       checkedInAt: '2026-11-02T07:50:00.000Z',
       calledAt: '2026-11-02T08:05:00.000Z',
     });

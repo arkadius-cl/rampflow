@@ -2,7 +2,13 @@ import { randomUUID } from 'node:crypto';
 import type { AvisInput } from '@rampflow/shared/modules/avis/avis';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingParty, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingParty,
+  type CreatedParty,
+  Direction,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import {
   Role,
   ScopeParty,
@@ -185,7 +191,7 @@ export interface SeedBooking {
   dockId?: DockId | null;
   site?: CapacitySite;
   carrierId?: CarrierId | null;
-  createdParty?: 'carrier' | 'staff';
+  createdParty?: CreatedParty;
   createdBy?: UserId | null;
   walkIn?: boolean;
   noShowAt?: Date | null;
@@ -223,7 +229,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
       carrierName: 'Spedition Nowak',
       code: bookingCode(),
       status: o.status ?? 'confirmed',
-      direction: 'inbound',
+      direction: Direction.inbound,
       startsAt: o.startsAt,
       endsAt,
       blocksUntil: endsAt,
@@ -243,7 +249,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
     siteId: at.siteId,
     carrierId,
     counterpartyName: 'Lieferant GmbH',
-    loadUnits: [{ type: 'eur_pallet', quantity: 10 }],
+    loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 10 }],
   });
   const linkId = randomUUID();
   await db.insert(driverAccess).values({
@@ -253,7 +259,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
     bookingId: row.id,
     carrierId,
     tokenHash: hashToken(deriveToken(TokenPurpose.driver, linkId)),
-    channel: 'link',
+    channel: DriverChannel.link,
     expiresAt: new Date(o.startsAt.getTime() + 7 * 86_400_000),
   });
   return row;

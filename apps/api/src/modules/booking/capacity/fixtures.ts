@@ -1,11 +1,13 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   BookingStatus,
+  CreatedParty,
   Direction,
   DurationKind,
   type LoadStatus,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { TimeZone } from '@rampflow/shared/time';
 import { ScopeParty, TenantActorKind, TenantRole } from '@rampflow/shared/values';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
@@ -42,7 +44,7 @@ export interface CapacitySiteOptions {
   zone?: string;
   subdivision?: string | null;
   docks?: number;
-  kind?: 'pool' | 'single';
+  kind?: ResourceKind;
   capacityCap?: number | null;
   dailyCap?: number | null;
   /** `[weekday, opens, closes]` site rows. */
@@ -80,9 +82,9 @@ export async function capacitySite(
       siteId,
       hallId,
       code: `D-${i + 1}`,
-      doorType: 'dock_leveler',
-      temperatureZone: 'ambient',
-      status: 'active',
+      doorType: DoorType.dock_leveler,
+      temperatureZone: TemperatureZone.ambient,
+      status: DockStatus.active,
     });
   }
   const kind = o.kind ?? ResourceKind.pool;
@@ -114,7 +116,7 @@ export async function capacitySite(
       tenantId,
       siteId,
       name: { de: 'Paletten', en: 'Pallets' },
-      direction: 'inbound',
+      direction: Direction.inbound,
       duration: { kind: DurationKind.fixed, minutes: o.minutes ?? 60 },
       bufferMinutes: o.buffer ?? 0,
     })
@@ -151,13 +153,13 @@ export async function placeBooking(
       carrierName: 'Spedition Test',
       code: randomBytes(4).toString('hex').toUpperCase(),
       status,
-      direction: 'inbound',
+      direction: Direction.inbound,
       startsAt,
       endsAt: end,
       blocksUntil: end,
       siteTimeZone: s.zone,
       loadUnits: 10,
-      createdParty: 'staff',
+      createdParty: CreatedParty.staff,
     })
     .returning({ id: booking.id });
   if (!row) throw new Error('no booking');

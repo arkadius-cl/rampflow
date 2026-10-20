@@ -1,9 +1,16 @@
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import {
+  EmailTemplate,
+  ErrorCode,
+  ForbiddenReason,
+  OrgKind,
   Role,
   ScopeParty,
+  StaffLocale,
   TenantActorKind,
   TenantRole,
   TokenPurpose,
+  UnauthorizedReason,
 } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -70,12 +77,15 @@ describe('TN-03 invite a carrier', () => {
     const email = unique('invite');
     const res = await as(app, w.A.users.dispatcher).post(
       `/api/t/${w.A.tenantId}/carriers/invitations`,
-      { body: { companyName: 'Baltic Freight UAB', email, locale: 'pl' } },
+      { body: { companyName: 'Baltic Freight UAB', email, locale: StaffLocale.pl } },
     );
     expect(res.status).toBe(201);
     expect(await res.json()).toMatchObject({ companyName: 'Baltic Freight UAB', email });
     const [mail] = await outboxTo(email);
-    expect(mail).toMatchObject({ template: 'booking.carrier-invitation', locale: 'pl' });
+    expect(mail).toMatchObject({
+      template: EmailTemplate.booking_carrier_invitation,
+      locale: StaffLocale.pl,
+    });
     expect(mail?.payload).toMatchObject({ companyName: 'Baltic Freight UAB' });
     expect(JSON.stringify(mail?.payload)).not.toMatch(/carrier-invite#/);
 
@@ -142,13 +152,16 @@ describe('CR-01 accept a carrier invitation', () => {
     const { carrierId } = (await res.json()) as { carrierId: CarrierId };
     expect(sessionOf(res)).not.toBeNull();
     const [company] = await ownerDb().select().from(org).where(eq(org.id, carrierId));
-    expect(company).toMatchObject({ kind: 'carrier', name: 'Invited Spedition' });
+    expect(company).toMatchObject({ kind: OrgKind.carrier, name: 'Invited Spedition' });
     const members = await ownerDb()
       .select({ role: membership.role })
       .from(membership)
       .where(eq(membership.orgId, carrierId));
-    expect(members).toEqual([{ role: 'carrier_admin' }]);
-    expect(await linkOf(w, carrierId)).toMatchObject({ status: 'active', source: 'invitation' });
+    expect(members).toEqual([{ role: Role.carrier_admin }]);
+    expect(await linkOf(w, carrierId)).toMatchObject({
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.invitation,
+    });
 
     const tenantView = await as(app, w.A.users.dispatcher).get(`/api/t/${w.A.tenantId}/carriers`);
     const network = (await tenantView.json()) as { links: { carrierId: string; name: string }[] };
@@ -184,7 +197,7 @@ describe('CR-01 accept a carrier invitation', () => {
     const anonymous = await anon.post('/api/public/carrier-invitations/accept', { body });
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({
-      error: { details: { reason: 'sign_in_required' } },
+      error: { details: { reason: UnauthorizedReason.sign_in_required } },
     });
 
     const orgsBefore = await ownerDb().select({ id: org.id }).from(org);
@@ -194,7 +207,7 @@ describe('CR-01 accept a carrier invitation', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ carrierId: w.B.carrierId });
     expect(await ownerDb().select({ id: org.id }).from(org)).toHaveLength(orgsBefore.length);
-    expect(await linkOf(w, w.B.carrierId)).toMatchObject({ status: 'active' });
+    expect(await linkOf(w, w.B.carrierId)).toMatchObject({ status: CarrierLinkStatus.active });
   });
 
   it('a carrier_user may not bind their company: 403, the invitation stays pending', async () => {
@@ -211,7 +224,10 @@ describe('CR-01 accept a carrier invitation', () => {
     });
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
-      error: { code: 'forbidden', details: { reason: 'carrier_admin_required' } },
+      error: {
+        code: ErrorCode.forbidden,
+        details: { reason: ForbiddenReason.carrier_admin_required },
+      },
     });
     expect(await linkOf(w, other.B.carrierId)).toBeUndefined();
     expect((await ownerDb().select({ id: org.id }).from(org)).length).toBe(orgsBefore);
@@ -343,15 +359,19 @@ describe('TN-03 a stale invitation', () => {
       clock.set(new Date(start + 60_000));
       await as(app, w.A.users.dispatcher).patch(
         `/api/t/${w.A.tenantId}/carriers/${w.A.rivalCarrierId}`,
-        { body: { status: 'deactivated' } },
+        { body: { status: CarrierLinkStatus.deactivated } },
       );
       clock.set(new Date(start + 120_000));
       expect((await accept(early)).status).toBe(200);
-      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({ status: 'deactivated' });
+      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({
+        status: CarrierLinkStatus.deactivated,
+      });
 
       const later = await invite();
       expect((await accept(later)).status).toBe(200);
-      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({ status: 'active' });
+      expect(await linkOf(w, w.A.rivalCarrierId)).toMatchObject({
+        status: CarrierLinkStatus.active,
+      });
     } finally {
       clock.set(new Date());
     }
@@ -361,16 +381,21 @@ describe('TN-03 a stale invitation', () => {
 describe('TN-03 deactivate a link', () => {
   it('blocks new bookings through assertActiveLink while existing bookings stay visible', async () => {
     const url = `/api/t/${w.A.tenantId}/carriers/${w.A.carrierId}`;
-    const off = await as(app, w.A.users.dispatcher).patch(url, { body: { status: 'deactivated' } });
+    const off = await as(app, w.A.users.dispatcher).patch(url, {
+      body: { status: CarrierLinkStatus.deactivated },
+    });
     expect(off.status).toBe(200);
-    expect(await off.json()).toMatchObject({ status: 'deactivated', carrierId: w.A.carrierId });
+    expect(await off.json()).toMatchObject({
+      status: CarrierLinkStatus.deactivated,
+      carrierId: w.A.carrierId,
+    });
 
     const atTenant = {
-      party: 'carrier_at_tenant',
+      party: ScopeParty.carrier_at_tenant,
       carrierId: w.A.carrierId,
       tenantId: w.A.tenantId,
       userId: w.A.users.carrier_user.id,
-      role: 'carrier_user',
+      role: Role.carrier_user,
     } as const;
     const refused = await asParty(atTenant, (tx) =>
       assertActiveLink(tx, w.A.tenantId, w.A.carrierId).then(
@@ -379,13 +404,16 @@ describe('TN-03 deactivate a link', () => {
       ),
     );
     expect(refused).toBeInstanceOf(ApiError);
-    expect(refused).toMatchObject({ code: 'forbidden', details: { reason: 'link_inactive' } });
+    expect(refused).toMatchObject({
+      code: ErrorCode.forbidden,
+      details: { reason: ForbiddenReason.link_inactive },
+    });
 
     const carrier = {
-      party: 'carrier',
+      party: ScopeParty.carrier,
       carrierId: w.A.carrierId,
       userId: w.A.users.carrier_user.id,
-      role: 'carrier_user',
+      role: Role.carrier_user,
     } as const;
     const own = await asParty(carrier, (tx) =>
       tx.select({ id: booking.id }).from(booking).where(eq(booking.id, w.A.bookings.own.id)),
@@ -412,19 +440,24 @@ describe('TN-03 deactivate a link', () => {
     expect(listed.items).toContainEqual(
       expect.objectContaining({
         tenantId: w.A.tenantId,
-        link: expect.objectContaining({ status: 'deactivated' }),
+        link: expect.objectContaining({ status: CarrierLinkStatus.deactivated }),
       }),
     );
 
-    const on = await as(app, w.A.users.dispatcher).patch(url, { body: { status: 'active' } });
-    expect(await on.json()).toMatchObject({ status: 'active', deactivatedAt: null });
+    const on = await as(app, w.A.users.dispatcher).patch(url, {
+      body: { status: CarrierLinkStatus.active },
+    });
+    expect(await on.json()).toMatchObject({
+      status: CarrierLinkStatus.active,
+      deactivatedAt: null,
+    });
     await asParty(atTenant, (tx) => assertActiveLink(tx, w.A.tenantId, w.A.carrierId));
   });
 
   it('answers 404 for a carrier without a link to this tenant', async () => {
     const res = await as(app, w.A.users.dispatcher).patch(
       `/api/t/${w.A.tenantId}/carriers/${w.B.rivalCarrierId}`,
-      { body: { status: 'deactivated' } },
+      { body: { status: CarrierLinkStatus.deactivated } },
     );
     expect(res.status).toBe(404);
   });

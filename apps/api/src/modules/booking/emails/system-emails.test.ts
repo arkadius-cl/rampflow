@@ -26,7 +26,7 @@ describe('job emails', () => {
     const template = await loadTemplateFile('booking.no-show');
     const de = await createServerI18n('de');
     const { body } = template.render(
-      { ...(template.example as object), locale: 'de' },
+      { ...(template.example as object), locale: StaffLocale.de },
       de.getFixedT('de', 'booking'),
     );
     expect(await render(body, { plainText: true })).toContain('bis 10:00 MEZ');

@@ -50,6 +50,9 @@ export type { BookingStatus };
 const inStatuses = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(', '));
 
 /** The booking and its visit. No personal data; that lives in `avis`. */
+/** The unique constraint on a tenant's booking codes; `createBooking` retries a new code on it. */
+export const BOOKING_CODE_KEY = 'booking_tenant_code_key';
+
 export const booking = pgTable(
   'booking',
   {
@@ -110,7 +113,7 @@ export const booking = pgTable(
       foreignColumns: [loadType.id, loadType.siteId],
     }),
     foreignKey({ columns: [t.dockId, t.siteId], foreignColumns: [dock.id, dock.siteId] }),
-    unique('booking_tenant_code_key').on(t.tenantId, t.code),
+    unique(BOOKING_CODE_KEY).on(t.tenantId, t.code),
     unique('booking_id_tenant_key').on(t.id, t.tenantId),
     uniqueIndex('booking_client_request_key')
       .on(t.createdBy, t.clientRequestId)

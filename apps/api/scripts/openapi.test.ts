@@ -1,3 +1,4 @@
+import { SecuritySchemeType, ZodIssueCode } from '@rampflow/shared/values';
 import { Validator } from '@seriousme/openapi-schema-validator';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
@@ -31,8 +32,8 @@ describe('pnpm api:docs', () => {
   it('declares the session cookie, the driver cookie and anonymous routes', () => {
     expect(doc.security).toEqual([{ session: [] }]);
     expect(doc.components.securitySchemes).toEqual({
-      session: { type: 'apiKey', in: 'cookie', name: 'rf_session' },
-      driver: { type: 'apiKey', in: 'cookie', name: 'rf_driver' },
+      session: { type: SecuritySchemeType.apiKey, in: 'cookie', name: 'rf_session' },
+      driver: { type: SecuritySchemeType.apiKey, in: 'cookie', name: 'rf_driver' },
     });
     expect(doc.paths['/api/auth/login'].post.security).toEqual([]);
     expect(doc.paths['/api/driver/booking'].get.security).toEqual([{ driver: [] }]);
@@ -44,7 +45,7 @@ describe('pnpm api:docs', () => {
     const rejected = collectEndpoints(app.routes).flatMap((e) => {
       const body = describeRequest(e).requestBody?.content['application/json'];
       const result = e.validators.json?.safeParse(body?.example);
-      const shapeIssues = result?.error?.issues.filter((i) => i.code !== 'custom') ?? [];
+      const shapeIssues = result?.error?.issues.filter((i) => i.code !== ZodIssueCode.custom) ?? [];
       return shapeIssues.map((i) => `${e.meta.id} ${i.path.join('.')}: ${i.message}`);
     });
     expect(rejected).toEqual([]);

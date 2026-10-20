@@ -1,3 +1,4 @@
+import { LogoContentType } from '@rampflow/shared/modules/brand/values';
 import {
   AccountCredential,
   ForeignOutcome,
@@ -41,7 +42,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.PUT,
     path: P,
     params: org,
-    raw: () => ({ type: 'image/png', bytes: PNG_1PX }),
+    raw: () => ({ type: LogoContentType.png, bytes: PNG_1PX }),
   },
   { ...base, method: HttpMethod.DELETE, path: P, params: org },
 ]);

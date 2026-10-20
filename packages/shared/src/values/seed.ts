@@ -19,3 +19,9 @@ export const SeedActor = {
   system: 'system',
 } as const;
 export type SeedActor = ValueOf<typeof SeedActor>;
+
+/** What `POST /api/test/seed` writes for the end-to-end tests: the two worlds of the fixtures. */
+export const SeedScenario = {
+  world: 'world',
+} as const;
+export type SeedScenario = ValueOf<typeof SeedScenario>;

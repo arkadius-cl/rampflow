@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ErrorCode } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.ts';
 import { DRIVER_CSP } from './static.ts';
@@ -48,7 +49,7 @@ describe('static serving of the built SPAs', () => {
   it('keeps unknown API paths as JSON 404s', async () => {
     const res = await app.request('/api/nope');
     expect(res.status).toBe(404);
-    expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+    expect(await res.json()).toMatchObject({ error: { code: ErrorCode.not_found } });
   });
 });
 

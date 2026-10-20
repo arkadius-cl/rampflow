@@ -3,6 +3,7 @@ import {
   EnqueueResult,
   ScopeParty,
   Setting,
+  SqlState,
   StaffLocale,
   TenantActorKind,
   values,
@@ -42,7 +43,7 @@ const isStaffLocale = (l: string | null): l is StaffLocale =>
 /** A Postgres foreign-key violation: a row elsewhere still references this one. */
 const isReferenced = (e: unknown): boolean => {
   for (let cur = e; cur && typeof cur === 'object'; cur = (cur as { cause?: unknown }).cause) {
-    if ('code' in cur && cur.code === '23503') return true;
+    if ('code' in cur && cur.code === SqlState.foreign_key_violation) return true;
   }
   return false;
 };

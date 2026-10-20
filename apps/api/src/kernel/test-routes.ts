@@ -1,4 +1,4 @@
-import { ErrorCode, ValidationTarget } from '@rampflow/shared/values';
+import { ErrorCode, SeedScenario, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { world } from '../../test/world.ts';
@@ -12,7 +12,7 @@ import { validate } from './validate.ts';
 // Mounted at /api/test only with ENABLE_TEST_ROUTES=1, which env.ts refuses in production.
 // Seeding writes as the owner role (MIGRATION_DATABASE_URL), like the Vitest fixtures.
 
-const SeedBody = z.object({ scenario: z.literal('world') });
+const SeedBody = z.object({ scenario: z.literal(SeedScenario.world) });
 const ClockBody = z.object({ now: z.iso.datetime({ offset: true }).nullable() });
 
 export const testRoutes = (clock: PinnableClock) =>

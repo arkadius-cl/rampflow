@@ -37,7 +37,7 @@ export const cases = defineRouteCases([
     method: HttpMethod.POST,
     path: `${P}/invitations`,
     params: org,
-    body: () => ({ email: inviteeEmail('colleague'), role: 'carrier_user' }),
+    body: () => ({ email: inviteeEmail('colleague'), role: Role.carrier_user }),
     foreign: ForeignOutcome.empty,
   },
   {
@@ -62,7 +62,7 @@ export const cases = defineRouteCases([
     path: `${P}/:membershipId`,
     setup: colleague,
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
-    body: () => ({ role: 'carrier_admin' }),
+    body: () => ({ role: Role.carrier_admin }),
   },
   {
     ...base,

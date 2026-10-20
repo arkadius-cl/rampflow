@@ -1,3 +1,4 @@
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import {
   ForeignOutcome,
   HttpMethod,
@@ -112,9 +113,10 @@ export const cases = defineRouteCases([
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
     body: (w) => ({
       hallId: w.A.sites[0].hallId,
+      // biome-ignore lint/plugin: a dock code, free text
       code: 'D-99',
-      doorType: 'dock_leveler',
-      temperatureZone: 'chilled',
+      doorType: DoorType.dock_leveler,
+      temperatureZone: TemperatureZone.chilled,
     }),
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
@@ -130,7 +132,7 @@ export const cases = defineRouteCases([
       siteId: w.A.sites[0].id,
       dockId: w.A.sites[0].dockIds[0],
     }),
-    body: () => ({ status: 'maintenance' }),
+    body: () => ({ status: DockStatus.maintenance }),
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },

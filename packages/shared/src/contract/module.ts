@@ -71,7 +71,7 @@ export type NavItem<P extends string = string, F extends string = string> =
     }
   | {
       readonly id: string;
-      readonly area: 'carrier' | 'platform';
+      readonly area: typeof OrgKind.carrier | typeof OrgKind.platform;
       readonly to: string;
       readonly icon: string;
       readonly permission: P;

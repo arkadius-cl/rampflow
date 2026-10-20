@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import { BookingEventType, BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
-import { CarrierRole, ScopeParty, SystemActorName, TenantActorKind } from '@rampflow/shared/values';
+import {
+  CarrierRole,
+  OrgKind,
+  Role,
+  ScopeParty,
+  SqlState,
+  StaffLocale,
+  SystemActorName,
+  TenantActorKind,
+} from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
@@ -13,7 +23,7 @@ import { hashToken, type OrgId, type TenantId } from './ids.ts';
 import { asScope, type Scope, withScope } from './scope.ts';
 
 /** Postgres 42501: a row-level security policy refused the row. */
-const RLS_DENIED = { cause: { code: '42501' } };
+const RLS_DENIED = { cause: { code: SqlState.insufficient_privilege } };
 
 // Write paths of the party matrix: the commands a party needs succeed, the ones it must not
 // have fail in the database even when the application forgets its own filter.
@@ -56,7 +66,7 @@ describe('driver', () => {
         siteId: b.siteId,
         bookingId: b.id,
         carrierId: b.carrierId,
-        type: 'safety_linked',
+        type: BookingEventType.safety_linked,
         at: new Date(),
         actorParty: 'driver',
       });
@@ -72,7 +82,7 @@ describe('driver', () => {
     const b = w.A.bookings.own;
     await expect(
       withScope(driver(), (tx) =>
-        tx.update(booking).set({ status: 'cancelled' }).where(eq(booking.id, b.id)),
+        tx.update(booking).set({ status: BookingStatus.cancelled }).where(eq(booking.id, b.id)),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
     await expect(
@@ -81,7 +91,7 @@ describe('driver', () => {
           tenantId: w.A.tenantId,
           siteId: w.A.bookings.rival.siteId,
           bookingId: w.A.bookings.rival.id,
-          type: 'safety_linked',
+          type: BookingEventType.safety_linked,
           at: new Date(),
           actorParty: 'driver',
         }),
@@ -147,7 +157,7 @@ describe('carrier company creation', () => {
     const userId = w.A.users.dispatcher.id;
     const carrierId = randomUUID() as OrgId;
     await withScope({ party: ScopeParty.user, userId }, async (tx) => {
-      await tx.insert(org).values({ id: carrierId, kind: 'carrier', name: 'New Spedition' });
+      await tx.insert(org).values({ id: carrierId, kind: OrgKind.carrier, name: 'New Spedition' });
       await asScope(
         tx,
         {
@@ -159,7 +169,7 @@ describe('carrier company creation', () => {
         (inner) =>
           inner
             .insert(membership)
-            .values({ userId, orgId: carrierId, orgKind: 'carrier', role: 'carrier_admin' }),
+            .values({ userId, orgId: carrierId, orgKind: 'carrier', role: Role.carrier_admin }),
       );
     });
     expect(
@@ -167,7 +177,7 @@ describe('carrier company creation', () => {
     ).toHaveLength(1);
     await expect(
       withScope({ party: ScopeParty.user, userId }, (tx) =>
-        tx.insert(org).values({ kind: 'tenant', name: 'Sneaky' }),
+        tx.insert(org).values({ kind: OrgKind.tenant, name: 'Sneaky' }),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
   });
@@ -178,7 +188,7 @@ describe('outbox inserts', () => {
     tenantId,
     template: 'core.probe',
     toEmail: `${randomUUID()}@policies.test`,
-    locale: 'en',
+    locale: StaffLocale.en,
     payload: {},
   });
 
@@ -213,7 +223,7 @@ describe('scope switching', () => {
         orgId: w.A.tenantId,
         orgKind: 'tenant',
         email: `claim-${randomUUID()}@policies.test`,
-        role: 'dispatcher',
+        role: Role.dispatcher,
         tokenHash,
         expiresAt: new Date(Date.now() + 3600_000),
       });
@@ -237,7 +247,7 @@ describe('scope switching', () => {
           (inner) =>
             inner
               .insert(membership)
-              .values({ userId, orgId: w.A.tenantId, orgKind: 'tenant', role: 'dispatcher' }),
+              .values({ userId, orgId: w.A.tenantId, orgKind: 'tenant', role: Role.dispatcher }),
         );
         const { rows } = await tx.execute<{ party: string }>(sql`select app.party() as party`);
         return rows[0]?.party;

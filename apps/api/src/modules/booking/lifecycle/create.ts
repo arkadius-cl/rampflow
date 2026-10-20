@@ -3,6 +3,7 @@ import { type Avis, normalizePlate, totalLoadUnits } from '@rampflow/shared/modu
 import type { CarrierRef } from '@rampflow/shared/modules/booking/api.staff';
 import type { TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
 import {
+  BookingEventType,
   BookingParty,
   BookingStatus,
   CarrierLinkStatus,
@@ -31,7 +32,7 @@ import { invalid } from '../../core/sites/tenant.ts';
 import { issueDriverLink } from '../../driver/access.ts';
 import { lockSiteCapacity } from '../capacity/lock.ts';
 import { bookableResource, type LoadTypeId, type ResourceId } from '../schema.resources.ts';
-import { booking, bookingEvent } from '../schema.ts';
+import { BOOKING_CODE_KEY, booking, bookingEvent } from '../schema.ts';
 import { actorUserId, type BookingContext, eventActor } from './context.ts';
 import { carrierNames } from './elevated.ts';
 import {
@@ -251,7 +252,7 @@ async function insertBooking(
       return row;
     } catch (e) {
       const constraint = (e as { cause?: { constraint?: string } }).cause?.constraint;
-      if (constraint !== 'booking_tenant_code_key' || attempt >= CODE_ATTEMPTS) throw e;
+      if (constraint !== BOOKING_CODE_KEY || attempt >= CODE_ATTEMPTS) throw e;
     }
   }
 }
@@ -356,7 +357,7 @@ export async function createBooking(
     siteId: row.siteId,
     bookingId: row.id,
     carrierId: row.carrierId,
-    type: 'created',
+    type: BookingEventType.created,
     fromStatus: null,
     toStatus: 'confirmed',
     at: ctx.now,

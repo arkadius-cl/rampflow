@@ -11,6 +11,7 @@ import {
   ScopeParty,
   SystemActorName,
   UnauthorizedReason,
+  ZodIssueCode,
 } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
@@ -121,7 +122,7 @@ async function signedInAs(tx: Tx, userId: UserId | null, email: string): Promise
 
 const missing = (path: 'name' | 'password') => ({
   path: [path],
-  code: 'invalid_type',
+  code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
 });
 

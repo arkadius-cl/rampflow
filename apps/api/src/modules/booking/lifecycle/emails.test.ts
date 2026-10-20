@@ -36,7 +36,7 @@ describe('booking email templates', () => {
     const template = await loadTemplateFile('booking.confirmed');
     const de = await createServerI18n('de');
     const { body } = template.render(
-      { ...(template.example as object), locale: 'de' },
+      { ...(template.example as object), locale: StaffLocale.de },
       de.getFixedT('de', 'booking'),
     );
     expect(await render(body, { plainText: true })).toContain('09:00 MEZ – 10:00 MEZ');

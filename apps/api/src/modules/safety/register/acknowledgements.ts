@@ -8,7 +8,7 @@ import type {
 } from '@rampflow/shared/modules/safety/api.register';
 import { acknowledgementStatus, expiresAtFor } from '@rampflow/shared/modules/safety/validity';
 import { AckStatus } from '@rampflow/shared/modules/safety/values';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import {
   and,
   asc,
@@ -140,7 +140,7 @@ function decodeCursor(cursor: string) {
     return Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
   } catch {
     throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
-      issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
+      issues: [{ path: ['cursor'], code: ZodIssueCode.custom, message: 'Invalid cursor' }],
     });
   }
 }

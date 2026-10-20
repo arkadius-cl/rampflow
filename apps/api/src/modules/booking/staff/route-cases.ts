@@ -4,6 +4,7 @@ import {
   HttpMethod,
   Permission,
   RouteCaseActor,
+  StaffLocale,
 } from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { defineRouteCases } from '../../../../test/route-cases.ts';
@@ -155,7 +156,7 @@ export const cases = defineRouteCases([
     permission: Permission.booking.staff_book,
     entitlement: Feature.notify.email,
     params: own,
-    body: () => ({ email: 'driver@example.test', locale: 'pl' }),
+    body: () => ({ email: 'driver@example.test', locale: StaffLocale.pl }),
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },

@@ -1,4 +1,4 @@
-import { ApiParty, DescribedKind, HttpMethod, values } from '@rampflow/shared/values';
+import { ApiParty, DescribedKind, HttpMethod, RouteMethod, values } from '@rampflow/shared/values';
 import type { RouterRoute } from 'hono/types';
 import type * as z from 'zod';
 import {
@@ -37,12 +37,15 @@ export function partyOf(path: string): Party | null {
 const isMethod = (m: string): m is HttpMethod =>
   (values(HttpMethod) as readonly string[]).includes(m);
 
+/** A path segment that matches the rest of the path. */
+const WILDCARD = '*';
+
 /** Whether Hono runs a middleware registered at `pattern` for a request to `path`. */
 export function patternMatches(pattern: string, path: string): boolean {
   const want = pattern.split('/');
   const have = path.split('/');
   for (const [i, segment] of want.entries()) {
-    if (segment === '*' && i === want.length - 1) return true;
+    if (segment === WILDCARD && i === want.length - 1) return true;
     const actual = have[i];
     if (actual === undefined) return false;
     if (segment.startsWith(':')) continue;
@@ -79,7 +82,7 @@ export function collectEndpoints(routes: readonly RouterRoute[]): Endpoint[] {
     if (ops.length !== 1) problems.push(`${key}: needs exactly one op(), has ${ops.length}`);
     const guards: Guard[] = [];
     for (const r of routes) {
-      if (r.method !== 'ALL' && r.method !== method) continue;
+      if (r.method !== RouteMethod.ALL && r.method !== method) continue;
       if (!patternMatches(r.path, path)) continue;
       const d = describedBy(r.handler);
       if (d?.kind === DescribedKind.guard && !guards.some((g) => sameGuard(g, d.guard)))
