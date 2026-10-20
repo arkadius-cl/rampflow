@@ -84,9 +84,17 @@ describe('collectEndpoints', () => {
     }
   });
 
-  it('leaves out the test and docs routes', () => {
-    const paths = collectEndpointsSafe(createApp({ testRoutes: true }).routes);
-    expect(paths.filter((p) => p.startsWith('/api/test'))).toEqual([]);
+  it('describes every route of the app once and leaves out the test and docs routes', () => {
+    const app = createApp({ testRoutes: true, apiDocs: true });
+    const paths = collectEndpoints(app.routes).map((e) => e.path);
+    const excluded = ['/api/test', '/api/docs', '/api/openapi.json'];
+    expect(paths.filter((p) => excluded.some((x) => p.startsWith(x)))).toEqual([]);
+    const routes = new Set(
+      app.routes
+        .filter((r) => r.method !== 'ALL' && !excluded.some((x) => r.path.startsWith(x)))
+        .map((r) => `${r.method} ${r.path}`),
+    );
+    expect(paths.length).toBe(routes.size);
   });
 });
 
@@ -98,7 +106,9 @@ describe('partyOf', () => {
     expect(unmatched).toEqual([]);
   });
 
-  it('prefers the longest prefix', () => {
+  it('prefers the more specific prefix', () => {
+    expect(partyOf('/api/auth/logout')).toBe('user');
+    expect(partyOf('/api/auth/login')).toBe('anonymous');
     expect(partyOf('/api/c/:orgId/at/:tenantId/bookings')).toBe('carrier_at_tenant');
     expect(partyOf('/api/c/:orgId/bookings')).toBe('carrier');
     expect(partyOf('/api/testing')).toBe(null);
@@ -114,13 +124,3 @@ describe('patternMatches', () => {
     expect(patternMatches('/api/t/:orgId/x', '/api/t/:orgId/x/y')).toBe(false);
   });
 });
-
-/** The paths of an app, whether or not its routes carry op() yet. */
-function collectEndpointsSafe(routes: Parameters<typeof collectEndpoints>[0]): string[] {
-  try {
-    return collectEndpoints(routes).map((e) => e.path);
-  } catch (err) {
-    if (!(err instanceof GeneratorError)) throw err;
-    return err.problems.map((p) => p.split(' ')[1] ?? '');
-  }
-}

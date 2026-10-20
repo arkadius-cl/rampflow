@@ -14,7 +14,7 @@ import { applyTables, renderTables } from './openapi/tables.ts';
 const at = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 const API = at('../');
 const SRC = at('../src/');
-export const FILES = {
+const FILES = {
   document: at('../openapi.gen.json'),
   allowlist: at('../openapi.allowlist.json'),
   routes: at('../../../docs/reference/api-routes.md'),
@@ -73,7 +73,9 @@ function main() {
   }
   if (!check) for (const [file, text] of stale) writeFileSync(file as string, text as string);
   const verb = check ? 'current' : stale.length ? 'written' : 'unchanged';
-  console.log(`api:docs: ${verb} in ${seconds} s; ${out.allowlistSize} operation(s) on the allowlist`);
+  console.log(
+    `api:docs: ${verb} in ${seconds} s; ${out.allowlistSize} operation(s) on the allowlist`,
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

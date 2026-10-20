@@ -139,7 +139,11 @@ export function analyze(input: StaticInput): StaticResult {
       const json = out.format === 'json';
       if (!meta) {
         if (json && input.allowlist.has(id)) {
-          byStatus.set(status, convert(converter, out.type, `${id} ${status}`, problems));
+          const label = `${id} ${status}`;
+          byStatus.set(
+            status,
+            convert(() => converter.toSchema(out.type, label), problems),
+          );
         } else if (json) {
           problems.push(
             `${id} ${status}: the handler answers ${status} without a named type in op()`,
@@ -162,7 +166,8 @@ export function analyze(input: StaticInput): StaticResult {
     for (const d of declared) {
       if (!outputs.has(d.status)) continue;
       const type = checker.getTypeAtLocation(probe.aliasNode(d.alias));
-      if (!input.isResponseFile(d.file) || !converter.componentName(type)) {
+      const symbol = probe.declaredSymbol(checker, d.alias);
+      if (!input.isResponseFile(d.file) || !symbol) {
         problems.push(
           `${id} ${d.status}: ${d.name} is not a named type of packages/shared/src/modules/<id>/api*.ts`,
         );
@@ -171,7 +176,11 @@ export function analyze(input: StaticInput): StaticResult {
       for (const message of mismatches.get(d.alias) ?? []) {
         problems.push(`${id} ${d.status}: the handler output does not match ${d.name}: ${message}`);
       }
-      byStatus.set(d.status, convert(converter, type, `${id} ${d.status}`, problems));
+      const label = `${id} ${d.status}`;
+      byStatus.set(
+        d.status,
+        convert(() => converter.reference(symbol, type, label), problems),
+      );
     }
     const allJsonNamed = [...outputs].every(
       ([status, out]) =>
@@ -184,14 +193,9 @@ export function analyze(input: StaticInput): StaticResult {
   return { responses, components: converter.components, files, problems };
 }
 
-function convert(
-  converter: Converter,
-  type: ts.Type,
-  label: string,
-  problems: string[],
-): JsonSchema {
+function convert(run: () => JsonSchema, problems: string[]): JsonSchema {
   try {
-    return converter.toSchema(type, label);
+    return run();
   } catch (err) {
     if (!(err instanceof ConversionError)) throw err;
     problems.push(`${err.path}: ${err.reason}`);
@@ -223,6 +227,8 @@ class Probe {
       `import type { ${app.type} as App } from './${relative(dirname(app.file), app.file)}';`,
       'type S = ExtractSchema<App>;',
       'type At<P, M> = P extends keyof S ? (M extends keyof S[P] ? S[P][M] : never) : never;',
+      // `c.json(x, created ? 201 : 200)` gives one entry whose status is `200 | 201`.
+      'type Out<E, St> = E extends { status: infer S; output: infer O } ? (St extends S ? O : never) : never;',
     ];
   }
 
@@ -237,7 +243,7 @@ class Probe {
   declare(entry: string, d: DeclaredType) {
     const local = this.importType(d);
     const alias = `D${this.count++}`;
-    const output = `Extract<${entry}, { status: ${d.status} }>['output']`;
+    const output = `Out<${entry}, ${d.status}>`;
     this.body.push(`export type ${alias} = ${local};`);
     this.body.push(`declare const ${alias}_out: ${output};`);
     this.checks.set(this.body.length, alias);
@@ -290,6 +296,21 @@ class Probe {
     const program = ts.createProgram({ rootNames: [this.path], options, host });
     this.source = program.getSourceFile(this.path);
     return program;
+  }
+
+  /** The interface or type alias a declared alias imports, unless it is something else. */
+  declaredSymbol(checker: ts.TypeChecker, alias: string): ts.Symbol | null {
+    const decl = this.source?.statements.find(
+      (s): s is ts.TypeAliasDeclaration => ts.isTypeAliasDeclaration(s) && s.name.text === alias,
+    );
+    if (!decl || !ts.isTypeReferenceNode(decl.type)) return null;
+    const local = checker.getSymbolAtLocation(decl.type.typeName);
+    const target =
+      local && local.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(local) : local;
+    const declaration = target?.declarations?.[0];
+    if (!target || !declaration) return null;
+    const named = ts.isInterfaceDeclaration(declaration) || ts.isTypeAliasDeclaration(declaration);
+    return named ? target : null;
   }
 
   aliasNode(alias: string): ts.Node {

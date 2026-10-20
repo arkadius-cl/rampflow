@@ -49,7 +49,8 @@ const ERROR_RESPONSES: Record<number, { name: string; description: string }> = {
   },
   404: {
     name: 'NotFound',
-    description: '`not_found`: an unknown or malformed id, or an org the caller does not belong to.',
+    description:
+      '`not_found`: an unknown or malformed id, or an org the caller does not belong to.',
   },
   409: {
     name: 'LimitReached',
@@ -57,7 +58,8 @@ const ERROR_RESPONSES: Record<number, { name: string; description: string }> = {
   },
   422: {
     name: 'ValidationFailed',
-    description: '`validation_failed` with the zod issues in `details.issues` (`path`, `code`, `message`).',
+    description:
+      '`validation_failed` with the zod issues in `details.issues` (`path`, `code`, `message`).',
   },
 };
 
@@ -171,7 +173,7 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
         ),
       ]),
   );
-  const schemas = { ...statics.components, Error: ERROR_SCHEMA };
+  const schemas: Record<string, JsonSchema> = { ...statics.components, Error: ERROR_SCHEMA };
   return {
     openapi: '3.1.1',
     info: { title: 'rampflow API', version: '1', description: DESCRIPTION },
@@ -186,11 +188,18 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
     tags: Object.keys(SECTIONS).map((name) => ({ name })),
     paths: sortedPaths,
     components: {
-      schemas: Object.fromEntries(Object.keys(schemas).sort(byText).map((k) => [k, schemas[k]])),
+      schemas: Object.fromEntries(
+        Object.keys(schemas)
+          .sort(byText)
+          .map((k) => [k, schemas[k]]),
+      ),
       responses: Object.fromEntries(
         Object.values(ERROR_RESPONSES).map(({ name, description }) => [
           name,
-          { description, content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          {
+            description,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
         ]),
       ),
       securitySchemes: {

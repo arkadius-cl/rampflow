@@ -57,12 +57,8 @@ export class Converter {
     return this.structure(type, path);
   }
 
-  /** The component name of a named shared type, or `null`. */
-  componentName(type: ts.Type): string | null {
-    return this.namedSymbol(type)?.getName() ?? null;
-  }
-
-  private reference(symbol: ts.Symbol, type: ts.Type, path: string): JsonSchema {
+  /** A `$ref` to the component of `symbol`, the declaration a route names in `type<Name>()`. */
+  reference(symbol: ts.Symbol, type: ts.Type, path: string): JsonSchema {
     const name = symbol.getName();
     const owner = this.owners.get(name);
     if (owner && owner !== symbol) {

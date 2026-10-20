@@ -15,9 +15,11 @@ import {
   type Party,
 } from './model.ts';
 
-/** Longest prefix wins, so `/api/c/:orgId/at/:tenantId` beats `/api/c/:orgId`. */
+/** First match wins, so the more specific prefix comes first. */
 const PARTY_PREFIXES: readonly (readonly [string, Party])[] = [
   ['/api/c/:orgId/at/:tenantId', 'carrier_at_tenant'],
+  // The one /api/auth route that runs in the user scope.
+  ['/api/auth/logout', 'user'],
   ['/api/c/:orgId', 'carrier'],
   ['/api/t/:orgId', 'tenant'],
   ['/api/platform', 'platform'],

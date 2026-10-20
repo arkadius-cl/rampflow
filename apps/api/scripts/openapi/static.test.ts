@@ -27,14 +27,14 @@ describe('analyze', () => {
     expect(result.problems).toEqual([
       'toy.things.put 200: LocalView must be imported from packages/shared',
       'toy.missing.op: on the allowlist but no such operation',
-      'toy.things.inline 200: the handler answers 200 without a named type in op()',
-      'toy.things.listed: every JSON response has a named type; remove it from the allowlist',
-      'toy.things.create 200: the handler answers 200 without a named type in op()',
-      'toy.things.delete 204: the handler answers 204; declare noBody or file()',
-      'toy.things.delete 200: declared but the handler never answers it',
       expect.stringMatching(
         /^toy\.things\.extra 200: the handler output does not match ThingView: Property 'extra' is missing/,
       ),
+      'toy.things.create 200: the handler answers 200 without a named type in op()',
+      'toy.things.inline 200: the handler answers 200 without a named type in op()',
+      'toy.things.listed: every JSON response has a named type; remove it from the allowlist',
+      'toy.things.delete 204: the handler answers 204; declare noBody or file()',
+      'toy.things.delete 200: declared but the handler never answers it',
     ]);
   });
 
@@ -58,7 +58,11 @@ describe('analyze', () => {
           type: 'array',
           items: {
             type: 'object',
-            properties: { id: { type: 'string' }, name: { type: 'string' }, createdAt: { type: 'string' } },
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              createdAt: { type: 'string' },
+            },
             required: ['id', 'name', 'createdAt'],
           },
         },
