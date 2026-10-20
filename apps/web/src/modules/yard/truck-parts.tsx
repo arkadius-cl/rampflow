@@ -1,7 +1,7 @@
 import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { YardTruck } from '@rampflow/shared/modules/yard/api';
-import { StaffLocale } from '@rampflow/shared/values';
+import { BadgeTone, StaffLocale } from '@rampflow/shared/values';
 import { ShieldIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SiteTime, SiteTimeRange } from '@/components/site-time';
@@ -59,7 +59,7 @@ export function TruckSafety({ safety, size }: { safety: YardTruck['safety']; siz
   const { t } = useTranslation('yard');
   const meta =
     safety.status === SafetyStatus.not_required
-      ? { ...SAFETY_STATUS.valid, icon: ShieldIcon, tone: 'neutral' as const }
+      ? { ...SAFETY_STATUS.valid, icon: ShieldIcon, tone: BadgeTone.neutral }
       : SAFETY_STATUS[safety.status];
   return <StatusBadge meta={meta} label={t(($) => $.gate.safety[safety.status])} size={size} />;
 }

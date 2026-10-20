@@ -7,7 +7,7 @@ import {
 } from '@rampflow/shared/modules/booking/values';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { BriefingState, InstructionSafety } from '@rampflow/shared/modules/safety/values';
-import { SettingScope } from '@rampflow/shared/values';
+import { PackageId, SettingScope } from '@rampflow/shared/values';
 import type { BookableResource, Booking, Dock, Hall, Site } from '@/lib/domain';
 
 export const TODAY = '2026-10-19';
@@ -44,9 +44,9 @@ export const sites: Site[] = [
 ];
 
 export const tenants = [
-  { id: 'acme', name: 'Acme Logistics GmbH', pkg: 'pro' as const },
-  { id: 'nordfrost', name: 'Nordfrost Lager AG', pkg: 'start' as const },
-  { id: 'mueller', name: 'Müller Handel KG', pkg: 'enterprise' as const },
+  { id: 'acme', name: 'Acme Logistics GmbH', pkg: PackageId.pro },
+  { id: 'nordfrost', name: 'Nordfrost Lager AG', pkg: PackageId.start },
+  { id: 'mueller', name: 'Müller Handel KG', pkg: PackageId.enterprise },
 ];
 
 export const halls: Hall[] = [
