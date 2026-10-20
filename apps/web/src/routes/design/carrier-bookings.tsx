@@ -1,4 +1,5 @@
-import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { BookingStatus, PrototypeWizardStep } from '@rampflow/shared/modules/booking/values';
+import { BadgeSize, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarIcon,
@@ -38,7 +39,7 @@ function CarrierBookingsScreen() {
     <OfficeShell
       org={carrierMembership}
       memberships={memberships}
-      nav={carrierNav('bookings')}
+      nav={carrierNav(PrototypeScreen.bookings)}
       breadcrumbs={['Bookings']}
       user={carrierUser}
     >
@@ -48,7 +49,9 @@ function CarrierBookingsScreen() {
         actions={
           <Button
             nativeButton={false}
-            render={<Link to="/design/booking-wizard" search={{ step: 'where' }} />}
+            render={
+              <Link to="/design/booking-wizard" search={{ step: PrototypeWizardStep.where }} />
+            }
           >
             <PlusIcon /> New booking
           </Button>
@@ -150,10 +153,10 @@ function Row({ booking: b }: { booking: Booking }) {
         {b.plate ? <div className="font-mono text-xs text-muted-foreground">{b.plate}</div> : null}
       </TableCell>
       <TableCell>
-        <BookingStatusBadge status={b.status} size="sm" />
+        <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
       </TableCell>
       <TableCell>
-        <SafetyBadge status={b.safety} size="sm" />
+        <SafetyBadge status={b.safety} size={BadgeSize.sm} />
       </TableCell>
       <TableCell className="tabular-nums">
         <span className={cn(!gateIn && 'text-muted-foreground/60')}>{gateIn ?? '—'}</span>

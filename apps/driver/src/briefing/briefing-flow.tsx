@@ -5,7 +5,11 @@ import {
   type DriverBriefing,
   type DriverBriefingContent,
 } from '@rampflow/shared/modules/safety/api.driver';
-import { InstructionSafety, TranslationState } from '@rampflow/shared/modules/safety/values';
+import {
+  BriefingStep,
+  InstructionSafety,
+  TranslationState,
+} from '@rampflow/shared/modules/safety/values';
 import { CheckIcon, ChevronRightIcon, CircleAlertIcon, LanguagesIcon, XIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -49,11 +53,11 @@ export function rulesOf(blocks: readonly Block[]): Rule[] {
 }
 
 type Step =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'rules'; index: number; failed: boolean }
-  | { kind: 'quiz' }
-  | { kind: 'confirm' };
+  | { kind: typeof BriefingStep.loading }
+  | { kind: typeof BriefingStep.error }
+  | { kind: typeof BriefingStep.rules; index: number; failed: boolean }
+  | { kind: typeof BriefingStep.quiz }
+  | { kind: typeof BriefingStep.confirm };
 
 interface Props {
   shell: Omit<DriverShellProps, 'children' | 'footer'>;
@@ -66,7 +70,7 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
   const locale = useLocale();
   const [queue, setQueue] = useState<DriverBriefing[] | null>(null);
   const [content, setContent] = useState<DriverBriefingContent | null>(null);
-  const [step, setStep] = useState<Step>({ kind: 'loading' });
+  const [step, setStep] = useState<Step>({ kind: BriefingStep.loading });
   const current = queue?.[0];
   const instructionId = current?.instructionId;
   // The app re-renders on every poll; only a new instruction or language reloads the content.
@@ -74,11 +78,11 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
   done.current = onDone;
 
   const loadQueue = useCallback(() => {
-    setStep({ kind: 'loading' });
+    setStep({ kind: BriefingStep.loading });
     api
       .briefings()
       .then(({ items }) => setQueue(items.filter((i) => i.status === InstructionSafety.missing)))
-      .catch(() => setStep({ kind: 'error' }));
+      .catch(() => setStep({ kind: BriefingStep.error }));
   }, []);
   useEffect(loadQueue, [loadQueue]);
 
@@ -88,22 +92,27 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
       done.current();
       return;
     }
-    setStep({ kind: 'loading' });
+    setStep({ kind: BriefingStep.loading });
     api
       .briefing(instructionId, locale)
       .then((c) => {
         setContent(c);
-        setStep({ kind: 'rules', index: 0, failed: false });
+        setStep({ kind: BriefingStep.rules, index: 0, failed: false });
       })
-      .catch(() => setStep({ kind: 'error' }));
+      .catch(() => setStep({ kind: BriefingStep.error }));
   }, [queue, instructionId, locale]);
 
   const next = () => setQueue((q) => q?.slice(1) ?? null);
 
-  if (step.kind === 'loading' || step.kind === 'error' || !content || !current) {
+  if (
+    step.kind === BriefingStep.loading ||
+    step.kind === BriefingStep.error ||
+    !content ||
+    !current
+  ) {
     return (
       <DriverShell {...shell} footer={<CloseButton onClose={onClose} />}>
-        {step.kind === 'error' ? (
+        {step.kind === BriefingStep.error ? (
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>{t(($) => $.briefing.error)}</AlertTitle>
@@ -137,7 +146,7 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
       </p>
     ) : null;
 
-  if (step.kind === 'rules') {
+  if (step.kind === BriefingStep.rules) {
     return (
       <Rules
         shell={shell}
@@ -147,20 +156,20 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
         index={step.index}
         failed={step.failed}
         quiz={quiz}
-        onIndex={(index) => setStep({ kind: 'rules', index, failed: step.failed })}
-        onRead={() => setStep({ kind: quiz ? 'quiz' : 'confirm' })}
+        onIndex={(index) => setStep({ kind: BriefingStep.rules, index, failed: step.failed })}
+        onRead={() => setStep({ kind: quiz ? BriefingStep.quiz : BriefingStep.confirm })}
       />
     );
   }
-  if (step.kind === 'quiz') {
+  if (step.kind === BriefingStep.quiz) {
     return (
       <Quiz
         key={current.instructionId}
         shell={shell}
         header={header}
         content={content}
-        onPassed={() => setStep({ kind: 'confirm' })}
-        onFailed={() => setStep({ kind: 'rules', index: 0, failed: true })}
+        onPassed={() => setStep({ kind: BriefingStep.confirm })}
+        onFailed={() => setStep({ kind: BriefingStep.rules, index: 0, failed: true })}
       />
     );
   }

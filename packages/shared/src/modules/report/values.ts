@@ -36,3 +36,9 @@ export const VisitCsvColumn = {
   turnaroundMinutes: 'turnaroundMinutes',
 } as const;
 export type VisitCsvColumn = ValueOf<typeof VisitCsvColumn>;
+/** The CSV exports of the reports screen (RP-01, RP-02). */
+export const ReportExport = {
+  kpis: 'kpis',
+  visits: 'visits',
+} as const;
+export type ReportExport = ValueOf<typeof ReportExport>;

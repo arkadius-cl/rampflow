@@ -10,7 +10,7 @@ import { carrierOf, linkStatus, setSiteSetting } from '../support/u7.ts';
 async function openLink(
   request: import('@playwright/test').APIRequestContext,
   w: World,
-  mode: 'auto_approve' | 'approval_required',
+  mode: RegistrationMode,
 ): Promise<string> {
   const site = w.A.sites[0]?.id as string;
   const res = await request.post(`/api/t/${w.A.tenantId}/carriers/public-links`, {

@@ -3,6 +3,7 @@ import { type APIRequestContext, expect, type Page } from '@playwright/test';
 import pg from 'pg';
 import { deriveToken } from '../../apps/api/src/kernel/tokens.ts';
 import { OnSiteStatus } from '../../packages/shared/src/modules/booking/values.ts';
+import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
 import { TokenPurpose } from '../../packages/shared/src/values/tokens.ts';
 import { seedWorld, type World, type WorldSide } from './auth.ts';
 
@@ -100,7 +101,7 @@ export async function publishBriefing(
   const version = (await detail.json()) as {
     content: { locale: string; questions: PublishedBriefing['questions'] }[];
   };
-  const en = version.content.find((c) => c.locale === 'en');
+  const en = version.content.find((c) => c.locale === DriverLocale.en);
   if (!en || en.questions.length === 0) throw new Error('the template has no en quiz');
   return {
     instructionId: instruction.id,

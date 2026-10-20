@@ -1,4 +1,4 @@
-import { PackageId } from '@rampflow/shared/values';
+import { PackageId, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { CalendarIcon, PlusIcon, TrashIcon, TriangleAlertIcon } from 'lucide-react';
 import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/design/platform-admin')({
 interface Usage {
   id: string;
   name: string;
-  pkg: 'start' | 'pro' | 'enterprise';
+  pkg: PackageId;
   sites: [number, number | null];
   docks: [number, number | null];
   users: [number, number | null];
@@ -91,7 +91,7 @@ function PlatformAdminScreen() {
     <OfficeShell
       org={platformMembership}
       memberships={[platformMembership, ...memberships]}
-      nav={platformNav('tenants')}
+      nav={platformNav(PrototypeScreen.tenants)}
       breadcrumbs={['Tenants', tenant.name]}
       user={platformUser}
     >

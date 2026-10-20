@@ -1,8 +1,12 @@
 import type { PortalBookingSummary } from '@rampflow/shared/modules/booking/api.portal';
-import { BOOKING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingStatus,
+  BookingWizardStep,
+  CarrierBookingsTab,
+  RegistrationStatus,
+} from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeSize, isValueOf, Permission, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -44,11 +48,8 @@ import { type BookingFilters, portalBookingsQuery } from '@/modules/portal/queri
 // site's zone, with the visit from gate-in to gate-out. Filters live in the URL. A registration
 // waiting for approval shows as an alert (CR-02).
 
-const TABS = ['upcoming', 'today', 'past'] as const;
-type Tab = (typeof TABS)[number];
-
 interface Search {
-  tab: Tab;
+  tab: CarrierBookingsTab;
   tenant?: string;
   site?: string;
   status?: BookingStatus;
@@ -60,12 +61,10 @@ const text = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : undefi
 
 export const Route = createFileRoute('/c/$orgId/bookings/')({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    tab: TABS.includes(s.tab as Tab) ? (s.tab as Tab) : 'upcoming',
+    tab: isValueOf(CarrierBookingsTab, s.tab) ? s.tab : CarrierBookingsTab.upcoming,
     tenant: text(s.tenant),
     site: text(s.site),
-    status: BOOKING_STATUSES.includes(s.status as BookingStatus)
-      ? (s.status as BookingStatus)
-      : undefined,
+    status: isValueOf(BookingStatus, s.status) ? s.status : undefined,
     from: localDateSchema.safeParse(s.from).data,
     to: localDateSchema.safeParse(s.to).data,
   }),
@@ -79,12 +78,12 @@ const todayHere = () => new Date().toLocaleDateString('sv-SE') as LocalDate;
 function filtersOf(s: Search): BookingFilters {
   const today = todayHere();
   const base = { tenantId: s.tenant, siteId: s.site, status: s.status };
-  const range =
-    s.tab === 'today'
-      ? { from: today, to: today, order: 'asc' as const }
-      : s.tab === 'past'
-        ? { when: 'past' as const, order: 'desc' as const }
-        : { when: 'upcoming' as const, order: 'asc' as const };
+  const range: Pick<BookingFilters, 'from' | 'to' | 'when' | 'order'> =
+    s.tab === CarrierBookingsTab.today
+      ? { from: today, to: today, order: 'asc' }
+      : s.tab === CarrierBookingsTab.past
+        ? { when: 'past', order: 'desc' }
+        : { when: 'upcoming', order: 'asc' };
   return { ...base, ...range, ...(s.from ? { from: s.from } : {}), ...(s.to ? { to: s.to } : {}) };
 }
 
@@ -118,7 +117,7 @@ function BookingsPage() {
             <Link
               to="/c/$orgId/book"
               params={{ orgId }}
-              search={{ step: 'where' }}
+              search={{ step: BookingWizardStep.where }}
               className={buttonVariants()}
             >
               <PlusIcon /> {t(($) => $.portal.list.new)}
@@ -135,9 +134,9 @@ function BookingsPage() {
       ))}
 
       <div className="flex flex-wrap items-end gap-2">
-        <Tabs value={search.tab} onValueChange={(v) => set({ tab: v as Tab })}>
+        <Tabs value={search.tab} onValueChange={(v) => set({ tab: v as CarrierBookingsTab })}>
           <TabsList aria-label={t(($) => $.portal.list.range)}>
-            {TABS.map((tab) => (
+            {values(CarrierBookingsTab).map((tab) => (
               <TabsTrigger key={tab} value={tab}>
                 {t(($) => $.portal.list.tabs[tab])}
               </TabsTrigger>
@@ -191,11 +190,13 @@ function BookingsPage() {
             onChange={(e) => set({ status: (e.target.value || undefined) as BookingStatus })}
           >
             <NativeSelectOption value="">{t(($) => $.portal.list.any_status)}</NativeSelectOption>
-            {BOOKING_STATUSES.filter((s) => s !== BookingStatus.requested).map((s) => (
-              <NativeSelectOption key={s} value={s}>
-                {t(($) => $.lifecycle.status[s])}
-              </NativeSelectOption>
-            ))}
+            {values(BookingStatus)
+              .filter((s) => s !== BookingStatus.requested)
+              .map((s) => (
+                <NativeSelectOption key={s} value={s}>
+                  {t(($) => $.lifecycle.status[s])}
+                </NativeSelectOption>
+              ))}
           </NativeSelect>
         </Field>
         <Field className="w-40">
@@ -256,7 +257,7 @@ function BookingsPage() {
               <Link
                 to="/c/$orgId/book"
                 params={{ orgId }}
-                search={{ step: 'where' }}
+                search={{ step: BookingWizardStep.where }}
                 className={buttonVariants({ variant: 'outline' })}
               >
                 <PlusIcon /> {t(($) => $.portal.list.new)}
@@ -338,7 +339,7 @@ function Row({
         ) : null}
       </TableCell>
       <TableCell>
-        <BookingStatusBadge status={b.status} size="sm" />
+        <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
       </TableCell>
       <TableCell className="whitespace-nowrap tabular-nums">
         <span className="sr-only">{t(($) => $.portal.list.gate_in)} </span>

@@ -1,5 +1,5 @@
 import type { PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeTone, Permission } from '@rampflow/shared/values';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   CopyIcon,
@@ -147,8 +147,16 @@ function LinkRow({ orgId, link }: { orgId: string; link: PublicLinkView }) {
         <StatusBadge
           meta={
             link.enabled
-              ? { icon: ToggleRightIcon, tone: 'success', label: t(($) => $.carriers.links.on) }
-              : { icon: ToggleLeftIcon, tone: 'neutral', label: t(($) => $.carriers.links.off) }
+              ? {
+                  icon: ToggleRightIcon,
+                  tone: BadgeTone.success,
+                  label: t(($) => $.carriers.links.on),
+                }
+              : {
+                  icon: ToggleLeftIcon,
+                  tone: BadgeTone.neutral,
+                  label: t(($) => $.carriers.links.off),
+                }
           }
         />
       </TableCell>

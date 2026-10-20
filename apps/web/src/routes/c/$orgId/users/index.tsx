@@ -1,10 +1,5 @@
-import {
-  CARRIER_ROLES,
-  type CarrierRole,
-  InviteCarrierUser,
-  UpdateCarrierUser,
-} from '@rampflow/shared/modules/core/api.staff';
-import { Permission } from '@rampflow/shared/values';
+import { InviteCarrierUser, UpdateCarrierUser } from '@rampflow/shared/modules/core/api.staff';
+import { CarrierRole, Permission, values } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +23,7 @@ function CarrierUsersPage() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: carrierUsersKey(orgId) });
   const users = api.c[':orgId'].users;
   const admin: MembersAdmin<CarrierRole> = {
-    roles: CARRIER_ROLES,
+    roles: values(CarrierRole),
     list: list.data,
     inviteSchema: InviteCarrierUser,
     updateSchema: UpdateCarrierUser,

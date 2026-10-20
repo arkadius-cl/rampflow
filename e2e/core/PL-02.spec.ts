@@ -1,11 +1,14 @@
 import { expect, type Page, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 
 test.describe('PL-02 Packages and overrides', () => {
   const group = (page: Page, name: string) =>
     page.getByRole('button', { name: new RegExp(`^${name} \\(\\d+\\)$`) });
   const savedPrefs = (page: Page) =>
-    page.waitForResponse((r) => r.url().endsWith('/api/me') && r.request().method() === 'PATCH');
+    page.waitForResponse(
+      (r) => r.url().endsWith('/api/me') && r.request().method() === HttpMethod.PATCH,
+    );
 
   test('the platform admin sees the packages read-only, grouped by module', async ({
     page,

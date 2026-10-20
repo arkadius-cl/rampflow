@@ -4,9 +4,10 @@ import type {
   DriverLinkView,
   PutAvis,
 } from '@rampflow/shared/modules/booking/api.staff';
+import { BookingDialog, ChangeLock } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { ConflictReason, ErrorCode, Permission } from '@rampflow/shared/values';
+import { BadgeSize, ConflictReason, ErrorCode, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
@@ -81,7 +82,7 @@ function BookingPage() {
   const change = useChangeAccess(booking.status);
   const dayLabel = useDayLabel();
   const siteTime = useSiteTime();
-  const [dialog, setDialog] = useState<'reschedule' | 'cancel' | null>(null);
+  const [dialog, setDialog] = useState<BookingDialog | null>(null);
   const day = siteDay(new Date(booking.startsAt), booking.timeZone as TimeZone);
 
   return (
@@ -119,7 +120,7 @@ function BookingPage() {
             ))}
           </div>
         </div>
-        {change.lock === 'no_permission' ? null : (
+        {change.lock === ChangeLock.no_permission ? null : (
           <div className="flex max-w-sm flex-col items-end gap-1">
             <div className="flex gap-2">
               <Button
@@ -173,13 +174,13 @@ function BookingPage() {
       <RescheduleDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'reschedule'}
+        open={dialog === BookingDialog.reschedule}
         onOpenChange={(open) => setDialog(open ? 'reschedule' : null)}
       />
       <CancelDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'cancel'}
+        open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
     </div>
@@ -355,7 +356,7 @@ function SafetyCard({ booking }: { booking: BookingView }) {
         {booking.safety.instructions.map((i) => (
           <div key={i.instructionId} className="flex flex-wrap items-center justify-between gap-2">
             <span>{i.name}</span>
-            <BookingSafetyBadge status={i.status} size="sm" />
+            <BookingSafetyBadge status={i.status} size={BadgeSize.sm} />
           </div>
         ))}
         {booking.safety.enforced ? (

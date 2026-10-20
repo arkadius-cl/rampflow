@@ -47,7 +47,8 @@ or {
   },
   // In a call snippet the argument binds as a list, so match its elements.
   `z.literal($argument)` as $schema where {
-    $argument <: some string_literal(),
+    // `z.literal('')` is a form's empty value, exempt as `''` is from comparisons.
+    $argument <: some and { string_literal(), not empty_string() },
     register_diagnostic(span=$schema, message="Use the central value set member (`z.literal(X.member)` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },
   // Only lists of plain strings: a query key such as `['tenant', orgId] as const` is not a set.
@@ -59,6 +60,11 @@ or {
   JsPropertyObjectMember(name=$name, value=$value) as $member where {
     $name <: r"['\"]?(?:kind|status|type|as|role|code|party|state|source|channel|mode|direction|via|tab|view|step)['\"]?",
     $value <: string_literal(),
+    // Text with a capital or a space is a label or a code ('Tenant admin', 'A-01'), not a set
+    // member; a typed field is still checked by `pnpm values:check`.
+    not $value <: r"['\"`].*[A-Z\s].*['\"`]",
+    // An empty field of a form's defaults, as `''` is exempt from comparisons.
+    not $value <: empty_string(),
     not $member <: within `$_ as const`,
     register_diagnostic(span=$member, message="Use the central value set member for this field (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },

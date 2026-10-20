@@ -1,10 +1,5 @@
-import {
-  InviteStaff,
-  TENANT_ROLES,
-  type TenantRole,
-  UpdateStaff,
-} from '@rampflow/shared/modules/core/api.staff';
-import { Permission } from '@rampflow/shared/values';
+import { InviteStaff, UpdateStaff } from '@rampflow/shared/modules/core/api.staff';
+import { Permission, TenantRole, values } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +24,7 @@ function StaffPage() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: staffKey(orgId) });
   const staff = api.t[':orgId'].staff;
   const admin: MembersAdmin<TenantRole> = {
-    roles: TENANT_ROLES,
+    roles: values(TenantRole),
     sites,
     list: list.data,
     inviteSchema: InviteStaff,

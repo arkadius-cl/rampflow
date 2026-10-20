@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { STAFF_LOCALES } from '@rampflow/shared';
 import {
   CarrierInvitationBody,
   type CarrierInvitationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { DisplayNamesType, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MailPlusIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -35,7 +35,7 @@ type InviteForm = z.input<typeof CarrierInvitationBody>;
 
 /** Each language named in itself, as the language menu does. */
 const languageName = (locale: string) =>
-  new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale;
+  new Intl.DisplayNames([locale], { type: DisplayNamesType.language }).of(locale) ?? locale;
 
 /** TN-03: invite a carrier company by name and email. */
 export function InviteCarrierDialog({ orgId }: { orgId: string }) {
@@ -131,7 +131,7 @@ export function InviteCarrierDialog({ orgId }: { orgId: string }) {
                     onBlur={field.onBlur}
                     className="w-full"
                   >
-                    {STAFF_LOCALES.map((l) => (
+                    {values(StaffLocale).map((l) => (
                       <NativeSelectOption key={l} value={l}>
                         {languageName(l)}
                       </NativeSelectOption>

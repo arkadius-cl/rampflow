@@ -1,3 +1,4 @@
+import { CredentialField, RefinementMessage } from '@rampflow/shared/modules/core/values';
 import { ErrorCode } from '@rampflow/shared/values';
 import type { TFunction } from 'i18next';
 import type { FieldError, FieldValues, Path, UseFormSetError } from 'react-hook-form';
@@ -12,12 +13,12 @@ export function useFieldMessage() {
   const { t } = useTranslation();
   return (error: FieldError | undefined, field?: string): string | undefined => {
     if (!error) return undefined;
-    if (error.type === 'custom' && error.message === 'password_match') {
+    if (error.type === 'custom' && error.message === RefinementMessage.password_match) {
       return t(($) => $.auth.validation.password_match);
     }
-    if (error.type === 'invalid_format' || field === 'email')
+    if (error.type === 'invalid_format' || field === CredentialField.email)
       return t(($) => $.auth.validation.email);
-    if (error.type === 'too_small' && field === 'password') {
+    if (error.type === 'too_small' && field === CredentialField.password) {
       return t(($) => $.auth.validation.password_length);
     }
     if (error.type === 'too_big') return t(($) => $.auth.validation.too_long);

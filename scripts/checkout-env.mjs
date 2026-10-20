@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+import { execFileSync, spawn } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
+import { createSocket } from 'node:dgram';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { isIPv4 } from 'node:net';
+import { networkInterfaces } from 'node:os';
+import { basename, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
 // Per-checkout environment: ports and database names that keep parallel worktrees apart.
 //
 //   node scripts/checkout-env.mjs              print this checkout's env
@@ -14,14 +23,7 @@
 // The dev profile serves the app on the LAN: APP_ORIGIN is http://<DEV_HOST>:<WEB_PORT>, where
 // DEV_HOST is the machine's LAN address unless set, and APP_EXTRA_ORIGINS lists its other
 // addresses. Both are computed on every run, never written, so a new DHCP lease needs no rewrite.
-import { execFileSync, spawn } from 'node:child_process';
-import { createHash, randomBytes } from 'node:crypto';
-import { createSocket } from 'node:dgram';
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { networkInterfaces } from 'node:os';
-import { basename, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parseEnv } from 'node:util';
+import { CheckoutEnvArg } from '../packages/shared/src/values/cli.ts';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const envPath = join(root, '.env');
@@ -128,7 +130,7 @@ const PRIVATE_IPV4 = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
 function lanAddresses() {
   return Object.values(networkInterfaces())
     .flat()
-    .filter((a) => a?.family === 'IPv4' && !a.internal)
+    .filter((a) => a && isIPv4(a.address) && !a.internal)
     .map((a) => a.address);
 }
 
@@ -245,12 +247,13 @@ function run(env, argv) {
 }
 
 const argv = process.argv.slice(2);
-const e2e = argv[0] === '--e2e';
+const e2e = argv[0] === CheckoutEnvArg.e2e;
 const [mode, ...rest] = e2e ? argv.slice(1) : argv;
 const ROUTE_ADDRESS = await defaultRouteAddress();
 const env = () => (e2e ? e2eEnv(resolvedEnv()) : resolvedEnv());
-if (mode === 'run') run(env(), rest[0] === '--' ? rest.slice(1) : rest);
-else if (mode === '--write' && !e2e) write();
+if (mode === CheckoutEnvArg.run) {
+  run(env(), rest[0] === CheckoutEnvArg.end_of_options ? rest.slice(1) : rest);
+} else if (mode === CheckoutEnvArg.write && !e2e) write();
 else if (mode === undefined) console.log(format(env()));
 else {
   console.error(`unknown argument ${mode}`);

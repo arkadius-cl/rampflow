@@ -329,3 +329,97 @@ export const HolidayType = {
   observance: 'observance',
 } as const;
 export type HolidayType = ValueOf<typeof HolidayType>;
+/** How many slots a day of the slot picker still offers. */
+export const SlotAvailability = {
+  free: 'free',
+  scarce: 'scarce',
+  full: 'full',
+  closed: 'closed',
+} as const;
+export type SlotAvailability = ValueOf<typeof SlotAvailability>;
+
+/** The steps of the carrier booking wizard (BK-01). */
+export const BookingWizardStep = {
+  where: 'where',
+  when: 'when',
+  avis: 'avis',
+  done: 'done',
+} as const;
+export type BookingWizardStep = ValueOf<typeof BookingWizardStep>;
+
+/** The steps of the booking wizard in the design prototype (`/design`). */
+export const PrototypeWizardStep = {
+  where: BookingWizardStep.where,
+  slot: 'slot',
+  avis: BookingWizardStep.avis,
+  confirmed: BookingStatus.confirmed,
+} as const;
+export type PrototypeWizardStep = ValueOf<typeof PrototypeWizardStep>;
+
+/** Why a booking can no longer be rescheduled or cancelled from its detail. */
+export const ChangeLock = {
+  on_site: 'on_site',
+  closed: 'closed',
+  no_permission: 'no_permission',
+} as const;
+export type ChangeLock = ValueOf<typeof ChangeLock>;
+
+/** The field of the reschedule dialog that blocks saving. */
+export const RescheduleProblem = {
+  time: 'time',
+  reason: 'reason',
+} as const;
+export type RescheduleProblem = ValueOf<typeof RescheduleProblem>;
+
+/** The command dialog open on a booking detail. */
+export const BookingDialog = {
+  reschedule: 'reschedule',
+  cancel: 'cancel',
+} as const;
+export type BookingDialog = ValueOf<typeof BookingDialog>;
+
+/** The extra line a timeline entry shows under its event. */
+export const TimelineNote = {
+  none: 'none',
+  reason: 'reason',
+  moved: 'moved',
+} as const;
+export type TimelineNote = ValueOf<typeof TimelineNote>;
+
+/** Whether staff book for a linked carrier or type a carrier name. */
+export const CarrierChoice = {
+  linked: 'linked',
+  other: 'other',
+} as const;
+export type CarrierChoice = ValueOf<typeof CarrierChoice>;
+
+/** The flags a booking can carry, in display order. Each is a boolean field of the booking. */
+export const BookingFlag = {
+  overCapacity: 'overCapacity',
+  forced: 'forced',
+  walkIn: 'walkIn',
+} as const;
+export type BookingFlag = ValueOf<typeof BookingFlag>;
+
+/** The tabs of the carrier's booking list. */
+export const CarrierBookingsTab = {
+  upcoming: 'upcoming',
+  today: 'today',
+  past: 'past',
+} as const;
+export type CarrierBookingsTab = ValueOf<typeof CarrierBookingsTab>;
+
+/** The views of the plan screen. */
+export const PlanView = {
+  board: 'board',
+  list: 'list',
+} as const;
+export type PlanView = ValueOf<typeof PlanView>;
+
+/** The tabs of the tenant's carriers screen. */
+export const CarriersTab = {
+  linked: 'linked',
+  registrations: 'registrations',
+  links: 'links',
+} as const;
+export type CarriersTab = ValueOf<typeof CarriersTab>;

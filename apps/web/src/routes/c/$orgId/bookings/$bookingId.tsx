@@ -1,7 +1,12 @@
 import type { Avis } from '@rampflow/shared/modules/avis/avis';
 import type { PortalBookingView } from '@rampflow/shared/modules/booking/api.portal';
 import type { PutAvis } from '@rampflow/shared/modules/booking/api.staff';
-import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingDialog,
+  BookingStatus,
+  BookingWizardStep,
+  CarrierBookingsTab,
+} from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { ErrorCode, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
@@ -74,7 +79,7 @@ function BookingPage() {
   const access = useAccess();
   const canBook = access.can(Permission.booking.book);
   const loadTypeName = useLoadTypeName();
-  const [dialog, setDialog] = useState<'reschedule' | 'cancel' | null>(null);
+  const [dialog, setDialog] = useState<BookingDialog | null>(null);
   const changeable = canBook && beforeCutoff(booking);
   const lockReason =
     booking.status !== BookingStatus.confirmed
@@ -88,7 +93,7 @@ function BookingPage() {
       <Link
         to="/c/$orgId/bookings"
         params={{ orgId }}
-        search={{ tab: 'upcoming' }}
+        search={{ tab: CarrierBookingsTab.upcoming }}
         className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'w-fit' })}
       >
         <ArrowLeftIcon /> {t(($) => $.portal.detail.back)}
@@ -138,7 +143,7 @@ function BookingPage() {
                 <Link
                   to="/c/$orgId/book"
                   params={{ orgId }}
-                  search={{ step: 'when', from: booking.id }}
+                  search={{ step: BookingWizardStep.when, from: booking.id }}
                   className={buttonVariants({ variant: 'outline', size: 'sm' })}
                 >
                   <RefreshCwIcon /> {t(($) => $.portal.actions.book_again)}
@@ -232,13 +237,13 @@ function BookingPage() {
       <RescheduleDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'reschedule'}
+        open={dialog === BookingDialog.reschedule}
         onOpenChange={(open) => setDialog(open ? 'reschedule' : null)}
       />
       <CancelDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'cancel'}
+        open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
     </div>

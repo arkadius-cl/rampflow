@@ -1,6 +1,6 @@
 import { createBrowserI18n } from '@rampflow/i18n/browser';
-import { catalog, STAFF_LOCALES } from '@rampflow/shared';
-import { LocaleSet, StaffLocale } from '@rampflow/shared/values';
+import { catalog } from '@rampflow/shared';
+import { isValueOf, LocaleSet, StaffLocale } from '@rampflow/shared/values';
 import type { i18n } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import type { Resources } from './i18n-resources.gen';
@@ -22,7 +22,7 @@ export const FALLBACK_LOCALE: StaffLocale = StaffLocale.de;
 const STORAGE_KEY = 'rf_locale';
 
 export const isStaffLocale = (value: unknown): value is StaffLocale =>
-  typeof value === 'string' && (STAFF_LOCALES as readonly string[]).includes(value);
+  typeof value === 'string' && isValueOf(StaffLocale, value);
 
 /** The language before anyone is signed in: this device's last choice, then the browser's. */
 export function deviceLocale(): StaffLocale {

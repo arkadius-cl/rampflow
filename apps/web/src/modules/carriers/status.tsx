@@ -2,6 +2,7 @@ import type {
   CarrierLinkStatus,
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { BadgeTone } from '@rampflow/shared/values';
 import {
   BanIcon,
   CircleCheckIcon,
@@ -11,20 +12,20 @@ import {
   PauseCircleIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { StatusBadge, type Tone } from '@/components/status-badge';
+import { StatusBadge } from '@/components/status-badge';
 
 // Link and registration states as icon plus label (UX concept, principle 2).
 
-const LINK: Record<CarrierLinkStatus, { icon: LucideIcon; tone: Tone }> = {
-  active: { icon: CircleCheckIcon, tone: 'success' },
-  deactivated: { icon: PauseCircleIcon, tone: 'neutral' },
+const LINK: Record<CarrierLinkStatus, { icon: LucideIcon; tone: BadgeTone }> = {
+  active: { icon: CircleCheckIcon, tone: BadgeTone.success },
+  deactivated: { icon: PauseCircleIcon, tone: BadgeTone.neutral },
 };
 
-const REGISTRATION: Record<RegistrationStatus, { icon: LucideIcon; tone: Tone }> = {
-  pending_email: { icon: MailQuestionIcon, tone: 'neutral' },
-  pending_approval: { icon: HourglassIcon, tone: 'onsite' },
-  approved: { icon: CircleCheckIcon, tone: 'success' },
-  rejected: { icon: BanIcon, tone: 'danger' },
+const REGISTRATION: Record<RegistrationStatus, { icon: LucideIcon; tone: BadgeTone }> = {
+  pending_email: { icon: MailQuestionIcon, tone: BadgeTone.neutral },
+  pending_approval: { icon: HourglassIcon, tone: BadgeTone.onsite },
+  approved: { icon: CircleCheckIcon, tone: BadgeTone.success },
+  rejected: { icon: BanIcon, tone: BadgeTone.danger },
 };
 
 export function LinkStatusBadge({ status }: { status: CarrierLinkStatus }) {

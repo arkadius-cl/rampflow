@@ -3,8 +3,8 @@ import type {
   BoardView,
   BookingSummary,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { FINAL_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { FinalBookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { BadgeSize, isValueOf } from '@rampflow/shared/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ import { BookingStatusBadge } from './display';
 // model, so a DST day and server-side capacity per slot need no wall-clock arithmetic here.
 
 const MINUTE = 60_000;
-const isFinal = (b: BookingSummary) => (FINAL_STATUSES as readonly string[]).includes(b.status);
+const isFinal = (b: BookingSummary) => isValueOf(FinalBookingStatus, b.status);
 
 /** The rows the board shows: from the first open or booked slot to the last. */
 export function visibleWindow(board: BoardView): { first: number; last: number } | null {
@@ -312,8 +312,7 @@ function BookingCard({
 }) {
   const { t } = useTranslation('booking');
   const siteTime = useSiteTime();
-  const tone =
-    booking.status === BookingStatus.requested ? 'planned' : BOOKING_STATUS[booking.status].tone;
+  const tone = BOOKING_STATUS[booking.status].tone;
   const compact = style.height < 60;
   const slot = `${siteTime(booking.startsAt, timeZone).time}–${siteTime(booking.endsAt, timeZone).time}`;
   return (
@@ -354,7 +353,7 @@ function BookingCard({
             {t(($) => $.plan.board.units, { n: booking.loadUnits })} ·{' '}
             <span className="font-mono">{booking.code}</span>
           </span>
-          <BookingStatusBadge status={booking.status} size="sm" className="mt-auto" />
+          <BookingStatusBadge status={booking.status} size={BadgeSize.sm} className="mt-auto" />
         </>
       )}
     </button>

@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  DIRECTIONS,
   LoadTypeDuration,
   type LoadTypeView,
   PutLoadTypeResources,
@@ -9,7 +8,7 @@ import {
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
-import { Feature, StaffLocale } from '@rampflow/shared/values';
+import { Feature, InputKind, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LockIcon, PencilIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -364,7 +363,7 @@ function LoadTypeFormView({
             />
             <InputGroupAddon align="inline-end">{unit}</InputGroupAddon>
           </InputGroup>
-          <FieldError>{message(fieldState.error, 'number')}</FieldError>
+          <FieldError>{message(fieldState.error, InputKind.number)}</FieldError>
         </Field>
       )}
     />
@@ -379,18 +378,19 @@ function LoadTypeFormView({
     >
       <FieldGroup className="px-4">
         <div className="grid grid-cols-2 gap-3">
-          {(['de', 'en'] as const).map((lang) => (
+          {(
+            [
+              [StaffLocale.de, t(($) => $.capacity.load_types.fields.name_de)],
+              [StaffLocale.en, t(($) => $.capacity.load_types.fields.name_en)],
+            ] as const
+          ).map(([lang, label]) => (
             <Controller
               key={lang}
               name={`name.${lang}`}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={`lt-name-${lang}`}>
-                    {lang === StaffLocale.de
-                      ? t(($) => $.capacity.load_types.fields.name_de)
-                      : t(($) => $.capacity.load_types.fields.name_en)}
-                  </FieldLabel>
+                  <FieldLabel htmlFor={`lt-name-${lang}`}>{label}</FieldLabel>
                   <Input id={`lt-name-${lang}`} {...field} aria-invalid={fieldState.invalid} />
                   <FieldError>{message(fieldState.error)}</FieldError>
                 </Field>
@@ -412,7 +412,7 @@ function LoadTypeFormView({
                 onValueChange={(v) => (v[0] ? field.onChange(v[0]) : null)}
                 aria-label={t(($) => $.capacity.load_types.fields.direction)}
               >
-                {DIRECTIONS.map((d) => (
+                {values(Direction).map((d) => (
                   <ToggleGroupItem key={d} value={d}>
                     {t(($) => $.capacity.directions[d])}
                   </ToggleGroupItem>
@@ -567,7 +567,12 @@ function LoadTypeFormView({
             </FieldSet>
           )}
         />
-        {(['carrierBookable', 'active'] as const).map((name) => (
+        {(
+          [
+            ['carrierBookable', t(($) => $.capacity.load_types.fields.carrier_bookable)],
+            ['active', t(($) => $.capacity.load_types.fields.active)],
+          ] as const
+        ).map(([name, label]) => (
           <Controller
             key={name}
             name={name}
@@ -575,11 +580,7 @@ function LoadTypeFormView({
             render={({ field }) => (
               <Field orientation="horizontal">
                 <Switch id={`lt-${name}`} checked={field.value} onCheckedChange={field.onChange} />
-                <FieldLabel htmlFor={`lt-${name}`}>
-                  {name === 'active'
-                    ? t(($) => $.capacity.load_types.fields.active)
-                    : t(($) => $.capacity.load_types.fields.carrier_bookable)}
-                </FieldLabel>
+                <FieldLabel htmlFor={`lt-${name}`}>{label}</FieldLabel>
               </Field>
             )}
           />

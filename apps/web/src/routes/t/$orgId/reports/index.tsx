@@ -1,8 +1,8 @@
 import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
 import { MAX_PERIOD_DAYS, ReportFilter, type VisitItem } from '@rampflow/shared/modules/report/api';
-import { KpiUnit } from '@rampflow/shared/modules/report/values';
+import { KpiUnit, ReportExport } from '@rampflow/shared/modules/report/values';
 import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
-import { EmailCategory, Feature, Permission } from '@rampflow/shared/values';
+import { BadgeSize, EmailCategory, Feature, Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
@@ -179,8 +179,8 @@ function ExportButtons({ orgId, filter }: { orgId: string; filter: ReportFilter 
   const { t } = useTranslation('report');
   const { has } = useAccess();
   const valid = ReportFilter.safeParse(filter).success;
-  const kpis = useMutation({ mutationFn: () => downloadCsv(orgId, 'kpis', filter) });
-  const visits = useMutation({ mutationFn: () => downloadCsv(orgId, 'visits', filter) });
+  const kpis = useMutation({ mutationFn: () => downloadCsv(orgId, ReportExport.kpis, filter) });
+  const visits = useMutation({ mutationFn: () => downloadCsv(orgId, ReportExport.visits, filter) });
   // Without report.export the buttons are absent: an operator cannot change the package.
   if (!has(Feature.report.export)) return null;
   return (
@@ -393,7 +393,7 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         {v.status === BookingStatus.requested ? null : (
           <BookingStatusBadge
             status={v.status}
-            size="sm"
+            size={BadgeSize.sm}
             label={t(($) => $.lifecycle.status[v.status], { ns: EmailCategory.booking })}
           />
         )}
@@ -402,7 +402,7 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         {v.punctuality ? (
           <StatusBadge
             meta={PUNCTUALITY[v.punctuality]}
-            size="sm"
+            size={BadgeSize.sm}
             label={t(($) => $.lifecycle.punctuality[v.punctuality ?? Punctuality.on_time], {
               ns: EmailCategory.booking,
             })}

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { DocsMode } from '../packages/shared/src/values/cli.ts';
 
 const root = new URL('..', import.meta.url).pathname;
 const docsDir = join(root, 'docs');
 const indexPath = join(docsDir, 'INDEX.md');
-const mode = process.argv[2] ?? 'check';
+const mode = process.argv[2] ?? DocsMode.check;
 
 const TYPES = ['tutorial', 'how-to', 'reference', 'explanation'];
 const STATUSES = ['draft', 'stable'];
@@ -155,7 +156,7 @@ const { CATALOG_DOC, withCatalogTables } = await import('../packages/shared/src/
 const catalogPath = join(root, CATALOG_DOC);
 const catalogDoc = existsSync(catalogPath) ? readFileSync(catalogPath, 'utf8') : null;
 
-if (mode === 'index') {
+if (mode === DocsMode.index) {
   writeFileSync(indexPath, index);
   if (catalogDoc !== null) writeFileSync(catalogPath, withCatalogTables(catalogDoc));
   console.log(`wrote docs/INDEX.md with ${entries.length} docs and the catalog tables`);

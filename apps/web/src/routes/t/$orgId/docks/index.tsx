@@ -1,7 +1,8 @@
 import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
 import type { OnSiteTruck, YardDock, YardTruck } from '@rampflow/shared/modules/yard/api';
-import { Feature, Permission } from '@rampflow/shared/values';
+import { DockStep } from '@rampflow/shared/modules/yard/values';
+import { BadgeSize, Feature, Permission, ShellLayout } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -46,7 +47,7 @@ interface DocksSearch {
 }
 
 export const Route = createFileRoute('/t/$orgId/docks/')({
-  staticData: { shell: 'station' },
+  staticData: { shell: ShellLayout.station },
   beforeLoad: guard({ permission: Permission.yard.call, entitlement: Feature.yard.call_to_dock }),
   validateSearch: (search: Record<string, unknown>): DocksSearch => ({
     ...stationSearch(search),
@@ -222,10 +223,10 @@ function DockCard({
   const truck = dock.occupant;
   const maintenance = dock.status === DockStatus.maintenance;
   const commands = yardApi(orgId);
-  const progress = useYardMutation(orgId, (step: 'dock' | 'loading' | 'uncall') => {
+  const progress = useYardMutation(orgId, (step: DockStep) => {
     if (!truck) throw new Error('no truck at the dock');
-    if (step === 'dock') return commands.dock(truck.id);
-    if (step === 'loading') return commands.startLoading(truck.id);
+    if (step === DockStep.dock) return commands.dock(truck.id);
+    if (step === DockStep.loading) return commands.startLoading(truck.id);
     return commands.uncall(truck.id);
   });
   const works = access.can(Permission.yard.dock);
@@ -264,7 +265,7 @@ function DockCard({
             · {t(($) => $.gate.row.units, { count: truck.loadUnits })}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <TruckStatus status={truck.status} size="md" />
+            <TruckStatus status={truck.status} size={BadgeSize.md} />
             <span className="text-xs text-muted-foreground">
               {t(($) => $.docks.dock.since)}{' '}
               <InstantTime at={truck.since} timeZone={truck.timeZone} />
@@ -276,7 +277,7 @@ function DockCard({
                 size="lg"
                 className="h-11 flex-1"
                 disabled={disabled}
-                onClick={() => progress.mutate('dock')}
+                onClick={() => progress.mutate(DockStep.dock)}
               >
                 <DoorOpenIcon /> {t(($) => $.docks.progress.at_dock)}
               </Button>
@@ -286,7 +287,7 @@ function DockCard({
                 size="lg"
                 className="h-11 flex-1"
                 disabled={disabled}
-                onClick={() => progress.mutate('loading')}
+                onClick={() => progress.mutate(DockStep.loading)}
               >
                 <PackageOpenIcon /> {t(($) => $.docks.progress.loading)}
               </Button>
@@ -307,7 +308,7 @@ function DockCard({
                 variant="outline"
                 className="h-11"
                 disabled={disabled}
-                onClick={() => progress.mutate('uncall')}
+                onClick={() => progress.mutate(DockStep.uncall)}
               >
                 <UndoIcon /> {t(($) => $.docks.progress.uncall)}
               </Button>

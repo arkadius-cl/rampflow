@@ -3,13 +3,11 @@ import type { ResourceView } from '@rampflow/shared/modules/booking/api.capacity
 import {
   CreateDock,
   CreateHall,
-  DOCK_STATUSES,
-  DOOR_TYPES,
   type DockView,
   type HallView,
-  TEMPERATURE_ZONES,
 } from '@rampflow/shared/modules/core/api.sites';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { PencilIcon, PlusIcon, WrenchIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -305,7 +303,7 @@ export function DockDialog({
     onError: (e) => applyServerIssues(e, form.setError),
   });
   const select = (
-    name: 'hallId' | 'doorType' | 'temperatureZone' | 'status',
+    name: keyof Pick<DockValues, 'hallId' | 'doorType' | 'temperatureZone' | 'status'>,
     label: string,
     options: { value: string; label: string }[],
   ) => (
@@ -362,17 +360,20 @@ export function DockDialog({
               {select(
                 'doorType',
                 t(($) => $.sites.docks.fields.door),
-                DOOR_TYPES.map((v) => ({ value: v, label: t(($) => $.sites.door_types[v]) })),
+                values(DoorType).map((v) => ({ value: v, label: t(($) => $.sites.door_types[v]) })),
               )}
               {select(
                 'temperatureZone',
                 t(($) => $.sites.docks.fields.zone),
-                TEMPERATURE_ZONES.map((v) => ({ value: v, label: t(($) => $.sites.zones[v]) })),
+                values(TemperatureZone).map((v) => ({
+                  value: v,
+                  label: t(($) => $.sites.zones[v]),
+                })),
               )}
               {select(
                 'status',
                 t(($) => $.sites.docks.fields.status),
-                DOCK_STATUSES.map((v) => ({ value: v, label: t(($) => $.sites.statuses[v]) })),
+                values(DockStatus).map((v) => ({ value: v, label: t(($) => $.sites.statuses[v]) })),
               )}
             </div>
             <Controller

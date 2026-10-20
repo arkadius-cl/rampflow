@@ -30,7 +30,7 @@ export const zoneAt = (value: string, zone: string, locale: StaffLocale) =>
 export function weekdayName(
   weekday: number,
   locale: StaffLocale,
-  style: 'short' | 'long' = 'long',
+  style: Intl.DateTimeFormatOptions['weekday'] = 'long',
 ) {
   // 2024-01-01 is a Monday.
   return new Intl.DateTimeFormat(locale, { weekday: style, timeZone: 'UTC' }).format(

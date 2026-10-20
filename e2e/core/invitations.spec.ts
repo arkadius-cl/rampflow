@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { OrgKind } from '../../packages/shared/src/values/roles.ts';
+import { OrgKind, Role } from '../../packages/shared/src/values/roles.ts';
 import { expectAccessible, seedWorld } from '../support/auth.ts';
 import { createAccount, createInvitation, sitesOfMember, uniqueEmail } from '../support/db.ts';
 
@@ -13,7 +13,7 @@ test.describe('Invitations (PL-01, TN-01, CR-04 acceptance)', () => {
     const token = await createInvitation({
       orgId: w.A.tenantId,
       orgKind: OrgKind.tenant,
-      role: 'gate_operator',
+      role: Role.gate_operator,
       email,
       invitedBy: w.A.users.tenant_admin.id,
       siteIds: [w.A.sites[1]?.id as string],
@@ -49,7 +49,7 @@ test.describe('Invitations (PL-01, TN-01, CR-04 acceptance)', () => {
     const token = await createInvitation({
       orgId: w.A.carrierId,
       orgKind: OrgKind.carrier,
-      role: 'carrier_user',
+      role: Role.carrier_user,
       email: person.email,
       invitedBy: w.A.users.carrier_admin.id,
     });

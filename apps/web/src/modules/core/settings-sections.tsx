@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ModuleId, SettingKey, SettingScope } from '@rampflow/shared';
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
-import { Setting } from '@rampflow/shared/values';
+import { SettingControl } from '@rampflow/shared/modules/core/values';
+import { DisplayNamesType, LabelPart, Setting } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
@@ -73,7 +74,7 @@ export function SettingsSections({
   );
 }
 
-const labelKey = (key: SettingKey, part: 'label' | 'description') => {
+const labelKey = (key: SettingKey, part: LabelPart) => {
   const dot = key.indexOf('.');
   return `${key.slice(0, dot)}:settings.${key.slice(dot + 1)}.${part}`;
 };
@@ -100,7 +101,7 @@ function SettingRow({
     onError: (e) => applyServerIssues(e, form.setError),
   });
   const reset = useMutation({ mutationFn: () => actions.reset(entry.key) });
-  const label = t(labelKey(entry.key, 'label') as never) as string;
+  const label = t(labelKey(entry.key, LabelPart.label) as never) as string;
   const message = useSettingMessage(spec);
 
   return (
@@ -108,7 +109,7 @@ function SettingRow({
       <SettingField
         id={entry.key}
         label={label}
-        description={t(labelKey(entry.key, 'description') as never) as string}
+        description={t(labelKey(entry.key, LabelPart.description) as never) as string}
         source={entry.source}
         scope={scope}
         inheritedValue={display(entry.inherited.value)}
@@ -168,14 +169,14 @@ function Control({
 }) {
   const { t } = useTranslation();
   switch (spec.kind) {
-    case 'switch':
+    case SettingControl.switch:
       return (
         <div className="flex h-8 items-center gap-2 text-sm">
           <Switch id={id} checked={value === true} onCheckedChange={(on) => onChange(on)} />
           <span aria-hidden>{display(value)}</span>
         </div>
       );
-    case 'select':
+    case SettingControl.select:
       return (
         <NativeSelect
           id={id}
@@ -194,7 +195,7 @@ function Control({
           ))}
         </NativeSelect>
       );
-    case 'number':
+    case SettingControl.number:
       return (
         <Input
           id={id}
@@ -209,7 +210,7 @@ function Control({
           onChange={(e) => onChange(e.target.value === '' ? Number.NaN : Number(e.target.value))}
         />
       );
-    case 'list': {
+    case SettingControl.list: {
       const picked = Array.isArray(value) ? (value as string[]) : [];
       return (
         <fieldset aria-label={label} className="flex flex-col gap-1.5">
@@ -228,7 +229,7 @@ function Control({
         </fieldset>
       );
     }
-    case 'url':
+    case SettingControl.url:
       return (
         <InputGroup>
           <InputGroupInput
@@ -260,7 +261,7 @@ function useValueText(key: SettingKey, spec: ControlSpec) {
   const { t } = useTranslation();
   const locale = useLocale();
   const format = useFormat();
-  const languages = new Intl.DisplayNames(locale, { type: 'language' });
+  const languages = new Intl.DisplayNames(locale, { type: DisplayNamesType.language });
   const option = (v: unknown): string => {
     if (key === Setting.i18n.default_locale) return languages.of(String(v)) ?? String(v);
     if (key === Setting.booking.public_registration_mode) {
@@ -273,15 +274,15 @@ function useValueText(key: SettingKey, spec: ControlSpec) {
   };
   return (value: unknown): string => {
     switch (spec.kind) {
-      case 'switch':
+      case SettingControl.switch:
         return value ? t(($) => $['settings-ui'].values.on) : t(($) => $['settings-ui'].values.off);
-      case 'list': {
+      case SettingControl.list: {
         const list = Array.isArray(value) ? value : [];
         return list.length === 0
           ? t(($) => $['settings-ui'].values.none)
           : list.map(option).join(', ');
       }
-      case 'url':
+      case SettingControl.url:
         return typeof value === 'string' ? value : t(($) => $['settings-ui'].values.none);
       default:
         return option(value);
@@ -295,14 +296,14 @@ function useSettingMessage(spec: ControlSpec) {
   const format = useFormat();
   return (error: FormFieldError | undefined): string | undefined => {
     if (!error) return undefined;
-    if (spec.kind === 'number') {
+    if (spec.kind === SettingControl.number) {
       return t(($) => $['settings-ui'].validation.number_range, {
         min: format.number(spec.min),
         max: format.number(spec.max),
       });
     }
-    if (spec.kind === 'url') return t(($) => $['settings-ui'].validation.url);
-    if (spec.kind === 'list' && error.type === 'custom') {
+    if (spec.kind === SettingControl.url) return t(($) => $['settings-ui'].validation.url);
+    if (spec.kind === SettingControl.list && error.type === 'custom') {
       return t(($) => $['settings-ui'].validation.duplicate);
     }
     return t(($) => $['settings-ui'].validation.invalid);

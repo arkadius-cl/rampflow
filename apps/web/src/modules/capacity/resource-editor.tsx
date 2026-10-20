@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  DIRECTIONS,
   PutResourceDocks,
   type ResourceView,
   UpdateResource,
@@ -8,7 +7,7 @@ import {
 import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
-import { Feature } from '@rampflow/shared/values';
+import { Feature, InputKind, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LayersIcon, LockIcon, PlusIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -200,11 +199,12 @@ function ResourceDetails({
     ),
     defaultValues: saved,
   });
-  const values = useWatch({ control: form.control }) as ResourceValues;
+  const current = useWatch({ control: form.control }) as ResourceValues;
   const lowered =
     resource !== null &&
-    (capacityOf(values, docks) < capacityOf(saved, docks) ||
-      (values.dailyCap !== null && (saved.dailyCap === null || values.dailyCap < saved.dailyCap)));
+    (capacityOf(current, docks) < capacityOf(saved, docks) ||
+      (current.dailyCap !== null &&
+        (saved.dailyCap === null || current.dailyCap < saved.dailyCap)));
 
   const save = useMutation({
     mutationFn: async (v: ResourceValues) => {
@@ -242,7 +242,12 @@ function ResourceDetails({
   const holderOf = (dockId: string) =>
     resources.find((r) => r.id !== resource?.id && r.dockIds.includes(dockId));
 
-  const number = (name: 'capacityCap' | 'dailyCap', label: string, unit: string, hint: string) => (
+  const number = (
+    name: keyof Pick<ResourceValues, 'capacityCap' | 'dailyCap'>,
+    label: string,
+    unit: string,
+    hint: string,
+  ) => (
     <Controller
       name={name}
       control={form.control}
@@ -265,7 +270,7 @@ function ResourceDetails({
             <InputGroupAddon align="inline-end">{unit}</InputGroupAddon>
           </InputGroup>
           <FieldDescription>{hint}</FieldDescription>
-          <FieldError>{message(fieldState.error, 'number')}</FieldError>
+          <FieldError>{message(fieldState.error, InputKind.number)}</FieldError>
         </Field>
       )}
     />
@@ -312,7 +317,7 @@ function ResourceDetails({
                   onValueChange={(v) => field.onChange(v)}
                   aria-label={t(($) => $.capacity.resources.fields.directions)}
                 >
-                  {DIRECTIONS.map((d) => (
+                  {values(Direction).map((d) => (
                     <ToggleGroupItem key={d} value={d}>
                       {t(($) => $.capacity.directions[d])}
                     </ToggleGroupItem>

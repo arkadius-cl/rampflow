@@ -1,5 +1,6 @@
 import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
+import { PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   ChevronRightIcon,
@@ -69,7 +70,7 @@ function MasterDataScreen() {
     <OfficeShell
       org={tenantMembership}
       memberships={memberships}
-      nav={tenantNav('master-data')}
+      nav={tenantNav(PrototypeScreen.master_data)}
       breadcrumbs={['Administration', 'Sites and docks', site.name]}
       user={dispatcherUser}
     >
@@ -85,7 +86,7 @@ function MasterDataScreen() {
       <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Sites" className="flex flex-col gap-2">
           {sites
-            .filter((s) => s.tenantId === 'acme')
+            .filter((s) => s.tenantId === tenantMembership.id)
             .map((s) => (
               <a
                 key={s.id}

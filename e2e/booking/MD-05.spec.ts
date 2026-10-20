@@ -14,6 +14,9 @@ interface LoadTypes {
   items: { id: string; name: { en: string } }[];
 }
 
+/** The English name of the seeded load type the story edits. */
+const PALLETISED = 'Palletised';
+
 test.describe('MD-05 Load types', () => {
   test('a new site lists the three seeded load types; 20 pallets take 60 minutes, 40 take 90', async ({
     page,
@@ -43,7 +46,7 @@ test.describe('MD-05 Load types', () => {
       HttpMethod.GET,
       `/t/${w.A.tenantId}/capacity/load-types?siteId=${site.id}`,
     );
-    const id = items.find((lt) => lt.name.en === 'Palletised')?.id;
+    const id = items.find((lt) => lt.name.en === PALLETISED)?.id;
     const minutes = async (units: number) =>
       (
         await apiCall<{ durationMinutes: number }>(

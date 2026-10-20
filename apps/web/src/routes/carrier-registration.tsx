@@ -1,5 +1,6 @@
 import type { RegistrationVerified } from '@rampflow/shared/modules/booking/api.carriers';
-import { ErrorCode } from '@rampflow/shared/values';
+import { SignInMode } from '@rampflow/shared/modules/core/values';
+import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon } from 'lucide-react';
@@ -32,7 +33,7 @@ function VerifyRegistrationPage() {
     );
   const first = useExchangeOnce(token && `registration:${token}`, verify);
   const retry = useMutation({ mutationFn: verify, meta: { silent: true } });
-  const done = retry.data ?? (first.status === 'done' ? first.value : undefined);
+  const done = retry.data ?? (first.status === TokenExchangeStatus.done ? first.value : undefined);
 
   useEffect(() => {
     if (!done) return;
@@ -40,7 +41,7 @@ function VerifyRegistrationPage() {
     void navigate({ to: '/c/$orgId/tenants', params: { orgId: done.carrierId }, replace: true });
   }, [done, navigate, queryClient]);
 
-  const failure = retry.error ?? (first.status === 'failed' ? first.error : null);
+  const failure = retry.error ?? (first.status === TokenExchangeStatus.failed ? first.error : null);
   const signInEmail =
     isFailure(failure, ErrorCode.unauthorized) &&
     failure.reason === 'sign_in_required' &&
@@ -48,7 +49,10 @@ function VerifyRegistrationPage() {
       ? failure.details.email
       : null;
 
-  if (token && (done || retry.isPending || (first.status === 'pending' && !failure))) {
+  if (
+    token &&
+    (done || retry.isPending || (first.status === TokenExchangeStatus.pending && !failure))
+  ) {
     return (
       <AuthLayout title={t(($) => $.registration.verify.title)}>
         <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
@@ -101,7 +105,7 @@ function SignInToConfirm({ email, onSignedIn }: { email: string; onSignedIn: () 
       </p>
       <Link
         to="/login"
-        search={{ mode: 'magic' }}
+        search={{ mode: SignInMode.magic }}
         target="_blank"
         className={buttonVariants({ variant: 'link', size: 'sm' })}
       >

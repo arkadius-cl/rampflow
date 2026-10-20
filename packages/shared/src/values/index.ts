@@ -1,7 +1,7 @@
 export * from './api.ts';
 export * from './catalogs.ts';
 export * from './cli.ts';
-export { type ValueOf, values } from './define.ts';
+export { isValueOf, type ValueOf, values } from './define.ts';
 export * from './dom.ts';
 export * from './emails.ts';
 export * from './entitlements.ts';
@@ -23,4 +23,5 @@ export * from './sql.ts';
 export * from './stories.ts';
 export * from './time.ts';
 export * from './tokens.ts';
+export * from './ui.ts';
 export * from './validation.ts';

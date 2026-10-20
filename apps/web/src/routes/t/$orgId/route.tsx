@@ -1,6 +1,6 @@
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
 import type { TenantContext } from '@rampflow/shared/modules/core/api.context';
-import { ErrorCode, OrgKind } from '@rampflow/shared/values';
+import { ErrorCode, OrgKind, ShellLayout } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router';
 import { AppShell } from '@/components/app-shell/app-shell';
@@ -45,7 +45,9 @@ function TenantLayout() {
   const me = useQuery(meQuery).data ?? (route.me as MeResponse);
   const context = useQuery(tenantContextQuery(orgId)).data ?? route.access.context;
   const access = { ...route.access, context } as Extract<AreaAccess, { area: 'tenant' }>;
-  const station = useMatches({ select: (ms) => ms.at(-1)?.staticData.shell === 'station' });
+  const station = useMatches({
+    select: (ms) => ms.at(-1)?.staticData.shell === ShellLayout.station,
+  });
   useSyncLocale(me, tenantLocale(context as TenantContext));
   if (station) {
     return (

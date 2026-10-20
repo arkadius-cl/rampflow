@@ -160,7 +160,11 @@ function HoursEditor({
     );
   }
 
-  const time = (index: number, part: 'opens' | 'closes', label: string) => (
+  const time = (
+    index: number,
+    part: keyof Pick<HoursValues['rows'][number], 'opens' | 'closes'>,
+    label: string,
+  ) => (
     <Controller
       name={`rows.${index}.${part}`}
       control={form.control}

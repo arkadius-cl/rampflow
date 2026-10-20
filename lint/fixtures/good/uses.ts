@@ -24,6 +24,7 @@ export function rank(status: BookingStatus): number {
 
 export const statusSchema = z.enum(BookingStatus);
 export const requestedSchema = z.literal(BookingStatus.requested);
+export const emptySchema = z.literal('');
 export const textSchema = z.string().min(1, 'Required');
 
 export const transitions = { status: 'requested', next: 'confirmed' } as const;
@@ -40,3 +41,6 @@ t('booking.status.no_show');
 export const queryKey = (orgId: string) => ['tenant', orgId, 'staff'] as const;
 // `reason` is free text in most bodies; typed reasons are left to `pnpm values:check`.
 export const cancelled = { reason: 'Ware nicht fertig' };
+// Labels and codes in fields named like discriminants are text, not set members.
+export const membership = { role: 'Tenant admin', code: 'A-01' };
+export const emptyForm = { type: '', status: '' };

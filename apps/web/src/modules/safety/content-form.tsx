@@ -2,11 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   type Content,
   ContentBody,
-  PICTOGRAM_IDS,
-  type PictogramId,
   QUIZ_QUESTIONS,
-  TRANSLATION_STATES,
 } from '@rampflow/shared/modules/safety/api.authoring';
+import { PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
+import { values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDownIcon,
@@ -119,7 +118,7 @@ export function ContentForm({
                 {t(($) => $.editor.fields.translation)}
               </FieldLabel>
               <NativeSelect {...field} id={id('translation')}>
-                {TRANSLATION_STATES.map((state) => (
+                {values(TranslationState).map((state) => (
                   <NativeSelectOption key={state} value={state}>
                     {t(($) => $.editor.translation[state])}
                   </NativeSelectOption>
@@ -215,7 +214,7 @@ export function ContentForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => blocks.append({ kind: 'pictogram', id: PICTOGRAM_IDS[0] })}
+                onClick={() => blocks.append({ kind: 'pictogram', id: values(PictogramId)[0] })}
               >
                 <ImageIcon /> {t(($) => $.editor.block.add_pictogram)}
               </Button>
@@ -351,7 +350,7 @@ function PictogramBlock({
             {t(($) => $.editor.block.label, { n: index + 1 })}
           </FieldLabel>
           <NativeSelect {...field} id={label}>
-            {PICTOGRAM_IDS.map((id) => (
+            {values(PictogramId).map((id) => (
               <NativeSelectOption key={id} value={id}>
                 {name(id)}
               </NativeSelectOption>

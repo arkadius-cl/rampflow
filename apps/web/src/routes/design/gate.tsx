@@ -1,5 +1,6 @@
 import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
 import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
+import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   LogInIcon,
@@ -135,7 +136,7 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
           <PunctualityBadge
             punctuality={Punctuality.late}
             minutes={12}
-            size="sm"
+            size={BadgeSize.sm}
             className="mt-1"
           />
         ) : null}
@@ -147,8 +148,8 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
           {b.loadType} · <span className="font-mono">{b.code}</span>
         </div>
       </div>
-      <SafetyBadge status={b.safety} size="lg" />
-      <BookingStatusBadge status={b.status} size="lg" />
+      <SafetyBadge status={b.safety} size={BadgeSize.lg} />
+      <BookingStatusBadge status={b.status} size={BadgeSize.lg} />
       <div className="flex gap-2">
         <Button
           size="lg"
@@ -189,7 +190,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
           <div className="text-sm font-medium">Arrival</div>
           <div className="mt-2 flex items-center gap-2">
             <SiteTime time={NOW} zone={site?.zoneLabel ?? ''} className="text-lg font-semibold" />
-            <PunctualityBadge punctuality={Punctuality.early} minutes={12} size="lg" />
+            <PunctualityBadge punctuality={Punctuality.early} minutes={12} size={BadgeSize.lg} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">Within 30 min early tolerance.</p>
         </div>
@@ -208,7 +209,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
           <h3 id="safety-heading" className="font-semibold">
             Safety briefing
           </h3>
-          <SafetyBadge status={b.safety} size="lg" />
+          <SafetyBadge status={b.safety} size={BadgeSize.lg} />
         </div>
         {blocked ? (
           <>
