@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import ts from 'typescript-6';
 import type { CheckResult, Finding } from './check.ts';
+import { resolve } from './imports.ts';
 import type { ValueSet } from './sets.ts';
 
 export interface FixResult {
@@ -14,6 +15,24 @@ interface Edit {
   start: number;
   end: number;
   text: string;
+}
+
+/** The changes to one import declaration of a file. */
+interface ImportPlan {
+  /** Type-only imports of sets that become value imports. */
+  converted: Set<ts.ImportSpecifier>;
+  /** Sets imported through a re-export, which move to the set's own module. */
+  removed: Set<ts.ImportSpecifier>;
+  added: string[];
+}
+
+/** How a set's name is bound in a file. */
+interface Binding {
+  missing?: true;
+  clash?: string;
+  /** An import of the set that needs a change: a type-only one, or one through a re-export. */
+  element?: ts.ImportSpecifier;
+  moved?: true;
 }
 
 /** Rewrites each finding that has a set to `X.member` and adds the imports. */
@@ -30,18 +49,31 @@ export function fix(root: string, result: CheckResult): FixResult {
     if (!program || !source) continue;
     const checker = program.getTypeChecker();
     const edits: Edit[] = [];
-    const imports = new Map<string, ValueSet[]>();
+    const plans = new Map<ts.ImportDeclaration, ImportPlan>();
+    const plan = (declaration: ts.ImportDeclaration) => {
+      const found = plans.get(declaration) ?? {
+        converted: new Set(),
+        removed: new Set(),
+        added: [],
+      };
+      plans.set(declaration, found);
+      return found;
+    };
+    const missing = new Map<string, string[]>();
     const usable = new Map<string, string | undefined>();
     for (const f of findings) {
       if (f.verdict.kind !== 'set') continue;
       const set = f.verdict.set;
       if (!usable.has(set.name)) {
-        const binding = bindingOf(checker, source, set);
+        const binding = bindingOf(program, checker, source, set);
         usable.set(set.name, binding.clash);
-        if (binding.convert) edits.push(...binding.convert);
-        if (binding.missing) {
-          const spec = specifier(root, file, set.file);
-          imports.set(spec, [...(imports.get(spec) ?? []), set]);
+        if (binding.element) {
+          const declaration = binding.element.parent.parent.parent as ts.ImportDeclaration;
+          plan(declaration)[binding.moved ? 'removed' : 'converted'].add(binding.element);
+        }
+        if (binding.missing || binding.moved) {
+          const spec = specifier(root, program, file, set.file);
+          missing.set(spec, [...(missing.get(spec) ?? []), set.name]);
         }
       }
       const clash = usable.get(set.name);
@@ -54,20 +86,21 @@ export function fix(root: string, result: CheckResult): FixResult {
       done.add(f);
     }
     if (!edits.length) continue;
-    edits.push(...importEdits(source, imports));
+    edits.push(...additions(source, missing, plan));
+    for (const [declaration, changes] of plans) edits.push(rewrite(source, declaration, changes));
     writeFileSync(file, apply(readFileSync(file, 'utf8'), edits));
   }
   return { done, clashes };
 }
 
-/** How the set's name is bound in the file: imported already, free to import, or taken. */
 function bindingOf(
+  program: ts.Program,
   checker: ts.TypeChecker,
   source: ts.SourceFile,
   set: ValueSet,
-): { missing?: true; clash?: string; convert?: Edit[] } {
+): Binding {
   for (const statement of source.statements) {
-    if (!ts.isImportDeclaration(statement)) continue;
+    if (!ts.isImportDeclaration(statement) || statement.attributes) continue;
     const clause = statement.importClause;
     const bindings = clause?.namedBindings;
     if (!clause || !bindings || !ts.isNamedImports(bindings)) continue;
@@ -79,7 +112,12 @@ function bindingOf(
       (d) => d.getSourceFile().fileName === set.file && ts.isVariableDeclaration(d),
     );
     if (!declared) return { clash: `${set.name} is imported from elsewhere` };
-    return { convert: valueImport(source, clause, element) };
+    const spec = (statement.moduleSpecifier as ts.StringLiteral).text;
+    // A re-export may export the set as a type only (`export type { Role }`).
+    if (resolve(program, spec, source.fileName)?.resolvedFileName !== set.file) {
+      return { element, moved: true };
+    }
+    return clause.isTypeOnly || element.isTypeOnly ? { element } : {};
   }
   let taken = false;
   const visit = (node: ts.Node): void => {
@@ -108,72 +146,82 @@ function declares(name: ts.Identifier): boolean {
   );
 }
 
-/** Turns a type-only import of the set into a value import. */
-function valueImport(
+/** Adds names to an existing value import of the module, or as a new import line. */
+function additions(
   source: ts.SourceFile,
-  clause: ts.ImportClause,
-  element: ts.ImportSpecifier,
+  missing: Map<string, string[]>,
+  plan: (declaration: ts.ImportDeclaration) => ImportPlan,
 ): Edit[] {
-  if (element.isTypeOnly) {
-    return [{ start: element.getStart(source), end: element.name.getStart(source), text: '' }];
-  }
-  if (!clause.isTypeOnly) return [];
-  const declaration = clause.parent;
-  const start = declaration.getStart(source) + 'import'.length;
-  const keyword = source.text.slice(start).match(/^\s+type\b/);
-  const edits: Edit[] = [{ start, end: start + (keyword?.[0].length ?? 0), text: '' }];
-  const elements = (clause.namedBindings as ts.NamedImports).elements;
-  for (const other of elements) {
-    if (other === element) continue;
-    const at = other.getStart(source);
-    edits.push({ start: at, end: at, text: 'type ' });
-  }
-  return edits;
-}
-
-function importEdits(source: ts.SourceFile, imports: Map<string, ValueSet[]>): Edit[] {
-  const edits: Edit[] = [];
   const declarations = source.statements.filter(ts.isImportDeclaration);
   const fresh: string[] = [];
-  for (const [spec, sets] of imports) {
-    const names = sets.map((s) => s.name).sort();
-    const existing = declarations.find((d) => {
-      const clause = d.importClause;
-      return (
-        ts.isStringLiteral(d.moduleSpecifier) &&
-        d.moduleSpecifier.text === spec &&
-        clause &&
-        !clause.isTypeOnly &&
-        clause.namedBindings &&
-        ts.isNamedImports(clause.namedBindings) &&
-        clause.namedBindings.elements.length
-      );
-    });
-    const last = (
-      existing?.importClause?.namedBindings as ts.NamedImports | undefined
-    )?.elements.at(-1);
-    if (last) edits.push({ start: last.end, end: last.end, text: `, ${names.join(', ')}` });
-    else fresh.push(`import { ${names.join(', ')} } from '${spec}';`);
-  }
-  if (fresh.length) {
-    const after = declarations.at(-1)?.end;
-    edits.push(
-      after === undefined
-        ? { start: 0, end: 0, text: `${fresh.join('\n')}\n` }
-        : { start: after, end: after, text: `\n${fresh.join('\n')}` },
+  for (const [spec, names] of missing) {
+    const existing = declarations.find(
+      (d) =>
+        (d.moduleSpecifier as ts.StringLiteral).text === spec &&
+        !d.attributes &&
+        d.importClause &&
+        !d.importClause.isTypeOnly &&
+        d.importClause.namedBindings &&
+        ts.isNamedImports(d.importClause.namedBindings),
     );
+    if (existing) plan(existing).added.push(...names.sort());
+    else fresh.push(`import { ${names.sort().join(', ')} } from '${spec}';`);
   }
-  return edits;
+  if (!fresh.length) return [];
+  const after = declarations.at(-1)?.end;
+  return [
+    after === undefined
+      ? { start: 0, end: 0, text: `${fresh.join('\n')}\n` }
+      : { start: after, end: after, text: `\n${fresh.join('\n')}` },
+  ];
 }
 
-/** The import path of a set: relative inside packages/shared, the package export elsewhere. */
-export function specifier(root: string, from: string, setFile: string): string {
+/** The import declaration with the plan applied; `pnpm format` tidies it afterwards. */
+function rewrite(source: ts.SourceFile, declaration: ts.ImportDeclaration, plan: ImportPlan): Edit {
+  const clause = declaration.importClause as ts.ImportClause;
+  const elements = (clause.namedBindings as ts.NamedImports).elements;
+  const typeOnly = clause.isTypeOnly && !plan.converted.size;
+  const names = elements
+    .filter((e) => !plan.removed.has(e))
+    .map((e) => {
+      const name = e.propertyName
+        ? `${e.propertyName.getText(source)} as ${e.name.text}`
+        : e.name.text;
+      const type = !plan.converted.has(e) && (e.isTypeOnly || (clause.isTypeOnly && !typeOnly));
+      return `${type ? 'type ' : ''}${name}`;
+    })
+    .concat(plan.added);
+  const start = declaration.getStart(source);
+  if (!names.length && !clause.name) {
+    const newline = source.text[declaration.end] === '\n' ? 1 : 0;
+    return { start, end: declaration.end + newline, text: '' };
+  }
+  const head = clause.name ? `${clause.name.text}${names.length ? ', ' : ''}` : '';
+  const body = names.length ? `{ ${names.join(', ')} }` : '';
+  const from = declaration.moduleSpecifier.getText(source);
+  return {
+    start,
+    end: declaration.end,
+    text: `import ${typeOnly ? 'type ' : ''}${head}${body} from ${from};`,
+  };
+}
+
+/**
+ * The import path of a set: the package export where the file's package resolves it, else a
+ * relative path (inside packages/shared, and in e2e, which is no workspace package).
+ */
+function specifier(root: string, program: ts.Program, from: string, setFile: string): string {
   const shared = join(root, 'packages', 'shared') + sep;
   const rel = relative(root, setFile).split(sep).join('/');
-  if (!from.startsWith(shared)) {
-    if (rel.startsWith('packages/shared/src/values/')) return '@rampflow/shared/values';
-    const module = rel.match(/^packages\/shared\/src\/modules\/([^/]+)\/values\.ts$/)?.[1];
-    if (module) return `@rampflow/shared/modules/${module}/values`;
+  const module = rel.match(/^packages\/shared\/src\/modules\/([^/]+)\/values\.ts$/)?.[1];
+  const exported = rel.startsWith('packages/shared/src/values/')
+    ? '@rampflow/shared/values'
+    : module && `@rampflow/shared/modules/${module}/values`;
+  if (exported && !from.startsWith(shared)) {
+    const resolved = resolve(program, exported, from)?.resolvedFileName;
+    if (resolved === setFile || (resolved && dirname(resolved) === dirname(setFile))) {
+      return exported;
+    }
   }
   const path = relative(dirname(from), setFile).split(sep).join('/');
   return path.startsWith('.') ? path : `./${path}`;

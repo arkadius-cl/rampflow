@@ -166,7 +166,7 @@ function climb(node: ts.Node): { site: ts.Node; parent: ts.Node; element: boolea
   }
 }
 
-function isConstAssertion(node: ts.AsExpression) {
+export function isConstAssertion(node: ts.AsExpression) {
   return ts.isTypeReferenceNode(node.type) && node.type.typeName.getText() === 'const';
 }
 

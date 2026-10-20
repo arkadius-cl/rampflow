@@ -11,6 +11,7 @@
     "jsx": "preserve",
     "types": [],
     "paths": {
+      "@rampflow/shared": ["./packages/shared/src/index.ts"],
       "@rampflow/shared/values": ["./packages/shared/src/values/index.ts"],
       "@rampflow/shared/*": ["./packages/shared/src/*.ts"]
     }

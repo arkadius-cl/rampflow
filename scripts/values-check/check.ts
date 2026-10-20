@@ -1,7 +1,14 @@
 import { globSync } from 'node:fs';
 import { dirname, join, relative, resolve as resolvePath, sep } from 'node:path';
 import ts from 'typescript-6';
-import { type Context, contextOf, isLibraryAnnotation, isValuePosition } from './context.ts';
+import {
+  type Context,
+  contextOf,
+  isConstAssertion,
+  isLibraryAnnotation,
+  isValuePosition,
+} from './context.ts';
+import { dependencies } from './imports.ts';
 import { equalsSomeSet, indexSets, resolve, type ValueSet, type Verdict } from './sets.ts';
 
 /** Where the packages and the value sets of a checkout live. */
@@ -20,6 +27,7 @@ export interface Finding {
   file: string;
   line: number;
   col: number;
+  /** The text `--fix` replaces: the literal, or `'x' as const` as a whole. */
   start: number;
   end: number;
   literal: string;
@@ -79,11 +87,10 @@ export function check(layout: Layout): CheckResult {
       programs.set(tsconfig, program);
       sets ??= indexSets(program, extra);
       const known = sets;
-      const checker = program.getTypeChecker();
       for (const file of roots) {
         if (!isScanned(layout.root, file)) continue;
         const source = program.getSourceFile(file);
-        if (source) findings.push(...scan(layout.root, pkg, tsconfig, checker, source, known));
+        if (source) findings.push(...scan(layout.root, pkg, tsconfig, program, source, known));
       }
     }
   }
@@ -128,10 +135,11 @@ function scan(
   root: string,
   pkg: string,
   tsconfig: string,
-  checker: ts.TypeChecker,
+  program: ts.Program,
   source: ts.SourceFile,
   sets: readonly ValueSet[],
 ): Finding[] {
+  const checker = program.getTypeChecker();
   const found: Finding[] = [];
   const lines = source.text.split('\n');
   const visit = (node: ts.Node): void => {
@@ -142,10 +150,16 @@ function scan(
     ) {
       const context = contextOf(checker, node);
       const verdict = context && judge(root, checker, context, node.text, sets);
-      if (verdict) {
+      // A manifest declares the keys that `Permission` is derived from; it keeps its literals.
+      const defines =
+        verdict?.kind === 'set' && dependencies(program, verdict.set.file).has(source.fileName);
+      if (verdict && !defines) {
         const start = node.getStart(source);
         const { line, character } = source.getLineAndCharacterOfPosition(start);
         const ignored = (lines[line]?.match(IGNORE) ?? lines[line - 1]?.match(IGNORE))?.[1];
+        // `X.member as const` does not compile, and the member is a literal type already.
+        const asConst =
+          ts.isAsExpression(node.parent) && isConstAssertion(node.parent) ? node.parent : undefined;
         found.push({
           pkg,
           tsconfig,
@@ -153,7 +167,7 @@ function scan(
           line: line + 1,
           col: character + 1,
           start,
-          end: node.end,
+          end: asConst ? asConst.end : node.end,
           literal: node.text,
           jsx: ts.isJsxAttribute(node.parent),
           verdict,

@@ -88,7 +88,8 @@ test('--fix rewrites literals to members, adds imports, and type-checks', () => 
 
   assert.deepEqual(diagnostics(root), []);
   assert.match(read('apps/web/src/badge.tsx'), /status=\{BookingStatus\.checked_in\}/);
-  assert.match(read('apps/web/src/badge.tsx'), /^import \{ BookingStatus \} from/m);
+  assert.match(read('apps/web/src/badge.tsx'), /^import \{ BookingStatus, LoadStatus \} from/m);
+  assert.match(read('apps/web/src/typed.ts'), /^import \{ BookingStatus, type LoadStatus \} from/m);
   assert.match(read('apps/web/src/usage.ts'), /requirePermission\(Permission\.booking\.view\)/);
   assert.match(
     read('apps/web/src/usage.ts'),
@@ -104,7 +105,13 @@ test('--fix rewrites literals to members, adds imports, and type-checks', () => 
   const rules = read('packages/shared/src/modules/booking/rules.ts');
   assert.match(rules, /^import \{ BookingStatus \} from '\.\/values\.ts';$/m);
   assert.match(rules, /^import \{ Permission \} from '\.\.\/\.\.\/values\/keys\.ts';$/m);
+  assert.equal(
+    read('apps/web/src/reexport.ts').split('\n').slice(0, 1).join(),
+    "import { BookingStatus } from '@rampflow/shared/modules/booking/values';",
+  );
+  assert.match(read('apps/web/src/reexport.ts'), /= \[BookingStatus\.cancelled\];/);
   assert.match(read('apps/web/src/clash.ts'), /role: RoleName = 'admin'/);
+  assert.match(read('packages/shared/src/modules/booking/manifest.ts'), /= 'booking\.view'/);
   assert.deepEqual([...fixed.clashes.values()], ['Role is a local name']);
 });
 
@@ -116,7 +123,8 @@ test('a second --fix changes nothing', () => {
   assert.deepEqual(
     again.findings
       .map((f) => f.verdict.kind === 'set' && !f.ignored && f.verdict.access)
-      .filter(Boolean),
+      .filter(Boolean)
+      .sort(),
     ['Role.admin'],
   );
   fix(root, again);
