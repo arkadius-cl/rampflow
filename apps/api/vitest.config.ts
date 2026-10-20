@@ -10,6 +10,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       ENABLE_JOBS: '0',
       ENABLE_TEST_ROUTES: '1',
+      ENABLE_API_DOCS: '0',
       APP_ORIGIN: 'http://rampflow.test',
       APP_EXTRA_ORIGINS: '',
     },
