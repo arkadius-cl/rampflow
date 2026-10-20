@@ -5,6 +5,9 @@ import {
   DockStatus,
   DoorType,
   RateLimitBucket,
+  Salutation,
+  TaxIdStatus,
+  TaxIdType,
   TemperatureZone,
 } from '@rampflow/shared/modules/core/values';
 import {
@@ -79,13 +82,32 @@ export const org = pgTable(
     kind: text('kind', { enum: values(OrgKind) }).notNull(),
     name: text('name').notNull(),
     country: char('country', { length: 2 }),
+    // Tenant-only facts (design decision 3); org_tenant_facts_check keeps them off other kinds.
+    taxIdType: text('tax_id_type', { enum: values(TaxIdType) }),
+    taxIdValue: text('tax_id_value'),
+    taxIdStatus: text('tax_id_status', { enum: values(TaxIdStatus) }),
+    taxIdCheckedAt: instant('tax_id_checked_at'),
+    possibleDuplicate: boolean('possible_duplicate').notNull().default(false),
+    /** Null while the tenant is onboarding (`tenantStatus`). */
+    activatedAt: instant('activated_at'),
     createdAt: createdAt(),
   },
   (t) => [
     unique('org_id_kind_key').on(t.id, t.kind),
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
+    index('org_tax_id_value_idx')
+      .on(t.taxIdValue)
+      .where(oneOf(t.kind, [OrgKind.tenant])),
     check('org_kind_check', oneOf(t.kind, values(OrgKind))),
     check('org_name_length', sql`char_length(${t.name}) between 1 and 120`),
+    check(
+      'org_tenant_facts_check',
+      sql`${oneOf(t.kind, [OrgKind.tenant])} or (${t.taxIdType} is null and ${t.taxIdValue} is null and ${t.taxIdStatus} is null and ${t.taxIdCheckedAt} is null and not ${t.possibleDuplicate} and ${t.activatedAt} is null)`,
+    ),
+    check(
+      'org_tax_id_check',
+      sql`((${t.taxIdType} is null and ${t.taxIdValue} is null and ${t.taxIdStatus} is null) or (${t.taxIdType} is not null and ${t.taxIdValue} is not null and ${t.taxIdStatus} is not null)) and ${oneOf(t.taxIdType, values(TaxIdType))} and ${oneOf(t.taxIdStatus, values(TaxIdStatus))}`,
+    ),
     allow(ScopeParty.platform, PolicyCommand.all, always),
     allow(
       ScopeParty.user,
@@ -113,9 +135,14 @@ export const org = pgTable(
       sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
     ),
     allow(ScopeParty.system, PolicyCommand.select, always),
-    // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02).
+    // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02),
+    // an onboarding tenant on a verified self-registration (RG-02).
     allow(ScopeParty.user, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
-    allow(ScopeParty.token, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
+    allow(
+      ScopeParty.token,
+      PolicyCommand.insert,
+      sql`${t.kind} = 'carrier' or (${oneOf(t.kind, [OrgKind.tenant])} and ${t.activatedAt} is null)`,
+    ),
   ],
 );
 
@@ -127,6 +154,10 @@ export const appUser = pgTable(
     email: citext('email').notNull().unique(),
     name: text('name').notNull(),
     locale: text('locale', { enum: values(StaffLocale) }),
+    // Name parts of a self-registered user, for email greetings only; `name` stays the display name.
+    givenName: text('given_name'),
+    familyName: text('family_name'),
+    salutation: text('salutation', { enum: values(Salutation) }),
     passwordHash: text('password_hash'),
     emailVerifiedAt: instant('email_verified_at'),
     lastSeenAt: instant('last_seen_at'),
@@ -137,6 +168,7 @@ export const appUser = pgTable(
   },
   (t) => [
     check('app_user_locale_check', oneOf(t.locale, values(StaffLocale))),
+    check('app_user_salutation_check', oneOf(t.salutation, values(Salutation))),
     check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
     allow(ScopeParty.platform, PolicyCommand.all, always),
     allow(ScopeParty.user, PolicyCommand.select, userIs(t.id)),
@@ -261,6 +293,8 @@ export const tenantSubscription = pgTable(
   (t) => [
     check('tenant_subscription_package_check', oneOf(t.package, values(PackageId))),
     ...tenantEntitlementPolicies(t),
+    // A verified self-registration starts on the free package only (RG-02).
+    allow(ScopeParty.token, PolicyCommand.insert, oneOf(t.package, [PackageId.start])),
   ],
 );
 

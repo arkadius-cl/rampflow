@@ -21,6 +21,7 @@ import * as carriersSchema from '../modules/booking/schema.carriers.ts';
 import * as resourcesSchema from '../modules/booking/schema.resources.ts';
 import * as bookingSchema from '../modules/booking/schema.ts';
 import * as brandSchema from '../modules/brand/schema.ts';
+import * as signupSchema from '../modules/core/schema.signup.ts';
 import * as coreSchema from '../modules/core/schema.ts';
 import * as driverSchema from '../modules/driver/schema.ts';
 import * as notifySchema from '../modules/notify/schema.ts';
@@ -222,10 +223,18 @@ const never: Relations = {
 };
 
 /** Tables that hold no tenant data and no RLS (ADR-0002, "Tables without RLS"). */
-const WITHOUT_RLS = ['auth_token', 'job_run', 'public_link', 'rate_limit_event', 'session'];
+const WITHOUT_RLS = [
+  'auth_token',
+  'job_run',
+  'public_link',
+  'rate_limit_event',
+  'session',
+  'tenant_signup',
+];
 
 const TABLES: PgTable[] = [
   coreSchema,
+  signupSchema,
   notifySchema,
   resourcesSchema,
   bookingSchema,

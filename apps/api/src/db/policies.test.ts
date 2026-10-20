@@ -5,6 +5,7 @@ import {
   CarrierRole,
   EmailTemplate,
   OrgKind,
+  PackageId,
   Role,
   ScopeParty,
   SqlState,
@@ -18,7 +19,7 @@ import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
 import { bookableResource } from '../modules/booking/schema.resources.ts';
 import { booking, bookingEvent } from '../modules/booking/schema.ts';
-import { invitation, membership, org } from '../modules/core/schema.ts';
+import { invitation, membership, org, tenantSubscription } from '../modules/core/schema.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
 import { hashToken, type OrgId, type TenantId } from './ids.ts';
 import { asScope, type Scope, withScope } from './scope.ts';
@@ -181,6 +182,68 @@ describe('carrier company creation', () => {
         tx.insert(org).values({ kind: OrgKind.tenant, name: 'Sneaky' }),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
+  });
+});
+
+describe('tenant creation by a signup token', () => {
+  const token = (): Scope => ({
+    party: ScopeParty.token,
+    tokenHash: hashToken(`signup-${randomUUID()}`),
+    userId: null,
+  });
+  const tenantRow = (activatedAt: Date | null) => ({
+    id: randomUUID() as TenantId,
+    kind: OrgKind.tenant,
+    name: 'Nordhafen Kühllogistik GmbH',
+    activatedAt,
+  });
+
+  it('inserts an onboarding tenant on the start package, never an active one or pro', async () => {
+    const onboarding = tenantRow(null);
+    await withScope(token(), async (tx) => {
+      await tx.insert(org).values(onboarding);
+      await tx.insert(tenantSubscription).values({
+        tenantId: onboarding.id,
+        package: PackageId.start,
+        updatedBy: w.platformAdmin.id,
+      });
+    });
+    try {
+      expect(
+        await ownerDb()
+          .select()
+          .from(tenantSubscription)
+          .where(eq(tenantSubscription.tenantId, onboarding.id)),
+      ).toHaveLength(1);
+      await expect(
+        withScope(token(), (tx) => tx.insert(org).values(tenantRow(new Date()))),
+      ).rejects.toMatchObject(RLS_DENIED);
+      const other = tenantRow(null);
+      await ownerDb().insert(org).values(other);
+      try {
+        await expect(
+          withScope(token(), (tx) =>
+            tx.insert(tenantSubscription).values({
+              tenantId: other.id,
+              package: PackageId.pro,
+              updatedBy: w.platformAdmin.id,
+            }),
+          ),
+        ).rejects.toMatchObject(RLS_DENIED);
+      } finally {
+        await ownerDb().delete(org).where(eq(org.id, other.id));
+      }
+    } finally {
+      await ownerDb().delete(org).where(eq(org.id, onboarding.id));
+    }
+  });
+
+  it('refuses tenant facts on a carrier org', async () => {
+    await expect(
+      ownerDb()
+        .insert(org)
+        .values({ kind: OrgKind.carrier, name: 'Trans-Pol', activatedAt: new Date() }),
+    ).rejects.toMatchObject({ cause: { code: SqlState.check_violation } });
   });
 });
 
