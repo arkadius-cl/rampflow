@@ -91,6 +91,7 @@ describe('catalog check', () => {
       write('status.json', { ...status, tr: undefined });
       for (const l of ['en', 'de', 'pl']) write(`${l}/yard/nav.json`, { docks: 'x' });
       expect(checkCatalogs(dir, [yard], { requireDerivedParts: true }).map(formatProblem)).toEqual([
+        'yard/module.json: missing derived part',
         'yard/nav.json: missing derived key gate',
         'yard/entitlements.json: missing derived part',
         'status.json has no source, machine or reviewed entry for tr',

@@ -1,6 +1,6 @@
 // Writes what derives from the manifests and the en catalogs:
 // - the label parts of ADR-0009 point 5,
-//     packages/i18n/locales/<locale>/<module>/{nav,entitlements,settings}.json
+//     packages/i18n/locales/<locale>/<module>/{module,nav,entitlements,settings}.json
 //   for every module and every locale of its set. Existing labels are kept, keys the manifests
 //   no longer have are dropped, and new keys get a placeholder (the en label in other locales,
 //   a humanized key in en) that a person then translates;
@@ -62,6 +62,7 @@ const read = (path: string): Map<string, string> =>
 const stale: string[] = [];
 for (const m of catalog) {
   const parts: Record<string, string[]> = {
+    module: ['name'],
     nav: m.nav.map((n) => n.id),
     entitlements: Object.entries(m.entitlements)
       .filter(([, def]) => !('reserved' in def && def.reserved))
@@ -75,7 +76,9 @@ for (const m of catalog) {
   for (const [part, keys] of Object.entries(parts)) {
     if (keys.length === 0) continue;
     const en = read(join(LOCALES_DIR, SOURCE_LOCALE, m.id, `${part}.json`));
-    const source = new Map(keys.map((key) => [key, en.get(key) ?? humanize(key)]));
+    // A module's name has no key of its own to humanize: its placeholder is the module id.
+    const placeholder = (key: string) => (part === 'module' ? humanize(m.id) : humanize(key));
+    const source = new Map(keys.map((key) => [key, en.get(key) ?? placeholder(key)]));
     for (const locale of locales) {
       const path = join(LOCALES_DIR, locale, m.id, `${part}.json`);
       const current = read(path);

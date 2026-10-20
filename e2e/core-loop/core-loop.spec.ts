@@ -90,6 +90,7 @@ test.describe('Core loop', () => {
         await dialog.getByRole('button', { name: 'Create and invite' }).click();
         await expect(page.getByRole('heading', { name: tenantName })).toBeVisible();
         tenantId = /\/platform\/tenants\/([0-9a-f-]+)$/.exec(page.url())?.[1] as string;
+        await page.getByRole('button', { name: 'Expand all' }).click();
         await expect(page.getByTestId('entitlement-safety.gate_enforcement')).toContainText('On');
         await expectAccessible(page);
       });

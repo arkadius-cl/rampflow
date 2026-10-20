@@ -3501,7 +3501,7 @@
       "get": {
         "operationId": "core.me.getMe",
         "summary": "Get me",
-        "description": "`{ user, memberships }` for the org picker ([Module contract](module-contract.md#context-endpoints))",
+        "description": "`{ user, memberships, uiPrefs }` for the org picker and the stored UI state ([Module contract](module-contract.md#context-endpoints), [ADR-0014](../decisions/ADR-0014-user-ui-preferences.md))",
         "tags": [
           "Auth, me and invitations"
         ],
@@ -3584,11 +3584,57 @@
                           "role"
                         ]
                       }
+                    },
+                    "uiPrefs": {
+                      "type": "object",
+                      "properties": {
+                        "platform.packages.openModules": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "avis",
+                              "booking",
+                              "brand",
+                              "core",
+                              "driver",
+                              "i18n",
+                              "integration",
+                              "notify",
+                              "privacy",
+                              "report",
+                              "safety",
+                              "yard"
+                            ]
+                          }
+                        },
+                        "platform.tenant.openModules": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "avis",
+                              "booking",
+                              "brand",
+                              "core",
+                              "driver",
+                              "i18n",
+                              "integration",
+                              "notify",
+                              "privacy",
+                              "report",
+                              "safety",
+                              "yard"
+                            ]
+                          }
+                        }
+                      }
                     }
                   },
                   "required": [
                     "user",
-                    "memberships"
+                    "memberships",
+                    "uiPrefs"
                   ]
                 }
               }
@@ -3605,7 +3651,7 @@
       "patch": {
         "operationId": "core.me.updateMe",
         "summary": "Update me",
-        "description": "`{ name?, locale? }`; answers like GET",
+        "description": "`{ name?, locale?, uiPrefs? }`; `uiPrefs` merges key by key into the stored object; answers like GET",
         "tags": [
           "Auth, me and invitations"
         ],
@@ -3628,6 +3674,54 @@
                       "en",
                       "pl"
                     ]
+                  },
+                  "uiPrefs": {
+                    "type": "object",
+                    "properties": {
+                      "platform.packages.openModules": {
+                        "maxItems": 12,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "core",
+                            "i18n",
+                            "privacy",
+                            "brand",
+                            "integration",
+                            "booking",
+                            "avis",
+                            "yard",
+                            "safety",
+                            "notify",
+                            "report",
+                            "driver"
+                          ]
+                        }
+                      },
+                      "platform.tenant.openModules": {
+                        "maxItems": 12,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "core",
+                            "i18n",
+                            "privacy",
+                            "brand",
+                            "integration",
+                            "booking",
+                            "avis",
+                            "yard",
+                            "safety",
+                            "notify",
+                            "report",
+                            "driver"
+                          ]
+                        }
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 }
               },
@@ -3714,11 +3808,57 @@
                           "role"
                         ]
                       }
+                    },
+                    "uiPrefs": {
+                      "type": "object",
+                      "properties": {
+                        "platform.packages.openModules": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "avis",
+                              "booking",
+                              "brand",
+                              "core",
+                              "driver",
+                              "i18n",
+                              "integration",
+                              "notify",
+                              "privacy",
+                              "report",
+                              "safety",
+                              "yard"
+                            ]
+                          }
+                        },
+                        "platform.tenant.openModules": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "avis",
+                              "booking",
+                              "brand",
+                              "core",
+                              "driver",
+                              "i18n",
+                              "integration",
+                              "notify",
+                              "privacy",
+                              "report",
+                              "safety",
+                              "yard"
+                            ]
+                          }
+                        }
+                      }
                     }
                   },
                   "required": [
                     "user",
-                    "memberships"
+                    "memberships",
+                    "uiPrefs"
                   ]
                 }
               }

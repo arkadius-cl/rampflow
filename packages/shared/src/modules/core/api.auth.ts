@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { ROLES } from '../../contract/module.ts';
 import { STAFF_LOCALES } from '../../locales.ts';
+import { UiPrefs } from './ui-prefs.ts';
 
 // Request and response bodies of /api/auth, /api/me and /api/public/invitations (U2).
 
@@ -45,11 +46,13 @@ export const MeResponse = z.object({
   memberships: z.array(
     z.object({ orgId: z.uuid(), orgKind: OrgKind, orgName: z.string(), role: z.enum(ROLES) }),
   ),
+  /** Stored UI state: known, valid keys only (ADR-0014). */
+  uiPrefs: UiPrefs,
 });
 export type MeResponse = z.infer<typeof MeResponse>;
 
 export const MePatchBody = z
-  .object({ name: z.string().trim().min(1).max(120), locale: StaffLocale })
+  .object({ name: z.string().trim().min(1).max(120), locale: StaffLocale, uiPrefs: UiPrefs })
   .partial();
 export type MePatchBody = z.infer<typeof MePatchBody>;
 

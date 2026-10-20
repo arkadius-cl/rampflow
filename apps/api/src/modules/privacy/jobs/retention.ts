@@ -118,6 +118,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
             email: `deleted-${u.id}@invalid.rampflow`,
             name: '-',
             locale: null,
+            uiPrefs: {},
             passwordHash: null,
             emailVerifiedAt: null,
             disabledAt: now,

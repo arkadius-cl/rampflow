@@ -96,5 +96,11 @@
     "email": "E-Mail der Admin-Person",
     "reinvite": "Admin erneut einladen",
     "sent": "Einladung an {{email}} gesendet."
+  },
+  "groups": {
+    "expand_all": "Alle aufklappen",
+    "collapse_all": "Alle zuklappen",
+    "header": "{{module}} ({{count}})",
+    "summary": "{{on}} von {{total}} Funktionen aktiv"
   }
 }

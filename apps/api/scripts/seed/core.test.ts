@@ -1,9 +1,10 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { app } from '../../src/app.ts';
+import { appUser } from '../../src/modules/core/schema.ts';
 import { ownerCount, ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
-import { ACME, DEMO_PASSWORD, DEMO_USERS, seed, TRANS_POL } from './core.ts';
+import { ACME, ADMIN_UI_PREFS, DEMO_PASSWORD, DEMO_USERS, seed, TRANS_POL } from './core.ts';
 
 const run = () => ownerDb().transaction((tx) => seed({ db: tx, log: () => undefined }));
 
@@ -39,5 +40,21 @@ describe('pnpm db:seed, core', () => {
     expect(
       ((await ctx.json()) as { tenants: { name: string }[] }).tenants.map((t) => t.name),
     ).toEqual([ACME]);
+  });
+
+  it('opens two package groups for the platform admin and keeps keys set by hand', async () => {
+    const email = 'admin@rampflow.local';
+    const prefs = async () =>
+      (
+        await ownerDb().select({ v: appUser.uiPrefs }).from(appUser).where(eq(appUser.email, email))
+      )[0]?.v;
+    await run();
+    await ownerDb()
+      .update(appUser)
+      .set({ uiPrefs: { 'platform.tenant.openModules': ['yard'] } })
+      .where(eq(appUser.email, email));
+    await run();
+    await run();
+    expect(await prefs()).toEqual({ ...ADMIN_UI_PREFS, 'platform.tenant.openModules': ['yard'] });
   });
 });

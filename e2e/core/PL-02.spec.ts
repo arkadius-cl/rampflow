@@ -1,8 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 
 test.describe('PL-02 Packages and overrides', () => {
-  test('the platform admin sees the packages read-only', async ({ page, context, request }) => {
+  const group = (page: Page, name: string) =>
+    page.getByRole('button', { name: new RegExp(`^${name} \\(\\d+\\)$`) });
+  const savedPrefs = (page: Page) =>
+    page.waitForResponse((r) => r.url().endsWith('/api/me') && r.request().method() === 'PATCH');
+
+  test('the platform admin sees the packages read-only, grouped by module', async ({
+    page,
+    context,
+    request,
+  }) => {
     const w = await seedWorld(request);
     await signInAs(context, w.platformAdmin);
 
@@ -10,10 +19,76 @@ test.describe('PL-02 Packages and overrides', () => {
     for (const name of ['Start', 'Pro', 'Enterprise']) {
       await expect(page.getByRole('columnheader', { name, exact: true })).toBeVisible();
     }
+    // Collapsed at first: the header counts the features each package grants.
+    await expect(page.getByRole('button', { name: 'Expand all' })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Briefing quiz/ })).toHaveCount(0);
+    await expect(page.getByTestId('module-group-safety').getByRole('cell')).toHaveText([
+      'Safety (5)',
+      /^2\/4/,
+      /^4\/4/,
+      /^4\/4/,
+    ]);
+    await expect(page.getByTestId('module-group-core').getByRole('cell')).toHaveText([
+      'Core (3)',
+      '',
+      '',
+      '',
+    ]);
+    for (const id of ['driver', 'i18n', 'privacy']) {
+      await expect(page.getByTestId(`module-group-${id}`)).toHaveCount(0);
+    }
+    await expectAccessible(page);
+
+    await group(page, 'Safety').click();
+    await expect(group(page, 'Safety')).toHaveAttribute('aria-expanded', 'true');
     const quiz = page.getByRole('row', { name: /Briefing quiz/ });
     await expect(quiz.getByRole('cell')).toHaveText([/safety\.quiz/, 'Off', 'On', 'On']);
+    await expect(page.getByTestId('module-group-safety').getByRole('cell').nth(1)).toHaveText('');
     await expect(page.getByRole('textbox')).toHaveCount(0);
+
+    // By keyboard: the yard rows sit under their header.
+    await group(page, 'Yard').focus();
+    await page.keyboard.press('Enter');
+    await expect(group(page, 'Yard')).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('[data-testid="module-group-yard"] + tr + tr + tr')).toHaveAttribute(
+      'data-testid',
+      'module-group-safety',
+    );
+    await expect(page.getByTestId('entitlement-yard.checkin_qr')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Expand all' }).click();
+    await expect(page.getByRole('button', { name: 'Collapse all' })).toBeVisible();
+    await expect(page.locator('table button[aria-expanded="false"]')).toHaveCount(0);
     await expectAccessible(page);
+    await page.getByRole('button', { name: 'Collapse all' }).click();
+    await expect(page.locator('table button[aria-expanded="true"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Expand all' })).toBeVisible();
+  });
+
+  test('the open groups follow the admin to another browser, per page', async ({
+    page,
+    context,
+    request,
+    browser,
+  }) => {
+    const w = await seedWorld(request);
+    await signInAs(context, w.platformAdmin);
+    await page.goto('/platform/packages');
+    const saved = savedPrefs(page);
+    await group(page, 'Yard').click();
+    await saved;
+
+    const other = await browser.newContext();
+    await signInAs(other, w.platformAdmin);
+    const second = await other.newPage();
+    await second.goto('/platform/packages');
+    await expect(group(second, 'Yard')).toHaveAttribute('aria-expanded', 'true');
+    await expect(second.locator('table button[aria-expanded="true"]')).toHaveCount(1);
+
+    await second.goto(`/platform/tenants/${w.A.tenantId}`);
+    await expect(group(second, 'Yard')).toHaveAttribute('aria-expanded', 'false');
+    await expect(second.locator('table button[aria-expanded="true"]')).toHaveCount(0);
+    await other.close();
   });
 
   test('an override turning off the logo hides the tenant admin’s nav item until removed', async ({
@@ -36,6 +111,7 @@ test.describe('PL-02 Packages and overrides', () => {
 
     await page.goto(`/platform/tenants/${w.A.tenantId}`);
     await expect(page.getByText('No overrides. The package applies as it is.')).toBeVisible();
+    await expect(page.locator('table button[aria-expanded="true"]')).toHaveCount(0);
     await expectAccessible(page);
 
     await page.getByLabel('Entitlement').selectOption('brand.logo');
@@ -48,12 +124,22 @@ test.describe('PL-02 Packages and overrides', () => {
     await expect(override).toContainText('Off');
     await expect(override).toContainText('lower');
     await expect(override).toContainText('2030');
+    // Collapsed, the value column counts the override, the package column what the package grants.
+    await expect(page.getByTestId('module-group-brand').getByRole('cell')).toHaveText([
+      'Branding (1)',
+      /^0\/1/,
+      /^1\/1/,
+      '',
+    ]);
+    await group(page, 'Branding').click();
     await expect(page.getByTestId('entitlement-brand.logo')).toContainText('Override');
+    await expectAccessible(page);
 
     await page.getByLabel('Entitlement').selectOption('core.max_sites');
     await page.getByLabel('Value', { exact: true }).fill('9');
     await page.getByRole('button', { name: 'Add override' }).click();
     await expect(page.getByTestId('override-core.max_sites')).toContainText('higher');
+    await group(page, 'Core').click();
     await expect(page.getByTestId('entitlement-core.max_sites')).toContainText('9');
 
     await tenantPage.reload();

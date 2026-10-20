@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [mvp, scope, booking, yard, safety, avis, entitlements, settings, i18n, gdpr]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/explanation/research/market-and-features.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/explanation/domain-glossary.md]
 ---
 
@@ -57,6 +57,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 
 1. **PL-01 Create a tenant.** Creating tenant Acme with a package and an admin email gives Acme that package's entitlements and sends an invitation. Accepting it makes the user `tenant_admin` of Acme only.
 2. **PL-02 Packages and overrides.** The admin sees the three packages read-only and sets per-tenant overrides with an optional expiry.
+   - Both the packages page and the tenant's entitlements are grouped by module. Groups start collapsed, show per column how many of their features are on, and the open groups are stored per user, so they follow the admin to another computer.
    - Overrides can raise or lower a value, apply on the next request, and lapse at expiry.
    - Unknown or reserved keys return 400.
    - A route whose entitlement is off returns 403 `entitlement_required` with the key, and its navigation item is hidden.

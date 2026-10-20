@@ -1,0 +1,2 @@
+ALTER TABLE "app_user" ADD COLUMN "ui_prefs" jsonb DEFAULT '{}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "app_user" ADD CONSTRAINT "app_user_ui_prefs_check" CHECK (jsonb_typeof("app_user"."ui_prefs") = 'object');

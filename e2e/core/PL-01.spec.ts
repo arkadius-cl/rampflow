@@ -30,6 +30,8 @@ test.describe('PL-01 Create a tenant', () => {
 
     await expect(page.getByRole('heading', { name })).toBeVisible();
     const tenantId = /\/platform\/tenants\/([0-9a-f-]+)$/.exec(page.url())?.[1] as string;
+    // Entitlement groups start collapsed (PL-02).
+    await page.getByRole('button', { name: 'Expand all' }).click();
     await expect(page.getByTestId('entitlement-core.max_sites')).toContainText('5');
     await expect(page.getByTestId('entitlement-safety.quiz')).toContainText('On');
     await expect(page.getByText(adminEmail)).toBeVisible();
