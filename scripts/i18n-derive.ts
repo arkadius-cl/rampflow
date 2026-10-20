@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_LOCALE } from '../packages/shared/src/locales.ts';
+import { catalog } from '../packages/shared/src/registry.ts';
 import { isValueOf, values } from '../packages/shared/src/values/define.ts';
 import {
   DerivedPart,
@@ -20,7 +21,6 @@ import {
   LocaleSet,
   StaffLocale,
 } from '../packages/shared/src/values/locales.ts';
-import { catalog } from '../packages/shared/src/registry.ts';
 
 type Tree = { [key: string]: string | Tree };
 
@@ -86,7 +86,8 @@ for (const m of catalog) {
     if (keys.length === 0) continue;
     const en = read(join(LOCALES_DIR, SOURCE_LOCALE, m.id, `${part}.json`));
     // A module's name has no key of its own to humanize: its placeholder is the module id.
-    const placeholder = (key: string) => (part === DerivedPart.module ? humanize(m.id) : humanize(key));
+    const placeholder = (key: string) =>
+      part === DerivedPart.module ? humanize(m.id) : humanize(key);
     const source = new Map(keys.map((key) => [key, en.get(key) ?? placeholder(key)]));
     for (const locale of locales) {
       const path = join(LOCALES_DIR, locale, m.id, `${part}.json`);

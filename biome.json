@@ -5,6 +5,7 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
+  "plugins": [{ "path": "./lint/value-literals.grit", "includes": ["**", "!**/*.gen.ts"] }],
   "files": {
     "includes": [
       "**",
