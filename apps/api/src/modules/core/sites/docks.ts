@@ -7,6 +7,7 @@ import {
   type UpdateDock,
   type UpdateHall,
 } from '@rampflow/shared/modules/core/api.sites';
+import { ConflictReason, ErrorCode, Limit } from '@rampflow/shared/values';
 import { and, count, eq, inArray } from 'drizzle-orm';
 import type { DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -65,7 +66,7 @@ export async function updateHall(
     .set(input)
     .where(and(eq(hall.tenantId, tenantId), eq(hall.siteId, siteId), eq(hall.id, hallId)))
     .returning();
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return hallView(row);
 }
 
@@ -120,7 +121,7 @@ function withinDockLimit(tx: Tx, req: TenantRequest): Promise<void> {
     tx,
     req.tenantId,
     req.entitlements,
-    'core.max_docks',
+    Limit.core.max_docks,
     countCountedDocks(req.tenantId),
   );
 }
@@ -147,8 +148,8 @@ async function rejectDuplicateCode(
     .from(dock)
     .where(and(eq(dock.tenantId, tenantId), eq(dock.siteId, siteId), eq(dock.code, code)));
   if (row && row.id !== except) {
-    throw new ApiError('conflict', `Dock code ${code} exists on this site`, {
-      reason: 'duplicate_code',
+    throw new ApiError(ErrorCode.conflict, `Dock code ${code} exists on this site`, {
+      reason: ConflictReason.duplicate_code,
     });
   }
 }
@@ -167,7 +168,9 @@ export async function createDock(
     .insert(dock)
     .values({ ...input, sort: input.sort ?? 0, tenantId: req.tenantId, siteId })
     .returning()
-    .catch((e: unknown) => conflictOnUnique(e, 'dock_site_code_key', 'duplicate_code'));
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'dock_site_code_key', ConflictReason.duplicate_code),
+    );
   if (!row) throw new Error('dock insert returned nothing');
   const [view] = await dockViews(tx, req.tenantId, [row]);
   return view as DockView;
@@ -186,7 +189,7 @@ export async function updateDock(
     .select()
     .from(dock)
     .where(and(eq(dock.tenantId, req.tenantId), eq(dock.siteId, siteId), eq(dock.id, dockId)));
-  if (!current) throw new ApiError('not_found');
+  if (!current) throw new ApiError(ErrorCode.not_found);
   if (input.hallId) await requireHallOnSite(tx, req.tenantId, siteId, input.hallId);
   if (input.status && isCounted(input.status) && !isCounted(current.status)) {
     await withinDockLimit(tx, req);
@@ -197,8 +200,10 @@ export async function updateDock(
     .set(input)
     .where(and(eq(dock.tenantId, req.tenantId), eq(dock.id, dockId)))
     .returning()
-    .catch((e: unknown) => conflictOnUnique(e, 'dock_site_code_key', 'duplicate_code'));
-  if (!row) throw new ApiError('not_found');
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'dock_site_code_key', ConflictReason.duplicate_code),
+    );
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const [view] = await dockViews(tx, req.tenantId, [row]);
   return view as DockView;
 }

@@ -1,6 +1,5 @@
-import type { Role, StaffLocale } from '@rampflow/shared';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
-import type { OrgKind } from '@rampflow/shared/values';
+import { Module, OrgKind, Role, StaffLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
 import { hashPassword, verifyPassword } from '../../src/modules/core/auth/password.ts';
@@ -21,7 +20,9 @@ import { findOrg, type SeedContext } from './context.ts';
 export const DEMO_PASSWORD = 'rampflow-demo';
 export const ACME = 'Acme Logistics';
 export const TRANS_POL = 'Trans-Pol Sp. z o.o.';
-export const ADMIN_UI_PREFS: UiPrefs = { 'platform.packages.openModules': ['booking', 'yard'] };
+export const ADMIN_UI_PREFS: UiPrefs = {
+  'platform.packages.openModules': [Module.booking, Module.yard],
+};
 
 interface DemoUser {
   email: string;
@@ -35,38 +36,44 @@ export const DEMO_USERS: readonly DemoUser[] = [
   {
     email: 'admin@rampflow.local',
     name: 'Sam Ops',
-    locale: 'en',
+    locale: StaffLocale.en,
     org: 'platform',
-    role: 'platform_admin',
+    role: Role.platform_admin,
   },
-  { email: 'admin@acme.local', name: 'Anna Lenz', locale: 'de', org: 'acme', role: 'tenant_admin' },
+  {
+    email: 'admin@acme.local',
+    name: 'Anna Lenz',
+    locale: StaffLocale.de,
+    org: 'acme',
+    role: Role.tenant_admin,
+  },
   {
     email: 'dispatch@acme.local',
     name: 'Daniel Brandt',
-    locale: 'de',
+    locale: StaffLocale.de,
     org: 'acme',
-    role: 'dispatcher',
+    role: Role.dispatcher,
   },
   {
     email: 'gate@acme.local',
     name: 'Gerd Weber',
-    locale: 'de',
+    locale: StaffLocale.de,
     org: 'acme',
-    role: 'gate_operator',
+    role: Role.gate_operator,
   },
   {
     email: 'dock@acme.local',
     name: 'Dana Krüger',
-    locale: 'de',
+    locale: StaffLocale.de,
     org: 'acme',
-    role: 'dock_operator',
+    role: Role.dock_operator,
   },
   {
     email: 'admin@trans-pol.local',
     name: 'Piotr Nowak',
-    locale: 'pl',
+    locale: StaffLocale.pl,
     org: 'transpol',
-    role: 'carrier_admin',
+    role: Role.carrier_admin,
   },
 ];
 
@@ -78,7 +85,8 @@ async function ensureOrg(
   name: string,
   country: string | null,
 ): Promise<AnyOrgId> {
-  const found = kind === 'platform' ? await platformOrg(ctx) : await findOrg(ctx.db, kind, name);
+  const found =
+    kind === OrgKind.platform ? await platformOrg(ctx) : await findOrg(ctx.db, kind, name);
   if (found) return found;
   const [row] = await ctx.db.insert(org).values({ kind, name, country }).returning({ id: org.id });
   ctx.log(`created ${kind} ${name}`);
@@ -123,9 +131,9 @@ async function ensureUser(ctx: SeedContext, u: DemoUser): Promise<UserId> {
 
 export async function seed(ctx: SeedContext): Promise<void> {
   const orgs = {
-    platform: await ensureOrg(ctx, 'platform', 'rampflow', null),
-    acme: await ensureOrg(ctx, 'tenant', ACME, 'DE'),
-    transpol: await ensureOrg(ctx, 'carrier', TRANS_POL, 'PL'),
+    platform: await ensureOrg(ctx, OrgKind.platform, 'rampflow', null),
+    acme: await ensureOrg(ctx, OrgKind.tenant, ACME, 'DE'),
+    transpol: await ensureOrg(ctx, OrgKind.carrier, TRANS_POL, 'PL'),
   };
   const users = new Map<string, UserId>();
   for (const u of DEMO_USERS) {

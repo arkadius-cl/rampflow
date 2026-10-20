@@ -1,4 +1,5 @@
-import type { OrgKind } from '@rampflow/shared/values';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, OrgKind, SiteLimitedRole } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -30,7 +31,10 @@ export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_TOUCH_MS = 5 * 60 * 1000;
 
-const SITE_LIMITED_ROLES: ReadonlySet<TenantRole> = new Set(['gate_operator', 'dock_operator']);
+const SITE_LIMITED_ROLES: ReadonlySet<TenantRole> = new Set([
+  SiteLimitedRole.gate_operator,
+  SiteLimitedRole.dock_operator,
+]);
 const uuid = z.uuid();
 
 /** The signed-in user of the `rf_session` cookie, or `null`. Touches `last_seen_at` every 5 min. */
@@ -65,14 +69,14 @@ export async function sessionUser(c: Context<AppEnv>): Promise<UserId | null> {
 
 async function requireUser(c: Context<AppEnv>): Promise<UserId> {
   const userId = await sessionUser(c);
-  if (!userId) throw new ApiError('unauthorized');
+  if (!userId) throw new ApiError(ErrorCode.unauthorized);
   return userId;
 }
 
 /** A path id that is not a UUID is an unknown id: 404, never a database error. */
 function pathId<T extends string>(c: Context<AppEnv>, name: string): T {
   const parsed = uuid.safeParse(c.req.param(name));
-  if (!parsed.success) throw new ApiError('not_found');
+  if (!parsed.success) throw new ApiError(ErrorCode.not_found);
   return parsed.data as T;
 }
 
@@ -112,8 +116,8 @@ export const platformScope: ScopeResolver = async (c) => {
       .from(membership)
       .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'platform'))),
   );
-  if (!found.some((m) => m.role === 'platform_admin')) throw new ApiError('not_found');
-  return { party: 'platform', userId };
+  if (!found.some((m) => m.role === 'platform_admin')) throw new ApiError(ErrorCode.not_found);
+  return { party: OrgKind.platform, userId };
 };
 
 /**
@@ -123,12 +127,12 @@ export const platformScope: ScopeResolver = async (c) => {
 export const tenantScope: ScopeResolver = async (c) => {
   const userId = await requireUser(c);
   const tenantId = pathId<TenantId>(c, 'orgId');
-  const m = await membershipIn(userId, tenantId, 'tenant');
-  if (!m) throw new ApiError('not_found');
+  const m = await membershipIn(userId, tenantId, OrgKind.tenant);
+  if (!m) throw new ApiError(ErrorCode.not_found);
   const role = m.role as TenantRole;
   const limited = SITE_LIMITED_ROLES.has(role) && m.siteIds.length > 0;
   return {
-    party: 'tenant',
+    party: ActorParty.tenant,
     tenantId,
     siteIds: limited ? (m.siteIds as SiteId[]) : 'all',
     actor: { kind: 'user', userId, role },
@@ -141,16 +145,16 @@ const AT_TENANT = /^\/api\/c\/[^/]+\/at\/([^/]+)(?:\/|$)/;
 export const carrierScope: ScopeResolver = async (c) => {
   const userId = await requireUser(c);
   const carrierId = pathId<CarrierId>(c, 'orgId');
-  const m = await membershipIn(userId, carrierId, 'carrier');
-  if (!m) throw new ApiError('not_found');
+  const m = await membershipIn(userId, carrierId, OrgKind.carrier);
+  if (!m) throw new ApiError(ErrorCode.not_found);
   const role = m.role as CarrierRole;
   const atTenant = AT_TENANT.exec(c.req.path)?.[1];
-  if (atTenant === undefined) return { party: 'carrier', carrierId, userId, role };
+  if (atTenant === undefined) return { party: ActorParty.carrier, carrierId, userId, role };
 
   const parsed = uuid.safeParse(atTenant);
-  if (!parsed.success) throw new ApiError('not_found');
+  if (!parsed.success) throw new ApiError(ErrorCode.not_found);
   const tenantId = parsed.data as TenantId;
-  const carrier: Scope = { party: 'carrier', carrierId, userId, role };
+  const carrier: Scope = { party: ActorParty.carrier, carrierId, userId, role };
   const [link] = await withScope(carrier, (tx) =>
     tx
       .select({ status: tenantCarrierLink.status })
@@ -159,14 +163,14 @@ export const carrierScope: ScopeResolver = async (c) => {
         and(eq(tenantCarrierLink.tenantId, tenantId), eq(tenantCarrierLink.carrierId, carrierId)),
       ),
   );
-  if (!link) throw new ApiError('not_found');
+  if (!link) throw new ApiError(ErrorCode.not_found);
   return { party: 'carrier_at_tenant', carrierId, tenantId, userId, role };
 };
 
 /** `/api/driver/*`: the `rf_driver` cookie names an unrevoked, unexpired `driver_access` row. */
 export const driverScope: ScopeResolver = async (c) => {
   const token = getCookie(c, DRIVER_COOKIE);
-  if (!token) throw new ApiError('unauthorized');
+  if (!token) throw new ApiError(ErrorCode.unauthorized);
   const now = c.var.clock.now();
   const [access] = await withScope(tokenScope(token, null), (tx) =>
     tx
@@ -184,8 +188,8 @@ export const driverScope: ScopeResolver = async (c) => {
         ),
       ),
   );
-  if (!access) throw new ApiError('unauthorized');
-  return { party: 'driver', ...access };
+  if (!access) throw new ApiError(ErrorCode.unauthorized);
+  return { party: ActorParty.driver, ...access };
 };
 
 /**

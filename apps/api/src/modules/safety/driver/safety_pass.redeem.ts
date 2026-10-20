@@ -1,5 +1,8 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
 import { type BookingStatus, sourceStates } from '@rampflow/shared/modules/booking/lifecycle';
+import { ActorParty, BookingParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
+import { ErrorCode, SystemActorName } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { TokenHash } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -21,10 +24,10 @@ import {
 // the tenant, inside the request transaction (ADR-0002).
 
 const asTenant = (tenantId: SafetyTarget['tenantId']): Scope => ({
-  party: 'tenant',
+  party: ActorParty.tenant,
   tenantId,
   siteIds: 'all',
-  actor: systemActor('safety_pass'),
+  actor: systemActor(SystemActorName.safety_pass),
 });
 
 /**
@@ -76,12 +79,14 @@ export async function redeemPasses(
   target: SafetyTarget & { status: BookingStatus },
   deviceHash: TokenHash,
 ): Promise<number> {
-  if (!sourceStates('link_acknowledgement', 'driver').includes(target.status)) return 0;
+  if (!sourceStates('link_acknowledgement', BookingParty.driver).includes(target.status)) return 0;
   const { tx, now } = ctx;
   return asScope(tx, asTenant(target.tenantId), async (inner) => {
     const safety = await bookingSafety(inner, ctx.access, target, now);
     const missing = new Set(
-      safety.instructions.filter((i) => i.status === 'missing').map((i) => i.instructionId),
+      safety.instructions
+        .filter((i) => i.status === InstructionSafety.missing)
+        .map((i) => i.instructionId),
     );
     if (missing.size === 0) return 0;
     const passes = await inner
@@ -112,12 +117,12 @@ export async function redeemPasses(
         await transitionBooking({ ...ctx, tx: inner }, target.id, {
           type: 'link_acknowledgement',
           acknowledgementId: pass.acknowledgementId,
-          via: 'pass',
+          via: LinkVia.pass,
         });
         linked++;
       } catch (e) {
         // An acknowledgement outdated by a material change stays on the phone but links nothing.
-        if (e instanceof ApiError && e.code === 'conflict') continue;
+        if (e instanceof ApiError && e.code === ErrorCode.conflict) continue;
         throw e;
       }
     }

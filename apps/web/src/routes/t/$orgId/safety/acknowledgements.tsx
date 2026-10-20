@@ -1,5 +1,6 @@
 import type { RegisterFilter, RegisterItem } from '@rampflow/shared/modules/safety/api.register';
 import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
+import { Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ClipboardCheckIcon, DownloadIcon, SearchIcon } from 'lucide-react';
@@ -42,7 +43,7 @@ import {
 // the driver name is a personal search term (API routes, "Requests").
 
 export const Route = createFileRoute('/t/$orgId/safety/acknowledgements')({
-  beforeLoad: guard({ permission: 'safety.view_register' }),
+  beforeLoad: guard({ permission: Permission.safety.view_register }),
   component: RegisterPage,
 });
 

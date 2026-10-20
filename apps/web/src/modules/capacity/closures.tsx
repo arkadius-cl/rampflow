@@ -5,6 +5,7 @@ import {
   CreateClosure,
   type ResourceView,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { ClosureKind, ClosureSource } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CalendarOffIcon, PlusIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
@@ -179,7 +180,7 @@ export function ClosuresCard({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {c.source === 'holiday' ? (
+                        {c.source === ClosureSource.holiday ? (
                           <span className="inline-flex flex-wrap items-center gap-1.5">
                             {c.holidayName}
                             <Badge variant="secondary">
@@ -193,7 +194,7 @@ export function ClosuresCard({
                         )}
                       </TableCell>
                       <TableCell className="pr-6 text-right">
-                        {c.source === 'manual' ? (
+                        {c.source === ClosureSource.manual ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -268,7 +269,7 @@ function ClosureDialog({
   const empty: ClosureValues = {
     siteId,
     resourceId: null,
-    kind: 'closed',
+    kind: ClosureKind.closed,
     startsLocal: '',
     endsLocal: '',
     reason: null,

@@ -1,5 +1,6 @@
 import type { PortalBookingView, PortalOffers } from '@rampflow/shared/modules/booking/api.portal';
 import { type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,7 @@ const bookingApi = () => api.c[':orgId'].at[':tenantId'].bookings[':bookingId'];
 export function useRefreshOffers(orgId: string) {
   const queryClient = useQueryClient();
   return (error: unknown, request: { tenantId: string; loadTypeId: string; loadUnits: number }) => {
-    if (!(error instanceof ApiFailure) || error.code !== 'conflict') return false;
+    if (!(error instanceof ApiFailure) || error.code !== ErrorCode.conflict) return false;
     const offers = error.details.offers as PortalOffers | undefined;
     if (!offers) return false;
     queryClient.setQueryData(

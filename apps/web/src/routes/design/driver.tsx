@@ -1,3 +1,4 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   BellRingIcon,
@@ -118,7 +119,7 @@ function BookingView() {
         <div className="min-w-0">
           <div className="text-sm text-muted-foreground">Show at the gate</div>
           <div className="font-mono text-2xl font-semibold tracking-wide">{booking.code}</div>
-          <BookingStatusBadge status="confirmed" size="lg" className="mt-2" />
+          <BookingStatusBadge status={BookingStatus.confirmed} size="lg" className="mt-2" />
         </div>
       </section>
 
@@ -292,7 +293,7 @@ function WaitingView() {
         <p className="text-lg text-muted-foreground">
           You are checked in. We will call you to a dock on this page. Keep it open.
         </p>
-        <BookingStatusBadge status="checked_in" size="xl" />
+        <BookingStatusBadge status={BookingStatus.checked_in} size="xl" />
         <dl className="mt-2 grid w-full grid-cols-2 gap-3 text-left text-sm">
           <div className="rounded-lg bg-muted p-3">
             <dt className="text-muted-foreground">Checked in</dt>

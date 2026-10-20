@@ -1,4 +1,5 @@
 import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
+import { PackageId } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -15,7 +16,7 @@ const app = createApp({ clock: testClock(new Date()) });
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'start', B: 'pro' } });
+  w = await world({ packages: { A: PackageId.start, B: PackageId.pro } });
 });
 
 const path = (side: World['A'], key = '') => `/api/t/${side.tenantId}/settings${key && `/${key}`}`;

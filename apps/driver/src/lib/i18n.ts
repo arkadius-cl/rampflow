@@ -1,6 +1,7 @@
 import { createBrowserI18n } from '@rampflow/i18n/browser';
 import status from '@rampflow/i18n/locales/status.json';
-import { DRIVER_LOCALES, type DriverLocale } from '@rampflow/shared/locales';
+import { DRIVER_LOCALES } from '@rampflow/shared/locales';
+import { DriverLocale } from '@rampflow/shared/values';
 import type { i18n } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import type app from '../../../../packages/i18n/locales/en/driver/app.json';
@@ -18,7 +19,7 @@ declare module 'i18next' {
 }
 
 const STORAGE_KEY = 'rf_driver_locale';
-export const FALLBACK_LOCALE: DriverLocale = 'en';
+export const FALLBACK_LOCALE: DriverLocale = DriverLocale.en;
 
 export const isDriverLocale = (value: unknown): value is DriverLocale =>
   typeof value === 'string' && (DRIVER_LOCALES as readonly string[]).includes(value);

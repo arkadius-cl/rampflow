@@ -47,15 +47,15 @@ const EnvSchema = z
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('rampflow <no-reply@rampflow.local>'),
   })
-  .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === 'production'), {
+  .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === NodeEnv.production), {
     message: 'ENABLE_TEST_ROUTES=1 is not allowed with NODE_ENV=production',
     path: ['ENABLE_TEST_ROUTES'],
   })
-  .refine((e) => !(e.ENABLE_API_DOCS && e.NODE_ENV === 'production'), {
+  .refine((e) => !(e.ENABLE_API_DOCS && e.NODE_ENV === NodeEnv.production), {
     message: 'ENABLE_API_DOCS=1 is not allowed with NODE_ENV=production',
     path: ['ENABLE_API_DOCS'],
   })
-  .refine((e) => e.NODE_ENV !== 'production' || !e.TOKEN_SECRET.startsWith('dev-only'), {
+  .refine((e) => e.NODE_ENV !== NodeEnv.production || !e.TOKEN_SECRET.startsWith('dev-only'), {
     message: 'Set TOKEN_SECRET in production',
     path: ['TOKEN_SECRET'],
   });

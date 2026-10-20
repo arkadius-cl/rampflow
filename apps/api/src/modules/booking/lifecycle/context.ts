@@ -1,4 +1,4 @@
-import type { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SystemActorName } from '@rampflow/shared/values';
 import type { Context } from 'hono';
@@ -27,14 +27,14 @@ export function bookingContext(c: Context<AppEnv>): BookingContext {
   const { scope, access, db } = c.var;
   const now = c.var.clock.now();
   switch (scope.party) {
-    case 'tenant':
+    case ActorParty.tenant:
       return {
         tx: db,
         tenantId: scope.tenantId,
         actor:
           scope.actor.kind === 'user'
-            ? { party: 'staff', userId: scope.actor.userId }
-            : { party: 'system', job: scope.actor.job },
+            ? { party: BookingParty.staff, userId: scope.actor.userId }
+            : { party: BookingParty.system, job: scope.actor.job },
         access,
         now,
       };
@@ -42,15 +42,15 @@ export function bookingContext(c: Context<AppEnv>): BookingContext {
       return {
         tx: db,
         tenantId: scope.tenantId,
-        actor: { party: 'carrier', userId: scope.userId, carrierId: scope.carrierId },
+        actor: { party: BookingParty.carrier, userId: scope.userId, carrierId: scope.carrierId },
         access,
         now,
       };
-    case 'driver':
+    case ActorParty.driver:
       return {
         tx: db,
         tenantId: scope.tenantId,
-        actor: { party: 'driver', bookingId: scope.bookingId, channel: scope.channel },
+        actor: { party: BookingParty.driver, bookingId: scope.bookingId, channel: scope.channel },
         access,
         now,
       };
@@ -60,7 +60,7 @@ export function bookingContext(c: Context<AppEnv>): BookingContext {
 }
 
 export const actorUserId = (actor: BookingActor): UserId | null =>
-  actor.party === 'staff' || actor.party === 'carrier' ? actor.userId : null;
+  actor.party === BookingParty.staff || actor.party === BookingParty.carrier ? actor.userId : null;
 
 /** `booking_event.actor_*` columns. */
 export function eventActor(actor: BookingActor): {
@@ -77,6 +77,6 @@ export function eventActor(actor: BookingActor): {
   return {
     actorParty: party[actor.party],
     actorUserId: actorUserId(actor),
-    actorJob: actor.party === 'system' ? actor.job : null,
+    actorJob: actor.party === BookingParty.system ? actor.job : null,
   };
 }

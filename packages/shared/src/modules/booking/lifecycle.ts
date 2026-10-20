@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { DRIVER_LOCALES } from '../../locales.ts';
 import type { ImplementedFeatureKey, PermissionKey } from '../../registry.ts';
 import { values } from '../../values/define.ts';
+import { Feature, Permission } from '../../values/keys.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import {
   BookingParty,
@@ -110,107 +111,120 @@ export interface CommandDef {
 
 const ACTIVE = LOAD_STATUSES;
 const carrierBook: CommandActor = {
-  permission: 'booking.book',
+  permission: Permission.booking.book,
   beforeCutoff: true,
   activeLink: true,
 };
-const staffBook: CommandActor = { permission: 'booking.staff_book' };
+const staffBook: CommandActor = { permission: Permission.booking.staff_book };
 
 /** The command table of docs/reference/booking-lifecycle.md. */
 export const COMMANDS = {
   reschedule: {
-    from: ['confirmed'],
+    from: [BookingStatus.confirmed],
     to: null,
     actors: { carrier: carrierBook, staff: staffBook },
     siteLock: 'always',
   },
   update_avis: {
-    from: ['confirmed', 'checked_in', 'called', 'at_dock', 'loading', 'done'],
+    from: [
+      BookingStatus.confirmed,
+      BookingStatus.checked_in,
+      BookingStatus.called,
+      BookingStatus.at_dock,
+      BookingStatus.loading,
+      BookingStatus.done,
+    ],
     to: null,
-    actors: { carrier: { ...carrierBook, from: ['confirmed'] }, staff: staffBook },
+    actors: { carrier: { ...carrierBook, from: [BookingStatus.confirmed] }, staff: staffBook },
     siteLock: 'when_duration_changes',
   },
   cancel: {
-    from: ['confirmed'],
-    to: 'cancelled',
+    from: [BookingStatus.confirmed],
+    to: BookingStatus.cancelled,
     actors: { carrier: { ...carrierBook, activeLink: false }, staff: staffBook },
     siteLock: 'never',
   },
   regenerate_driver_link: {
     from: ACTIVE,
     to: null,
-    actors: { carrier: { permission: 'booking.book' }, staff: staffBook },
+    actors: { carrier: { permission: Permission.booking.book }, staff: staffBook },
     siteLock: 'never',
   },
   send_driver_link: {
     from: ACTIVE,
     to: null,
-    actors: { carrier: { permission: 'booking.book' }, staff: staffBook },
+    actors: { carrier: { permission: Permission.booking.book }, staff: staffBook },
     siteLock: 'never',
   },
   mark_no_show: {
-    from: ['confirmed'],
-    to: 'no_show',
+    from: [BookingStatus.confirmed],
+    to: BookingStatus.no_show,
     actors: { system: { permission: null } },
     siteLock: 'never',
   },
   check_in: {
-    from: ['confirmed', 'no_show'],
-    to: 'checked_in',
-    actors: { staff: { permission: 'yard.gate' } },
+    from: [BookingStatus.confirmed, BookingStatus.no_show],
+    to: BookingStatus.checked_in,
+    actors: { staff: { permission: Permission.yard.gate } },
     siteLock: 'never',
   },
   turn_away: {
-    from: ['confirmed', 'no_show', 'checked_in'],
-    to: 'turned_away',
-    actors: { staff: { permission: 'yard.gate' } },
+    from: [BookingStatus.confirmed, BookingStatus.no_show, BookingStatus.checked_in],
+    to: BookingStatus.turned_away,
+    actors: { staff: { permission: Permission.yard.gate } },
     siteLock: 'never',
   },
   call: {
-    from: ['checked_in', 'called'],
-    to: 'called',
-    actors: { staff: { permission: 'yard.call' } },
-    entitlement: 'yard.call_to_dock',
+    from: [BookingStatus.checked_in, BookingStatus.called],
+    to: BookingStatus.called,
+    actors: { staff: { permission: Permission.yard.call } },
+    entitlement: Feature.yard.call_to_dock,
     siteLock: 'never',
   },
   uncall: {
-    from: ['called'],
-    to: 'checked_in',
-    actors: { staff: { permission: 'yard.call' } },
-    entitlement: 'yard.call_to_dock',
+    from: [BookingStatus.called],
+    to: BookingStatus.checked_in,
+    actors: { staff: { permission: Permission.yard.call } },
+    entitlement: Feature.yard.call_to_dock,
     siteLock: 'never',
   },
   dock: {
-    from: ['checked_in', 'called'],
-    to: 'at_dock',
-    actors: { staff: { permission: 'yard.dock' } },
-    entitlement: 'yard.call_to_dock',
+    from: [BookingStatus.checked_in, BookingStatus.called],
+    to: BookingStatus.at_dock,
+    actors: { staff: { permission: Permission.yard.dock } },
+    entitlement: Feature.yard.call_to_dock,
     siteLock: 'never',
   },
   start_loading: {
-    from: ['checked_in', 'called', 'at_dock'],
-    to: 'loading',
-    actors: { staff: { permission: 'yard.dock' } },
-    entitlement: 'yard.call_to_dock',
+    from: [BookingStatus.checked_in, BookingStatus.called, BookingStatus.at_dock],
+    to: BookingStatus.loading,
+    actors: { staff: { permission: Permission.yard.dock } },
+    entitlement: Feature.yard.call_to_dock,
     siteLock: 'never',
   },
   complete: {
-    from: ['called', 'at_dock', 'loading'],
-    to: 'done',
-    actors: { staff: { permission: 'yard.dock' } },
-    entitlement: 'yard.call_to_dock',
+    from: [BookingStatus.called, BookingStatus.at_dock, BookingStatus.loading],
+    to: BookingStatus.done,
+    actors: { staff: { permission: Permission.yard.dock } },
+    entitlement: Feature.yard.call_to_dock,
     siteLock: 'never',
   },
   depart: {
-    from: ['checked_in', 'called', 'at_dock', 'loading', 'done'],
-    to: 'departed',
-    actors: { staff: { permission: 'yard.gate' } },
+    from: [
+      BookingStatus.checked_in,
+      BookingStatus.called,
+      BookingStatus.at_dock,
+      BookingStatus.loading,
+      BookingStatus.done,
+    ],
+    to: BookingStatus.departed,
+    actors: { staff: { permission: Permission.yard.gate } },
     siteLock: 'never',
   },
   link_acknowledgement: {
-    from: ['confirmed', 'no_show', 'checked_in'],
+    from: [BookingStatus.confirmed, BookingStatus.no_show, BookingStatus.checked_in],
     to: null,
-    actors: { staff: { permission: 'yard.gate' }, driver: { permission: null } },
+    actors: { staff: { permission: Permission.yard.gate }, driver: { permission: null } },
     siteLock: 'never',
   },
 } as const satisfies Record<CommandName, CommandDef>;
@@ -243,7 +257,7 @@ export function punctualityOf(
   earlyToleranceMinutes: number,
   graceMinutes: number,
 ): Punctuality {
-  if (minutes < -earlyToleranceMinutes) return 'early';
-  if (minutes > graceMinutes) return 'late';
-  return 'on_time';
+  if (minutes < -earlyToleranceMinutes) return Punctuality.early;
+  if (minutes > graceMinutes) return Punctuality.late;
+  return Punctuality.on_time;
 }

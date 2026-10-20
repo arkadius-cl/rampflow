@@ -67,11 +67,11 @@ export const CreateResource = z
     sort: z.int().min(0).optional(),
     dockIds: ids.min(1),
   })
-  .refine((r) => r.kind === 'pool' || r.dockIds.length === 1, {
+  .refine((r) => r.kind === ResourceKind.pool || r.dockIds.length === 1, {
     message: 'A single resource has exactly one dock',
     path: ['dockIds'],
   })
-  .refine((r) => r.kind === 'pool' || r.capacityCap == null, {
+  .refine((r) => r.kind === ResourceKind.pool || r.capacityCap == null, {
     message: 'Only pools have a capacity cap',
     path: ['capacityCap'],
   });

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { expectTouchTargets, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
 
@@ -15,7 +16,7 @@ test.describe('YD-06 Dock overview', () => {
       carrier: 'Am Tor AG',
       plate: 'HHAT1',
       start: -10,
-      status: 'loading',
+      status: LoadStatus.loading,
       dockId: s.dockIds[0],
       phone: '+491701234567',
     });
@@ -23,14 +24,14 @@ test.describe('YD-06 Dock overview', () => {
       carrier: 'Später GmbH',
       plate: 'HHSP2',
       start: 30,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
       checkedIn: -5,
     });
     await seedVisit(w, {
       carrier: 'Früher KG',
       plate: 'HHFR3',
       start: -20,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
       checkedIn: -15,
     });
     await signInAs(context, w.A.users.dock_operator);

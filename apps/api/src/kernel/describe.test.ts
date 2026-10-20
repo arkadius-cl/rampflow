@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { Feature, Module, Permission } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
@@ -88,11 +89,11 @@ describe('validate()', () => {
 describe('guards', () => {
   it('record their key on the middleware Hono stores in app.routes', () => {
     const app = new Hono()
-      .use('/yard/*', requireModule('yard'))
+      .use('/yard/*', requireModule(Module.yard))
       .post(
         '/yard/check-in',
-        requirePermission('yard.gate'),
-        requireEntitlement('yard.call_to_dock'),
+        requirePermission(Permission.yard.gate),
+        requireEntitlement(Feature.yard.call_to_dock),
         (c) => c.body(null, 204),
       );
     expect(app.routes.map((r) => describedBy(r.handler))).toEqual([

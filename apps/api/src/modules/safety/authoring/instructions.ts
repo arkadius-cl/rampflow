@@ -10,9 +10,10 @@ import {
   type SafetyLocale,
   type UpdateInstructionBody,
   type VersionDetail,
-  type VersionStatus,
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
+import { VersionStatus } from '@rampflow/shared/modules/safety/values';
+import { ConflictReason, ErrorCode, Limit } from '@rampflow/shared/values';
 import { and, asc, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -40,10 +41,13 @@ const byLocale = (a: { locale: string }, b: { locale: string }) =>
 const quizOn = (entitlements: Entitlements) => entitlements.features['safety.quiz'] === true;
 
 const invalidTransition = (status: VersionStatus) =>
-  new ApiError('conflict', `Version is ${status}`, { reason: 'invalid_transition', status });
+  new ApiError(ErrorCode.conflict, `Version is ${status}`, {
+    reason: ConflictReason.invalid_transition,
+    status,
+  });
 
 const quizRequired = () =>
-  new ApiError('entitlement_required', 'safety.quiz is off', { key: 'safety.quiz' });
+  new ApiError(ErrorCode.entitlement_required, 'safety.quiz is off', { key: 'safety.quiz' });
 
 function contentRow(
   tenantId: TenantId,
@@ -82,7 +86,7 @@ async function assertOwnSites(tx: Tx, tenantId: TenantId, siteIds: readonly stri
     .select({ id: site.id })
     .from(site)
     .where(and(eq(site.tenantId, tenantId), inArray(site.id, unique)));
-  if (found.length !== unique.length) throw new ApiError('not_found', 'Unknown site');
+  if (found.length !== unique.length) throw new ApiError(ErrorCode.not_found, 'Unknown site');
 }
 
 async function replaceSites(
@@ -144,8 +148,12 @@ export async function listInstructions(
       ),
     );
   return instructions.map((i) => {
-    const published = versions.find((v) => v.instructionId === i.id && v.status === 'published');
-    const draft = versions.find((v) => v.instructionId === i.id && v.status === 'draft');
+    const published = versions.find(
+      (v) => v.instructionId === i.id && v.status === VersionStatus.published,
+    );
+    const draft = versions.find(
+      (v) => v.instructionId === i.id && v.status === VersionStatus.draft,
+    );
     return {
       id: i.id,
       name: i.name,
@@ -167,7 +175,7 @@ export async function listInstructions(
 
 async function getInstruction(tx: Tx, tenantId: TenantId, id: InstructionId) {
   const [found] = await listInstructions(tx, tenantId, id);
-  if (!found) throw new ApiError('not_found');
+  if (!found) throw new ApiError(ErrorCode.not_found);
   return found;
 }
 
@@ -181,7 +189,7 @@ export async function createInstruction(
     tx,
     tenantId,
     entitlements,
-    'safety.max_briefing_templates',
+    Limit.safety.max_briefing_templates,
     unarchivedCount(tenantId),
   );
   await assertOwnSites(tx, tenantId, body.siteIds);
@@ -213,7 +221,7 @@ async function lockInstruction(tx: Tx, tenantId: TenantId, id: InstructionId) {
     .from(safetyInstruction)
     .where(and(eq(safetyInstruction.tenantId, tenantId), eq(safetyInstruction.id, id)))
     .for('update');
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -238,7 +246,7 @@ export async function updateInstruction(
       tx,
       tenantId,
       entitlements,
-      'safety.max_briefing_templates',
+      Limit.safety.max_briefing_templates,
       unarchivedCount(tenantId),
     );
     patch.archivedAt = null;
@@ -326,7 +334,7 @@ export async function getVersion(
     .from(safetyVersion)
     .innerJoin(safetyInstruction, eq(safetyInstruction.id, safetyVersion.instructionId))
     .where(and(eq(safetyVersion.tenantId, tenantId), eq(safetyVersion.id, versionId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const [summary] = await summaries(tx, tenantId, [row.version]);
   const content = await tx
     .select()
@@ -356,7 +364,7 @@ export async function openDraft(
       and(eq(safetyVersion.tenantId, tenantId), eq(safetyVersion.instructionId, instructionId)),
     )
     .orderBy(desc(safetyVersion.version));
-  const draft = versions.find((v) => v.status === 'draft');
+  const draft = versions.find((v) => v.status === VersionStatus.draft);
   if (draft) return { created: false, version: await getVersion(tx, tenantId, draft.id) };
   const latest = versions[0];
   if (!latest) throw new Error(`instruction ${instructionId} has no version`);
@@ -391,7 +399,7 @@ async function lockVersion(tx: Tx, tenantId: TenantId, versionId: VersionId) {
     .from(safetyVersion)
     .where(and(eq(safetyVersion.tenantId, tenantId), eq(safetyVersion.id, versionId)))
     .for('update');
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -409,7 +417,7 @@ export async function putContent(
   const { tenantId, entitlements, versionId, locale, body } = input;
   if (body.questions.length > 0 && !quizOn(entitlements)) throw quizRequired();
   const version = await lockVersion(tx, tenantId, versionId);
-  if (version.status !== 'draft') throw invalidTransition(version.status);
+  if (version.status !== VersionStatus.draft) throw invalidTransition(version.status);
   const row = contentRow(tenantId, versionId, locale, body);
   const [saved] = await tx
     .insert(safetyContent)
@@ -448,10 +456,10 @@ export async function publishVersion(
 ): Promise<VersionDetail> {
   const { tenantId, entitlements, versionId, materialChange, userId, now } = input;
   const version = await lockVersion(tx, tenantId, versionId);
-  if (version.status === 'published' && version.materialChange === materialChange) {
+  if (version.status === VersionStatus.published && version.materialChange === materialChange) {
     return getVersion(tx, tenantId, versionId);
   }
-  if (version.status !== 'draft') throw invalidTransition(version.status);
+  if (version.status !== VersionStatus.draft) throw invalidTransition(version.status);
   const content = await tx
     .select({ locale: safetyContent.locale, questions: safetyContent.questions })
     .from(safetyContent)
@@ -465,8 +473,8 @@ export async function publishVersion(
       .filter(({ n }) => n < QUIZ_QUESTIONS.min || n > QUIZ_QUESTIONS.max)
       .map(({ locale }) => locale);
     if (incomplete.length > 0) {
-      throw new ApiError('conflict', 'Every locale needs 3 to 5 questions', {
-        reason: 'quiz_incomplete',
+      throw new ApiError(ErrorCode.conflict, 'Every locale needs 3 to 5 questions', {
+        reason: ConflictReason.quiz_incomplete,
         locales: incomplete,
         ...QUIZ_QUESTIONS,
       });

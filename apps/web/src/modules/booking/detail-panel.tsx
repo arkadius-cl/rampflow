@@ -1,4 +1,5 @@
 import type { BookingView } from '@rampflow/shared/modules/booking/api.staff';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BanIcon, CalendarClockIcon, ExternalLinkIcon, PhoneIcon, XIcon } from 'lucide-react';
@@ -111,7 +112,7 @@ function PanelBody({
           <h2 className="truncate text-lg font-semibold">{booking.carrierName}</h2>
           <div className="mt-1 flex flex-wrap gap-1">
             <BookingStatusBadge status={booking.status} />
-            {booking.safety.status === 'not_required' ? null : (
+            {booking.safety.status === SafetyStatus.not_required ? null : (
               <BookingSafetyBadge status={booking.safety.status} />
             )}
             {booking.punctuality ? (

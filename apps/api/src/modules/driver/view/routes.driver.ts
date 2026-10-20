@@ -1,4 +1,6 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { ErrorCode, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { op, type } from '../../../kernel/describe.ts';
@@ -12,7 +14,7 @@ export const driver = new Hono<AppEnv>().get(
   '/booking',
   op({
     id: 'driver.view.getBooking',
-    stories: ['DR-01', 'DR-03', 'SF-04'],
+    stories: [StoryId.DR_01, StoryId.DR_03, StoryId.SF_04],
     description:
       '`DriverBookingView`: `asOf`, `channel`, tenant name and logo URL, site name, address lines, map link, zone and phone, code, status, slot and check-in and call instants, `dock` (`{ code, hall }` while called, at the dock or loading), safety `{ status, validUntil }`, `privacyNoticeUrl`, `linkExpiresAt`; polled every 15 s; writes nothing',
     responses: { 200: type<DriverBookingView>() },
@@ -20,7 +22,7 @@ export const driver = new Hono<AppEnv>().get(
   async (c) => {
     const { scope, db, access } = c.var;
     const token = getCookie(c, DRIVER_COOKIE);
-    if (scope.party !== 'driver' || !token) throw new ApiError('unauthorized');
+    if (scope.party !== ActorParty.driver || !token) throw new ApiError(ErrorCode.unauthorized);
     const view = await loadDriverView({
       tx: db,
       access,

@@ -1,5 +1,7 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
+import { AckStatus, InstructionSafety, SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import { Setting } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -20,7 +22,7 @@ export interface SafetyTarget {
 /** Whether `check_in` refuses a missing acknowledgement (YD-02, booking lifecycle `check_in`). */
 export async function safetyEnforced(access: Access, siteId: SiteId): Promise<boolean> {
   if (!access.entitlements?.features['safety.gate_enforcement']) return false;
-  return (await access.setting('safety.require_for_checkin', siteId)).value;
+  return (await access.setting(Setting.safety.require_for_checkin, siteId)).value;
 }
 
 /**
@@ -35,10 +37,11 @@ export async function bookingSafety(
 ): Promise<BookingSafety> {
   const enforced = await safetyEnforced(access, b.siteId);
   if (!access.entitlements?.modules.safety) {
-    return { status: 'not_required', enforced: false, instructions: [] };
+    return { status: SafetyStatus.not_required, enforced: false, instructions: [] };
   }
   const applicable = await applicableInstructions(tx, { tenantId: b.tenantId, siteId: b.siteId });
-  if (applicable.length === 0) return { status: 'not_required', enforced, instructions: [] };
+  if (applicable.length === 0)
+    return { status: SafetyStatus.not_required, enforced, instructions: [] };
   const linked = await tx
     .select({
       instructionId: bookingAcknowledgement.instructionId,
@@ -64,15 +67,17 @@ export async function bookingSafety(
       link !== undefined &&
       link.restrictedAt === null &&
       acknowledgementStatus(link, { now, bookingId: b.id, materialFloor: i.materialFloor }) ===
-        'valid';
+        AckStatus.valid;
     return {
       instructionId: i.instructionId,
       name: i.name,
-      status: valid ? ('valid' as const) : ('missing' as const),
+      status: valid ? InstructionSafety.valid : InstructionSafety.missing,
       acknowledgementId: link?.acknowledgementId ?? null,
       expiresAt: link?.expiresAt?.toISOString() ?? null,
     };
   });
-  const status = instructions.every((i) => i.status === 'valid') ? 'valid' : 'missing';
+  const status = instructions.every((i) => i.status === InstructionSafety.valid)
+    ? 'valid'
+    : 'missing';
   return { status, enforced, instructions };
 }

@@ -4,12 +4,14 @@ import {
   LOAD_UNIT_TYPES,
   type LoadUnitType,
 } from '@rampflow/shared/modules/avis/avis';
+import { ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type {
   CreateCarrierBooking,
   PortalBookingView,
   PortalLoadType,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
+import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -109,7 +111,7 @@ export function BookingWizard({
   const refreshOffers = useRefreshOffers(orgId);
   const context = useQuery(carrierContextQuery(orgId)).data;
   const tenants = (context?.tenants ?? []).filter(
-    (x) => x.linkStatus === 'active' && x.carrierPortal,
+    (x) => x.linkStatus === CarrierLinkStatus.active && x.carrierPortal,
   );
   const [selection, setSelection] = useState<Selection>({
     tenantId: tenants.find((x) => x.id === search.tenant)?.id ?? tenants[0]?.id ?? '',
@@ -140,7 +142,7 @@ export function BookingWizard({
     form.reset(
       avisFormValues({
         ...AvisInput.omit({ references: true }).parse(rest),
-        references: [{ type: 'purchase_order', value: '' }],
+        references: [{ type: ReferenceType.purchase_order, value: '' }],
         plateSeen: null,
       }),
     );

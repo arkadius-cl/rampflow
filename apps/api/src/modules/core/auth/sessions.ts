@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { NodeEnv } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
@@ -15,7 +16,7 @@ const cookieOptions = () =>
   ({
     httpOnly: true,
     // Secure everywhere but development, which also covers an unset NODE_ENV (env.ts).
-    secure: env.NODE_ENV !== 'development',
+    secure: env.NODE_ENV !== NodeEnv.development,
     sameSite: 'Lax',
     path: '/',
   }) as const;

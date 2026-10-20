@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type Avis, AvisInput } from '@rampflow/shared/modules/avis/avis';
 import type { BookingView, CreateStaffBooking } from '@rampflow/shared/modules/booking/api.staff';
+import { Direction } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
+import { ErrorCode, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -144,7 +146,7 @@ function SheetForm({
   const { t } = useTranslation('booking');
   const id = useId();
   const access = useAccess();
-  const canForce = access.can('booking.force');
+  const canForce = access.can(Permission.booking.force);
   const queryClient = useQueryClient();
   const loadTypeName = useLoadTypeName();
   const siteTime = useSiteTime();
@@ -230,7 +232,7 @@ function SheetForm({
         }
         if (first === 'carrier') form.setError('carrierName', { type: issue.code });
       }
-      if (e.code === 'conflict' && FORCE_REASONS.has(e.conflictReason ?? '')) {
+      if (e.code === ErrorCode.conflict && FORCE_REASONS.has(e.conflictReason ?? '')) {
         setForceNeeded(canForce);
         void queryClient.invalidateQueries({ queryKey: bookingKey(orgId) });
       }
@@ -502,7 +504,7 @@ function SheetForm({
             <FieldLegend>{t(($) => $.plan.sheet.avis)}</FieldLegend>
             <AvisFields
               form={avisForm}
-              direction={loadType?.direction ?? 'inbound'}
+              direction={loadType?.direction ?? Direction.inbound}
               rules={rules}
             />
           </FieldSet>

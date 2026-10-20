@@ -1,7 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Role } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SystemActorName } from '@rampflow/shared/values';
+import { OrgKind } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, TokenHash, UserId } from './ids.ts';
 import { db, type Tx } from './pool.ts';
@@ -67,19 +69,19 @@ export function sessionVariables(scope: Scope): SessionVariables {
   const v = { ...EMPTY, party: scope.party };
   switch (scope.party) {
     case 'anonymous':
-    case 'system':
+    case ActorParty.system:
       return v;
     case 'user':
-    case 'platform':
+    case OrgKind.platform:
       return { ...v, user_id: scope.userId };
-    case 'tenant':
+    case ActorParty.tenant:
       return {
         ...v,
         tenant_id: scope.tenantId,
         user_id: scope.actor.kind === 'user' ? scope.actor.userId : '',
         site_ids: scope.siteIds === 'all' ? '*' : scope.siteIds.join(','),
       };
-    case 'carrier':
+    case ActorParty.carrier:
       return { ...v, carrier_id: scope.carrierId, user_id: scope.userId };
     case 'carrier_at_tenant':
       return {
@@ -88,7 +90,7 @@ export function sessionVariables(scope: Scope): SessionVariables {
         tenant_id: scope.tenantId,
         user_id: scope.userId,
       };
-    case 'driver':
+    case ActorParty.driver:
       return { ...v, tenant_id: scope.tenantId, booking_id: scope.bookingId };
     case 'token':
       return { ...v, token_hash: scope.tokenHash.toString('hex'), user_id: scope.userId ?? '' };

@@ -3,6 +3,7 @@ import {
   type RegistrationView,
   RejectRegistrationBody,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { InboxIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -109,7 +110,7 @@ export function RegistrationsTab({ orgId }: { orgId: string }) {
                   </div>
                 </TableCell>
                 <TableCell className="pr-6 text-right">
-                  {r.status === 'pending_approval' ? (
+                  {r.status === RegistrationStatus.pending_approval ? (
                     <Decide orgId={orgId} registration={r} />
                   ) : null}
                 </TableCell>

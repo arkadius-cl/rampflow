@@ -1,6 +1,8 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
-import type { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/lifecycle';
+import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import { Punctuality } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
+import { StaffLocale } from '@rampflow/shared/values';
 import {
   FootprintsIcon,
   HourglassIcon,
@@ -70,11 +72,11 @@ export function PunctualityBadge({
     <StatusBadge
       meta={{ ...PUNCTUALITY[punctuality], label }}
       label={
-        minutes === null || punctuality === 'on_time'
+        minutes === null || punctuality === Punctuality.on_time
           ? label
           : t(($) => $.plan.punctuality_minutes, {
               label,
-              minutes: `${punctuality === 'late' ? '+' : '-'}${Math.abs(minutes)}`,
+              minutes: `${punctuality === Punctuality.late ? '+' : '-'}${Math.abs(minutes)}`,
             })
       }
       {...props}
@@ -108,7 +110,7 @@ export function BookingFlagBadge({ flag, ...props }: { flag: BookingFlag } & Bad
 export function useDayLabel() {
   const locale = useLocale();
   // en reads "Mon 19 Oct 2026" as in the UX concept, not the US order.
-  const format = new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, {
+  const format = new Intl.DateTimeFormat(locale === StaffLocale.en ? 'en-GB' : locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -121,5 +123,5 @@ export function useDayLabel() {
 /** A load type's name in the UI language; the API stores de and en (MD-05). */
 export function useLoadTypeName() {
   const locale = useLocale();
-  return (name: { de: string; en: string }) => (locale === 'de' ? name.de : name.en);
+  return (name: { de: string; en: string }) => (locale === StaffLocale.de ? name.de : name.en);
 }

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
   apiCall,
@@ -24,7 +25,7 @@ test.describe('MD-05 Load types', () => {
     await poolWorldDocks(context, w);
     const site = await apiCall<{ id: string }>(
       context,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/sites`,
       newSiteBody('Garching'),
     );
@@ -39,7 +40,7 @@ test.describe('MD-05 Load types', () => {
 
     const { items } = await apiCall<LoadTypes>(
       context,
-      'GET',
+      HttpMethod.GET,
       `/t/${w.A.tenantId}/capacity/load-types?siteId=${site.id}`,
     );
     const id = items.find((lt) => lt.name.en === 'Palletised')?.id;
@@ -47,7 +48,7 @@ test.describe('MD-05 Load types', () => {
       (
         await apiCall<{ durationMinutes: number }>(
           context,
-          'GET',
+          HttpMethod.GET,
           `/t/${w.A.tenantId}/capacity/availability?siteId=${site.id}&date=${nextMonday()}&loadTypeId=${id}&loadUnits=${units}`,
         )
       ).durationMinutes;

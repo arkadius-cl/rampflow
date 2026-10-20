@@ -1,4 +1,6 @@
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
+import { VersionStatus } from '@rampflow/shared/modules/safety/values';
+import { Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { EllipsisIcon, PlusIcon, ShieldCheckIcon } from 'lucide-react';
@@ -44,7 +46,7 @@ import { instructionsQuery, safetyKey } from '@/modules/safety/queries';
 // versions. A row opens the editor.
 
 export const Route = createFileRoute('/t/$orgId/safety/briefings/')({
-  beforeLoad: guard({ permission: 'safety.manage_briefings' }),
+  beforeLoad: guard({ permission: Permission.safety.manage_briefings }),
   component: BriefingsPage,
 });
 
@@ -234,7 +236,7 @@ function InstructionRow({
         {instruction.published ? (
           <span className="inline-flex items-center gap-2">
             <VersionStatusBadge
-              status="published"
+              status={VersionStatus.published}
               size="sm"
               label={t(($) => $.briefings.version, { version: instruction.published.version })}
             />
@@ -251,7 +253,7 @@ function InstructionRow({
       <TableCell>
         {instruction.draft ? (
           <VersionStatusBadge
-            status="draft"
+            status={VersionStatus.draft}
             size="sm"
             label={t(($) => $.briefings.draft_open, { version: instruction.draft.version })}
           />

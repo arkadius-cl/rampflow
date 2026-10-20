@@ -1,3 +1,4 @@
+import { StaffLocale } from '@rampflow/shared/values';
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
 import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
@@ -28,7 +29,7 @@ export const render: EmailTemplateModule<BookingEmailPayload>['render'] = (p, t)
 });
 
 export const example: BookingEmailPayload = {
-  locale: 'de',
+  locale: StaffLocale.de,
   bookingId: '00000000-0000-0000-0000-000000000000',
   code: 'K7M2Q9XA',
   site: {

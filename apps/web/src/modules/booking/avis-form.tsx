@@ -11,12 +11,14 @@ import {
   type AvisRules,
   type AvisView,
   LOAD_UNIT_TYPES,
-  type LoadUnitType,
   PACKING_GROUPS,
   VEHICLE_TYPES,
   type VehicleType,
 } from '@rampflow/shared/modules/avis/avis';
 import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
+import { LoadUnitType } from '@rampflow/shared/modules/avis/values';
+import { Direction } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
 import {
@@ -99,7 +101,7 @@ export function emptyAvis(): AvisFormValues {
   return {
     references: [{ type: 'purchase_order', value: '' }],
     counterpartyName: '',
-    loadUnits: [{ type: 'eur_pallet', quantity: '', label: '' }],
+    loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: '', label: '' }],
     palletPositions: '',
     grossWeightKg: '',
     palletExchange: '',
@@ -247,7 +249,7 @@ export function applyAvisIssues(
   error: unknown,
   form: UseFormReturn<AvisFormValues, unknown, Avis>,
 ) {
-  if (!(error instanceof ApiFailure) || error.code !== 'validation_failed') return false;
+  if (!(error instanceof ApiFailure) || error.code !== ErrorCode.validation_failed) return false;
   const avisIssues = error.issues.filter((i) => i.path[0] === 'avis');
   for (const issue of avisIssues) {
     form.setError(avisErrorPath(issue.path.slice(1)) as FieldPath<AvisFormValues>, {
@@ -441,7 +443,7 @@ export function AvisFields({
 
       {textField(
         'counterpartyName',
-        direction === 'inbound'
+        direction === Direction.inbound
           ? tAvis(($) => $.avis.field.counterpartyInbound)
           : tAvis(($) => $.avis.field.counterpartyOutbound),
       )}
@@ -489,7 +491,7 @@ export function AvisFields({
                   </Field>
                 )}
               />
-              {unitRows[i]?.type === 'other' ? (
+              {unitRows[i]?.type === LoadUnitType.other ? (
                 <Controller
                   name={`loadUnits.${i}.label`}
                   control={control}
@@ -530,7 +532,9 @@ export function AvisFields({
           size="sm"
           className="w-fit"
           disabled={disabled || loadUnits.fields.length >= 20}
-          onClick={() => loadUnits.append({ type: 'eur_pallet', quantity: '', label: '' })}
+          onClick={() =>
+            loadUnits.append({ type: LoadUnitType.eur_pallet, quantity: '', label: '' })
+          }
         >
           <PlusIcon />
           {t(($) => $.plan.avis.add_unit)}
@@ -849,9 +853,9 @@ export function useAvisRules(siteId: string): AvisRules {
     }
   };
   return {
-    requiredReferenceTypes: read('avis.required_reference_types', []),
-    requireGrossWeight: read('avis.require_gross_weight', false),
-    requireDriverPhone: read('avis.require_driver_phone', false),
-    requirePlate: read('booking.require_plate', false),
+    requiredReferenceTypes: read(Setting.avis.required_reference_types, []),
+    requireGrossWeight: read(Setting.avis.require_gross_weight, false),
+    requireDriverPhone: read(Setting.avis.require_driver_phone, false),
+    requirePlate: read(Setting.booking.require_plate, false),
   };
 }

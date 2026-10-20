@@ -1,8 +1,9 @@
+import { JobName } from '@rampflow/shared/values';
 import type { Job } from '../../../kernel/jobs.ts';
 import { deliverOutbox } from '../../../kernel/outbox.ts';
 
 export const job: Job = {
-  name: 'outbox',
+  name: JobName.outbox,
   everySeconds: 5,
   run: (ctx) => deliverOutbox(ctx),
 };

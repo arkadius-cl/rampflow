@@ -1,3 +1,4 @@
+import { TokenPurpose } from '@rampflow/shared/values';
 import { Button, Heading, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
@@ -29,7 +30,7 @@ const button = {
 
 /** CR-03: a single-use link to set a new password, valid for 60 minutes. */
 export function render(payload: PasswordResetPayload, t: TFunction) {
-  const link = `${env.APP_ORIGIN}/auth/reset#${deriveToken('password_reset', payload.authTokenId)}`;
+  const link = `${env.APP_ORIGIN}/auth/reset#${deriveToken(TokenPurpose.password_reset, payload.authTokenId)}`;
   return {
     subject: t('auth.email.password_reset.subject'),
     body: (

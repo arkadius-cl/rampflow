@@ -75,7 +75,7 @@ const loadUnit = z
     stackable: z.boolean().optional(),
     label: z.string().trim().min(1).max(60).optional(),
   })
-  .refine((u) => u.type !== 'other' || u.label !== undefined, {
+  .refine((u) => u.type !== LoadUnitType.other || u.label !== undefined, {
     message: 'Describe the load unit',
     path: ['label'],
   });

@@ -1,3 +1,5 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { Role, TenantRole, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerDb } from '../../../../test/db.ts';
@@ -36,7 +38,7 @@ const sessionOf = (res: Response) =>
 const userWith = (sessionToken: string, id: UserId): WorldUser => ({
   id,
   email: '',
-  role: 'carrier_admin',
+  role: Role.carrier_admin,
   sessionToken,
 });
 
@@ -327,7 +329,7 @@ describe('TN-03 a stale invitation', () => {
         { body: { companyName: 'Rival', email: rival.email } },
       );
       const { id } = (await res.json()) as { id: string };
-      return deriveToken('carrier_invitation', id);
+      return deriveToken(TokenPurpose.carrier_invitation, id);
     };
     const accept = (token: string) =>
       as(app, rival).post('/api/public/carrier-invitations/accept', { body: { token } });
@@ -386,10 +388,10 @@ describe('TN-03 deactivate a link', () => {
     expect(own).toEqual([{ id: w.A.bookings.own.id }]);
     const staff = await asParty(
       {
-        party: 'tenant',
+        party: ActorParty.tenant,
         tenantId: w.A.tenantId,
         siteIds: 'all',
-        actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: 'dispatcher' },
+        actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: TenantRole.dispatcher },
       },
       (tx) =>
         tx.select({ id: booking.id }).from(booking).where(eq(booking.id, w.A.bookings.own.id)),

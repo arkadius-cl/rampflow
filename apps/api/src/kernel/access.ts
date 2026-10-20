@@ -12,12 +12,13 @@ import {
   parseEntitlementOverride,
   permissionsFor,
   type ResolvedSetting,
-  type Role,
   resolveEntitlements,
   resolveSetting,
   type SettingKey,
   type SettingValue,
 } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, OrgKind, Role, SystemActorName } from '@rampflow/shared/values';
 import { eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -47,11 +48,11 @@ const NO_PERMISSIONS: ReadonlySet<PermissionKey> = new Set();
 
 function roleOf(scope: Scope): Role | null {
   switch (scope.party) {
-    case 'platform':
-      return 'platform_admin';
-    case 'tenant':
+    case OrgKind.platform:
+      return Role.platform_admin;
+    case ActorParty.tenant:
       return scope.actor.kind === 'user' ? scope.actor.role : null;
-    case 'carrier':
+    case ActorParty.carrier:
     case 'carrier_at_tenant':
       return scope.role;
     default:
@@ -61,9 +62,9 @@ function roleOf(scope: Scope): Role | null {
 
 function tenantOf(scope: Scope): TenantId | null {
   switch (scope.party) {
-    case 'tenant':
+    case ActorParty.tenant:
     case 'carrier_at_tenant':
-    case 'driver':
+    case ActorParty.driver:
     case 'public':
       return scope.tenantId;
     default:
@@ -129,8 +130,13 @@ function settingLoader(tx: Tx, tenantId: TenantId | null): Access['setting'] {
  * resolved as the tenant, inside the same transaction.
  */
 function entitlementsOf(tx: Tx, scope: Scope, tenantId: TenantId, now: Date) {
-  if (scope.party === 'tenant') return loadEntitlements(tx, tenantId, now);
-  const asTenant: Scope = { party: 'tenant', tenantId, siteIds: [], actor: systemActor('access') };
+  if (scope.party === ActorParty.tenant) return loadEntitlements(tx, tenantId, now);
+  const asTenant: Scope = {
+    party: ActorParty.tenant,
+    tenantId,
+    siteIds: [],
+    actor: systemActor(SystemActorName.access),
+  };
   return asScope(tx, asTenant, (inner) => loadEntitlements(inner, tenantId, now));
 }
 
@@ -160,7 +166,7 @@ export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
     const { entitlements } = c.var.access;
     if (entitlements && !entitlements.modules[id]) {
-      throw new ApiError('entitlement_required', `Module ${id} is off`, {
+      throw new ApiError(ErrorCode.entitlement_required, `Module ${id} is off`, {
         key: blockingFeature(catalog, entitlements, id),
       });
     }
@@ -171,7 +177,8 @@ export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
 
 export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
-    if (!c.var.access.permissions.has(key)) throw new ApiError('forbidden', `Missing ${key}`);
+    if (!c.var.access.permissions.has(key))
+      throw new ApiError(ErrorCode.forbidden, `Missing ${key}`);
     await next();
   });
   return register(guard, { kind: 'guard', guard: { kind: 'permission', key } });
@@ -181,7 +188,7 @@ export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv>
 export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
     if (!c.var.access.entitlements?.features[key]) {
-      throw new ApiError('entitlement_required', `${key} is off`, { key });
+      throw new ApiError(ErrorCode.entitlement_required, `${key} is off`, { key });
     }
     await next();
   });
@@ -210,6 +217,6 @@ export async function withinLimit(
     sql`select pg_advisory_xact_lock(hashtextextended(${`limit:${tenantId}:${key}`}, 0))`,
   );
   if ((await count(tx)) + 1 > limit) {
-    throw new ApiError('limit_reached', `Limit ${key} of ${limit} reached`, { key, limit });
+    throw new ApiError(ErrorCode.limit_reached, `Limit ${key} of ${limit} reached`, { key, limit });
   }
 }

@@ -6,6 +6,7 @@ import {
   USAGE_KEYS,
   type UsageKey,
 } from '@rampflow/shared/modules/core/api.platform';
+import { PackageId, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
@@ -46,7 +47,7 @@ import { platformKeys, tenantsQuery } from '@/modules/core/queries';
 // PL-01, PL-04: tenants with usage against their limits, and "Create tenant".
 
 export const Route = createFileRoute('/platform/tenants/')({
-  beforeLoad: guard({ permission: 'core.manage_tenants' }),
+  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
   component: TenantsPage,
 });
 
@@ -140,7 +141,7 @@ function CreateTenantDialog({ open, onClose }: { open: boolean; onClose: () => v
   const queryClient = useQueryClient();
   const form = useForm<CreateTenant>({
     resolver: zodResolver(CreateTenant),
-    defaultValues: { name: '', package: 'start', adminEmail: '' },
+    defaultValues: { name: '', package: PackageId.start, adminEmail: '' },
   });
   const create = useMutation({
     mutationFn: (json: CreateTenant) => call<TenantDetail>(api.platform.tenants.$post({ json })),

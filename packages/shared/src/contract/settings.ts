@@ -1,6 +1,7 @@
+import { SettingScope } from '../values/settings.ts';
 import { type Catalog, findSetting, type SettingKeyOf, type SettingValueOf } from './catalog.ts';
 import { blockingFeature, type ResolvedEntitlementsOf } from './entitlements.ts';
-import { SETTING_SCOPES, type SettingScope } from './module.ts';
+import { SETTING_SCOPES } from './module.ts';
 import type { Result } from './result.ts';
 
 export type SettingSource = SettingScope | 'default';
@@ -105,11 +106,11 @@ export function parseSettingWrite<C extends Catalog>(
       error: { code: 'scope_not_allowed', key: write.key, scope: write.scope, allowed: def.scopes },
     };
   }
-  if (write.scope !== 'platform' && entitlements === null) {
+  if (write.scope !== SettingScope.platform && entitlements === null) {
     throw new Error(`A ${write.scope} write of ${write.key} needs the tenant's entitlements`);
   }
   const blockedBy =
-    write.scope === 'platform' || entitlements === null
+    write.scope === SettingScope.platform || entitlements === null
       ? null
       : settingBlockedBy(catalog, entitlements, write.key);
   if (blockedBy) {

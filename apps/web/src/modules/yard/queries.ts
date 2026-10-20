@@ -11,6 +11,7 @@ import type {
   WalkInResult,
   YardTruck,
 } from '@rampflow/shared/modules/yard/api';
+import { OrgKind } from '@rampflow/shared/values';
 import {
   queryOptions,
   type UseMutationOptions,
@@ -25,7 +26,8 @@ import { queryKeys } from '@/lib/query-keys';
 
 const POLL_MS = 15_000;
 
-export const yardKey = (orgId: string) => [...queryKeys.org('tenant', orgId), 'yard'] as const;
+export const yardKey = (orgId: string) =>
+  [...queryKeys.org(OrgKind.tenant, orgId), 'yard'] as const;
 
 const yard = api.t[':orgId'].yard;
 
@@ -59,7 +61,7 @@ export const searchQuery = (orgId: string, siteId: string, q: string) =>
 
 export const loadTypesQuery = (orgId: string, siteId: string) =>
   queryOptions({
-    queryKey: [...queryKeys.org('tenant', orgId), 'booking', 'load-types', siteId],
+    queryKey: [...queryKeys.org(OrgKind.tenant, orgId), 'booking', 'load-types', siteId],
     queryFn: () =>
       call<{ items: LoadTypeView[] }>(
         api.t[':orgId'].capacity['load-types'].$get({ param: { orgId }, query: { siteId } }),

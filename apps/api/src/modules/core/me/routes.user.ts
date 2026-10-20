@@ -1,6 +1,7 @@
 import type { Role } from '@rampflow/shared';
 import { MePatchBody, type MeResponse } from '@rampflow/shared/modules/core/api.auth';
 import { parseStoredUiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import { ErrorCode } from '@rampflow/shared/values';
 import { asc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { UserId } from '../../../db/ids.ts';
@@ -26,7 +27,7 @@ async function me(tx: Tx, userId: UserId): Promise<MeResponse> {
     })
     .from(appUser)
     .where(eq(appUser.id, userId));
-  if (!row) throw new ApiError('unauthorized');
+  if (!row) throw new ApiError(ErrorCode.unauthorized);
   const { uiPrefs, ...user } = row;
   const rows = await tx
     .select({

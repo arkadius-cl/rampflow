@@ -1,4 +1,5 @@
 import type { KpiReport, ReportFilter, VisitPage } from '@rampflow/shared/modules/report/api';
+import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -7,7 +8,8 @@ import { queryKeys } from '@/lib/query-keys';
 
 const PAGE_SIZE = 50;
 
-export const reportKey = (orgId: string) => [...queryKeys.org('tenant', orgId), 'report'] as const;
+export const reportKey = (orgId: string) =>
+  [...queryKeys.org(OrgKind.tenant, orgId), 'report'] as const;
 
 const reports = () => api.t[':orgId'].reports;
 

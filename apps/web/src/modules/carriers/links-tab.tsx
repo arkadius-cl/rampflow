@@ -1,4 +1,5 @@
 import type { PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
+import { Permission } from '@rampflow/shared/values';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   CopyIcon,
@@ -73,7 +74,7 @@ export function LinksTab({ orgId }: { orgId: string }) {
         <InfoIcon />
         <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
           <span>{t(($) => $.carriers.links.hint)}</span>
-          {can('core.manage_settings') ? (
+          {can(Permission.core.manage_settings) ? (
             <a
               href={`/t/${orgId}/settings`}
               className={buttonVariants({ variant: 'outline', size: 'sm' })}

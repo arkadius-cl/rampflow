@@ -1,4 +1,5 @@
 import type { StaffList } from '@rampflow/shared/modules/core/api.staff';
+import { Role } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -54,7 +55,7 @@ describe('TN-01 staff', () => {
     expect(mail).toMatchObject({ tenantId: w.A.tenantId, locale: 'de' });
     expect(mail?.payload).toMatchObject({ role: 'gate_operator', inviterName: expect.any(String) });
 
-    const gate = await accept(email, 'gate_operator');
+    const gate = await accept(email, Role.gate_operator);
     const sites = `/api/t/${w.A.tenantId}/sites`;
     expect((await as(app, gate).get(`${sites}/${w.A.sites[0].id}`)).status).toBe(200);
     expect((await as(app, gate).get(`${sites}/${w.A.sites[1].id}`)).status).toBe(404);

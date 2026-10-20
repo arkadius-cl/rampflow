@@ -1,7 +1,18 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  ActorParty,
+  CarrierLinkStatus,
+  CreatedParty,
+  Direction,
+  LinkVia,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import { DriverLocale, OrgKind, SiteLimitedRole, SystemActorName } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, CarrierId, DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
 import type { Scope, TenantRole, Tx } from '../../src/db/scope.ts';
@@ -67,10 +78,14 @@ const dockStep = (dockNo: number) => `D-0${dockNo}`;
 
 /** The day: one visit per state, earliest first. Dock commands name docks by code. */
 function visits(): Visit[] {
-  const gate = (at: number, command: CommandInput): Step => ({ at, as: 'gate_operator', command });
+  const gate = (at: number, command: CommandInput): Step => ({
+    at,
+    as: SiteLimitedRole.gate_operator,
+    command,
+  });
   const dockOp = (at: number, command: CommandInput): Step => ({
     at,
-    as: 'dock_operator',
+    as: SiteLimitedRole.dock_operator,
     command,
   });
   const call = (at: number, n: number) => dockOp(at, { type: 'call', dockId: dockStep(n) });
@@ -188,9 +203,9 @@ async function briefDriver(
       bookingId: booking.id as BookingId,
       carrierId: booking.carrierId as CarrierId | null,
       instructionId,
-      locale: 'de',
+      locale: DriverLocale.de,
       driverName,
-      channel: 'link',
+      channel: DriverChannel.link,
       score: 100,
       attempts: 1,
       completedAt: new Date(ctx.now.getTime() - 5 * MINUTE),
@@ -199,7 +214,7 @@ async function briefDriver(
     await transitionBooking(ctx, booking.id as BookingId, {
       type: 'link_acknowledgement',
       acknowledgementId: ack.id,
-      via: 'completed',
+      via: LinkVia.completed,
     });
   }
 }
@@ -245,9 +260,9 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
         siteId,
         hallId: h?.id as string,
         code: dockStep(n),
-        doorType: 'dock_leveler' as const,
-        temperatureZone: 'ambient' as const,
-        status: 'active' as const,
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
+        status: CarrierLinkStatus.active,
         sort: n,
       })),
     )
@@ -259,14 +274,14 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
       siteId,
       kind: 'pool',
       name: 'Rampen 1–6',
-      directions: ['inbound', 'outbound'],
+      directions: [Direction.inbound, Direction.outbound],
     })
     .returning({ id: bookableResource.id });
   await db.insert(resourceDock).values(
     docks.map((d) => ({
       dockId: d.id,
       resourceId: pool?.id as never,
-      resourceKind: 'pool' as const,
+      resourceKind: ResourceKind.pool,
       siteId,
       tenantId,
     })),
@@ -305,8 +320,8 @@ async function userId(ctx: SeedContext, email: string): Promise<UserId> {
 }
 
 export async function seed(ctx: SeedContext): Promise<void> {
-  const tenantId = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
-  const transpol = (await findOrg(ctx.db, 'carrier', TRANS_POL)) as CarrierId | null;
+  const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
+  const transpol = (await findOrg(ctx.db, OrgKind.carrier, TRANS_POL)) as CarrierId | null;
   if (!tenantId || !transpol) throw new Error('run the core seed first');
   const siteId = await ensureSite(ctx, tenantId);
   const [palletised] = await ctx.db
@@ -327,9 +342,14 @@ export async function seed(ctx: SeedContext): Promise<void> {
   const context = async (as: Role | 'system', now: Date): Promise<BookingContext> => {
     const scope: Scope =
       as === 'system'
-        ? { party: 'tenant', tenantId, siteIds: 'all', actor: { kind: 'system', job: 'no_show' } }
+        ? {
+            party: ActorParty.tenant,
+            tenantId,
+            siteIds: 'all',
+            actor: { kind: 'system', job: SystemActorName.no_show },
+          }
         : {
-            party: 'tenant',
+            party: ActorParty.tenant,
             tenantId,
             siteIds: 'all',
             actor: { kind: 'user', userId: users[as], role: as },
@@ -362,10 +382,10 @@ export async function seed(ctx: SeedContext): Promise<void> {
     };
     const request: CreateBookingRequest = v.walkIn
       ? { ...base, mode: 'walk_in', plateSeen: v.plate, outcome: { kind: 'check_in', avis } }
-      : { ...base, mode: 'staff', startsAt: at(v.start), avis };
+      : { ...base, mode: CreatedParty.staff, startsAt: at(v.start), avis };
     const createdAt = v.walkIn ? at(-6) : at(Math.min(v.start, 0) - 24 * 60);
     const result = await createBooking(
-      await context(v.walkIn ? 'gate_operator' : 'dispatcher', createdAt),
+      await context(v.walkIn ? SiteLimitedRole.gate_operator : 'dispatcher', createdAt),
       request,
     );
     if (!result.created) continue;

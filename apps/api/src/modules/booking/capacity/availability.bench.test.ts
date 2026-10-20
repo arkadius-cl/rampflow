@@ -1,3 +1,4 @@
+import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -80,7 +81,7 @@ async function addResources(s: CapacitySite, n: number): Promise<string[]> {
         siteId: s.siteId,
         kind: 'single',
         name: `Tor ${i}`,
-        directions: ['inbound'],
+        directions: [Direction.inbound],
         sort: i,
       })
       .returning();
@@ -132,7 +133,12 @@ describe.skipIf(!process.env.BENCH)('availability at design load', () => {
     const hours = [1, 2, 3, 4, 5, 6, 7].map(
       (d) => [d, '05:00', '22:00'] as [number, string, string],
     );
-    bench = await capacitySite(w.A.tenantId, { kind: 'single', hours, minutes: 60, buffer: 15 });
+    bench = await capacitySite(w.A.tenantId, {
+      kind: ResourceKind.single,
+      hours,
+      minutes: 60,
+      buffer: 15,
+    });
     resourceIds = await addResources(bench, RESOURCES);
     await insertBookings(bench, resourceIds, 31, 4);
     // Background: the rest of a month at design load (about 118,000 bookings) on other sites.

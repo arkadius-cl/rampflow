@@ -7,6 +7,7 @@ import {
   type DriverBriefingContent,
   type DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
+import { Feature, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
@@ -31,7 +32,7 @@ export const driver = new Hono<AppEnv>()
     '/',
     op({
       id: 'safety.driver.listBriefings',
-      stories: ['SF-04'],
+      stories: [StoryId.SF_04],
       description:
         "at `/briefings`; on a `link` session with an `rf_device` cookie it first links this phone's valid passes at the tenant to the booking (`link_acknowledgement` via `pass`) for instructions still missing; then `{ items: [{ instructionId, name, status, expiresAt, quiz, locales }] }`",
       responses: { 200: type<DriverBriefingList>() },
@@ -42,7 +43,7 @@ export const driver = new Hono<AppEnv>()
     '/:instructionId',
     op({
       id: 'safety.driver.getBriefing',
-      stories: ['SF-04', 'DR-02'],
+      stories: [StoryId.SF_04, StoryId.DR_02],
       description:
         "`?locale=`; the published version in that locale, else en, else its first locale; `{ instructionId, version, locale, translation, title, blocks, questions, statement }`; questions without answers, and none while `safety.quiz` is off; 404 for an instruction that does not apply to the booking's site",
       responses: { 200: type<DriverBriefingContent>() },
@@ -59,12 +60,12 @@ export const driver = new Hono<AppEnv>()
     '/:instructionId/attempts',
     op({
       id: 'safety.driver.createAttempt',
-      stories: ['SF-04', 'SF-02'],
+      stories: [StoryId.SF_04, StoryId.SF_02],
       description:
         '`{ locale, answers: { <questionId>: <option index> } }` → `{ score, passed, attempts, wrong }`; passes at `safety.quiz_pass_percent`; counts every attempt in `safety_attempt` per booking and version; the latest attempt decides',
       responses: { 200: type<AttemptResult>() },
     }),
-    requireEntitlement('safety.quiz'),
+    requireEntitlement(Feature.safety.quiz),
     validate('param', InstructionParam),
     validate('json', AttemptBody),
     async (c) => {
@@ -79,7 +80,7 @@ export const driver = new Hono<AppEnv>()
     '/:instructionId/acknowledgement',
     op({
       id: 'safety.driver.acknowledgeBriefing',
-      stories: ['SF-04'],
+      stories: [StoryId.SF_04],
       description:
         "`{ locale, name, confirmed: true }` → 201 `{ expiresAt }`; with a quiz and `safety.quiz` on, 409 `conflict` reason `quiz_not_passed` until the latest attempt passed; stores the acknowledgement through `recordAcknowledgement` with the session's channel, links it (`link_acknowledgement` via `completed`); on a `link` session with an expiry it sets `rf_device` (one year, `Path=/api/driver`) when absent and upserts the `safety_pass`; a `staff` session (gate device, YD-02) never does",
       responses: { 201: type<AcknowledgementResult>() },

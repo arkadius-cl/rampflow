@@ -8,12 +8,14 @@ import {
   resolveEntitlements,
 } from '@rampflow/shared';
 import { findEntitlement } from '@rampflow/shared/contract/catalog';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
   type TenantUsage,
   USAGE_KEYS,
   type UsageKey,
 } from '@rampflow/shared/modules/core/api.platform';
 import { COUNTED_DOCK_STATUSES } from '@rampflow/shared/modules/core/api.sites';
+import { SystemActorName } from '@rampflow/shared/values';
 import { and, count, eq, gt, gte, inArray, sql } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -96,7 +98,12 @@ async function internalUsersOf(tx: Tx, ids: readonly TenantId[], now: Date) {
 async function tenantCounts(tx: Tx, tenantId: TenantId, now: Date) {
   return asScope(
     tx,
-    { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor('usage') },
+    {
+      party: ActorParty.tenant,
+      tenantId,
+      siteIds: 'all',
+      actor: systemActor(SystemActorName.usage),
+    },
     async (inner) => {
       const sites = inner
         .select({ n: count() })

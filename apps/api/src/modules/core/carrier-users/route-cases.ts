@@ -1,3 +1,4 @@
+import { HttpMethod, OrgKind, Permission, Role } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { MembershipId } from '../../../db/ids.ts';
@@ -7,8 +8,8 @@ import { inviteeEmail, membershipOf } from '../staff/fixtures.ts';
 const P = '/api/c/:orgId/users';
 
 const base = {
-  as: 'carrier_admin',
-  permission: 'core.manage_carrier_users',
+  as: Role.carrier_admin,
+  permission: Permission.core.manage_carrier_users,
   entitlement: null,
   foreign: 'not_found',
   siteScoped: false,
@@ -23,10 +24,10 @@ const colleague = async (w: World, db: Parameters<NonNullable<RouteCase['setup']
 };
 
 export const cases = defineRouteCases([
-  { ...base, method: 'GET', path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: 'empty' },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/invitations`,
     params: org,
     body: () => ({ email: inviteeEmail('colleague'), role: 'carrier_user' }),
@@ -34,13 +35,13 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'DELETE',
+    method: HttpMethod.DELETE,
     path: `${P}/invitations/:invitationId`,
     setup: async (w, db) => {
       const inv = await invitationFor(db, {
         orgId: w.A.carrierId,
-        orgKind: 'carrier',
-        role: 'carrier_user',
+        orgKind: OrgKind.carrier,
+        role: Role.carrier_user,
         invitedBy: w.A.users.carrier_admin.id,
       });
       invitations.set(w, inv.id);
@@ -50,7 +51,7 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: `${P}/:membershipId`,
     setup: colleague,
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),
@@ -58,7 +59,7 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'DELETE',
+    method: HttpMethod.DELETE,
     path: `${P}/:membershipId`,
     setup: colleague,
     params: (w) => ({ ...org(w), membershipId: members.get(w) ?? '' }),

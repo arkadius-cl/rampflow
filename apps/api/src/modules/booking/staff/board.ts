@@ -6,6 +6,7 @@ import type {
 } from '@rampflow/shared/modules/booking/api.staff';
 import { type BookingStatus, LOAD_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
 import { type LocalDate, slotGrid } from '@rampflow/shared/time';
+import { Setting } from '@rampflow/shared/values';
 import { and, asc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -64,7 +65,7 @@ export async function loadBoard(
   where: { tenantId: TenantId; siteId: SiteId; day: LocalDate },
 ): Promise<BoardView> {
   const timeline = await dayTimeline(tx, access, where.tenantId, where.siteId, where.day);
-  const gridMinutes = (await access.setting('booking.slot_grid_minutes', where.siteId)).value;
+  const gridMinutes = (await access.setting(Setting.booking.slot_grid_minutes, where.siteId)).value;
   const grid = slotGrid(where.day, timeline.timeZone, gridMinutes);
   const rows = await tx
     .select()

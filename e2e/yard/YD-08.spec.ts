@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { seedWorld, signInAs } from '../support/auth.ts';
 import { bookingStatus, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
 
@@ -15,7 +16,7 @@ test.describe('YD-08 Dock progress', () => {
       carrier: 'Ladung AG',
       plate: 'HHLA1',
       start: -10,
-      status: 'called',
+      status: LoadStatus.called,
       dockId: s.dockIds[1],
     });
     await signInAs(context, w.A.users.dock_operator);

@@ -1,5 +1,5 @@
 import { values } from '../../values/define.ts';
-import { AckStatus } from './values.ts';
+import { AckStatus, VersionStatus } from './values.ts';
 
 /**
  * Whether a safety acknowledgement still covers a visit (SF-01, SF-04, YD-02). Pure, so the gate,
@@ -34,7 +34,8 @@ export interface VersionFacts {
 export function materialFloor(versions: readonly VersionFacts[]): number {
   let floor = 0;
   for (const v of versions) {
-    if (v.status !== 'draft' && v.materialChange && v.version > floor) floor = v.version;
+    if (v.status !== VersionStatus.draft && v.materialChange && v.version > floor)
+      floor = v.version;
   }
   return floor;
 }
@@ -44,15 +45,17 @@ export function materialFloor(versions: readonly VersionFacts[]): number {
  * acknowledgement checked against another visit (or none). `expired`: past `expiresAt`.
  */
 export function acknowledgementStatus(ack: AcknowledgementFacts, ctx: ValidityContext): AckStatus {
-  if (ack.version < ctx.materialFloor) return 'outdated';
+  if (ack.version < ctx.materialFloor) return AckStatus.outdated;
   if (ack.expiresAt === null) {
-    return ack.bookingId !== null && ack.bookingId === ctx.bookingId ? 'valid' : 'visit_only';
+    return ack.bookingId !== null && ack.bookingId === ctx.bookingId
+      ? AckStatus.valid
+      : AckStatus.visit_only;
   }
-  return ctx.now < ack.expiresAt ? 'valid' : 'expired';
+  return ctx.now < ack.expiresAt ? AckStatus.valid : AckStatus.expired;
 }
 
 export function isAcknowledgementValid(ack: AcknowledgementFacts, ctx: ValidityContext): boolean {
-  return acknowledgementStatus(ack, ctx) === 'valid';
+  return acknowledgementStatus(ack, ctx) === AckStatus.valid;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

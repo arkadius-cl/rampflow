@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ModuleId, SettingKey, SettingScope } from '@rampflow/shared';
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
+import { Setting } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
@@ -261,11 +262,11 @@ function useValueText(key: SettingKey, spec: ControlSpec) {
   const format = useFormat();
   const languages = new Intl.DisplayNames(locale, { type: 'language' });
   const option = (v: unknown): string => {
-    if (key === 'i18n.default_locale') return languages.of(String(v)) ?? String(v);
-    if (key === 'booking.public_registration_mode') {
+    if (key === Setting.i18n.default_locale) return languages.of(String(v)) ?? String(v);
+    if (key === Setting.booking.public_registration_mode) {
       return t(`settings-ui.values.public_registration_mode.${String(v)}` as never) as string;
     }
-    if (key === 'avis.required_reference_types') {
+    if (key === Setting.avis.required_reference_types) {
       return t(`settings-ui.values.reference_type.${String(v)}` as never) as string;
     }
     return typeof v === 'number' ? format.number(v) : String(v);

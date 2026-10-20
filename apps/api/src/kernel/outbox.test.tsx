@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { EmailTemplate } from '@rampflow/shared/values';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { EmailCategory, EmailTemplate, TenantRole, TokenPurpose } from '@rampflow/shared/values';
 import { Text } from '@react-email/components';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -27,19 +28,19 @@ import { deriveToken } from './tokens.ts';
 const MAILPIT = `http://${process.env.SMTP_HOST ?? 'localhost'}:8025`;
 
 const probe: EmailTemplateModule<{ authTokenId: string }> = {
-  category: 'account',
+  category: EmailCategory.account,
   render: (payload) => ({
     subject: 'Your sign-in link',
     body: (
       <EmailLayout lang="en" preview="Sign in" footer="rampflow">
-        <Text>{`https://rampflow.test/auth/magic#${deriveToken('magic_link', payload.authTokenId)}`}</Text>
+        <Text>{`https://rampflow.test/auth/magic#${deriveToken(TokenPurpose.magic_link, payload.authTokenId)}`}</Text>
       </EmailLayout>
     ),
   }),
   example: { authTokenId: '00000000-0000-0000-0000-000000000000' },
 };
 const bookingProbe: EmailTemplateModule<{ bookingId: string }> = {
-  category: 'booking',
+  category: EmailCategory.booking,
   render: (p) => ({ subject: `Booking ${p.bookingId}`, body: <Text>{p.bookingId}</Text> }),
   example: { bookingId: '00000000-0000-0000-0000-000000000000' },
 };
@@ -55,10 +56,10 @@ beforeAll(async () => {
 });
 
 const tenantScope = (): Scope => ({
-  party: 'tenant',
+  party: ActorParty.tenant,
   tenantId: w.A.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: 'dispatcher' },
+  actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: TenantRole.dispatcher },
 });
 
 const rowsTo = (to: string) =>
@@ -190,7 +191,7 @@ describe('enqueueEmail', () => {
         templates,
       ),
     );
-    const token = deriveToken('magic_link', authTokenId);
+    const token = deriveToken(TokenPurpose.magic_link, authTokenId);
     expect(JSON.stringify(await rowsTo(to))).not.toContain(token);
   });
 });
@@ -236,7 +237,7 @@ describe('outbox worker', () => {
     const message = (await (
       await fetch(`${MAILPIT}/api/v1/message/${messages[0]?.ID}`)
     ).json()) as { Text: string };
-    expect(message.Text).toContain(deriveToken('magic_link', authTokenId));
+    expect(message.Text).toContain(deriveToken(TokenPurpose.magic_link, authTokenId));
   });
 
   it('schedules a retry when the transport fails, without addresses in last_error', async () => {

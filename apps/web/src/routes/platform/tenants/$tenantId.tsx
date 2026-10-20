@@ -5,6 +5,7 @@ import {
   type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
+import { Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
@@ -47,7 +48,7 @@ import { platformKeys, tenantQuery } from '@/modules/core/queries';
 // pending admin invitations with a re-invite.
 
 export const Route = createFileRoute('/platform/tenants/$tenantId')({
-  beforeLoad: guard({ permission: 'core.manage_tenants' }),
+  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
   component: TenantPage,
 });
 

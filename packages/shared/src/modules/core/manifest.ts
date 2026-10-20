@@ -1,10 +1,12 @@
 import { defineModule } from '../../contract/module.ts';
+import { LocaleSet } from '../../values/locales.ts';
+import { OrgKind, Role } from '../../values/roles.ts';
 
 export const core = defineModule({
   id: 'core',
   dependsOn: [],
   enabledBy: null,
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'core.max_sites': { kind: 'limit' },
     'core.max_docks': { kind: 'limit' },
@@ -13,60 +15,60 @@ export const core = defineModule({
     'core.audit_log': { kind: 'feature', reserved: true },
   },
   permissions: {
-    'core.manage_tenants': { roles: ['platform_admin'] },
-    'core.manage_platform_settings': { roles: ['platform_admin'] },
-    'core.manage_staff': { roles: ['tenant_admin'] },
-    'core.manage_settings': { roles: ['tenant_admin'] },
-    'core.manage_sites': { roles: ['tenant_admin'] },
-    'core.manage_carrier_users': { roles: ['carrier_admin'] },
+    'core.manage_tenants': { roles: [Role.platform_admin] },
+    'core.manage_platform_settings': { roles: [Role.platform_admin] },
+    'core.manage_staff': { roles: [Role.tenant_admin] },
+    'core.manage_settings': { roles: [Role.tenant_admin] },
+    'core.manage_sites': { roles: [Role.tenant_admin] },
+    'core.manage_carrier_users': { roles: [Role.carrier_admin] },
   },
   settings: {},
   nav: [
     {
       id: 'tenants',
-      area: 'platform',
+      area: OrgKind.platform,
       to: '/platform/tenants',
       icon: 'building-2',
       permission: 'core.manage_tenants',
     },
     {
       id: 'packages',
-      area: 'platform',
+      area: OrgKind.platform,
       to: '/platform/packages',
       icon: 'package',
       permission: 'core.manage_tenants',
     },
     {
       id: 'platform_settings',
-      area: 'platform',
+      area: OrgKind.platform,
       to: '/platform/settings',
       icon: 'sliders-horizontal',
       permission: 'core.manage_platform_settings',
     },
     {
       id: 'sites',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/sites',
       icon: 'warehouse',
       permission: 'core.manage_sites',
     },
     {
       id: 'staff',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/staff',
       icon: 'users',
       permission: 'core.manage_staff',
     },
     {
       id: 'settings',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/settings',
       icon: 'settings',
       permission: 'core.manage_settings',
     },
     {
       id: 'users',
-      area: 'carrier',
+      area: OrgKind.carrier,
       to: '/c/$orgId/users',
       icon: 'users',
       permission: 'core.manage_carrier_users',

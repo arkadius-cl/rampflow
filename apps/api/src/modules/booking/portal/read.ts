@@ -9,7 +9,9 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
 import { FINAL_STATUSES, ON_SITE_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import { and, asc, desc, eq, inArray, not, type SQL, sql } from 'drizzle-orm';
 import type * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -157,7 +159,7 @@ async function ownBooking(tx: Tx, carrierId: CarrierId, bookingId: BookingId) {
   const [row] = await summaryQuery(tx)
     .where(and(eq(booking.id, bookingId), eq(booking.carrierId, carrierId)))
     .limit(1);
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -188,7 +190,7 @@ export async function loadPortalBooking(
     ? await tx.select({ code: dock.code }).from(dock).where(eq(dock.id, b.dockId))
     : [];
   const access = await atTenant(b.tenantId);
-  const cutoff = (await access.setting('booking.cancel_cutoff_minutes', b.siteId)).value;
+  const cutoff = (await access.setting(Setting.booking.cancel_cutoff_minutes, b.siteId)).value;
   const events = await tx
     .select()
     .from(bookingEvent)
@@ -210,7 +212,7 @@ export async function loadPortalBooking(
       },
       phone: s.phone,
     },
-    linkActive: place.linkStatus === 'active',
+    linkActive: place.linkStatus === CarrierLinkStatus.active,
     dockCode: docked?.code ?? null,
     calledAt: iso(b.calledAt),
     atDockAt: iso(b.atDockAt),

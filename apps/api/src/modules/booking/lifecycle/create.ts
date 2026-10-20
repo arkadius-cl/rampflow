@@ -2,8 +2,22 @@ import { randomInt } from 'node:crypto';
 import { type Avis, normalizePlate, totalLoadUnits } from '@rampflow/shared/modules/avis/avis';
 import type { CarrierRef } from '@rampflow/shared/modules/booking/api.staff';
 import type { TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
-import type { SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import {
+  BookingParty,
+  BookingStatus,
+  CarrierLinkStatus,
+  CreatedParty,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, slotGrid, type TimeZone } from '@rampflow/shared/time';
+import {
+  ConflictReason,
+  EmailTemplate,
+  ErrorCode,
+  Permission,
+  Setting,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId } from '../../../db/ids.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -94,14 +108,17 @@ function requirePermissions(ctx: BookingContext, req: CreateBookingRequest) {
     ctx.access.permissions.has(p);
   const party = ctx.actor.party;
   const allowed =
-    req.mode === 'carrier'
-      ? party === 'carrier' && has('booking.book')
+    req.mode === CreatedParty.carrier
+      ? party === BookingParty.carrier && has(Permission.booking.book)
       : req.mode === 'staff'
-        ? party === 'staff' &&
-          has('booking.staff_book') &&
-          (req.forceReason === undefined || has('booking.force'))
-        : party === 'staff' && has('booking.walk_in') && has('yard.gate');
-  if (!allowed) throw new ApiError('forbidden', `Not allowed to create a ${req.mode} booking`);
+        ? party === BookingParty.staff &&
+          has(Permission.booking.staff_book) &&
+          (req.forceReason === undefined || has(Permission.booking.force))
+        : party === BookingParty.staff &&
+          has(Permission.booking.walk_in) &&
+          has(Permission.yard.gate);
+  if (!allowed)
+    throw new ApiError(ErrorCode.forbidden, `Not allowed to create a ${req.mode} booking`);
 }
 
 async function siteOf(ctx: BookingContext, siteId: SiteId) {
@@ -109,15 +126,15 @@ async function siteOf(ctx: BookingContext, siteId: SiteId) {
     .select({ id: site.id, timeZone: site.timeZone, active: site.active })
     .from(site)
     .where(and(eq(site.id, siteId), eq(site.tenantId, ctx.tenantId)));
-  if (!row) throw new ApiError('not_found', 'No such site');
+  if (!row) throw new ApiError(ErrorCode.not_found, 'No such site');
   return { ...row, zone: row.timeZone as TimeZone };
 }
 
 async function bookableLoadType(ctx: BookingContext, req: CreateBookingRequest) {
   const lt = await loadTypeAt(ctx.tx, ctx.tenantId, req.siteId, req.loadTypeId);
   // Carriers see only carrier-bookable load types (BK-04): anything else is unknown to them.
-  if (!lt || (req.mode === 'carrier' && !lt.carrierBookable)) {
-    throw new ApiError('not_found', 'No such load type');
+  if (!lt || (req.mode === CreatedParty.carrier && !lt.carrierBookable)) {
+    throw new ApiError(ErrorCode.not_found, 'No such load type');
   }
   if (!lt.active) throw invalid(['loadTypeId'], 'The load type is inactive');
   return lt;
@@ -130,7 +147,7 @@ async function linkActive(ctx: BookingContext, carrierId: CarrierId): Promise<bo
     .where(
       and(eq(tenantCarrierLink.tenantId, ctx.tenantId), eq(tenantCarrierLink.carrierId, carrierId)),
     );
-  return link?.status === 'active';
+  return link?.status === CarrierLinkStatus.active;
 }
 
 /** The booking's carrier: the acting carrier, an active linked carrier, or free text. */
@@ -138,11 +155,12 @@ async function carrierOf(
   ctx: BookingContext,
   req: CreateBookingRequest,
 ): Promise<{ carrierId: CarrierId | null; carrierName: string }> {
-  if (req.mode === 'carrier') {
-    if (ctx.actor.party !== 'carrier') throw new Error('carrier create without a carrier actor');
+  if (req.mode === CreatedParty.carrier) {
+    if (ctx.actor.party !== BookingParty.carrier)
+      throw new Error('carrier create without a carrier actor');
     const carrierId = ctx.actor.carrierId;
     if (!(await linkActive(ctx, carrierId))) {
-      throw new ApiError('forbidden', 'The carrier link is deactivated', {
+      throw new ApiError(ErrorCode.forbidden, 'The carrier link is deactivated', {
         reason: 'link_inactive',
       });
     }
@@ -179,7 +197,7 @@ async function existingRequest(ctx: BookingContext, clientRequestId: string) {
 
 /** The grid slot that contains `now` (YD-03). */
 async function walkInStart(ctx: BookingContext, siteId: SiteId, zone: TimeZone): Promise<Date> {
-  const grid = (await ctx.access.setting('booking.slot_grid_minutes', siteId)).value;
+  const grid = (await ctx.access.setting(Setting.booking.slot_grid_minutes, siteId)).value;
   const slots = slotGrid(siteDay(ctx.now, zone), zone, grid);
   const current = slots.filter((s) => s.start <= ctx.now).at(-1) ?? slots[0];
   if (!current) throw new Error(`no grid slots on ${siteDay(ctx.now, zone)} in ${zone}`);
@@ -268,9 +286,16 @@ export async function createBooking(
     const scope = { tenantId: ctx.tenantId, siteId: s.id, loadTypeId: lt.id, loadUnits, audience };
     const day = siteDay(startsAt, s.zone);
     if (!(await isOffered(ctx.access, s.id, s.zone, startsAt, audience, ctx.now))) {
-      return conflictWithOffers(ctx.tx, ctx.access, ctx.now, scope, day, 'not_offered');
+      return conflictWithOffers(
+        ctx.tx,
+        ctx.access,
+        ctx.now,
+        scope,
+        day,
+        ConflictReason.not_offered,
+      );
     }
-    const only = req.mode === 'staff' ? req.resourceId : undefined;
+    const only = req.mode === CreatedParty.staff ? req.resourceId : undefined;
     const tryOrder = await candidates(ctx.tx, ctx.tenantId, lt, { only });
     if (only && tryOrder.length === 0) {
       throw invalid(['resourceId'], 'The load type cannot be booked on this resource');
@@ -282,23 +307,23 @@ export async function createBooking(
       startsAt,
       block,
       candidates: tryOrder,
-      force: req.mode === 'staff' && req.forceReason !== undefined,
+      force: req.mode === CreatedParty.staff && req.forceReason !== undefined,
     });
     if (!fit.ok) return conflictWithOffers(ctx.tx, ctx.access, ctx.now, scope, day, fit.reason);
     resourceId = fit.resourceId;
   }
 
   const window = windowOf(startsAt, block);
-  const forceReason = req.mode === 'staff' ? (req.forceReason ?? null) : null;
+  const forceReason = req.mode === CreatedParty.staff ? (req.forceReason ?? null) : null;
   const createdBy = actorUserId(ctx.actor);
-  const createdParty = req.mode === 'carrier' ? 'carrier' : 'staff';
+  const createdParty = req.mode === CreatedParty.carrier ? 'carrier' : 'staff';
   const row = await insertBooking(ctx, {
     tenantId: ctx.tenantId,
     siteId: s.id,
     resourceId,
     loadTypeId: lt.id,
     ...carrier,
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     direction: lt.direction,
     ...window,
     siteTimeZone: s.zone,
@@ -347,8 +372,8 @@ export async function createBooking(
   });
 
   if (req.mode !== 'walk_in') {
-    await issueDriverLink(ctx.tx, row, { channel: 'link', createdBy });
-    await emailContacts(ctx, row, 'booking.confirmed', {});
+    await issueDriverLink(ctx.tx, row, { channel: DriverChannel.link, createdBy });
+    await emailContacts(ctx, row, EmailTemplate.booking_confirmed, {});
     return { booking: row, created: true, safety: null };
   }
   if (req.outcome.kind === 'turn_away') {
@@ -358,10 +383,10 @@ export async function createBooking(
     });
     return { booking: turned, created: true, safety: null };
   }
-  await issueDriverLink(ctx.tx, row, { channel: 'link', createdBy });
+  await issueDriverLink(ctx.tx, row, { channel: DriverChannel.link, createdBy });
   const safety = await bookingSafety(ctx.tx, ctx.access, row, ctx.now);
-  if (safety.enforced && safety.status === 'missing') {
-    return { booking: row, created: true, safety: 'missing' };
+  if (safety.enforced && safety.status === SafetyStatus.missing) {
+    return { booking: row, created: true, safety: SafetyStatus.missing };
   }
   const { booking: checkedIn } = await transitionBooking(ctx, row.id, {
     type: 'check_in',

@@ -8,6 +8,7 @@ import type {
   RegisterFilterOptions,
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
+import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -15,7 +16,8 @@ import { queryKeys } from '@/lib/query-keys';
 // Queries of the safety screens. Every key starts with ['tenant', orgId, 'safety'], so one
 // invalidation of `safetyKey(orgId)` refreshes the briefing list, the editor and the register.
 
-export const safetyKey = (orgId: string) => [...queryKeys.org('tenant', orgId), 'safety'] as const;
+export const safetyKey = (orgId: string) =>
+  [...queryKeys.org(OrgKind.tenant, orgId), 'safety'] as const;
 
 const safety = () => api.t[':orgId'].safety;
 

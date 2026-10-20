@@ -1,5 +1,6 @@
 import type { AppType } from '@rampflow/api';
-import type { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import type { ConflictReason } from '@rampflow/shared/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { hc } from 'hono/client';
 
 /** The typed API client. Same origin: Vite proxies /api in dev, one host serves both in production. */
@@ -31,7 +32,7 @@ export class ApiFailure extends Error {
 
   /** The reason of a 409 `conflict`; the API always names one. */
   get conflictReason(): ConflictReason | undefined {
-    return this.code === 'conflict' ? (this.details.reason as ConflictReason) : undefined;
+    return this.code === ErrorCode.conflict ? (this.details.reason as ConflictReason) : undefined;
   }
 
   get issues(): ValidationIssue[] {
@@ -49,7 +50,7 @@ async function failureOf(res: Response): Promise<ApiFailure> {
   const error = body?.error;
   return new ApiFailure(
     res.status,
-    error?.code ?? (res.status >= 500 ? 'internal_error' : 'bad_request'),
+    error?.code ?? (res.status >= 500 ? ErrorCode.internal_error : ErrorCode.bad_request),
     error?.message ?? res.statusText,
     error?.details,
   );

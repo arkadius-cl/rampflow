@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { AdrClass, LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type {
   BoardView,
   BookingPage,
   BookingView,
 } from '@rampflow/shared/modules/booking/api.staff';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { DriverLocale } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -124,7 +127,7 @@ describe('the avis (AV-01, AV-02)', () => {
     const b = await create(s, {
       avis: avisInput({
         vehicle: { plate: 'po 12-345', plateCountry: 'PL' },
-        driver: { name: 'Jan Kowalski', phone: '0048 601 234 567', locale: 'pl' },
+        driver: { name: 'Jan Kowalski', phone: '0048 601 234 567', locale: DriverLocale.pl },
       }),
     });
     expect(b.avis).toMatchObject({
@@ -138,7 +141,7 @@ describe('the avis (AV-01, AV-02)', () => {
     const goods = (unNumber: string) =>
       createBody(s, {
         avis: avisInput({
-          dangerousGoods: { present: true, items: [{ unNumber, adrClass: '3' }] },
+          dangerousGoods: { present: true, items: [{ unNumber, adrClass: AdrClass.class_3 }] },
         }),
       });
     const bad = await dispatcher().post(base(), { body: goods('UN123') });
@@ -180,7 +183,9 @@ describe('the avis (AV-01, AV-02)', () => {
     await create(s);
     const again = await dispatcher().post(base(), {
       body: createBody(s, {
-        avis: avisInput({ references: [{ type: 'purchase_order', value: ' po-4711 ' }] }),
+        avis: avisInput({
+          references: [{ type: ReferenceType.purchase_order, value: ' po-4711 ' }],
+        }),
       }),
     });
     expect(await errorOf(again)).toMatchObject({ details: { reason: 'duplicate_reference' } });
@@ -214,7 +219,7 @@ describe('the avis (AV-01, AV-02)', () => {
     const b = await create(s, { loadTypeId: tiered.id });
     await create(s, { loadTypeId: tiered.id, startsAt: '2026-11-02T08:00:00.000Z' });
     const bigger = {
-      avis: avisInput({ loadUnits: [{ type: 'eur_pallet', quantity: 20 }] }),
+      avis: avisInput({ loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 20 }] }),
       version: 1,
     };
     const refused = await dispatcher().put(`${base()}/${b.id}/avis`, { body: bigger });
@@ -397,7 +402,7 @@ describe('booking emails to the booking contact', () => {
     await expect(
       asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), async (ctx) => {
         await createBooking(ctx, {
-          mode: 'staff',
+          mode: CreatedParty.staff,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -425,7 +430,7 @@ describe('booking emails to the booking contact', () => {
     const mail = await world();
     const b = await seedBooking(mail.A, {
       startsAt: new Date('2026-11-04T08:00:00Z'),
-      createdParty: 'carrier',
+      createdParty: CreatedParty.carrier,
       createdBy: mail.A.users.carrier_user.id,
     });
     await asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), (ctx) =>

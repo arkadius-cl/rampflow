@@ -4,6 +4,7 @@ import {
   type InvitationInspectResponse,
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -49,7 +50,7 @@ function InvitePage() {
   );
 
   if (!token || inspect.status === 'failed') {
-    const expired = inspect.status === 'failed' && isFailure(inspect.error, 'unauthorized');
+    const expired = inspect.status === 'failed' && isFailure(inspect.error, ErrorCode.unauthorized);
     return (
       <AuthLayout title={t(($) => $.auth.invite.title)}>
         <div className="flex flex-col gap-4">
@@ -111,7 +112,8 @@ function Invitation({
       });
     },
     onError: (e) => {
-      if (isFailure(e, 'unauthorized') && e.reason === 'sign_in_required') setNeedsSignIn(true);
+      if (isFailure(e, ErrorCode.unauthorized) && e.reason === 'sign_in_required')
+        setNeedsSignIn(true);
     },
   });
 
@@ -129,13 +131,13 @@ function Invitation({
         </div>
         {failure &&
         failure.reason !== 'sign_in_required' &&
-        failure.code !== 'validation_failed' ? (
+        failure.code !== ErrorCode.validation_failed ? (
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
               {failure.reason === 'already_member'
                 ? t(($) => $.auth.invite.already_member)
-                : failure.code === 'unauthorized'
+                : failure.code === ErrorCode.unauthorized
                   ? t(($) => $.auth.invite.invalid)
                   : errorText(t, failure)}
             </AlertTitle>
@@ -276,7 +278,7 @@ function SignInToAccept({ email, onSignedIn }: { email: string; onSignedIn: () =
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {isFailure(login.error, 'rate_limited')
+              {isFailure(login.error, ErrorCode.rate_limited)
                 ? t(($) => $.errors.rate_limited)
                 : t(($) => $.auth.login.wrong)}
             </AlertTitle>

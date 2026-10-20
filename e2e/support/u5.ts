@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect } from '@playwright/test';
 import pg from 'pg';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { World, WorldSide, WorldUser } from './auth.ts';
 
 // Safety fixtures (U5): API calls as a seeded user, and what no staff screen writes: package
@@ -69,11 +70,11 @@ export async function publishedBriefing(
   const created = await apiAs<{ id: string; draft: { id: string } }>(
     request,
     admin,
-    'POST',
+    HttpMethod.POST,
     `${base}/instructions`,
     { name, allSites: true, siteIds: [] },
   );
-  await apiAs(request, admin, 'POST', `${base}/versions/${created.draft.id}/publish`, {
+  await apiAs(request, admin, HttpMethod.POST, `${base}/versions/${created.draft.id}/publish`, {
     materialChange: false,
   });
   return { id: created.id, versionId: created.draft.id };

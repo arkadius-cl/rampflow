@@ -1,7 +1,7 @@
 import { TZDate } from '@date-fns/tz';
 import type { StaffLocale } from '@rampflow/shared';
 import { KPIS, type KpiReport, type VisitItem } from '@rampflow/shared/modules/report/api';
-import type { KpiUnit } from '@rampflow/shared/modules/report/values';
+import { KpiUnit } from '@rampflow/shared/modules/report/values';
 import { formatISO } from 'date-fns';
 import type { TFunction } from 'i18next';
 
@@ -30,8 +30,8 @@ function document(rows: readonly (readonly string[])[], locale: StaffLocale): st
 }
 
 /** Counts as integers, rates and minutes with their one decimal, in the user's notation. */
-const number = (value: number | null, locale: StaffLocale, unit: KpiUnit = 'minutes') =>
-  value === null ? '' : value.toFixed(unit === 'count' ? 0 : 1).replace('.', DECIMAL[locale]);
+const number = (value: number | null, locale: StaffLocale, unit: KpiUnit = KpiUnit.minutes) =>
+  value === null ? '' : value.toFixed(unit === KpiUnit.count ? 0 : 1).replace('.', DECIMAL[locale]);
 
 const siteTime = (iso: string | null, timeZone: string) =>
   iso ? formatISO(new TZDate(new Date(iso), timeZone)) : '';
@@ -102,7 +102,7 @@ export function visitsCsv(
       startsAt: siteTime(v.startsAt, timeZone),
       endsAt: siteTime(v.endsAt, timeZone),
       punctuality: v.punctuality ? t(`booking:lifecycle.punctuality.${v.punctuality}`) : '',
-      punctualityMinutes: number(v.punctualityMinutes, locale, 'count'),
+      punctualityMinutes: number(v.punctualityMinutes, locale, KpiUnit.count),
       checkedInAt: siteTime(v.checkedInAt, timeZone),
       calledAt: siteTime(v.calledAt, timeZone),
       atDockAt: siteTime(v.atDockAt, timeZone),

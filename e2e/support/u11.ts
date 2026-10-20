@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
+import { CreatedParty, Punctuality } from '../../packages/shared/src/modules/booking/values.ts';
 import type { WorldSide } from './auth.ts';
 
 // Report fixtures (U11), written as the owner: the ten visits of the reference fixture in
@@ -38,9 +39,9 @@ interface Visit {
 const VISITS: Visit[] = [
   {
     start: '08:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'departed',
-    punctuality: 'on_time',
+    punctuality: Punctuality.on_time,
     checkedIn: '07:50',
     atDock: '08:05',
     done: '08:50',
@@ -48,9 +49,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '09:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'departed',
-    punctuality: 'early',
+    punctuality: Punctuality.early,
     checkedIn: '08:20',
     atDock: '09:10',
     done: '10:00',
@@ -58,9 +59,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '10:00',
-    party: 'staff',
+    party: CreatedParty.staff,
     status: 'departed',
-    punctuality: 'late',
+    punctuality: Punctuality.late,
     checkedIn: '10:30',
     called: '10:35',
     atDock: '10:40',
@@ -70,35 +71,35 @@ const VISITS: Visit[] = [
   },
   {
     start: '11:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'departed',
-    punctuality: 'late',
+    punctuality: Punctuality.late,
     noShow: '12:00',
     checkedIn: '12:30',
     atDock: '12:40',
     done: '13:20',
     departed: '13:30',
   },
-  { start: '12:00', party: 'carrier', status: 'no_show', noShow: '13:00' },
+  { start: '12:00', party: CreatedParty.carrier, status: 'no_show', noShow: '13:00' },
   {
     start: '13:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'cancelled',
     cancelled: '12:00',
     cancelledLate: true,
   },
   {
     start: '14:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'cancelled',
     cancelled: '08:00',
     cancelledLate: false,
   },
   {
     start: '15:00',
-    party: 'staff',
+    party: CreatedParty.staff,
     status: 'departed',
-    punctuality: 'on_time',
+    punctuality: Punctuality.on_time,
     checkedIn: '14:55',
     loading: '15:05',
     done: '15:45',
@@ -106,7 +107,7 @@ const VISITS: Visit[] = [
   },
   {
     start: '16:00',
-    party: 'staff',
+    party: CreatedParty.staff,
     status: 'departed',
     walkIn: true,
     checkedIn: '16:10',
@@ -116,9 +117,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '17:00',
-    party: 'carrier',
+    party: CreatedParty.carrier,
     status: 'done',
-    punctuality: 'on_time',
+    punctuality: Punctuality.on_time,
     checkedIn: '16:50',
     atDock: '17:00',
     done: '17:30',

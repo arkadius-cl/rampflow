@@ -1,3 +1,4 @@
+import { NodeEnv } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -68,7 +69,7 @@ function buildApi(options: AppOptions) {
 export function createApp(options: AppOptions = {}) {
   const api = buildApi(options);
   const app = new Hono<AppEnv>()
-    .use(securityHeaders({ hsts: options.production ?? env.NODE_ENV === 'production' }))
+    .use(securityHeaders({ hsts: options.production ?? env.NODE_ENV === NodeEnv.production }))
     .route('/api', api);
   if (options.static) app.route('/', staticFiles(options.static));
   return app.onError(onError).notFound(onNotFound);

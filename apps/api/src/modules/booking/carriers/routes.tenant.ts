@@ -8,6 +8,8 @@ import {
   type RegistrationView,
   RejectRegistrationBody,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { Feature, Permission, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type SiteId } from '../../../db/ids.ts';
@@ -30,8 +32,8 @@ const InvitationParam = z.object({ invitationId: z.uuid() });
 const RegistrationParam = z.object({ registrationId: idSchema<'carrier_registration'>() });
 const SiteParam = z.object({ siteId: idSchema<'site'>() });
 
-const manage = requirePermission('booking.manage_carriers');
-const publicLinks = requireEntitlement('booking.public_link');
+const manage = requirePermission(Permission.booking.manage_carriers);
+const publicLinks = requireEntitlement(Feature.booking.public_link);
 
 /** Mounted at `/api/t/:orgId/carriers` by modules/index.ts (TN-03, TN-04). */
 export const tenant = new Hono<AppEnv>()
@@ -39,7 +41,7 @@ export const tenant = new Hono<AppEnv>()
     '/',
     op({
       id: 'booking.carriers.listCarriers',
-      stories: ['TN-03'],
+      stories: [StoryId.TN_03],
       description:
         '`{ links, invitations }`: linked carriers with name, country, status and source, and invitations neither accepted nor revoked',
       responses: {},
@@ -60,13 +62,13 @@ export const tenant = new Hono<AppEnv>()
     '/invitations',
     op({
       id: 'booking.carriers.createCarrierInvitation',
-      stories: ['TN-03'],
+      stories: [StoryId.TN_03],
       description:
         "`{ companyName, email, locale? }` → 201; emails `booking.carrier-invitation` in `locale` (default the inviter's). A pending invitation for the same email is revoked, so inviting again resends",
       responses: { 201: type<CarrierInvitationView>() },
     }),
     manage,
-    requireEntitlement('booking.carrier_portal'),
+    requireEntitlement(Feature.booking.carrier_portal),
     validate('json', CarrierInvitationBody),
     async (c) => {
       const { tenantId, userId, entitlements } = tenantRequest(c);
@@ -85,7 +87,7 @@ export const tenant = new Hono<AppEnv>()
     '/invitations/:invitationId',
     op({
       id: 'booking.carriers.deleteCarrierInvitation',
-      stories: ['TN-03'],
+      stories: [StoryId.TN_03],
       description: '204, also when nothing matched',
       responses: { 204: noBody },
     }),
@@ -106,7 +108,7 @@ export const tenant = new Hono<AppEnv>()
     '/registrations',
     op({
       id: 'booking.carriers.listRegistrations',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description:
         '`{ items }`, newest first, every status; each item carries the typed `companyName` and `carrierName`, the org verification bound (null before verification)',
       responses: {},
@@ -122,7 +124,7 @@ export const tenant = new Hono<AppEnv>()
     '/registrations/:registrationId/approve',
     op({
       id: 'booking.carriers.approveRegistration',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description:
         'links the carrier (reactivating a deactivated link), emails `booking.registration-approved`; 409 `invalid_transition` with `status` unless `pending_approval`',
       responses: { 200: type<RegistrationView>() },
@@ -135,7 +137,7 @@ export const tenant = new Hono<AppEnv>()
       const view = await decideRegistration(c.var.db, {
         tenantId,
         registrationId: c.req.valid('param').registrationId,
-        decision: { status: 'approved' },
+        decision: { status: RegistrationStatus.approved },
         decidedBy: userId,
         entitlements,
         now: c.var.clock.now(),
@@ -147,7 +149,7 @@ export const tenant = new Hono<AppEnv>()
     '/registrations/:registrationId/reject',
     op({
       id: 'booking.carriers.rejectRegistration',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description: '`{ reason }`, emails `booking.registration-rejected`; 409 as for approve',
       responses: { 200: type<RegistrationView>() },
     }),
@@ -160,7 +162,7 @@ export const tenant = new Hono<AppEnv>()
       const view = await decideRegistration(c.var.db, {
         tenantId,
         registrationId: c.req.valid('param').registrationId,
-        decision: { status: 'rejected', reason: c.req.valid('json').reason },
+        decision: { status: RegistrationStatus.rejected, reason: c.req.valid('json').reason },
         decidedBy: userId,
         entitlements,
         now: c.var.clock.now(),
@@ -172,7 +174,7 @@ export const tenant = new Hono<AppEnv>()
     '/public-links',
     op({
       id: 'booking.carriers.listPublicLinks',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description:
         '`{ items }`: per site the slug (or `null`), `enabled` (`booking.public_link_enabled`) and `mode` (`booking.public_registration_mode`)',
       responses: {},
@@ -188,7 +190,7 @@ export const tenant = new Hono<AppEnv>()
     '/public-links',
     op({
       id: 'booking.carriers.createPublicLink',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description:
         "`{ siteId }`; 201 when it creates the site's slug, 200 with the existing one; 404 for a site of another tenant",
       responses: { 200: type<PublicLinkView>(), 201: type<PublicLinkView>() },
@@ -207,7 +209,7 @@ export const tenant = new Hono<AppEnv>()
     '/public-links/:siteId/regenerate',
     op({
       id: 'booking.carriers.regeneratePublicLink',
-      stories: ['TN-04'],
+      stories: [StoryId.TN_04],
       description: 'revokes the slug and issues a new one, for a link that leaked',
       responses: { 200: type<PublicLinkView>() },
     }),
@@ -230,7 +232,7 @@ export const tenant = new Hono<AppEnv>()
     '/:carrierId',
     op({
       id: 'booking.carriers.updateCarrierLink',
-      stories: ['TN-03'],
+      stories: [StoryId.TN_03],
       description: "`{ status: 'active' | 'deactivated' }`; 404 without a link",
       responses: { 200: type<CarrierLinkView>() },
     }),

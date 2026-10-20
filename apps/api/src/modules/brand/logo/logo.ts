@@ -1,11 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { Entitlements } from '@rampflow/shared';
-import {
-  LOGO_MAX_BYTES,
-  type LogoContentType,
-  type LogoView,
-  logoUrl,
-} from '@rampflow/shared/modules/brand/api';
+import { LOGO_MAX_BYTES, type LogoView, logoUrl } from '@rampflow/shared/modules/brand/api';
+import { LogoContentType } from '@rampflow/shared/modules/brand/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -23,13 +20,15 @@ const startsWith = (bytes: Uint8Array, magic: readonly number[]) =>
 
 /** The image type by magic bytes, whatever the client claims. SVG and everything else is `null`. */
 export function sniffLogo(bytes: Uint8Array): LogoContentType | null {
-  if (startsWith(bytes, PNG)) return 'image/png';
-  if (startsWith(bytes, JPEG)) return 'image/jpeg';
+  if (startsWith(bytes, PNG)) return LogoContentType.png;
+  if (startsWith(bytes, JPEG)) return LogoContentType.jpeg;
   return null;
 }
 
 const issue = (code: 'too_big' | 'invalid_format', message: string) =>
-  new ApiError('validation_failed', 'Invalid logo', { issues: [{ path: [], code, message }] });
+  new ApiError(ErrorCode.validation_failed, 'Invalid logo', {
+    issues: [{ path: [], code, message }],
+  });
 
 export const tooBig = () => issue('too_big', `At most ${LOGO_MAX_BYTES} bytes`);
 

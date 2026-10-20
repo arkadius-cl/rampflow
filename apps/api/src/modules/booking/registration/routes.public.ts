@@ -3,6 +3,7 @@ import {
   RegistrationBody,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { TokenBody } from '@rampflow/shared/modules/core/api.auth';
+import { StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { withScope } from '../../../db/scope.ts';
@@ -26,7 +27,7 @@ export const publicApi = new Hono<AppEnv>()
     '/links/:slug',
     op({
       id: 'booking.registration.getPublicLink',
-      stories: ['CR-02', 'TN-04'],
+      stories: [StoryId.CR_02, StoryId.TN_04],
       description:
         "Needs the tenant's `booking.public_link` and the site's `booking.public_link_enabled`. `{ tenantName, siteName, city, country, logoUrl }` (`logoUrl` is `null` without a logo or while `brand.logo` is off). 404 for an unknown or revoked slug, the feature or the site setting off, or an inactive site. The setting is the only on and off switch; the slug only names the link",
       responses: { 200: type<PublicLinkInfo>() },
@@ -44,7 +45,7 @@ export const publicApi = new Hono<AppEnv>()
     '/links/:slug/registrations',
     op({
       id: 'booking.registration.createRegistration',
-      stories: ['CR-02'],
+      stories: [StoryId.CR_02],
       description:
         "Needs the tenant's `booking.public_link` and the site's `booking.public_link_enabled`. `{ companyName, country, contactName, email, locale? }`; always 202 with an empty body. A known email gets a sign-in prompt by email instead of the verification text, both with the single-use `/carrier-registration#<token>` link, so the response never reveals an account. Limits `registration_request` (5 per hour per email) and `registration_ip` (100 per hour per client address); over either the answer is the same 202 and nothing is written",
       responses: { 202: noBody },
@@ -72,7 +73,7 @@ export const publicApi = new Hono<AppEnv>()
     '/registrations/verify',
     op({
       id: 'booking.registration.verifyRegistration',
-      stories: ['CR-02'],
+      stories: [StoryId.CR_02],
       description:
         "`{ token }` → `{ carrierId, status }`; verifies the email, signs in, applies `booking.public_registration_mode`. A new email gets a verified account without password and a new carrier org; a known email answers 401 `sign_in_required` with `email` until that user is signed in, then attaches to the carrier org they administer; a user who is only `carrier_user` somewhere answers 403 `forbidden` with `reason: 'carrier_admin_required'` and the registration stays unverified. `auto_approve` links at once but leaves a link the tenant deactivated off. Single use, 24 hours; 401 once the site switched the public link off, the feature or site is off, or the slug the form came through was regenerated. Service: `verifyRegistration` in `verify.redeem.ts`",
       responses: {},

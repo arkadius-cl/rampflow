@@ -1,3 +1,4 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarIcon,
@@ -125,9 +126,9 @@ function CarrierBookingsScreen() {
 function Row({ booking: b }: { booking: Booking }) {
   const site = sites.find((s) => s.id === b.siteId);
   const tenant = tenants.find((t) => t.id === b.tenantId);
-  const gateIn = b.timeline.find((t) => t.status === 'checked_in')?.at;
-  const gateOut = b.timeline.find((t) => t.status === 'departed')?.at;
-  const changeable = b.status === 'confirmed';
+  const gateIn = b.timeline.find((t) => t.status === BookingStatus.checked_in)?.at;
+  const gateOut = b.timeline.find((t) => t.status === BookingStatus.departed)?.at;
+  const changeable = b.status === BookingStatus.confirmed;
   return (
     <TableRow>
       <TableCell>

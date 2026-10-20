@@ -1,3 +1,4 @@
+import { OrgKind } from '../values/roles.ts';
 import { type Catalog, findEntitlement } from './catalog.ts';
 import { isValidEntitlementValue } from './entitlements.ts';
 import { ROLE_PARTY } from './module.ts';
@@ -70,7 +71,7 @@ export function validateCatalog(catalog: Catalog, packages: LoosePackages): stri
       } else if (!permission.roles.some((r) => ROLE_PARTY[r] === item.area)) {
         problems.push(`${where}: no ${item.area} role holds ${item.permission}`);
       }
-      if (item.area === 'tenant' && item.entitlement !== undefined) {
+      if (item.area === OrgKind.tenant && item.entitlement !== undefined) {
         problems.push(...checkFeatureRef(catalog, where, item.entitlement));
       }
     }

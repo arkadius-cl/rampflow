@@ -4,6 +4,7 @@ import {
   type TenantRole,
   UpdateStaff,
 } from '@rampflow/shared/modules/core/api.staff';
+import { Permission } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,7 @@ import { staffKey, staffQuery } from '@/modules/core/queries';
 // TN-01: staff with role and sites, and pending invitations.
 
 export const Route = createFileRoute('/t/$orgId/staff/')({
-  beforeLoad: guard({ permission: 'core.manage_staff' }),
+  beforeLoad: guard({ permission: Permission.core.manage_staff }),
   component: StaffPage,
 });
 

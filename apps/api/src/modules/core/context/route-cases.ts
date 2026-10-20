@@ -1,10 +1,11 @@
+import { HttpMethod, Role } from '@rampflow/shared/values';
 import { defineRouteCases } from '../../../../test/route-cases.ts';
 
 export const cases = defineRouteCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/context',
-    as: 'gate_operator',
+    as: Role.gate_operator,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId }),
@@ -12,9 +13,9 @@ export const cases = defineRouteCases([
     siteScoped: false,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/context',
-    as: 'carrier_user',
+    as: Role.carrier_user,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId }),
@@ -22,9 +23,9 @@ export const cases = defineRouteCases([
     siteScoped: false,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/platform/context',
-    as: 'platform_admin',
+    as: Role.platform_admin,
     permission: 'member',
     entitlement: null,
     params: () => ({}),

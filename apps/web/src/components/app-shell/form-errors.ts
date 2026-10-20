@@ -1,3 +1,4 @@
+import { ErrorCode } from '@rampflow/shared/values';
 import type { TFunction } from 'i18next';
 import type { FieldError, FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +27,7 @@ export function useFieldMessage() {
 
 /** `core:errors.<code>`, or `core:errors.conflict.<reason>` for a 409 conflict. */
 export function errorText(t: TFunction<'core'>, e: ApiFailure): string {
-  if (e.code !== 'conflict')
+  if (e.code !== ErrorCode.conflict)
     return t(($) => $.errors[e.code as Exclude<typeof e.code, 'conflict'>]);
   const reason = e.conflictReason;
   return reason ? t(($) => $.errors.conflict[reason]) : t(($) => $.errors.conflict.default);
@@ -37,7 +38,7 @@ export function applyServerIssues<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,
 ): boolean {
-  if (!(error instanceof ApiFailure) || error.code !== 'validation_failed') return false;
+  if (!(error instanceof ApiFailure) || error.code !== ErrorCode.validation_failed) return false;
   for (const issue of error.issues) {
     const [field] = issue.path;
     if (typeof field === 'string') setError(field as Path<T>, { type: issue.code });

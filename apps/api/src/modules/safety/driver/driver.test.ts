@@ -5,6 +5,7 @@ import type {
   DriverBriefingContent,
   DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
+import { TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -64,7 +65,7 @@ async function setValidityDays(side: WorldSide, days: number) {
 /** A 30-minute gate-device session for the booking (YD-02), as U9's briefing-session route issues. */
 async function gateDeviceToken(side: WorldSide, b: WorldBooking, now: Date): Promise<string> {
   const id = randomUUID();
-  const token = deriveToken('driver', id);
+  const token = deriveToken(TokenPurpose.driver, id);
   await ownerDb()
     .insert(driverAccess)
     .values({

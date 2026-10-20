@@ -1,4 +1,5 @@
 import { InvitationAcceptBody, TokenBody } from '@rampflow/shared/modules/core/api.auth';
+import { StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { op } from '../../../kernel/describe.ts';
@@ -17,7 +18,7 @@ export const publicApi = new Hono<AppEnv>()
     '/inspect',
     op({
       id: 'core.invitations.inspectInvitation',
-      stories: ['PL-01', 'TN-01', 'CR-01', 'CR-04'],
+      stories: [StoryId.PL_01, StoryId.TN_01, StoryId.CR_01, StoryId.CR_04],
       description:
         '`{ token }` → `{ orgKind, orgName, role, email, hasAccount }`; 401 when unknown, used, revoked or expired',
       responses: {},
@@ -36,7 +37,7 @@ export const publicApi = new Hono<AppEnv>()
     '/accept',
     op({
       id: 'core.invitations.acceptInvitation',
-      stories: ['PL-01', 'TN-01', 'CR-01', 'CR-04'],
+      stories: [StoryId.PL_01, StoryId.TN_01, StoryId.CR_01, StoryId.CR_04],
       description:
         "Runs with the token, then in the scope of the org. `{ token, name?, password?, locale? }` → `{ orgId, orgKind }`. A user signed in with the invited email just joins. Otherwise an email with an account answers 401 with `reason: 'sign_in_required'`; a new user needs `name` and `password` (422 without) and gets a verified account and a session. Gate and dock site lists become `membership_site` rows. 409 `already_member` leaves the invitation pending. Service: `acceptInvitation` in `core/invitations/accept.redeem.ts`",
       responses: {},

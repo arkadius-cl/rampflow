@@ -5,6 +5,7 @@ import {
   type DriverBriefing,
   type DriverBriefingContent,
 } from '@rampflow/shared/modules/safety/api.driver';
+import { InstructionSafety, TranslationState } from '@rampflow/shared/modules/safety/values';
 import { CheckIcon, ChevronRightIcon, CircleAlertIcon, LanguagesIcon, XIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -76,7 +77,7 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
     setStep({ kind: 'loading' });
     api
       .briefings()
-      .then(({ items }) => setQueue(items.filter((i) => i.status === 'missing')))
+      .then(({ items }) => setQueue(items.filter((i) => i.status === InstructionSafety.missing)))
       .catch(() => setStep({ kind: 'error' }));
   }, []);
   useEffect(loadQueue, [loadQueue]);
@@ -129,7 +130,7 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
     </div>
   );
   const machine =
-    content.translation === 'machine' ? (
+    content.translation === TranslationState.machine ? (
       <p className="flex items-center gap-2 text-sm text-tone-onsite">
         <LanguagesIcon aria-hidden className="size-4 shrink-0" />
         {t(($) => $.briefing.machine)}

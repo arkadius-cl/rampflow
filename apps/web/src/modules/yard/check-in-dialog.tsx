@@ -1,5 +1,8 @@
 import { TURN_AWAY_REASONS, type TurnAwayReason } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { AcknowledgementCandidate, YardTruck } from '@rampflow/shared/modules/yard/api';
+import { Setting } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LinkIcon,
@@ -44,8 +47,12 @@ import {
 // YD-02: check in with the plate as seen, see punctuality and the safety status, link a briefing
 // by driver name or start it on this device, or turn the truck away with a listed reason.
 
-const CHECKABLE = new Set<YardTruck['status']>(['confirmed', 'no_show']);
-const TURNABLE = new Set<YardTruck['status']>(['confirmed', 'no_show', 'checked_in']);
+const CHECKABLE = new Set<YardTruck['status']>([BookingStatus.confirmed, BookingStatus.no_show]);
+const TURNABLE = new Set<YardTruck['status']>([
+  BookingStatus.confirmed,
+  BookingStatus.no_show,
+  BookingStatus.checked_in,
+]);
 
 export function CheckInDialog({
   orgId,
@@ -68,7 +75,7 @@ export function CheckInDialog({
   const [plate, setPlate] = useState(truck.plate ?? '');
   const [reason, setReason] = useState<TurnAwayReason | ''>('');
   const canCheckIn = CHECKABLE.has(truck.status);
-  const blocked = truck.safety.enforced && truck.safety.status === 'missing';
+  const blocked = truck.safety.enforced && truck.safety.status === SafetyStatus.missing;
 
   const checkIn = useYardMutation(orgId, () => commands.checkIn(truck.id, plate.trim() || null), {
     onSuccess: () => {
@@ -126,15 +133,15 @@ export function CheckInDialog({
               {truck.walkIn
                 ? t(($) => $.gate.check_in.walk_in_no_slot)
                 : t(($) => $.gate.check_in.tolerance, {
-                    early: access.setting('yard.early_tolerance_minutes', siteId),
-                    grace: access.setting('yard.grace_minutes', siteId),
+                    early: access.setting(Setting.yard.early_tolerance_minutes, siteId),
+                    grace: access.setting(Setting.yard.grace_minutes, siteId),
                   })}
             </p>
           </div>
         </div>
       ) : null}
 
-      {canCheckIn && truck.safety.status !== 'not_required' ? (
+      {canCheckIn && truck.safety.status !== SafetyStatus.not_required ? (
         <SafetySection orgId={orgId} truck={truck} online={online} blocked={blocked} />
       ) : null}
 
@@ -211,7 +218,7 @@ function SafetySection({
 }) {
   const { t } = useTranslation('yard');
   const commands = yardApi(orgId);
-  const valid = truck.safety.status === 'valid';
+  const valid = truck.safety.status === SafetyStatus.valid;
   const [name, setName] = useState('');
   const [opened, setOpened] = useState(false);
   const find = useMutation({

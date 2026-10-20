@@ -1,3 +1,4 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
   type CarrierRole,
   type CarrierUserInvitationView,
@@ -6,6 +7,7 @@ import {
   InviteCarrierUser,
   UpdateCarrierUser,
 } from '@rampflow/shared/modules/core/api.staff';
+import { OrgKind, Permission, Setting, StoryId } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
@@ -24,19 +26,20 @@ const MembershipParam = z.object({ membershipId: idSchema<'membership'>() });
 
 function carrierRequest(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== 'carrier') throw new Error(`carrier route under party ${scope.party}`);
-  const org_: OrgRef = { orgId: scope.carrierId, orgKind: 'carrier' };
+  if (scope.party !== ActorParty.carrier)
+    throw new Error(`carrier route under party ${scope.party}`);
+  const org_: OrgRef = { orgId: scope.carrierId, orgKind: OrgKind.carrier };
   return { org: org_, userId: scope.userId };
 }
 
 /** Mounted at `/api/c/:orgId/users` by modules/index.ts (CR-04). */
 export const carrier = new Hono<AppEnv>()
-  .use(requirePermission('core.manage_carrier_users'))
+  .use(requirePermission(Permission.core.manage_carrier_users))
   .get(
     '/',
     op({
       id: 'core.carrier-users.listUsers',
-      stories: ['CR-04'],
+      stories: [StoryId.CR_04],
       description: 'as the staff list, without site lists',
       responses: { 200: type<CarrierUserList>() },
     }),
@@ -49,7 +52,7 @@ export const carrier = new Hono<AppEnv>()
     '/invitations',
     op({
       id: 'core.carrier-users.createInvitation',
-      stories: ['CR-04'],
+      stories: [StoryId.CR_04],
       description: "`{ email, role }` → 201; the email goes out in the inviter's locale",
       responses: { 201: type<CarrierUserInvitationView>() },
     }),
@@ -73,7 +76,8 @@ export const carrier = new Hono<AppEnv>()
           role: input.role,
           invitedBy: userId,
           // A carrier has no default locale; colleagues likely share the inviter's language.
-          locale: me?.locale ?? (await c.var.access.setting('i18n.default_locale', null)).value,
+          locale:
+            me?.locale ?? (await c.var.access.setting(Setting.i18n.default_locale, null)).value,
         },
         now,
       );
@@ -84,7 +88,7 @@ export const carrier = new Hono<AppEnv>()
     '/invitations/:invitationId',
     op({
       id: 'core.carrier-users.deleteInvitation',
-      stories: ['CR-04'],
+      stories: [StoryId.CR_04],
       description: 'Revokes an invitation; the link stops working.',
       responses: { 204: noBody },
     }),
@@ -100,7 +104,7 @@ export const carrier = new Hono<AppEnv>()
     '/:membershipId',
     op({
       id: 'core.carrier-users.updateMember',
-      stories: ['CR-04'],
+      stories: [StoryId.CR_04],
       description: '`{ role }`',
       responses: { 200: type<CarrierUserView>() },
     }),
@@ -122,7 +126,7 @@ export const carrier = new Hono<AppEnv>()
     '/:membershipId',
     op({
       id: 'core.carrier-users.deleteMember',
-      stories: ['CR-04'],
+      stories: [StoryId.CR_04],
       description: 'Removes a member from the carrier.',
       responses: { 204: noBody },
     }),

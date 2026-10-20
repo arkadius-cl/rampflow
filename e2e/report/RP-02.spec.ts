@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
+import { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { overrideEntitlement } from '../support/u5.ts';
 import { REFERENCE_DAY, seedReferenceVisits, setLocale } from '../support/u11.ts';
@@ -37,7 +38,7 @@ test.describe('RP-02 CSV export', () => {
     expect(v1[header.indexOf('Checked in')]).toBe(`${REFERENCE_DAY}T07:50:00+01:00`);
     expect(visits.filter(Boolean)).toHaveLength(11);
 
-    await setLocale(w.A.users.dispatcher.id, 'de');
+    await setLocale(w.A.users.dispatcher.id, StaffLocale.de);
     await page.goto(`/t/${w.A.tenantId}/reports?${query}`);
     await expect(page.getByRole('heading', { name: 'Auswertungen' })).toBeVisible();
     const kpisDe = await exported(page, 'Kennzahlen als CSV');

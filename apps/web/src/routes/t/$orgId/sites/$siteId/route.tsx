@@ -1,3 +1,4 @@
+import { Permission } from '@rampflow/shared/values';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
@@ -17,7 +18,7 @@ import { SiteNav } from '@/modules/capacity/site-nav';
 // load types. The left pane lists every site with the usage meters.
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId')({
-  beforeLoad: guard({ permission: 'core.manage_sites' }),
+  beforeLoad: guard({ permission: Permission.core.manage_sites }),
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(siteQueries.list(params.orgId)),
@@ -42,7 +43,7 @@ function SiteLayout() {
       call(api.t[':orgId'].sites[':siteId'].$patch({ param: { orgId, siteId }, json: { active } })),
     onSettled: refresh,
   });
-  const capacity = can('booking.manage_resources');
+  const capacity = can(Permission.booking.manage_resources);
   return (
     <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <SiteNav orgId={orgId} sites={list.items} usage={list.usage} currentId={siteId} />

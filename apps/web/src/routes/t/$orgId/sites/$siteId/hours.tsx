@@ -1,4 +1,5 @@
 import { addDays, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { guard } from '@/lib/access';
@@ -15,7 +16,7 @@ const closureWindow = (timeZone: string) => {
 };
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId/hours')({
-  beforeLoad: guard({ permission: 'booking.manage_resources' }),
+  beforeLoad: guard({ permission: Permission.booking.manage_resources }),
   loader: async ({ context, params }) => {
     const { orgId, siteId } = params;
     const q = context.queryClient;

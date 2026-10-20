@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { type LocalDate, localDateSchema } from '../../time/index.ts';
 import { BOOKING_STATUSES, PUNCTUALITY } from '../booking/lifecycle.ts';
-import type { KpiUnit } from './values.ts';
+import { KpiUnit } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
 // definitions are binding in docs/reference/booking-lifecycle.md, "KPIs".
@@ -54,18 +54,18 @@ export type VisitQuery = z.infer<typeof VisitQuery>;
  * empty denominator, shown as "–".
  */
 export const KPIS = [
-  { key: 'bookingsDue', unit: 'count' },
-  { key: 'noShowRate', unit: 'percent' },
-  { key: 'lateCancellationRate', unit: 'percent' },
-  { key: 'onTimeRate', unit: 'percent' },
-  { key: 'earlyRate', unit: 'percent' },
-  { key: 'lateRate', unit: 'percent' },
-  { key: 'waitMinutes', unit: 'minutes' },
-  { key: 'dockDwellMinutes', unit: 'minutes' },
-  { key: 'turnaroundMinutes', unit: 'minutes' },
-  { key: 'dockUtilisation', unit: 'percent' },
-  { key: 'portalAdoption', unit: 'percent' },
-  { key: 'standgeldVisits', unit: 'count' },
+  { key: 'bookingsDue', unit: KpiUnit.count },
+  { key: 'noShowRate', unit: KpiUnit.percent },
+  { key: 'lateCancellationRate', unit: KpiUnit.percent },
+  { key: 'onTimeRate', unit: KpiUnit.percent },
+  { key: 'earlyRate', unit: KpiUnit.percent },
+  { key: 'lateRate', unit: KpiUnit.percent },
+  { key: 'waitMinutes', unit: KpiUnit.minutes },
+  { key: 'dockDwellMinutes', unit: KpiUnit.minutes },
+  { key: 'turnaroundMinutes', unit: KpiUnit.minutes },
+  { key: 'dockUtilisation', unit: KpiUnit.percent },
+  { key: 'portalAdoption', unit: KpiUnit.percent },
+  { key: 'standgeldVisits', unit: KpiUnit.count },
 ] as const satisfies readonly { key: string; unit: KpiUnit }[];
 export type KpiKey = (typeof KPIS)[number]['key'];
 

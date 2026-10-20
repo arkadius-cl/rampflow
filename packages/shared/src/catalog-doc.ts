@@ -2,6 +2,7 @@ import { permissionsFor } from './contract/access.ts';
 import { ROLES } from './contract/module.ts';
 import { PACKAGE_IDS, packages } from './packages.ts';
 import { catalog } from './registry.ts';
+import { OrgKind } from './values/roles.ts';
 
 export const CATALOG_DOC = 'docs/reference/module-contract.md';
 export const START_MARKER = '<!-- catalog:start -->';
@@ -65,7 +66,7 @@ export function renderCatalogTables(): string {
   row(['---', '---', '---', '---', '---']);
   for (const m of catalog) {
     for (const n of m.nav) {
-      const entitlement = n.area === 'tenant' && n.entitlement ? code(n.entitlement) : '';
+      const entitlement = n.area === OrgKind.tenant && n.entitlement ? code(n.entitlement) : '';
       row([code(`${m.id}:nav.${n.id}`), n.area, code(n.to), code(n.permission), entitlement]);
     }
   }

@@ -1,3 +1,4 @@
+import { Module } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withModule } from '../kernel/access.ts';
 import type { AppEnv } from '../kernel/env.ts';
@@ -53,11 +54,11 @@ const tenant = new Hono<AppEnv>()
   .route('/bookings', bookingStaff.tenant)
   .route('/carriers', bookingCarriers.tenant)
   .route('/privacy', privacy.tenant)
-  .route('/brand', withModule('brand', brandLogo.tenant))
-  .route('/safety', withModule('safety', safetyAuthoring.tenant))
-  .route('/safety', withModule('safety', safetyRegister.tenant))
-  .route('/yard', withModule('yard', yard.tenant))
-  .route('/reports', withModule('report', reports.tenant));
+  .route('/brand', withModule(Module.brand, brandLogo.tenant))
+  .route('/safety', withModule(Module.safety, safetyAuthoring.tenant))
+  .route('/safety', withModule(Module.safety, safetyRegister.tenant))
+  .route('/yard', withModule(Module.yard, yard.tenant))
+  .route('/reports', withModule(Module.report, reports.tenant));
 
 // carrierScope resolves `carrier_at_tenant` for paths under /at/:tenantId.
 const carrier = new Hono<AppEnv>()
@@ -76,7 +77,7 @@ const platform = new Hono<AppEnv>()
 const driver = new Hono<AppEnv>()
   .use(scoped(driverScope))
   .route('/session', driverSessionDriver.driver)
-  .route('/briefings', withModule('safety', safetyDriver.driver))
+  .route('/briefings', withModule(Module.safety, safetyDriver.driver))
   .route('/', driverView.driver);
 
 // Token and public routes pick their scope per route (a token in the body, a slug in the path).

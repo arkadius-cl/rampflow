@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -25,7 +26,9 @@ function toyApp() {
     .use(scoped(tenantScope))
     .post('/throws', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');
-      throw new ApiError('conflict', 'after a write', { reason: 'stale_version' });
+      throw new ApiError(ErrorCode.conflict, 'after a write', {
+        reason: ConflictReason.stale_version,
+      });
     })
     .post('/returns-409', async (c) => {
       await writeHall(c, c.req.header('X-Name') ?? '');

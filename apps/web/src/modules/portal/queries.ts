@@ -10,6 +10,7 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
 import type { LocalDate } from '@rampflow/shared/time';
+import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -17,7 +18,8 @@ import { queryKeys } from '@/lib/query-keys';
 // Queries of the carrier portal. Every key starts with ['carrier', orgId, 'portal'], so one
 // invalidation after a booking change refreshes the list, the detail and the offers.
 
-export const portalKey = (orgId: string) => [...queryKeys.org('carrier', orgId), 'portal'] as const;
+export const portalKey = (orgId: string) =>
+  [...queryKeys.org(OrgKind.carrier, orgId), 'portal'] as const;
 
 const bookings = () => api.c[':orgId'].bookings;
 const at = () => api.c[':orgId'].at[':tenantId'];

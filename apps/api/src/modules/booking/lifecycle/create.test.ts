@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { CreatedParty, Direction, TurnAwayReason } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -42,7 +44,7 @@ const oneDockSite = (o: Partial<Parameters<typeof capacitySite>[1]> = {}) =>
 const staffCreate = (s: CapacitySite, startsAt: Date, o: { forceReason?: string } = {}) =>
   asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
     createBooking(ctx, {
-      mode: 'staff',
+      mode: CreatedParty.staff,
       clientRequestId: randomUUID(),
       siteId: s.siteId,
       loadTypeId: s.loadTypeId,
@@ -92,7 +94,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
         siteId: s.siteId,
         kind: 'single',
         name: 'Rampe 2',
-        directions: ['inbound'],
+        directions: [Direction.inbound],
         sort: 1,
       })
       .returning();
@@ -129,7 +131,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
         .where(eq(booking.id, onSecond.id));
       const carrier = asCarrier(w.A, w.A.users.carrier_user, NOW, (ctx) =>
         createBooking(ctx, {
-          mode: 'carrier',
+          mode: CreatedParty.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -151,7 +153,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
     }
     const deadlocks = errors.filter((e) => JSON.stringify(e).includes('40P01'));
     expect(deadlocks).toEqual([]);
-    expect(errors.every((e) => e instanceof ApiError && e.code === 'conflict')).toBe(true);
+    expect(errors.every((e) => e instanceof ApiError && e.code === ErrorCode.conflict)).toBe(true);
   });
 });
 
@@ -212,7 +214,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const now = new Date('2026-11-02T07:20:00Z');
     const staffSoon = await asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
       createBooking(ctx, {
-        mode: 'staff',
+        mode: CreatedParty.staff,
         clientRequestId: randomUUID(),
         siteId: s.siteId,
         loadTypeId: s.loadTypeId,
@@ -227,7 +229,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const carrier = (startsAt: Date, at: Date) =>
       asCarrier(w.A, w.A.users.carrier_user, at, (ctx) =>
         createBooking(ctx, {
-          mode: 'carrier',
+          mode: CreatedParty.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -302,7 +304,7 @@ describe('walk-in mode (YD-03)', () => {
     const result = await walkIn(now, {
       kind: 'turn_away',
       avis: null,
-      reason: 'documents_missing',
+      reason: TurnAwayReason.documents_missing,
     });
     expect(result.booking).toMatchObject({
       status: 'turned_away',

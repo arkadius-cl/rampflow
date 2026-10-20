@@ -1,3 +1,4 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { type SQL, sql } from 'drizzle-orm';
 import { type AnyPgColumn, type PgPolicy, pgPolicy } from 'drizzle-orm/pg-core';
 import type { Scope } from './scope.ts';
@@ -75,7 +76,7 @@ export function tenantPolicies(
 ): PgPolicy[] {
   const own = o.site ? and(tenantIs(t.tenantId), siteAllowed(o.site)) : tenantIs(t.tenantId);
   return [
-    allow('tenant', 'all', own),
+    allow(ActorParty.tenant, 'all', own),
     ...o.readers.map((reader) =>
       allow(
         reader,
@@ -108,13 +109,15 @@ export function carrierOwnedPolicies(
   const own = and(tenantIs(t.tenantId), carrierIs(t.carrierId));
   return [
     ...(o.update
-      ? [allow('tenant', 'all', tenant)]
-      : (['select', 'insert', 'delete'] as const).map((cmd) => allow('tenant', cmd, tenant))),
-    allow('carrier', 'select', carrierIs(t.carrierId)),
+      ? [allow(ActorParty.tenant, 'all', tenant)]
+      : (['select', 'insert', 'delete'] as const).map((cmd) =>
+          allow(ActorParty.tenant, cmd, tenant),
+        )),
+    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
     allow('carrier_at_tenant', 'select', own),
     allow('carrier_at_tenant', 'insert', own),
     ...(o.update ? [allow('carrier_at_tenant', 'update', own)] : []),
-    ...(o.driver ? [allow('driver', 'select', bookingIs(t.bookingId))] : []),
+    ...(o.driver ? [allow(ActorParty.driver, 'select', bookingIs(t.bookingId))] : []),
   ];
 }
 

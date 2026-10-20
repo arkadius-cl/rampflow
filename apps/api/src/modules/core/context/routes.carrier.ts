@@ -1,4 +1,5 @@
 import type { Role } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
   type CarrierContext,
   type CarrierContextTenant,
@@ -27,7 +28,8 @@ export const carrier = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope, access, db, clock } = c.var;
-    if (scope.party !== 'carrier' || !access.role) throw new Error('context runs under a carrier');
+    if (scope.party !== ActorParty.carrier || !access.role)
+      throw new Error('context runs under a carrier');
     const [named] = await db
       .select({ id: org.id, name: org.name })
       .from(org)

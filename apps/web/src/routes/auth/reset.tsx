@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon } from 'lucide-react';
@@ -66,7 +67,7 @@ function ResetPage() {
     onError: (e) => applyServerIssues(e, form.setError),
   });
 
-  if (!token || isFailure(confirm.error, 'unauthorized')) {
+  if (!token || isFailure(confirm.error, ErrorCode.unauthorized)) {
     return (
       <AuthLayout title={t(($) => $.auth.reset.title)}>
         <InvalidLink />

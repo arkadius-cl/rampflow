@@ -8,13 +8,13 @@ export { LocaleSet, OrgKind, Role, SettingScope };
 export const ROLES = values(Role);
 
 export const ROLE_PARTY = {
-  platform_admin: 'platform',
-  tenant_admin: 'tenant',
-  dispatcher: 'tenant',
-  gate_operator: 'tenant',
-  dock_operator: 'tenant',
-  carrier_admin: 'carrier',
-  carrier_user: 'carrier',
+  platform_admin: OrgKind.platform,
+  tenant_admin: OrgKind.tenant,
+  dispatcher: OrgKind.tenant,
+  gate_operator: OrgKind.tenant,
+  dock_operator: OrgKind.tenant,
+  carrier_admin: OrgKind.carrier,
+  carrier_user: OrgKind.carrier,
 } as const satisfies Record<Role, OrgKind>;
 
 /**
@@ -23,11 +23,11 @@ export const ROLE_PARTY = {
  */
 export const ROLE_INCLUDES = {
   platform_admin: [],
-  tenant_admin: ['dispatcher'],
-  dispatcher: ['gate_operator', 'dock_operator'],
+  tenant_admin: [Role.dispatcher],
+  dispatcher: [Role.gate_operator, Role.dock_operator],
   gate_operator: [],
   dock_operator: [],
-  carrier_admin: ['carrier_user'],
+  carrier_admin: [Role.carrier_user],
   carrier_user: [],
 } as const satisfies Record<Role, readonly Role[]>;
 

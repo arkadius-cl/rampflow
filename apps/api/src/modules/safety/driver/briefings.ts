@@ -1,5 +1,6 @@
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { SafetyLocale } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   AcknowledgementBody,
@@ -9,6 +10,8 @@ import type {
   DriverBriefingContent,
   DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
+import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
+import { ConflictReason, DriverLocale, ErrorCode, Setting } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import type { BookingId, CarrierId, SiteId, TenantId, TokenHash } from '../../../db/ids.ts';
@@ -45,7 +48,7 @@ export interface DriverVisit {
 
 export async function driverVisit(c: Context<AppEnv>): Promise<DriverVisit> {
   const { scope } = c.var;
-  if (scope.party !== 'driver') throw new ApiError('unauthorized');
+  if (scope.party !== ActorParty.driver) throw new ApiError(ErrorCode.unauthorized);
   const ctx = bookingContext(c);
   const [row] = await ctx.tx
     .select({
@@ -57,7 +60,7 @@ export async function driverVisit(c: Context<AppEnv>): Promise<DriverVisit> {
     })
     .from(booking)
     .where(and(eq(booking.id, scope.bookingId), eq(booking.tenantId, scope.tenantId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return { ctx, channel: scope.channel, booking: row };
 }
 
@@ -71,7 +74,7 @@ export async function listBriefings(
   v: DriverVisit,
   device: TokenHash | null,
 ): Promise<DriverBriefingList> {
-  if (device && v.channel === 'link') await redeemPasses(v.ctx, v.booking, device);
+  if (device && v.channel === DriverChannel.link) await redeemPasses(v.ctx, v.booking, device);
   const { tx, access, now } = v.ctx;
   const applicable = await applicableInstructions(tx, v.booking);
   const safety = await driverSafety(tx, access, v.booking, now);
@@ -81,7 +84,7 @@ export async function listBriefings(
       return {
         instructionId: i.instructionId,
         name: i.name,
-        status: s?.status ?? 'missing',
+        status: s?.status ?? InstructionSafety.missing,
         expiresAt: s?.expiresAt ?? null,
         quiz: i.quiz && quizOn(v),
         locales: i.locales,
@@ -94,7 +97,7 @@ async function applicable(v: DriverVisit, instructionId: InstructionId) {
   const found = (await applicableInstructions(v.ctx.tx, v.booking)).find(
     (i) => i.instructionId === instructionId,
   );
-  if (!found) throw new ApiError('not_found');
+  if (!found) throw new ApiError(ErrorCode.not_found);
   return found;
 }
 
@@ -108,7 +111,7 @@ async function contentIn(
     instructionId,
     locale,
   });
-  if (!content) throw new ApiError('not_found', 'No published content in this locale');
+  if (!content) throw new ApiError(ErrorCode.not_found, 'No published content in this locale');
   return content;
 }
 
@@ -117,9 +120,9 @@ const bestLocale = (i: ApplicableInstruction, wanted: SafetyLocale | undefined):
   const has = (l: SafetyLocale | undefined) =>
     l !== undefined && i.locales.some((x) => x.locale === l);
   if (has(wanted)) return wanted as SafetyLocale;
-  if (has('en')) return 'en';
+  if (has(DriverLocale.en)) return DriverLocale.en;
   const first = i.locales[0];
-  if (!first) throw new ApiError('not_found', 'The briefing has no content');
+  if (!first) throw new ApiError(ErrorCode.not_found, 'The briefing has no content');
   return first.locale;
 };
 
@@ -158,9 +161,11 @@ export async function submitAttempt(
 ): Promise<AttemptResult> {
   await applicable(v, instructionId);
   const content = await contentIn(v, instructionId, body.locale);
-  if (content.questions.length === 0) throw new ApiError('not_found', 'The briefing has no quiz');
-  const passPercent = (await v.ctx.access.setting('safety.quiz_pass_percent', v.booking.siteId))
-    .value;
+  if (content.questions.length === 0)
+    throw new ApiError(ErrorCode.not_found, 'The briefing has no quiz');
+  const passPercent = (
+    await v.ctx.access.setting(Setting.safety.quiz_pass_percent, v.booking.siteId)
+  ).value;
   const result = scoreAnswers(content.questions, body.answers, passPercent);
   const attempts = await recordAttempt(v.ctx.tx, attemptKey(v, content), result, v.ctx.now);
   return { ...result, attempts };
@@ -182,7 +187,9 @@ export async function acknowledge(
   const attempt = await attemptOf(tx, attemptKey(v, content));
   const quiz = content.questions.length > 0 && quizOn(v);
   if (quiz && !attempt?.passedAt) {
-    throw new ApiError('conflict', 'Conflict: quiz_not_passed', { reason: 'quiz_not_passed' });
+    throw new ApiError(ErrorCode.conflict, 'Conflict: quiz_not_passed', {
+      reason: ConflictReason.quiz_not_passed,
+    });
   }
   const ack = await recordAcknowledgement(tx, {
     tenantId: v.booking.tenantId,
@@ -200,9 +207,9 @@ export async function acknowledge(
   await transitionBooking(v.ctx, v.booking.id, {
     type: 'link_acknowledgement',
     acknowledgementId: ack.id,
-    via: 'completed',
+    via: LinkVia.completed,
   });
-  if (v.channel === 'link' && ack.expiresAt) {
+  if (v.channel === DriverChannel.link && ack.expiresAt) {
     await keepPass(tx, {
       deviceHash: device(),
       tenantId: v.booking.tenantId,

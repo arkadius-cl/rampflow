@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { templateContent } from '../../apps/api/src/modules/safety/template/platform.ts';
+import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { linkIn } from '../support/mailpit.ts';
@@ -17,7 +18,7 @@ import {
 
 const ZONE = 'Europe/Berlin';
 /** The en quiz of the platform template the admin publishes unchanged. */
-const QUIZ = templateContent('en', { quiz: true }).questions;
+const QUIZ = templateContent(DriverLocale.en, { quiz: true }).questions;
 const SITE = 'Lager Garching';
 
 type SettingRow = ReturnType<Page['getByTestId']>;

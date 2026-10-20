@@ -1,3 +1,4 @@
+import { TokenPurpose } from '@rampflow/shared/values';
 import { Button, Heading, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
@@ -39,7 +40,7 @@ export const languageOf = (t: TFunction) => (t as { lng?: string }).lng ?? 'en';
 
 /** A single-use link to /carrier-invite#<token>, valid for 7 days. */
 export function render(payload: CarrierInvitationPayload, t: TFunction) {
-  const link = `${env.APP_ORIGIN}/carrier-invite#${deriveToken('carrier_invitation', payload.carrierInvitationId)}`;
+  const link = `${env.APP_ORIGIN}/carrier-invite#${deriveToken(TokenPurpose.carrier_invitation, payload.carrierInvitationId)}`;
   const values = {
     tenant: payload.tenantName,
     company: payload.companyName,

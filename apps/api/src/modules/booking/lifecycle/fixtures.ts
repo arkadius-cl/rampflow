@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import { ActorParty, BookingParty, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { Role, SystemActorName, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide, WorldUser } from '../../../../test/world.ts';
@@ -46,7 +49,7 @@ export async function bookableSite(
     s.dockIds.map((dockId) => ({
       dockId,
       resourceId: s.resourceId,
-      resourceKind: 'pool' as const,
+      resourceKind: ResourceKind.pool,
       siteId: s.id,
       tenantId: side.tenantId,
     })),
@@ -87,9 +90,9 @@ export function clearSetting(tenantId: TenantId, key: string) {
 }
 
 export const avisInput = (o: Partial<AvisInput> = {}): AvisInput => ({
-  references: [{ type: 'purchase_order', value: 'PO-4711' }],
+  references: [{ type: ReferenceType.purchase_order, value: 'PO-4711' }],
   counterpartyName: 'Lieferant GmbH',
-  loadUnits: [{ type: 'eur_pallet', quantity: 10 }],
+  loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 10 }],
   ...o,
 });
 
@@ -103,9 +106,9 @@ export function asStaff<T>(
   now: Date,
   fn: (ctx: BookingContext) => Promise<T>,
 ): Promise<T> {
-  const siteLimited = user.role === 'gate_operator' || user.role === 'dock_operator';
+  const siteLimited = user.role === Role.gate_operator || user.role === Role.dock_operator;
   const scope: Scope = {
-    party: 'tenant',
+    party: ActorParty.tenant,
     tenantId: side.tenantId,
     siteIds: siteLimited ? [side.sites[0].id] : 'all',
     actor: { kind: 'user', userId: user.id, role: user.role as TenantRole },
@@ -114,7 +117,7 @@ export function asStaff<T>(
     fn({
       tx,
       tenantId: side.tenantId,
-      actor: { party: 'staff', userId: user.id },
+      actor: { party: BookingParty.staff, userId: user.id },
       access: await loadAccess(tx, scope, testClock(now)),
       now,
     }),
@@ -128,16 +131,16 @@ export function asSystem<T>(
   fn: (ctx: BookingContext) => Promise<T>,
 ): Promise<T> {
   const scope: Scope = {
-    party: 'tenant',
+    party: ActorParty.tenant,
     tenantId: side.tenantId,
     siteIds: 'all',
-    actor: { kind: 'system', job: 'no_show' },
+    actor: { kind: 'system', job: SystemActorName.no_show },
   };
   return withScope(scope, async (tx) =>
     fn({
       tx,
       tenantId: side.tenantId,
-      actor: { party: 'system', job: 'no_show' },
+      actor: { party: BookingParty.system, job: SystemActorName.no_show },
       access: await loadAccess(tx, scope, testClock(now)),
       now,
     }),
@@ -162,7 +165,7 @@ export function asCarrier<T>(
     fn({
       tx,
       tenantId: side.tenantId,
-      actor: { party: 'carrier', userId: user.id, carrierId: side.carrierId },
+      actor: { party: BookingParty.carrier, userId: user.id, carrierId: side.carrierId },
       access: await loadAccess(tx, scope, testClock(now)),
       now,
     }),
@@ -243,7 +246,7 @@ export async function seedBooking(side: WorldSide, o: SeedBooking): Promise<Book
     siteId: at.siteId,
     bookingId: row.id,
     carrierId,
-    tokenHash: hashToken(deriveToken('driver', linkId)),
+    tokenHash: hashToken(deriveToken(TokenPurpose.driver, linkId)),
     channel: 'link',
     expiresAt: new Date(o.startsAt.getTime() + 7 * 86_400_000),
   });

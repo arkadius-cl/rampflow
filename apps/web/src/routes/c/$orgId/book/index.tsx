@@ -1,3 +1,4 @@
+import { Permission } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/c/$orgId/book/')({
     from: text(search.from),
     booking: text(search.booking),
   }),
-  beforeLoad: guard({ permission: 'booking.book' }),
+  beforeLoad: guard({ permission: Permission.booking.book }),
   component: BookPage,
 });
 

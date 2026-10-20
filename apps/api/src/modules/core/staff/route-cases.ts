@@ -1,3 +1,4 @@
+import { HttpMethod, OrgKind, Permission, Role } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { MembershipId } from '../../../db/ids.ts';
@@ -9,8 +10,8 @@ const P = '/api/t/:orgId/staff';
 // Staff routes need core.manage_staff, which gate and dock operators lack, so `siteScoped`
 // checks that an operator of the other site gets 403 (TN-01).
 const base = {
-  as: 'tenant_admin',
-  permission: 'core.manage_staff',
+  as: Role.tenant_admin,
+  permission: Permission.core.manage_staff,
   entitlement: null,
   foreign: 'not_found',
   siteScoped: true,
@@ -22,10 +23,10 @@ const members = new WeakMap<World, MembershipId>();
 const invitations = new WeakMap<World, string>();
 
 export const cases = defineRouteCases([
-  { ...base, method: 'GET', path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: 'empty' },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/invitations`,
     params: org,
     body: () => ({ email: inviteeEmail('staff'), role: 'dispatcher' }),
@@ -33,13 +34,13 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'DELETE',
+    method: HttpMethod.DELETE,
     path: `${P}/invitations/:invitationId`,
     setup: async (w, db) => {
       const inv = await invitationFor(db, {
         orgId: w.A.tenantId,
-        orgKind: 'tenant',
-        role: 'dispatcher',
+        orgKind: OrgKind.tenant,
+        role: Role.dispatcher,
         invitedBy: w.A.users.tenant_admin.id,
       });
       invitations.set(w, inv.id);
@@ -49,7 +50,7 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: `${P}/:membershipId`,
     setup: async (w, db) => {
       members.set(w, await membershipOf(db, w.A.users.dock_operator.id));
@@ -59,7 +60,7 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'DELETE',
+    method: HttpMethod.DELETE,
     path: `${P}/:membershipId`,
     setup: async (w, db) => {
       members.set(w, await membershipOf(db, w.A.users.dock_operator.id));

@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Email, type EmailLinkBody, LoginBody } from '@rampflow/shared/modules/core/api.auth';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailCheckIcon } from 'lucide-react';
@@ -77,7 +78,8 @@ function PasswordForm({ redirect }: { redirect: string }) {
   });
   const failure = login.error;
   const retryMinutes =
-    isFailure(failure, 'rate_limited') && typeof failure.details.retryAfterSeconds === 'number'
+    isFailure(failure, ErrorCode.rate_limited) &&
+    typeof failure.details.retryAfterSeconds === 'number'
       ? Math.ceil(failure.details.retryAfterSeconds / 60)
       : null;
 
@@ -95,7 +97,7 @@ function PasswordForm({ redirect }: { redirect: string }) {
                       'minute',
                     ),
                   })
-                : isFailure(failure, 'unauthorized')
+                : isFailure(failure, ErrorCode.unauthorized)
                   ? t(($) => $.auth.login.wrong)
                   : t(($) => $.errors.internal_error)}
             </AlertTitle>

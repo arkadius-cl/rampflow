@@ -1,3 +1,4 @@
+import { OrgKind, Role } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -23,7 +24,7 @@ const sessionOf = (res: Response) =>
 const signedIn = (sessionToken: string, id: UserId): WorldUser => ({
   id,
   email: '',
-  role: 'dispatcher',
+  role: Role.dispatcher,
   sessionToken,
 });
 
@@ -50,8 +51,8 @@ describe('a new user accepts', () => {
   it('a gate operator invitation: verified account, membership, site list and a session', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'gate_operator',
+      orgKind: OrgKind.tenant,
+      role: Role.gate_operator,
       invitedBy: w.A.users.tenant_admin.id,
       siteIds: [w.A.sites[1].id],
     });
@@ -98,8 +99,8 @@ describe('a new user accepts', () => {
   it('a carrier user invitation from a carrier admin (CR-04)', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.carrierId,
-      orgKind: 'carrier',
-      role: 'carrier_user',
+      orgKind: OrgKind.carrier,
+      role: Role.carrier_user,
       invitedBy: w.A.users.carrier_admin.id,
     });
     const res = await anon.post('/api/public/invitations/accept', {
@@ -117,8 +118,8 @@ describe('a new user accepts', () => {
   it('without name and password answers 422 and leaves the invitation pending', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const res = await anon.post('/api/public/invitations/accept', { body: { token: inv.token } });
@@ -133,8 +134,8 @@ describe('a new user accepts', () => {
   it('once: two racing acceptances create one user and one membership', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const body = { token: inv.token, name: 'Racer', password: 'race password 12' };
@@ -158,8 +159,8 @@ describe('an existing user accepts', () => {
     const existing = await account(ownerDb());
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
       email: existing.email,
     });
@@ -193,8 +194,8 @@ describe('an existing user accepts', () => {
     const member = w.A.users.dispatcher;
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'tenant_admin',
+      orgKind: OrgKind.tenant,
+      role: Role.tenant_admin,
       invitedBy: w.platformAdmin.id,
       email: member.email,
     });
@@ -211,8 +212,8 @@ describe('a token', () => {
   it('works once', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dock_operator',
+      orgKind: OrgKind.tenant,
+      role: Role.dock_operator,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const body = { token: inv.token, name: 'Dora Dock', password: 'dock password 12' };
@@ -228,8 +229,8 @@ describe('a token', () => {
     const later = createApp({ clock: local });
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
       expiresAt: new Date(local.now().getTime() + 7 * 24 * 3600_000),
     });
@@ -244,8 +245,8 @@ describe('a token', () => {
   it('of a revoked invitation answers 401', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     await ownerDb()
@@ -259,8 +260,8 @@ describe('a token', () => {
   it('needs the same-origin header like every mutating request', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const res = await anon.post('/api/public/invitations/inspect', {

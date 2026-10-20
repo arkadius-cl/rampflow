@@ -7,9 +7,9 @@ import {
   type ImplementedFeatureKey,
   type PermissionKey,
   permissionsFor,
-  type Role,
 } from '@rampflow/shared';
 import type { HttpMethod } from '@rampflow/shared/values';
+import { OrgKind, Role } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
 import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
@@ -160,18 +160,18 @@ export const accountCoverage = (
 ) => coverage(routes, cases, ACCOUNT);
 
 const TENANT_ROLES: readonly Role[] = [
-  'dock_operator',
-  'gate_operator',
-  'dispatcher',
-  'tenant_admin',
+  Role.dock_operator,
+  Role.gate_operator,
+  Role.dispatcher,
+  Role.tenant_admin,
 ];
-const CARRIER_ROLES: readonly Role[] = ['carrier_user', 'carrier_admin'];
+const CARRIER_ROLES: readonly Role[] = [Role.carrier_user, Role.carrier_admin];
 
 function actorOf(side: WorldSide, w: World, role: Role | 'driver'): Actor {
   switch (role) {
     case 'driver':
       return side.bookings.own;
-    case 'platform_admin':
+    case Role.platform_admin:
       return w.platformAdmin;
     default:
       return side.users[role];
@@ -179,7 +179,7 @@ function actorOf(side: WorldSide, w: World, role: Role | 'driver'): Actor {
 }
 
 function rivalOf(side: WorldSide, role: Role): Actor {
-  return role === 'carrier_admin' ? side.users.rival_admin : side.users.rival_user;
+  return role === Role.carrier_admin ? side.users.rival_admin : side.users.rival_user;
 }
 
 function fill(pattern: string, params: Record<string, string>): string {
@@ -305,23 +305,23 @@ export async function checkRouteCase(
 
   // 1. Foreign tenant, carrier or booking: B's actor with A's ids, then inside B's own org.
   // Platform admins see every org by design (ADR-0002); their routes have no foreign party.
-  if (party !== 'platform') {
+  if (party !== OrgKind.platform) {
     report(
       'foreign_org',
       await expectForeign(await call(actorOf(B, w, role), params), rc.foreign, secretsA),
     );
   }
-  if (party === 'tenant' || party === 'carrier') {
+  if (party === OrgKind.tenant || party === OrgKind.carrier) {
     const own = {
       ...params,
-      orgId: party === 'tenant' ? B.tenantId : B.carrierId,
+      orgId: party === OrgKind.tenant ? B.tenantId : B.carrierId,
       ...(rc.path.includes(':tenantId') ? { tenantId: B.tenantId } : {}),
     };
     report('leak', await expectForeign(await call(actorOf(B, w, role), own), rc.foreign, secretsA));
   }
 
   // 1b. A second carrier linked to the same tenant sees none of the first carrier's rows.
-  if (party === 'carrier') {
+  if (party === OrgKind.carrier) {
     const rivalSecrets = secretsOf([A.carrierId, A.bookings.own, A.bookings.otherSite]);
     const rival = { ...params, orgId: A.rivalCarrierId };
     report(
@@ -338,8 +338,8 @@ export async function checkRouteCase(
   }
 
   // 2. Foreign site: an operator limited to the other site of the same tenant.
-  if (rc.siteScoped && party === 'tenant') {
-    const operator = role === 'dock_operator' ? 'dock_operator' : 'gate_operator';
+  if (rc.siteScoped && party === OrgKind.tenant) {
+    const operator = role === Role.dock_operator ? 'dock_operator' : 'gate_operator';
     const holds =
       rc.permission === 'member' ||
       permissionsFor(catalog, operator).has(rc.permission as PermissionKey);
@@ -354,7 +354,8 @@ export async function checkRouteCase(
 
   // 3. Missing permission: the highest role of the same party that lacks it.
   if (rc.permission !== 'member' && rc.permission !== 'driver') {
-    const roles = party === 'tenant' ? TENANT_ROLES : party === 'carrier' ? CARRIER_ROLES : [];
+    const roles =
+      party === OrgKind.tenant ? TENANT_ROLES : party === OrgKind.carrier ? CARRIER_ROLES : [];
     const lacking = roles
       .filter((r) => !permissionsFor(catalog, r).has(rc.permission as PermissionKey))
       .at(-1);
@@ -370,7 +371,7 @@ export async function checkRouteCase(
     ? catalog.find((m) => rc.permission.startsWith(`${m.id}.`))
     : undefined;
   const features = [rc.entitlement, module?.enabledBy ?? null].filter((f) => f !== null);
-  if (party !== 'platform') {
+  if (party !== OrgKind.platform) {
     for (const feature of features) {
       const res = await withFeaturesOff(A.tenantId, [feature], w.platformAdmin.id, () =>
         call(actorOf(A, w, role), params),
@@ -381,7 +382,8 @@ export async function checkRouteCase(
 
   // Control: the case's own actor reaches the handler with every route feature off except the
   // declared one, so a gate the case leaves out answers 403 here instead of passing unseen.
-  const undeclared = party === 'platform' ? [] : ROUTE_FEATURES.filter((f) => f !== rc.entitlement);
+  const undeclared =
+    party === OrgKind.platform ? [] : ROUTE_FEATURES.filter((f) => f !== rc.entitlement);
   const res = await withFeaturesOff(A.tenantId, undeclared, w.platformAdmin.id, () =>
     call(actorOf(A, w, role), params),
   );

@@ -1,3 +1,4 @@
+import { OrgKind } from '../values/roles.ts';
 import type { Catalog, PermissionKeyOf } from './catalog.ts';
 import type { ResolvedEntitlementsOf } from './entitlements.ts';
 import { type NavItem, ROLE_INCLUDES, type Role } from './module.ts';
@@ -47,13 +48,17 @@ export function navFor<C extends Catalog>(catalog: C, ctx: NavContext<C>): Visib
   const permissions: ReadonlySet<string> = ctx.permissions;
   const visible: VisibleNavItem[] = [];
   for (const module of catalog) {
-    if (ctx.area === 'tenant') {
+    if (ctx.area === OrgKind.tenant) {
       const modulesOn: Readonly<Record<string, boolean>> = ctx.entitlements.modules;
       if (!modulesOn[module.id]) continue;
     }
     for (const item of module.nav) {
       if (item.area !== ctx.area || !permissions.has(item.permission)) continue;
-      if (item.area === 'tenant' && item.entitlement !== undefined && ctx.area === 'tenant') {
+      if (
+        item.area === OrgKind.tenant &&
+        item.entitlement !== undefined &&
+        ctx.area === OrgKind.tenant
+      ) {
         const features: Readonly<Record<string, boolean>> = ctx.entitlements.features;
         if (!features[item.entitlement]) continue;
       }

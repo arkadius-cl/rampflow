@@ -1,3 +1,4 @@
+import { Setting } from '@rampflow/shared/values';
 import { and, eq, inArray, isNotNull, isNull, lt, type SQL, sql } from 'drizzle-orm';
 import type { BookingId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -32,11 +33,11 @@ export async function retentionLimits(access: Pick<Access, 'setting'>): Promise<
       | 'privacy.retention.audit_log_days',
   ) => (await access.setting(key, null)).value;
   return {
-    driverPhoneDays: await days('privacy.retention.driver_phone_days'),
-    driverIdentityDays: await days('privacy.retention.driver_identity_days'),
-    visitDays: await days('privacy.retention.visit_days'),
-    safetyAfterExpiryDays: await days('privacy.retention.safety_after_expiry_days'),
-    auditLogDays: await days('privacy.retention.audit_log_days'),
+    driverPhoneDays: await days(Setting.privacy.retention.driver_phone_days),
+    driverIdentityDays: await days(Setting.privacy.retention.driver_identity_days),
+    visitDays: await days(Setting.privacy.retention.visit_days),
+    safetyAfterExpiryDays: await days(Setting.privacy.retention.safety_after_expiry_days),
+    auditLogDays: await days(Setting.privacy.retention.audit_log_days),
   };
 }
 

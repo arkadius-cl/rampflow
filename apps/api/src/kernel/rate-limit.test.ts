@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { RateLimitBucket } from '@rampflow/shared/modules/core/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { as } from '../../test/http.ts';
@@ -21,14 +23,14 @@ function loginApp(email: string) {
     .use(scoped(anonymousScope))
     .post('/login', async (c) => {
       const key = `${email}|${clientIp(c)}`;
-      const state = await rateLimitState('login_failed', key, c.var.clock.now());
+      const state = await rateLimitState(RateLimitBucket.login_failed, key, c.var.clock.now());
       if (state.limited) {
-        throw new ApiError('rate_limited', 'Too many attempts', {
+        throw new ApiError(ErrorCode.rate_limited, 'Too many attempts', {
           retryAfterSeconds: state.retryAfterSeconds,
         });
       }
-      await recordRateLimitEvent('login_failed', key, c.var.clock.now());
-      throw new ApiError('unauthorized', 'Wrong password');
+      await recordRateLimitEvent(RateLimitBucket.login_failed, key, c.var.clock.now());
+      throw new ApiError(ErrorCode.unauthorized, 'Wrong password');
     })
     .onError(onError);
 }
@@ -47,8 +49,14 @@ describe('rate limits', () => {
     const key = randomUUID();
     const at = new Date('2026-11-02T09:00:00Z');
     for (let i = 0; i < 5; i++)
-      await recordRateLimitEvent('login_failed', key, new Date(at.getTime() + i * 60_000));
-    expect(await rateLimitState('login_failed', key, new Date(at.getTime() + 5 * 60_000))).toEqual({
+      await recordRateLimitEvent(
+        RateLimitBucket.login_failed,
+        key,
+        new Date(at.getTime() + i * 60_000),
+      );
+    expect(
+      await rateLimitState(RateLimitBucket.login_failed, key, new Date(at.getTime() + 5 * 60_000)),
+    ).toEqual({
       limited: true,
       retryAfterSeconds: 600,
     });
@@ -63,7 +71,7 @@ describe('rate limits', () => {
       })
       .post(
         '/exchange',
-        rateLimit('driver_exchange', () => ip),
+        rateLimit(RateLimitBucket.driver_exchange, () => ip),
         (c) => c.json({ ok: true }),
       )
       .onError(onError);

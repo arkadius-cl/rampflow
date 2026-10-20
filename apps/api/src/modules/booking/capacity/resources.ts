@@ -4,6 +4,8 @@ import type {
   ResourceView,
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DockId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -22,8 +24,10 @@ type ResourceRow = typeof bookableResource.$inferSelect;
 
 /** Pools need `booking.pools` to be created or changed; existing pools keep offering (ADR-0004). */
 function requirePools(req: TenantRequest, kind: ResourceRow['kind']): void {
-  if (kind === 'pool' && !req.entitlements.features['booking.pools']) {
-    throw new ApiError('entitlement_required', 'booking.pools is off', { key: 'booking.pools' });
+  if (kind === ResourceKind.pool && !req.entitlements.features['booking.pools']) {
+    throw new ApiError(ErrorCode.entitlement_required, 'booking.pools is off', {
+      key: 'booking.pools',
+    });
   }
 }
 
@@ -80,7 +84,7 @@ async function requireResource(tx: Tx, tenantId: TenantId, id: ResourceId): Prom
     .select()
     .from(bookableResource)
     .where(and(eq(bookableResource.id, id), eq(bookableResource.tenantId, tenantId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -114,8 +118,8 @@ async function setDocks(tx: Tx, resource: ResourceRow, dockIds: readonly string[
       ),
     );
   if (taken.length > 0) {
-    throw new ApiError('conflict', 'Dock already belongs to a resource', {
-      reason: 'dock_in_resource',
+    throw new ApiError(ErrorCode.conflict, 'Dock already belongs to a resource', {
+      reason: ConflictReason.dock_in_resource,
       dockIds: taken.map((t) => t.dockId),
     });
   }
@@ -136,7 +140,9 @@ async function setDocks(tx: Tx, resource: ResourceRow, dockIds: readonly string[
       })),
     )
     // A concurrent assignment of the same dock that committed after the check above.
-    .catch((e: unknown) => conflictOnUnique(e, 'resource_dock_pkey', 'dock_in_resource'));
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'resource_dock_pkey', ConflictReason.dock_in_resource),
+    );
 }
 
 export async function createResource(
@@ -173,7 +179,7 @@ export async function updateResource(
 ): Promise<ResourceView> {
   const current = await requireResource(tx, req.tenantId, id);
   requirePools(req, current.kind);
-  if (current.kind === 'single' && input.capacityCap != null) {
+  if (current.kind === ResourceKind.single && input.capacityCap != null) {
     throw invalid(['capacityCap'], 'Only pools have a capacity cap');
   }
   const [row] = await tx
@@ -181,7 +187,7 @@ export async function updateResource(
     .set(input)
     .where(and(eq(bookableResource.id, id), eq(bookableResource.tenantId, req.tenantId)))
     .returning();
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const docks = await dockIdsOf(tx, req.tenantId, [id]);
   return view(row, docks.get(id) ?? []);
 }
@@ -194,7 +200,7 @@ export async function putResourceDocks(
 ): Promise<ResourceView> {
   const current = await requireResource(tx, req.tenantId, id);
   requirePools(req, current.kind);
-  if (current.kind === 'single' && dockIds.length !== 1) {
+  if (current.kind === ResourceKind.single && dockIds.length !== 1) {
     throw invalid(['dockIds'], 'A single resource has exactly one dock');
   }
   await setDocks(tx, current, dockIds);
@@ -216,7 +222,7 @@ export async function bookDock(
     .select({ id: dock.id, siteId: dock.siteId, code: dock.code })
     .from(dock)
     .where(and(eq(dock.tenantId, req.tenantId), eq(dock.id, dockId)));
-  if (!target) throw new ApiError('not_found');
+  if (!target) throw new ApiError(ErrorCode.not_found);
   const [held] = await tx
     .select()
     .from(resourceDock)
@@ -224,16 +230,16 @@ export async function bookDock(
     .where(and(eq(resourceDock.tenantId, req.tenantId), eq(resourceDock.dockId, dockId)));
   const current = held?.bookable_resource;
   const pool =
-    input.as === 'pool'
+    input.as === ResourceKind.pool
       ? await requireResource(tx, req.tenantId, input.resourceId as ResourceId)
       : null;
-  if (pool && (pool.kind !== 'pool' || pool.siteId !== target.siteId)) {
+  if (pool && (pool.kind !== ResourceKind.pool || pool.siteId !== target.siteId)) {
     throw invalid(['resourceId'], 'No such pool on this site');
   }
   if (current) requirePools(req, current.kind);
   if (pool) requirePools(req, pool.kind);
 
-  if (input.as === 'single' && current?.kind === 'single') {
+  if (input.as === ResourceKind.single && current?.kind === ResourceKind.single) {
     const directions = input.directions ?? current.directions;
     return updateResource(tx, req, current.id, { directions, active: true });
   }
@@ -244,7 +250,7 @@ export async function bookDock(
     await tx
       .delete(resourceDock)
       .where(and(eq(resourceDock.tenantId, req.tenantId), eq(resourceDock.dockId, dockId)));
-    if (current.kind === 'single') {
+    if (current.kind === ResourceKind.single) {
       await tx
         .update(bookableResource)
         .set({ active: false })
@@ -255,7 +261,7 @@ export async function bookDock(
   }
   if (input.as === 'none') return null;
   const resource =
-    input.as === 'single'
+    input.as === ResourceKind.single
       ? await singleFor(tx, req, { ...target, directions: input.directions })
       : (pool as ResourceRow);
   // One row, never a rewrite of the pool's list: a concurrent move into the same pool keeps its
@@ -269,7 +275,9 @@ export async function bookDock(
       siteId: resource.siteId,
       tenantId: resource.tenantId,
     })
-    .catch((e: unknown) => conflictOnUnique(e, 'resource_dock_pkey', 'dock_in_resource'));
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'resource_dock_pkey', ConflictReason.dock_in_resource),
+    );
   return view(resource, await dockIdsOfOne(tx, resource));
 }
 

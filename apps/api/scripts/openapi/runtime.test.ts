@@ -1,3 +1,4 @@
+import { HttpMethod, Permission, StoryId } from '@rampflow/shared/values';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
@@ -18,10 +19,10 @@ const marker = (guard: Guard & { kind: 'permission' }): MiddlewareHandler =>
   );
 
 const meta = (id: `${string}.${string}.${string}`) =>
-  op({ id, stories: ['MD-03'], description: 'Toy.', responses: {} });
+  op({ id, stories: [StoryId.MD_03], description: 'Toy.', responses: {} });
 
-const staff = marker({ kind: 'permission', key: 'core.manage_staff' });
-const view = marker({ kind: 'permission', key: 'booking.view' });
+const staff = marker({ kind: 'permission', key: Permission.core.manage_staff });
+const view = marker({ kind: 'permission', key: Permission.booking.view });
 
 const Body = z.object({ name: z.string() });
 
@@ -57,7 +58,7 @@ describe('collectEndpoints', () => {
   });
 
   it('joins the op() metadata, the party and the validators', () => {
-    const post = collectEndpoints(toy.routes).find((e) => e.method === 'POST');
+    const post = collectEndpoints(toy.routes).find((e) => e.method === HttpMethod.POST);
     expect(post).toMatchObject({
       path: '/api/t/:orgId/s/b',
       party: 'tenant',

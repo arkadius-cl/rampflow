@@ -1,5 +1,6 @@
 import type { VisibleNavItem } from '@rampflow/shared';
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
+import { OrgKind } from '@rampflow/shared/values';
 import { useRouterState } from '@tanstack/react-router';
 import { DynamicIcon, type IconName } from 'lucide-react/dynamic';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +59,8 @@ export function useShellNav(access: AreaAccess): ShellNav {
     icon: iconOf(i.icon),
     active: i === current,
   });
-  if (access.area !== 'tenant') return { groups: [{ items: items.map(entry) }], items, current };
+  if (access.area !== OrgKind.tenant)
+    return { groups: [{ items: items.map(entry) }], items, current };
   const key = (i: VisibleNavItem) => `${i.module}.${i.id}`;
   const operations = items.filter((i) => OPERATIONS.has(key(i)));
   const administration = items.filter((i) => !OPERATIONS.has(key(i)));
@@ -72,11 +74,11 @@ export function useShellNav(access: AreaAccess): ShellNav {
 /** Where the org picker and the org switcher go for a membership. */
 export function homeOf(m: MeResponse['memberships'][number]): string {
   switch (m.orgKind) {
-    case 'tenant':
+    case OrgKind.tenant:
       return `/t/${m.orgId}`;
-    case 'carrier':
+    case OrgKind.carrier:
       return `/c/${m.orgId}`;
-    case 'platform':
+    case OrgKind.platform:
       return '/platform';
   }
 }
@@ -85,7 +87,7 @@ export function homeOf(m: MeResponse['memberships'][number]): string {
 export function useMemberships(me: MeResponse): Membership[] {
   const { t } = useTranslation();
   return me.memberships.map((m) => ({
-    id: m.orgKind === 'platform' ? 'platform' : m.orgId,
+    id: m.orgKind === OrgKind.platform ? 'platform' : m.orgId,
     name: m.orgName,
     kind: m.orgKind,
     role: t(($) => $.shell.roles[m.role]),

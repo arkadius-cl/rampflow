@@ -1,3 +1,4 @@
+import { OrgKind } from '@rampflow/shared/values';
 import {
   Building2Icon,
   CalendarDaysIcon,
@@ -21,9 +22,9 @@ import {
 import type { Membership, NavGroup } from '@/components/shells/office-shell';
 
 export const memberships: Membership[] = [
-  { id: 'acme', name: 'Acme Logistics GmbH', kind: 'tenant', role: 'Tenant admin' },
-  { id: 'nordfrost', name: 'Nordfrost Lager AG', kind: 'tenant', role: 'Tenant admin' },
-  { id: 'transpol', name: 'Trans-Pol Sp. z o.o.', kind: 'carrier', role: 'Carrier admin' },
+  { id: 'acme', name: 'Acme Logistics GmbH', kind: OrgKind.tenant, role: 'Tenant admin' },
+  { id: 'nordfrost', name: 'Nordfrost Lager AG', kind: OrgKind.tenant, role: 'Tenant admin' },
+  { id: 'transpol', name: 'Trans-Pol Sp. z o.o.', kind: OrgKind.carrier, role: 'Carrier admin' },
 ];
 
 export const tenantMembership = memberships[0] as Membership;
@@ -32,7 +33,7 @@ export const carrierMembership = memberships[2] as Membership;
 export const platformMembership: Membership = {
   id: 'platform',
   name: 'rampflow',
-  kind: 'platform',
+  kind: OrgKind.platform,
   role: 'Platform admin',
 };
 

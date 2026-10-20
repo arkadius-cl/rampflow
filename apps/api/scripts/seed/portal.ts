@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -7,6 +8,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { CarrierRole, OrgKind } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Scope, Tx } from '../../src/db/scope.ts';
@@ -37,8 +39,8 @@ function requestId(name: string): string {
 }
 
 export async function seed(ctx: SeedContext): Promise<void> {
-  const tenantId = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
-  const carrierId = (await findOrg(ctx.db, 'carrier', TRANS_POL)) as CarrierId | null;
+  const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
+  const carrierId = (await findOrg(ctx.db, OrgKind.carrier, TRANS_POL)) as CarrierId | null;
   if (!tenantId || !carrierId) throw new Error('run the core seed first');
   const [s] = await ctx.db
     .select({ id: site.id, timeZone: site.timeZone })
@@ -63,7 +65,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
     carrierId,
     tenantId,
     userId: user.id,
-    role: 'carrier_admin',
+    role: CarrierRole.carrier_admin,
   };
   const bookingContext = {
     tx,
@@ -76,7 +78,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
   for (const p of PLAN) {
     const day = addDays(siteDay(now, zone), p.inDays);
     const result = await createBooking(bookingContext, {
-      mode: 'carrier',
+      mode: CreatedParty.carrier,
       clientRequestId: requestId(`${day}:${p.at}`),
       siteId: s.id as SiteId,
       loadTypeId: palletised.id,

@@ -1,5 +1,6 @@
 import type { HoursRowView, PutHours } from '@rampflow/shared/modules/booking/api.capacity';
 import type { LocalTime } from '@rampflow/shared/time';
+import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -49,7 +50,7 @@ export async function putHours(
           eq(bookableResource.id, resourceId),
         ),
       );
-    if (!resource) throw new ApiError('not_found');
+    if (!resource) throw new ApiError(ErrorCode.not_found);
   }
   await tx
     .delete(openingHours)

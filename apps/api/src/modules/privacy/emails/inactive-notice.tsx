@@ -1,4 +1,4 @@
-import type { StaffLocale } from '@rampflow/shared';
+import { StaffLocale } from '@rampflow/shared/values';
 import { Button, Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
 import { env } from '../../../kernel/env.ts';
@@ -51,4 +51,4 @@ export const render: EmailTemplateModule<InactiveNoticePayload>['render'] = (p, 
   };
 };
 
-export const example: InactiveNoticePayload = { locale: 'de', deletesOn: '2026-12-01' };
+export const example: InactiveNoticePayload = { locale: StaffLocale.de, deletesOn: '2026-12-01' };

@@ -1,4 +1,5 @@
 import { LOGO_MAX_BYTES } from '@rampflow/shared/modules/brand/api';
+import { Permission, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { requirePermission } from '../../../kernel/access.ts';
@@ -9,12 +10,12 @@ import { deleteLogo, parseLogo, readLogo, tooBig, writeLogo } from './logo.ts';
 
 /** Mounted at `/api/t/:orgId/brand` by modules/index.ts, inside `withModule('brand')` (TN-05). */
 export const tenant = new Hono<AppEnv>()
-  .use(requirePermission('brand.manage'))
+  .use(requirePermission(Permission.brand.manage))
   .get(
     '/logo',
     op({
       id: 'brand.logo.getLogo',
-      stories: ['TN-05'],
+      stories: [StoryId.TN_05],
       description: '`{ logo: { url, contentType, byteSize, updatedAt } | null }`',
       responses: {},
     }),
@@ -27,7 +28,7 @@ export const tenant = new Hono<AppEnv>()
     '/logo',
     op({
       id: 'brand.logo.putLogo',
-      stories: ['TN-05'],
+      stories: [StoryId.TN_05],
       description:
         'raw PNG or JPEG up to 256 KB, checked by magic bytes whatever the `Content-Type` → `{ logo }`. A larger body answers 422 with issue code `too_big`; SVG and anything else 422 `invalid_format`',
       body: file('image/png', 'image/jpeg'),
@@ -51,7 +52,7 @@ export const tenant = new Hono<AppEnv>()
     '/logo',
     op({
       id: 'brand.logo.deleteLogo',
-      stories: ['TN-05'],
+      stories: [StoryId.TN_05],
       description: 'Removes the logo.',
       responses: { 204: noBody },
     }),

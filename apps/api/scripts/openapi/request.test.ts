@@ -1,4 +1,5 @@
 import { PutHours } from '@rampflow/shared/modules/booking/api.capacity';
+import { HttpMethod, OrgKind, StoryId } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { file } from '../../src/kernel/describe.ts';
@@ -6,10 +7,15 @@ import type { Endpoint } from './model.ts';
 import { describeRequest, openApiPath } from './request.ts';
 
 const endpoint = (e: Partial<Endpoint>): Endpoint => ({
-  method: 'PUT',
+  method: HttpMethod.PUT,
   path: '/api/t/:orgId/capacity/hours',
-  party: 'tenant',
-  meta: { id: 'booking.capacity.putHours', stories: ['MD-04'], description: '', responses: {} },
+  party: OrgKind.tenant,
+  meta: {
+    id: 'booking.capacity.putHours',
+    stories: [StoryId.MD_04],
+    description: '',
+    responses: {},
+  },
   validators: {},
   guards: [],
   ...e,
@@ -42,7 +48,7 @@ describe('describeRequest', () => {
   it('describes path and query parameters, unvalidated path ids as UUIDs', () => {
     const { parameters, requestBody } = describeRequest(
       endpoint({
-        method: 'GET',
+        method: HttpMethod.GET,
         path: '/api/t/:orgId/things/:code',
         validators: {
           param: z.object({ code: z.string().regex(/^[A-Z]{3}$/) }),

@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
+import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
 import { notify } from '@rampflow/shared/modules/notify/manifest';
+import { EmailTemplate, Setting } from '@rampflow/shared/values';
 import { and, eq, gt, lte } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
@@ -38,12 +40,23 @@ const staffLocale = (l: string | null): l is StaffLocale =>
  * its confirmation and no reminder on top. A cancelled booking is no longer `confirmed`.
  */
 async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<JobStats> {
-  const scope: Scope = { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(JOB) };
+  const scope: Scope = {
+    party: ActorParty.tenant,
+    tenantId,
+    siteIds: 'all',
+    actor: systemActor(JOB),
+  };
   const access = await loadAccess(tx, scope, clock);
   const features = access.entitlements?.features;
   if (!features?.['notify.reminders'] || !features['notify.email']) return { off: 1 };
   const now = clock.now();
-  const ctx: BookingContext = { tx, tenantId, actor: { party: 'system', job: JOB }, access, now };
+  const ctx: BookingContext = {
+    tx,
+    tenantId,
+    actor: { party: BookingParty.system, job: JOB },
+    access,
+    now,
+  };
   const upcoming = await tx
     .select()
     .from(booking)
@@ -57,7 +70,7 @@ async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<
     );
   const stats = { reminded: 0 };
   for (const b of upcoming) {
-    const hours = (await access.setting('notify.reminder_hours_before', b.siteId)).value;
+    const hours = (await access.setting(Setting.notify.reminder_hours_before, b.siteId)).value;
     const dueAt = reminderDueAt(b.startsAt, hours);
     if (now < dueAt || b.createdAt > dueAt) continue;
     const recipients = await bookingContacts(ctx, b);
@@ -68,7 +81,7 @@ async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<
       const result = await enqueueEmail(
         tx,
         {
-          template: 'booking.reminder',
+          template: EmailTemplate.booking_reminder,
           to: r.email,
           locale,
           tenantId,

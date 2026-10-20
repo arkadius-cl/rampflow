@@ -4,6 +4,8 @@ import type {
   LoadTypeView,
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { Direction } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -49,7 +51,7 @@ export async function seedLoadTypes(tx: Tx, s: { id: SiteId; tenantId: TenantId 
       tenantId: s.tenantId,
       siteId: s.id,
       name: seed.name,
-      direction: 'inbound' as const,
+      direction: Direction.inbound,
       duration: seed.duration as LoadTypeDuration,
       sort,
     })),
@@ -59,7 +61,7 @@ export async function seedLoadTypes(tx: Tx, s: { id: SiteId; tenantId: TenantId 
 /** Tiered durations need `booking.duration_rules` to be written (MD-05). */
 function requireDurationRules(req: TenantRequest, duration: LoadTypeDuration | undefined): void {
   if (duration?.kind === 'tiers' && !req.entitlements.features['booking.duration_rules']) {
-    throw new ApiError('entitlement_required', 'booking.duration_rules is off', {
+    throw new ApiError(ErrorCode.entitlement_required, 'booking.duration_rules is off', {
       key: 'booking.duration_rules',
     });
   }
@@ -115,7 +117,7 @@ async function requireLoadType(tx: Tx, tenantId: TenantId, id: LoadTypeId): Prom
     .select()
     .from(loadType)
     .where(and(eq(loadType.tenantId, tenantId), eq(loadType.id, id)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -187,7 +189,7 @@ export async function updateLoadType(
     .set(input)
     .where(and(eq(loadType.tenantId, req.tenantId), eq(loadType.id, id)))
     .returning();
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const links = await resourceIdsOf(tx, req.tenantId, [id]);
   return view(row, links.get(id) ?? []);
 }

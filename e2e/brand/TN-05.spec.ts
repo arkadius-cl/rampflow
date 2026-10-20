@@ -1,4 +1,5 @@
 import { devices, expect, type Locator, type Page, test } from '@playwright/test';
+import { Setting } from '../../packages/shared/src/values/keys.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { linkIn } from '../support/mailpit.ts';
@@ -108,7 +109,7 @@ test.describe('TN-05 Logo', () => {
     await setSiteSetting({
       tenantId: w.A.tenantId,
       siteId: w.A.sites[0]?.id as string,
-      key: 'booking.public_link_enabled',
+      key: Setting.booking.public_link_enabled,
       value: true,
       by: w.A.users.tenant_admin.id,
     });

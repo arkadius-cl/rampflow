@@ -7,6 +7,8 @@ import type {
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
 import { acknowledgementStatus, expiresAtFor } from '@rampflow/shared/modules/safety/validity';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import {
   and,
   asc,
@@ -41,7 +43,7 @@ import {
 /** Days an acknowledgement completed at this site stays valid; 0 while `safety.validity` is off. */
 export async function validityDays(access: Access, siteId: SiteId): Promise<number> {
   if (!access.entitlements?.features['safety.validity']) return 0;
-  return (await access.setting('safety.validity_days', siteId)).value;
+  return (await access.setting(Setting.safety.validity_days, siteId)).value;
 }
 
 export interface RecordAcknowledgementInput {
@@ -78,7 +80,7 @@ export async function recordAcknowledgement(
 ): Promise<RecordedAcknowledgement> {
   const { tenantId, instructionId, locale, bookingId } = input;
   const content = await publishedContent(tx, { tenantId, instructionId, locale });
-  if (!content) throw new ApiError('not_found', 'No published content in this locale');
+  if (!content) throw new ApiError(ErrorCode.not_found, 'No published content in this locale');
   const expiresAt = expiresAtFor(input.completedAt, input.validityDays);
   const [ack] = await tx
     .insert(safetyAcknowledgement)
@@ -115,13 +117,13 @@ const floorSql = sql<number>`coalesce((
 function statusSql(status: NonNullable<RegisterFilter['status']>, now: Date): SQL | undefined {
   const current = sql`${safetyVersion.version} >= ${floorSql}`;
   switch (status) {
-    case 'outdated':
+    case AckStatus.outdated:
       return sql`${safetyVersion.version} < ${floorSql}`;
-    case 'visit_only':
+    case AckStatus.visit_only:
       return and(current, isNull(a.expiresAt));
-    case 'expired':
+    case AckStatus.expired:
       return and(current, lte(a.expiresAt, now));
-    case 'valid':
+    case AckStatus.valid:
       return and(current, gt(a.expiresAt, now));
   }
 }
@@ -137,7 +139,7 @@ function decodeCursor(cursor: string) {
   try {
     return Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
   } catch {
-    throw new ApiError('validation_failed', 'Invalid cursor', {
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
       issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
     });
   }

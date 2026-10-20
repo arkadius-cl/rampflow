@@ -7,6 +7,7 @@ import {
   type LocalTime,
   type TimeZone,
 } from '../../packages/shared/src/time/index.ts';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { World, WorldSide } from './auth.ts';
 import { apiAs, bookingsOf } from './u5.ts';
 
@@ -168,7 +169,7 @@ export function staffBooking(
   return apiAs<CreatedBooking>(
     request,
     side.users.dispatcher,
-    'POST',
+    HttpMethod.POST,
     `/t/${side.tenantId}/bookings`,
     {
       clientRequestId: randomUUID(),

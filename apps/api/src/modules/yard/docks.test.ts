@@ -1,4 +1,6 @@
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { CallResult, DocksView, YardTruck } from '@rampflow/shared/modules/yard/api';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
@@ -40,8 +42,8 @@ beforeAll(async () => {
         siteId: s.id,
         hallId: hall2?.id as string,
         code: `B-0${i + 1}`,
-        doorType: 'dock_leveler' as const,
-        temperatureZone: 'chilled' as const,
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.chilled,
         status,
       })),
     )
@@ -55,7 +57,7 @@ const post = (user: WorldUser, path: string, body: unknown = {}) =>
 const docks = async (user = w.A.users.dock_operator) =>
   json<DocksView>(await as(app, user).get(`${yard(w.A)}/docks?siteId=${w.A.sites[0].id}`));
 const checkedIn = (startsAt: string) =>
-  seedBooking(w.A, { startsAt: new Date(startsAt), status: 'checked_in' });
+  seedBooking(w.A, { startsAt: new Date(startsAt), status: BookingStatus.checked_in });
 
 describe('YD-06 dock overview', () => {
   it('groups active and maintenance docks by hall and queues checked-in trucks by slot start', async () => {

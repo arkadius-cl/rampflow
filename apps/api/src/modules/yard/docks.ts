@@ -1,4 +1,6 @@
 import { DOCK_HOLDING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
 import type { DocksView, YardDock } from '@rampflow/shared/modules/yard/api';
 import type { TimeZone } from '@rampflow/shared/time';
 import { and, asc, eq } from 'drizzle-orm';
@@ -33,7 +35,7 @@ export async function docksView(s: YardScope): Promise<DocksView> {
   const onSite = await onSiteTrucks(s);
   const halls = new Map<string, DocksView['halls'][number]>();
   for (const r of rows) {
-    if (r.status === 'inactive') continue;
+    if (r.status === DockStatus.inactive) continue;
     const group = halls.get(r.hallId) ?? { id: r.hallId, name: r.hallName, docks: [] };
     halls.set(r.hallId, group);
     const occupant = onSite.items.find((t) => t.dock?.id === r.id && HOLDING.has(t.status)) ?? null;
@@ -53,7 +55,7 @@ export async function docksView(s: YardScope): Promise<DocksView> {
     timeZone: site.timeZone as TimeZone,
     halls: [...halls.values()],
     queue: onSite.items
-      .filter((t) => t.status === 'checked_in')
+      .filter((t) => t.status === BookingStatus.checked_in)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id)),
   };
 }

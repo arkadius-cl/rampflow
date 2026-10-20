@@ -4,6 +4,7 @@ import {
   PutHours,
   type ResourceView,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { useMutation } from '@tanstack/react-query';
 import { PlusIcon, XIcon } from 'lucide-react';
@@ -43,7 +44,9 @@ const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 const SITE = 'site';
 
 export function resourceLabel(r: ResourceView, docks: DockView[]): string {
-  return r.kind === 'pool' ? r.name : (docks.find((d) => d.id === r.dockIds[0])?.code ?? r.name);
+  return r.kind === ResourceKind.pool
+    ? r.name
+    : (docks.find((d) => d.id === r.dockIds[0])?.code ?? r.name);
 }
 
 export function HoursCard({

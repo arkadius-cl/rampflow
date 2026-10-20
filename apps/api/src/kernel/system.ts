@@ -1,3 +1,4 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { SystemActorName } from '@rampflow/shared/values';
 import type { Scope, TenantActor } from '../db/scope.ts';
 
@@ -10,5 +11,5 @@ export function systemActor(job: SystemActorName): TenantActor {
 
 /** Cross-tenant job steps: list tenants, drain the outbox. Sees `org` and `outbox_message` only. */
 export function systemScope(job: SystemActorName): Scope {
-  return { party: 'system', job };
+  return { party: ActorParty.system, job };
 }

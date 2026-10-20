@@ -1,5 +1,7 @@
 import type { Entitlements } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { ConflictReason } from '@rampflow/shared/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
@@ -14,7 +16,7 @@ export interface TenantRequest {
 
 export function tenantRequest(c: Context<AppEnv>): TenantRequest {
   const { scope, access } = c.var;
-  if (scope.party !== 'tenant' || !access.entitlements) {
+  if (scope.party !== ActorParty.tenant || !access.entitlements) {
     throw new Error(`tenant route under party ${scope.party}`);
   }
   return {
@@ -38,14 +40,14 @@ function pgError(e: unknown): { code?: string; constraint?: string } | null {
 export function conflictOnUnique(e: unknown, constraint: string, reason: ConflictReason): never {
   const pg = pgError(e);
   if (pg?.code === '23505' && pg.constraint === constraint) {
-    throw new ApiError('conflict', `Conflict: ${reason}`, { reason });
+    throw new ApiError(ErrorCode.conflict, `Conflict: ${reason}`, { reason });
   }
   throw e;
 }
 
 /** 422 with one zod-shaped issue, for rules that need stored data. */
 export function invalid(path: (string | number)[], message: string): ApiError {
-  return new ApiError('validation_failed', 'Invalid json', {
+  return new ApiError(ErrorCode.validation_failed, 'Invalid json', {
     issues: [{ path, code: 'custom', message }],
   });
 }

@@ -1,3 +1,4 @@
+import { BookingStatus, CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -45,7 +46,7 @@ const reminderStarts = async (bookingId: string) =>
 
 async function seeded(side: WorldSide, o: SeedBooking & { createdAt: Date }) {
   const row = await seedBooking(side, {
-    createdParty: 'carrier',
+    createdParty: CreatedParty.carrier,
     createdBy: side.users.carrier_user.id,
     ...o,
   });
@@ -80,7 +81,7 @@ describe('BK-07 reminder job', () => {
     const id = await seeded(w.A, {
       startsAt: start,
       createdAt: at(start, -7 * 24),
-      status: 'cancelled',
+      status: BookingStatus.cancelled,
     });
     await tick(at(start, -12));
     expect(await reminderStarts(id)).toEqual([]);

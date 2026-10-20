@@ -1,6 +1,6 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import type { Entitlements } from '@rampflow/shared';
-import type { EmailCategory } from '@rampflow/shared/values';
+import { EmailCategory, SystemActorName } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { and, asc, eq, isNull, lte } from 'drizzle-orm';
 import type { TFunction } from 'i18next';
@@ -59,7 +59,7 @@ export const loadTemplateFile: TemplateLoader = async (id) => {
   );
   if (
     typeof mod.render !== 'function' ||
-    (mod.category !== 'account' && mod.category !== 'booking')
+    (mod.category !== EmailCategory.account && mod.category !== EmailCategory.booking)
   ) {
     throw new Error(`Template ${id} must export category and render`);
   }
@@ -78,7 +78,8 @@ export async function enqueueEmail<K extends TemplateId>(
   loadTemplate: TemplateLoader = loadTemplateFile,
 ): Promise<EnqueueResult> {
   const template = await loadTemplate(email.template);
-  if (template.category === 'booking' && !entitlements?.features['notify.email']) return 'skipped';
+  if (template.category === EmailCategory.booking && !entitlements?.features['notify.email'])
+    return 'skipped';
   const result = await tx
     .insert(outboxMessage)
     .values({
@@ -123,7 +124,12 @@ export interface DeliverOptions {
  * the system scope sees no logo or entitlements.
  */
 function emailBrand(tx: Tx, tenantId: TenantId, now: Date): Promise<EmailBrand | null> {
-  const scope = { party: 'tenant', tenantId, siteIds: [], actor: systemActor('outbox') } as const;
+  const scope = {
+    party: 'tenant',
+    tenantId,
+    siteIds: [],
+    actor: systemActor(SystemActorName.outbox),
+  } as const;
   return asScope(tx, scope, async (inner) => {
     const entitlements = await loadEntitlements(inner, tenantId, now);
     const logoUrl = await currentLogoUrl(inner, tenantId, entitlements, env.APP_ORIGIN);
@@ -143,7 +149,7 @@ export function deliverOutbox({
   mailer,
   loadTemplate = loadTemplateFile,
 }: DeliverOptions): Promise<OutboxStats> {
-  return asScope(tx, systemScope('outbox'), async () => {
+  return asScope(tx, systemScope(SystemActorName.outbox), async () => {
     const now = clock.now();
     const due = await tx
       .select()

@@ -1,3 +1,5 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Feature, HttpMethod, Module, Permission, Role } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -77,7 +79,7 @@ function toyAccountApp(defect: AccountDefect) {
 }
 
 const meCase: AccountRouteCase = {
-  method: 'GET',
+  method: HttpMethod.GET,
   path: '/api/me',
   credential: 'session',
   arrange: async (w) => ({ actor: w.A.users.dispatcher }),
@@ -119,7 +121,7 @@ function toyApp(defect: Defect) {
           .where(eq(dock.id, dockId))
       )[0];
     }
-    const tenantId = c.var.scope.party === 'tenant' ? c.var.scope.tenantId : null;
+    const tenantId = c.var.scope.party === ActorParty.tenant ? c.var.scope.tenantId : null;
     if (!tenantId) return undefined;
     const rows = await c.var.db
       .select({ id: dock.id, code: dock.code })
@@ -129,19 +131,21 @@ function toyApp(defect: Defect) {
   };
   const yard = new Hono<AppEnv>().get(
     '/docks/:dockId',
-    defect === 'no_permission' ? async (_c, next) => next() : requirePermission('yard.dock'),
+    defect === 'no_permission'
+      ? async (_c, next) => next()
+      : requirePermission(Permission.yard.dock),
     defect === 'no_entitlement'
       ? async (_c, next) => next()
-      : requireEntitlement('yard.call_to_dock'),
+      : requireEntitlement(Feature.yard.call_to_dock),
     async (c) => {
       const row = await readDock(c, c.req.param('dockId') as DockId);
-      if (!row) throw new ApiError('not_found');
+      if (!row) throw new ApiError(ErrorCode.not_found);
       return c.json(row);
     },
   );
   const carrier = new Hono<AppEnv>()
     .use(scoped(carrierScope))
-    .get('/bookings/:bookingId', requirePermission('booking.view'), async (c) => {
+    .get('/bookings/:bookingId', requirePermission(Permission.booking.view), async (c) => {
       const id = c.req.param('bookingId') as BookingId;
       const rows =
         defect === 'bypasses_rls'
@@ -153,7 +157,7 @@ function toyApp(defect: Defect) {
               .select({ id: booking.id, code: booking.code })
               .from(booking)
               .where(eq(booking.id, id));
-      if (!rows[0]) throw new ApiError('not_found');
+      if (!rows[0]) throw new ApiError(ErrorCode.not_found);
       return c.json(rows[0]);
     });
   return new Hono<AppEnv>()
@@ -163,7 +167,7 @@ function toyApp(defect: Defect) {
     })
     .route(
       '/api/t/:orgId',
-      new Hono<AppEnv>().use(scoped(tenantScope)).route('/yard', withModule('yard', yard)),
+      new Hono<AppEnv>().use(scoped(tenantScope)).route('/yard', withModule(Module.yard, yard)),
     )
     .route('/api/c/:orgId', carrier)
     .onError(onError)
@@ -172,20 +176,20 @@ function toyApp(defect: Defect) {
 
 const [dockCase, bookingCase] = defineRouteCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/yard/docks/:dockId',
-    as: 'dock_operator',
-    permission: 'yard.dock',
-    entitlement: 'yard.call_to_dock',
+    as: Role.dock_operator,
+    permission: Permission.yard.dock,
+    entitlement: Feature.yard.call_to_dock,
     params: (w) => ({ orgId: w.A.tenantId, dockId: w.A.sites[0].dockIds[0] }),
     foreign: 'not_found',
     siteScoped: true,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings/:bookingId',
-    as: 'carrier_user',
-    permission: 'booking.view',
+    as: Role.carrier_user,
+    permission: Permission.booking.view,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId, bookingId: w.A.bookings.own.id }),
     foreign: 'not_found',

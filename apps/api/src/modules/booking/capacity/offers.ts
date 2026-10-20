@@ -1,7 +1,9 @@
 import type { Entitlements } from '@rampflow/shared';
 import type { OfferedStart, Offers } from '@rampflow/shared/modules/booking/api.capacity';
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { type GridSlot, type LocalDate, slotGrid } from '@rampflow/shared/time';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -76,12 +78,13 @@ export async function offersFor(tx: Tx, ctx: OfferContext, req: OfferRequest): P
         eq(loadType.id, req.loadTypeId),
       ),
     );
-  if (!lt) throw new ApiError('not_found');
-  const bookable = lt.active && (req.audience === 'staff' || lt.carrierBookable);
+  if (!lt) throw new ApiError(ErrorCode.not_found);
+  const bookable = lt.active && (req.audience === CreatedParty.staff || lt.carrierBookable);
   const eligible = bookable ? await eligibleResources(tx, req.tenantId, lt) : [];
   const resourceIds = req.resourceId ? eligible.filter((id) => id === req.resourceId) : eligible;
   const durationMinutes = durationFor(lt, req.loadUnits, ctx.access.entitlements);
-  const gridMinutes = (await ctx.access.setting('booking.slot_grid_minutes', req.siteId)).value;
+  const gridMinutes = (await ctx.access.setting(Setting.booking.slot_grid_minutes, req.siteId))
+    .value;
   const timeline = await loadDayTimeline(tx, ctx.access, {
     tenantId: req.tenantId,
     siteId: req.siteId,
@@ -90,9 +93,9 @@ export async function offersFor(tx: Tx, ctx: OfferContext, req: OfferRequest): P
     excludeBookingId: req.excludeBookingId,
   });
   let bounds = null;
-  if (req.audience === 'carrier') {
-    const lead = (await ctx.access.setting('booking.min_lead_minutes', req.siteId)).value;
-    const horizon = (await ctx.access.setting('booking.horizon_days', req.siteId)).value;
+  if (req.audience === CreatedParty.carrier) {
+    const lead = (await ctx.access.setting(Setting.booking.min_lead_minutes, req.siteId)).value;
+    const horizon = (await ctx.access.setting(Setting.booking.horizon_days, req.siteId)).value;
     const now = ctx.now.getTime();
     bounds = { start: new Date(now + lead * 60_000), end: new Date(now + horizon * 86_400_000) };
   }

@@ -1,3 +1,4 @@
+import { TokenPurpose } from '@rampflow/shared/values';
 import { Button, Heading, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
@@ -27,7 +28,7 @@ const button = {
 
 /** CR-03: a single-use sign-in link, valid for 15 minutes. */
 export function render(payload: MagicLinkPayload, t: TFunction) {
-  const link = `${env.APP_ORIGIN}/auth/magic#${deriveToken('magic_link', payload.authTokenId)}`;
+  const link = `${env.APP_ORIGIN}/auth/magic#${deriveToken(TokenPurpose.magic_link, payload.authTokenId)}`;
   return {
     subject: t('auth.email.magic_link.subject'),
     body: (

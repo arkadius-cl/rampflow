@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, type Page } from '@playwright/test';
 import pg from 'pg';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { WorldSide, WorldUser } from './auth.ts';
 import { apiAs } from './u5.ts';
 import type { PlanSite } from './u6b.ts';
@@ -61,7 +62,7 @@ export function carrierBooking(
   return apiAs<PortalBooking>(
     request,
     o.user ?? side.users.carrier_user,
-    'POST',
+    HttpMethod.POST,
     `/c/${o.carrierId ?? side.carrierId}/at/${side.tenantId}/bookings`,
     {
       clientRequestId: randomUUID(),

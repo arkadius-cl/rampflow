@@ -4,6 +4,7 @@ import type {
   TenantList,
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
+import { PackageId, Setting } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -22,7 +23,7 @@ const app = createApp({ clock });
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'start', B: 'pro' } });
+  w = await world({ packages: { A: PackageId.start, B: PackageId.pro } });
 });
 
 // Platform rows are global to this worker's database; leave none behind for later files.
@@ -123,7 +124,7 @@ describe('PL-02 packages and overrides', () => {
   });
 
   it('a raising and a lowering override change a gated answer on the next request', async () => {
-    const t = await world({ packages: { A: 'start' } });
+    const t = await world({ packages: { A: PackageId.start } });
     const admin = as(app, t.A.users.tenant_admin);
     const logo = `/api/t/${t.A.tenantId}/brand/logo`;
     expect((await admin.get(logo)).status).toBe(200);
@@ -168,7 +169,7 @@ describe('PL-02 packages and overrides', () => {
   });
 
   it('an override stops applying at its expiry', async () => {
-    const t = await world({ packages: { A: 'start' } });
+    const t = await world({ packages: { A: PackageId.start } });
     for (let i = 0; i < 4; i++) expect((await invite(t.A)).status).toBe(201);
     const expiresAt = new Date(clock.now().getTime() + 3600_000).toISOString();
     await as(app, t.platformAdmin).put(overridePath(t.A.tenantId, 'core.max_internal_users'), {
@@ -213,7 +214,7 @@ describe('PL-02 packages and overrides', () => {
   });
 
   it('changes the package and the name', async () => {
-    const t = await world({ packages: { A: 'start' } });
+    const t = await world({ packages: { A: PackageId.start } });
     const res = await as(app, t.platformAdmin).patch(`/api/platform/tenants/${t.A.tenantId}`, {
       body: { package: 'enterprise', name: 'Renamed' },
     });
@@ -236,7 +237,7 @@ describe('PL-03 platform defaults', () => {
     const keys = view.items.map((i) => i.key);
     expect(keys).toContain('privacy.retention.driver_link_hours');
     expect(keys).not.toContain('booking.public_link_enabled');
-    expect(view.items.find((i) => i.key === 'booking.horizon_days')).toMatchObject({
+    expect(view.items.find((i) => i.key === Setting.booking.horizon_days)).toMatchObject({
       value: 30,
       source: 'default',
     });
@@ -268,7 +269,7 @@ describe('PL-03 platform defaults', () => {
     const view = (await (
       await as(app, w.B.users.tenant_admin).get(tenantSettings)
     ).json()) as SettingsView;
-    expect(view.items.find((i) => i.key === 'yard.grace_minutes')).toMatchObject({
+    expect(view.items.find((i) => i.key === Setting.yard.grace_minutes)).toMatchObject({
       value: 20,
       source: 'tenant',
       inherited: { value: 25, source: 'platform' },
@@ -285,7 +286,7 @@ describe('PL-03 platform defaults', () => {
 
 describe('PL-04 usage', () => {
   it('counts sites, docks, internal users and bookings this month against limits', async () => {
-    const t = await world({ packages: { A: 'start' } });
+    const t = await world({ packages: { A: PackageId.start } });
     await invite(t.A);
     const { items } = (await (
       await as(app, t.platformAdmin).get('/api/platform/tenants')
@@ -301,7 +302,7 @@ describe('PL-04 usage', () => {
   });
 
   it('flags a soft limit above 100% and keeps the tenant working', async () => {
-    const t = await world({ packages: { A: 'start' } });
+    const t = await world({ packages: { A: PackageId.start } });
     await as(app, t.platformAdmin).put(
       overridePath(t.A.tenantId, 'booking.max_bookings_per_month'),
       { body: { value: 2 } },

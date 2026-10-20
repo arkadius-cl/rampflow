@@ -1,10 +1,12 @@
-import type { StaffLocale } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
   RegisterFilterOptions,
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
 import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
+import { DriverLocale, StaffLocale } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerDb } from '../../../../test/db.ts';
@@ -53,20 +55,27 @@ beforeAll(async () => {
   });
 
   const record = (b: WorldBooking, driverName: string, completedAt: Date, validityDays: number) =>
-    asParty({ party: 'driver', tenantId: side.tenantId, bookingId: b.id, channel: 'link' }, (tx) =>
-      recordAcknowledgement(tx, {
+    asParty(
+      {
+        party: ActorParty.driver,
         tenantId: side.tenantId,
         bookingId: b.id,
-        carrierId: b.carrierId,
-        instructionId: rules.id as InstructionId,
-        locale: 'pl',
-        driverName,
-        channel: 'link',
-        score: 100,
-        attempts: 1,
-        completedAt,
-        validityDays,
-      }),
+        channel: DriverChannel.link,
+      },
+      (tx) =>
+        recordAcknowledgement(tx, {
+          tenantId: side.tenantId,
+          bookingId: b.id,
+          carrierId: b.carrierId,
+          instructionId: rules.id as InstructionId,
+          locale: DriverLocale.pl,
+          driverName,
+          channel: DriverChannel.link,
+          score: 100,
+          attempts: 1,
+          completedAt,
+          validityDays,
+        }),
     );
   const { own, rival, otherSite } = side.bookings;
   acks = {
@@ -184,7 +193,7 @@ describe('SF-03 acknowledgement register', () => {
       expect(res.headers.get('content-type')).toBe('text/csv; charset=utf-8');
       return new Uint8Array(await res.arrayBuffer());
     };
-    const de = await csv('de', { driverName: 'Jan' });
+    const de = await csv(StaffLocale.de, { driverName: 'Jan' });
     expect([...de.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     // TextDecoder drops the BOM checked above.
     const [header, row, ...rest] = new TextDecoder().decode(de).split('\r\n');
@@ -203,7 +212,9 @@ describe('SF-03 acknowledgement register', () => {
       side.bookings.own.code,
     ]);
 
-    const en = new TextDecoder().decode(await csv('en', { carrierId: side.rivalCarrierId }));
+    const en = new TextDecoder().decode(
+      await csv(StaffLocale.en, { carrierId: side.rivalCarrierId }),
+    );
     const lines = en.split('\r\n');
     expect(lines[0]?.startsWith('Completed at,Valid until,Status,Driver,')).toBe(true);
     expect(lines[1]).toContain(`,"'=HYPERLINK(""x"")",`);

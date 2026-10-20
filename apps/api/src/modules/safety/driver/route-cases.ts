@@ -1,3 +1,4 @@
+import { Feature, HttpMethod } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { BookingId, TenantId } from '../../../db/ids.ts';
@@ -11,7 +12,7 @@ const P = '/api/driver/briefings';
 const base = {
   as: 'driver',
   permission: 'driver',
-  entitlement: 'safety.briefings',
+  entitlement: Feature.safety.briefings,
   foreign: 'empty',
   siteScoped: false,
   setup: async (w, o) => {
@@ -24,19 +25,19 @@ const instruction = (w: World) => ({ instructionId: briefingOf(w.A).instructionI
 const allRight = Object.fromEntries(QUIZ.map((q) => [q.id, q.correct]));
 
 export const cases = defineRouteCases([
-  { ...base, method: 'GET', path: P, params: () => ({}) },
-  { ...base, method: 'GET', path: `${P}/:instructionId`, params: instruction },
+  { ...base, method: HttpMethod.GET, path: P, params: () => ({}) },
+  { ...base, method: HttpMethod.GET, path: `${P}/:instructionId`, params: instruction },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/:instructionId/attempts`,
-    entitlement: 'safety.quiz',
+    entitlement: Feature.safety.quiz,
     params: instruction,
     body: () => ({ locale: 'en', answers: allRight }),
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/:instructionId/acknowledgement`,
     params: instruction,
     body: () => ({ locale: 'en', name: 'Dana Driver', confirmed: true }),

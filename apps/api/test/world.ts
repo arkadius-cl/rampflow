@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import type { PackageId, Role } from '@rampflow/shared';
+import { Direction } from '@rampflow/shared/modules/booking/values';
+import { OrgKind, PackageId, Role, TokenPurpose } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import {
   type BookingId,
@@ -182,7 +183,7 @@ async function worldSite(o: OwnerDb, tenantId: TenantId, n: number): Promise<Wor
     siteId: id,
     kind: 'pool',
     name: 'Ramp pool',
-    directions: ['inbound', 'outbound'],
+    directions: [Direction.inbound, Direction.outbound],
     capacityCap: 2,
   });
   const loadTypeId = uid<LoadTypeId>();
@@ -255,7 +256,7 @@ async function worldBooking(
     actorParty: 'carrier',
   });
   const driverAccessId = randomUUID();
-  const driverToken = deriveToken('driver', driverAccessId);
+  const driverToken = deriveToken(TokenPurpose.driver, driverAccessId);
   await o.insert(driverAccess).values({
     id: driverAccessId as never,
     tenantId,
@@ -303,16 +304,30 @@ async function side(
   const c = carrierId as string as OrgId;
   const r = rivalCarrierId as string as OrgId;
   const users = {
-    tenant_admin: await user(o, t, 'tenant', 'tenant_admin'),
-    dispatcher: await user(o, t, 'tenant', 'dispatcher'),
-    gate_operator: await user(o, t, 'tenant', 'gate_operator', [sites[0].id], tenantId),
-    dock_operator: await user(o, t, 'tenant', 'dock_operator', [sites[0].id], tenantId),
-    gate_operator_other_site: await user(o, t, 'tenant', 'gate_operator', [sites[1].id], tenantId),
-    dock_operator_other_site: await user(o, t, 'tenant', 'dock_operator', [sites[1].id], tenantId),
-    carrier_admin: await user(o, c, 'carrier', 'carrier_admin'),
-    carrier_user: await user(o, c, 'carrier', 'carrier_user'),
-    rival_admin: await user(o, r, 'carrier', 'carrier_admin'),
-    rival_user: await user(o, r, 'carrier', 'carrier_user'),
+    tenant_admin: await user(o, t, OrgKind.tenant, Role.tenant_admin),
+    dispatcher: await user(o, t, OrgKind.tenant, Role.dispatcher),
+    gate_operator: await user(o, t, OrgKind.tenant, Role.gate_operator, [sites[0].id], tenantId),
+    dock_operator: await user(o, t, OrgKind.tenant, Role.dock_operator, [sites[0].id], tenantId),
+    gate_operator_other_site: await user(
+      o,
+      t,
+      OrgKind.tenant,
+      Role.gate_operator,
+      [sites[1].id],
+      tenantId,
+    ),
+    dock_operator_other_site: await user(
+      o,
+      t,
+      OrgKind.tenant,
+      Role.dock_operator,
+      [sites[1].id],
+      tenantId,
+    ),
+    carrier_admin: await user(o, c, OrgKind.carrier, Role.carrier_admin),
+    carrier_user: await user(o, c, OrgKind.carrier, Role.carrier_user),
+    rival_admin: await user(o, r, OrgKind.carrier, Role.carrier_admin),
+    rival_user: await user(o, r, OrgKind.carrier, Role.carrier_user),
   };
   const day = new Date(Date.UTC(2026, 10, 2, 8, 0));
   const bookings = {
@@ -344,11 +359,11 @@ export async function world(
 ): Promise<World> {
   const o = ownerDb();
   const platformOrgId = await platformOrg(o);
-  const platformAdmin = await user(o, platformOrgId, 'platform', 'platform_admin');
+  const platformAdmin = await user(o, platformOrgId, OrgKind.platform, Role.platform_admin);
   return {
     platformOrgId,
     platformAdmin,
-    A: await side(o, 'A', options.packages?.A ?? 'pro', platformAdmin.id),
-    B: await side(o, 'B', options.packages?.B ?? 'pro', platformAdmin.id),
+    A: await side(o, 'A', options.packages?.A ?? PackageId.pro, platformAdmin.id),
+    B: await side(o, 'B', options.packages?.B ?? PackageId.pro, platformAdmin.id),
   };
 }

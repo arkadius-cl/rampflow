@@ -1,3 +1,4 @@
+import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
 import { defineRouteCases } from '../../../../test/route-cases.ts';
 
 const site = {
@@ -13,9 +14,9 @@ const site = {
 
 export const cases = defineRouteCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/sites',
-    as: 'dock_operator',
+    as: Role.dock_operator,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId }),
@@ -23,10 +24,10 @@ export const cases = defineRouteCases([
     siteScoped: false,
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/sites',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId }),
     body: () => site,
@@ -34,9 +35,9 @@ export const cases = defineRouteCases([
     siteScoped: false,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/sites/:siteId',
-    as: 'dock_operator',
+    as: Role.dock_operator,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
@@ -44,10 +45,10 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: '/api/t/:orgId/sites/:siteId',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
     body: () => ({ name: 'Lager Süd' }),
@@ -55,9 +56,9 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/sites/:siteId/halls',
-    as: 'gate_operator',
+    as: Role.gate_operator,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
@@ -65,10 +66,10 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/sites/:siteId/halls',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
     body: () => ({ name: 'Halle 2' }),
@@ -76,10 +77,10 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: '/api/t/:orgId/sites/:siteId/halls/:hallId',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id, hallId: w.A.sites[0].hallId }),
     body: () => ({ name: 'Halle Ost' }),
@@ -87,9 +88,9 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/sites/:siteId/docks',
-    as: 'dock_operator',
+    as: Role.dock_operator,
     permission: 'member',
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
@@ -97,10 +98,10 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/sites/:siteId/docks',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({ orgId: w.A.tenantId, siteId: w.A.sites[0].id }),
     body: (w) => ({
@@ -113,10 +114,10 @@ export const cases = defineRouteCases([
     siteScoped: true,
   },
   {
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: '/api/t/:orgId/sites/:siteId/docks/:dockId',
-    as: 'tenant_admin',
-    permission: 'core.manage_sites',
+    as: Role.tenant_admin,
+    permission: Permission.core.manage_sites,
     entitlement: null,
     params: (w) => ({
       orgId: w.A.tenantId,

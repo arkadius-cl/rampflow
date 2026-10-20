@@ -1,3 +1,4 @@
+import { NodeEnv } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import { deleteCookie, setCookie } from 'hono/cookie';
 import { env } from '../../../kernel/env.ts';
@@ -9,7 +10,7 @@ import { DRIVER_COOKIE } from '../../../kernel/scopes.ts';
 const OPTIONS = {
   httpOnly: true,
   // Secure everywhere but development, so the PWA works on a phone at the LAN dev origin.
-  secure: env.NODE_ENV !== 'development',
+  secure: env.NODE_ENV !== NodeEnv.development,
   sameSite: 'Strict',
   path: '/api/driver',
 } as const;

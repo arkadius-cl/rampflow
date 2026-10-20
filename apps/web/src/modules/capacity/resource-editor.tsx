@@ -5,7 +5,10 @@ import {
   type ResourceView,
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
+import { Feature } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LayersIcon, LockIcon, PlusIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -67,7 +70,9 @@ const byCode = (a: DockView, b: DockView) =>
 
 /** Bookable capacity of a pool: its active member docks, at most the cap (ADR-0004). */
 const capacityOf = (v: Pick<ResourceValues, 'capacityCap' | 'dockIds'>, docks: DockView[]) => {
-  const active = docks.filter((d) => d.status === 'active' && v.dockIds.includes(d.id)).length;
+  const active = docks.filter(
+    (d) => d.status === DockStatus.active && v.dockIds.includes(d.id),
+  ).length;
   return v.capacityCap === null ? active : Math.min(active, v.capacityCap);
 };
 
@@ -84,8 +89,8 @@ export function ResourceEditor({
 }) {
   const { t } = useTranslation('booking');
   const { has } = useAccess();
-  const poolsOn = has('booking.pools');
-  const listed = resources.filter((r) => r.kind === 'pool' || r.dockIds.length > 0);
+  const poolsOn = has(Feature.booking.pools);
+  const listed = resources.filter((r) => r.kind === ResourceKind.pool || r.dockIds.length > 0);
   const [selected, setSelected] = useState<string>(() => listed[0]?.id ?? NEW);
   const resource = listed.find((r) => r.id === selected);
   const editing = resource ?? null;
@@ -131,7 +136,7 @@ export function ResourceEditor({
               ) : null}
               {listed.map((r) => (
                 <NativeSelectOption key={r.id} value={r.id}>
-                  {r.kind === 'pool'
+                  {r.kind === ResourceKind.pool
                     ? t(($) => $.capacity.resources.pool_option, { name: r.name })
                     : t(($) => $.capacity.resources.single_option, { code: codeOf(r.dockIds[0]) })}
                 </NativeSelectOption>
@@ -147,7 +152,7 @@ export function ResourceEditor({
             resource={editing}
             docks={docks}
             resources={resources}
-            locked={!poolsOn && editing?.kind !== 'single'}
+            locked={!poolsOn && editing?.kind !== ResourceKind.single}
             onCreated={setSelected}
           />
         ) : null}
@@ -178,10 +183,10 @@ function ResourceDetails({
   const { t } = useTranslation('booking');
   const message = useIssueText();
   const refresh = useRefreshMasterData(orgId);
-  const kind = resource?.kind ?? 'pool';
+  const kind = resource?.kind ?? ResourceKind.pool;
   const saved: ResourceValues = {
     name: resource?.name ?? '',
-    directions: resource?.directions ?? ['inbound'],
+    directions: resource?.directions ?? [Direction.inbound],
     capacityCap: resource?.capacityCap ?? null,
     dailyCap: resource?.dailyCap ?? null,
     active: resource?.active ?? true,
@@ -189,7 +194,7 @@ function ResourceDetails({
   };
   const form = useForm<ResourceValues>({
     resolver: zodResolver(
-      kind === 'pool'
+      kind === ResourceKind.pool
         ? ResourceForm.extend({ dockIds: PutResourceDocks.shape.dockIds })
         : ResourceForm,
     ),
@@ -208,17 +213,17 @@ function ResourceDetails({
         return call(
           api.t[':orgId'].capacity.resources.$post({
             param: { orgId },
-            json: { siteId, kind: 'pool', ...fields, dockIds },
+            json: { siteId, kind: ResourceKind.pool, ...fields, dockIds },
           }),
         );
       }
       const param = { orgId, resourceId: resource.id };
-      const body = kind === 'pool' ? fields : { ...fields, capacityCap: undefined };
+      const body = kind === ResourceKind.pool ? fields : { ...fields, capacityCap: undefined };
       const updated = await call(
         api.t[':orgId'].capacity.resources[':resourceId'].$patch({ param, json: body }),
       );
       const changed =
-        kind === 'pool' &&
+        kind === ResourceKind.pool &&
         (dockIds.length !== resource.dockIds.length ||
           dockIds.some((id) => !resource.dockIds.includes(id)));
       if (!changed) return updated;
@@ -266,14 +271,14 @@ function ResourceDetails({
     />
   );
 
-  const KindIcon = kind === 'pool' ? LayersIcon : SquareIcon;
+  const KindIcon = kind === ResourceKind.pool ? LayersIcon : SquareIcon;
   return (
     <form noValidate onSubmit={form.handleSubmit((v) => save.mutate(v))}>
       <fieldset disabled={locked || save.isPending} className="contents">
         <FieldGroup>
           <p className="flex items-start gap-2 text-sm text-muted-foreground">
             <KindIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
-            {kind === 'pool'
+            {kind === ResourceKind.pool
               ? t(($) => $.capacity.resources.pool_explainer)
               : t(($) => $.capacity.resources.single_explainer, {
                   code: docks.find((d) => d.id === resource?.dockIds[0])?.code ?? '',
@@ -317,8 +322,8 @@ function ResourceDetails({
               </FieldSet>
             )}
           />
-          <div className={cn('grid gap-3', kind === 'pool' && 'grid-cols-2')}>
-            {kind === 'pool'
+          <div className={cn('grid gap-3', kind === ResourceKind.pool && 'grid-cols-2')}>
+            {kind === ResourceKind.pool
               ? number(
                   'capacityCap',
                   t(($) => $.capacity.resources.fields.capacity_cap),
@@ -342,7 +347,7 @@ function ResourceDetails({
               {t(($) => $.capacity.resources.lowering)}
             </div>
           ) : null}
-          {kind === 'pool' ? (
+          {kind === ResourceKind.pool ? (
             <Controller
               name="dockIds"
               control={form.control}
@@ -382,10 +387,10 @@ function ResourceDetails({
                           </label>
                           <span className="text-xs text-muted-foreground">
                             {elsewhere
-                              ? elsewhere.kind === 'pool'
+                              ? elsewhere.kind === ResourceKind.pool
                                 ? t(($) => $.capacity.resources.in_pool, { name: elsewhere.name })
                                 : t(($) => $.capacity.resources.is_single)
-                              : d.status === 'active'
+                              : d.status === DockStatus.active
                                 ? null
                                 : t(($) => $.capacity.resources.no_capacity)}
                           </span>

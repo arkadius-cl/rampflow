@@ -3,6 +3,8 @@ import {
   type VersionDetail,
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
+import { VersionStatus } from '@rampflow/shared/modules/safety/values';
+import { Feature, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, FilePlusIcon, LockIcon, SendIcon, TriangleAlertIcon } from 'lucide-react';
@@ -44,14 +46,14 @@ const EditorSearch = z.object({
 
 export const Route = createFileRoute('/t/$orgId/safety/briefings/$instructionId')({
   validateSearch: EditorSearch,
-  beforeLoad: guard({ permission: 'safety.manage_briefings' }),
+  beforeLoad: guard({ permission: Permission.safety.manage_briefings }),
   component: EditorPage,
 });
 
 /** The draft if there is one, else the published version, else the newest. */
 const defaultVersion = (versions: readonly VersionSummary[]) =>
-  versions.find((v) => v.status === 'draft') ??
-  versions.find((v) => v.status === 'published') ??
+  versions.find((v) => v.status === VersionStatus.draft) ??
+  versions.find((v) => v.status === VersionStatus.published) ??
   versions[0];
 
 function EditorPage() {
@@ -156,7 +158,7 @@ function VersionActions({
       });
     },
   });
-  if (version.status === 'draft') {
+  if (version.status === VersionStatus.draft) {
     return (
       <>
         <Button size="sm" onClick={() => setPublishing(true)}>
@@ -273,7 +275,7 @@ function LanguageNav({
           <span lang={c.locale}>{languageName(c.locale)}</span>
           <span className="flex items-center gap-2">
             <TranslationBadge state={c.translation} size="sm" />
-            {has('safety.quiz') ? (
+            {has(Feature.safety.quiz) ? (
               <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                 {t(($) => $.editor.questions_count, { n: c.questions.length })}
               </span>
@@ -299,7 +301,7 @@ function VersionContent({
   const languageName = useLanguageName();
   const ordered = useOrderedContent(version);
   const content = ordered.find((c) => c.locale === locale) ?? ordered[0];
-  const readOnly = version.status !== 'draft';
+  const readOnly = version.status !== VersionStatus.draft;
   if (!content) return null;
   return (
     <Card>
@@ -318,7 +320,7 @@ function VersionContent({
             <LockIcon />
             <AlertTitle>{t(($) => $.editor.read_only.title)}</AlertTitle>
             <AlertDescription>
-              {version.status === 'retired'
+              {version.status === VersionStatus.retired
                 ? t(($) => $.editor.retired_note)
                 : t(($) => $.editor.read_only.description)}
             </AlertDescription>
@@ -330,7 +332,7 @@ function VersionContent({
           versionId={version.id}
           content={content}
           readOnly={readOnly}
-          quiz={has('safety.quiz')}
+          quiz={has(Feature.safety.quiz)}
         />
       </CardContent>
     </Card>

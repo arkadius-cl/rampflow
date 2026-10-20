@@ -1,4 +1,7 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { OnSiteTruck, YardTruck } from '@rampflow/shared/modules/yard/api';
+import { Feature, Permission } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -57,7 +60,7 @@ interface GateSearch {
 
 export const Route = createFileRoute('/t/$orgId/gate/')({
   staticData: { shell: 'station' },
-  beforeLoad: guard({ permission: 'yard.gate' }),
+  beforeLoad: guard({ permission: Permission.yard.gate }),
   validateSearch: (search: Record<string, unknown>): GateSearch => ({
     ...stationSearch(search),
     tab: TABS.find((t) => t === search.tab),
@@ -67,8 +70,8 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
   component: GateScreen,
 });
 
-const EXPECTED = new Set<YardTruck['status']>(['confirmed', 'no_show']);
-const DEPARTED = new Set<YardTruck['status']>(['departed', 'turned_away']);
+const EXPECTED = new Set<YardTruck['status']>([BookingStatus.confirmed, BookingStatus.no_show]);
+const DEPARTED = new Set<YardTruck['status']>([BookingStatus.departed, BookingStatus.turned_away]);
 
 function GateScreen() {
   const site = useStationSite();
@@ -93,7 +96,7 @@ function Gate({ siteId }: { siteId: string }) {
   // A scanned booking may lie outside today's lists (an early truck); the dialog still needs it.
   const [scanned, setScanned] = useState<YardTruck>();
   const tab = search.tab ?? 'expected';
-  const canCall = access.can('yard.call') && access.has('yard.call_to_dock');
+  const canCall = access.can(Permission.yard.call) && access.has(Feature.yard.call_to_dock);
 
   const day = expected.data?.items ?? [];
   const lists: Record<Tab, (YardTruck | OnSiteTruck)[]> = {
@@ -321,14 +324,14 @@ function TruckRow({
   const { t } = useTranslation('yard');
   const { orgId } = Route.useParams();
   const loadTypeName = useLoadTypeName();
-  const blocked = b.safety.enforced && b.safety.status === 'missing';
+  const blocked = b.safety.enforced && b.safety.status === SafetyStatus.missing;
   const onSite = isOnSite(b);
   return (
     <li
       data-testid="gate-row"
       className={cn(
         'grid min-h-16 grid-cols-[9.5rem_minmax(0,1fr)_auto] items-center gap-4 rounded-lg border bg-background px-4 py-3 lg:grid-cols-[9.5rem_minmax(0,1fr)_auto_auto]',
-        b.status === 'no_show' && 'opacity-80',
+        b.status === BookingStatus.no_show && 'opacity-80',
       )}
     >
       <div>
@@ -386,12 +389,12 @@ function TruckRow({
             <LogInIcon /> {t(($) => $.gate.action.check_in)}
           </Button>
         ) : null}
-        {b.status === 'checked_in' && canCall ? (
+        {b.status === BookingStatus.checked_in && canCall ? (
           <Button size="lg" variant="outline" className="h-12" disabled={!online} onClick={onCall}>
             <BellRingIcon /> {t(($) => $.docks.call.confirm_none)}
           </Button>
         ) : null}
-        {b.status === 'checked_in' ? (
+        {b.status === BookingStatus.checked_in ? (
           <Button size="lg" variant="outline" className="h-12" disabled={!online} onClick={onOpen}>
             <OctagonXIcon /> {t(($) => $.gate.action.turn_away)}
           </Button>

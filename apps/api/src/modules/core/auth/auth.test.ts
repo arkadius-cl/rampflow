@@ -1,4 +1,4 @@
-import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -167,7 +167,7 @@ describe('password sign-in (CR-03)', () => {
     const { request } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const magic = await linkTokenTo(a.email, 'magic_link');
+    const magic = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     const res = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token: magic, password: 'hijacked password' },
     });
@@ -193,7 +193,7 @@ describe('magic link (CR-03)', () => {
     const a = await account(ownerDb());
     const sent = await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
     expect(sent.status).toBe(202);
-    const token = await linkTokenTo(a.email, 'magic_link');
+    const token = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     const first = await request('POST', '/api/auth/magic-link/exchange', { body: { token } });
     expect(first.status).toBe(200);
     expect(sessionOf(first)).not.toBeNull();
@@ -205,7 +205,7 @@ describe('magic link (CR-03)', () => {
     const { request } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const token = await linkTokenTo(a.email, 'magic_link');
+    const token = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     const seen = await request('POST', '/api/auth/magic-link/inspect', { body: { token } });
     expect(seen.status).toBe(200);
     expect(await seen.json()).toEqual({ email: a.email });
@@ -226,7 +226,7 @@ describe('magic link (CR-03)', () => {
     const { request, clock } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const token = await linkTokenTo(a.email, 'magic_link');
+    const token = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     clock.advance(15 * 60_000);
     const late = await request('POST', '/api/auth/magic-link/exchange', { body: { token } });
     expect(late.status).toBe(401);
@@ -237,7 +237,7 @@ describe('magic link (CR-03)', () => {
     const { request } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const token = await linkTokenTo(a.email, 'magic_link');
+    const token = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     const both = await Promise.all([
       request('POST', '/api/auth/magic-link/exchange', { body: { token } }),
       request('POST', '/api/auth/magic-link/exchange', { body: { token } }),
@@ -274,7 +274,7 @@ describe('password reset (CR-03)', () => {
     expect(await sessionsOf(a.id)).toBe(2);
 
     await request('POST', '/api/auth/password-reset', { body: { email: a.email, locale: 'pl' } });
-    const token = await linkTokenTo(a.email, 'password_reset');
+    const token = await linkTokenTo(a.email, AuthTokenKind.password_reset);
     const done = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token, password: 'a brand new secret' },
     });
@@ -295,8 +295,8 @@ describe('password reset (CR-03)', () => {
     await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
     await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const [mine, stolen] = await linkTokensTo(a.email, 'password_reset');
-    const stolenMagic = await linkTokenTo(a.email, 'magic_link');
+    const [mine, stolen] = await linkTokensTo(a.email, AuthTokenKind.password_reset);
+    const stolenMagic = await linkTokenTo(a.email, AuthTokenKind.magic_link);
 
     const done = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token: mine, password: 'the owner secret' },
@@ -318,7 +318,7 @@ describe('password reset (CR-03)', () => {
     const { request } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
-    const token = await linkTokenTo(a.email, 'password_reset');
+    const token = await linkTokenTo(a.email, AuthTokenKind.password_reset);
     const short = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token, password: 'short' },
     });
@@ -336,7 +336,7 @@ describe('password reset (CR-03)', () => {
     const { request, clock } = harness();
     const a = await account(ownerDb());
     await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
-    const token = await linkTokenTo(a.email, 'password_reset');
+    const token = await linkTokenTo(a.email, AuthTokenKind.password_reset);
     clock.advance(60 * 60_000);
     const late = await request('POST', '/api/auth/password-reset/confirm', {
       body: { token, password: 'too late for this' },
@@ -368,7 +368,7 @@ describe('logs', () => {
     const signedIn = await login(a.email, a.password);
     secrets.push(sessionOf(signedIn) ?? '');
     await request('POST', '/api/auth/magic-link', { body: { email: a.email } });
-    const magic = await linkTokenTo(a.email, 'magic_link');
+    const magic = await linkTokenTo(a.email, AuthTokenKind.magic_link);
     secrets.push(magic);
     secrets.push(
       sessionOf(
@@ -376,7 +376,7 @@ describe('logs', () => {
       ) ?? '',
     );
     await request('POST', '/api/auth/password-reset', { body: { email: a.email } });
-    const reset = await linkTokenTo(a.email, 'password_reset');
+    const reset = await linkTokenTo(a.email, AuthTokenKind.password_reset);
     secrets.push(reset);
     await request('POST', '/api/auth/password-reset/confirm', {
       body: { token: reset, password: 'the new password 1' },

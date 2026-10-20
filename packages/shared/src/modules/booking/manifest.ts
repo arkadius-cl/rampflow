@@ -1,12 +1,15 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-import { everyScope } from '../../values/settings.ts';
+import { EmailCategory } from '../../values/emails.ts';
+import { LocaleSet } from '../../values/locales.ts';
+import { OrgKind, Role } from '../../values/roles.ts';
+import { everyScope, SettingScope } from '../../values/settings.ts';
 
 export const booking = defineModule({
-  id: 'booking',
+  id: EmailCategory.booking,
   dependsOn: ['core'],
   enabledBy: null,
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'booking.carrier_portal': { kind: 'feature' },
     'booking.public_link': { kind: 'feature' },
@@ -20,14 +23,14 @@ export const booking = defineModule({
     'booking.late_policy': { kind: 'feature', reserved: true },
   },
   permissions: {
-    'booking.view': { roles: ['gate_operator', 'dock_operator', 'carrier_user'] },
-    'booking.book': { roles: ['carrier_user'] },
-    'booking.staff_book': { roles: ['dispatcher'] },
-    'booking.walk_in': { roles: ['gate_operator'] },
-    'booking.force': { roles: ['dispatcher'] },
-    'booking.view_actors': { roles: ['tenant_admin'] },
-    'booking.manage_resources': { roles: ['tenant_admin'] },
-    'booking.manage_carriers': { roles: ['dispatcher'] },
+    'booking.view': { roles: [Role.gate_operator, Role.dock_operator, Role.carrier_user] },
+    'booking.book': { roles: [Role.carrier_user] },
+    'booking.staff_book': { roles: [Role.dispatcher] },
+    'booking.walk_in': { roles: [Role.gate_operator] },
+    'booking.force': { roles: [Role.dispatcher] },
+    'booking.view_actors': { roles: [Role.tenant_admin] },
+    'booking.manage_resources': { roles: [Role.tenant_admin] },
+    'booking.manage_carriers': { roles: [Role.dispatcher] },
   },
   settings: {
     'booking.slot_grid_minutes': {
@@ -51,48 +54,48 @@ export const booking = defineModule({
     'booking.public_link_enabled': {
       schema: z.boolean(),
       default: false,
-      scopes: ['site'],
+      scopes: [SettingScope.site],
       requires: 'booking.public_link',
     },
     'booking.public_registration_mode': {
       schema: z.enum(['auto_approve', 'approval_required']),
       default: 'approval_required',
-      scopes: ['tenant', 'site'],
+      scopes: [SettingScope.tenant, SettingScope.site],
       requires: 'booking.public_link',
     },
   },
   nav: [
     {
       id: 'plan',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/plan',
       icon: 'calendar-range',
       permission: 'booking.view',
     },
     {
       id: 'carriers',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/carriers',
       icon: 'truck',
       permission: 'booking.manage_carriers',
     },
     {
       id: 'bookings',
-      area: 'carrier',
+      area: OrgKind.carrier,
       to: '/c/$orgId/bookings',
       icon: 'list',
       permission: 'booking.view',
     },
     {
       id: 'book',
-      area: 'carrier',
+      area: OrgKind.carrier,
       to: '/c/$orgId/book',
       icon: 'calendar-plus',
       permission: 'booking.book',
     },
     {
       id: 'tenants',
-      area: 'carrier',
+      area: OrgKind.carrier,
       to: '/c/$orgId/tenants',
       icon: 'warehouse',
       permission: 'booking.view',

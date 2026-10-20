@@ -1,5 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  ActorParty,
+  BookingStatus,
+  Direction,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
+import { TenantRole } from '@rampflow/shared/values';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import type { BookingId, DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -77,7 +84,7 @@ export async function capacitySite(
       status: 'active',
     });
   }
-  const kind = o.kind ?? 'pool';
+  const kind = o.kind ?? ResourceKind.pool;
   const [resource] = await db
     .insert(bookableResource)
     .values({
@@ -85,7 +92,7 @@ export async function capacitySite(
       siteId,
       kind,
       name: 'Rampe',
-      directions: ['inbound', 'outbound'],
+      directions: [Direction.inbound, Direction.outbound],
       capacityCap: o.capacityCap ?? null,
       dailyCap: o.dailyCap ?? null,
     })
@@ -130,7 +137,7 @@ export async function placeBooking(
   s: CapacitySite,
   startsAt: Date,
   minutes: number,
-  status: (typeof LOAD_STATUSES)[number] | 'cancelled' = 'confirmed',
+  status: (typeof LOAD_STATUSES)[number] | 'cancelled' = BookingStatus.confirmed,
 ): Promise<BookingId> {
   const end = new Date(startsAt.getTime() + minutes * 60_000);
   const [row] = await ownerDb()
@@ -163,10 +170,10 @@ export function asTenantAdmin<T>(
   now = new Date('2026-10-19T08:00:00Z'),
 ): Promise<T> {
   const scope: Scope = {
-    party: 'tenant',
+    party: ActorParty.tenant,
     tenantId: side.tenantId,
     siteIds: 'all',
-    actor: { kind: 'user', userId: side.users.tenant_admin.id, role: 'tenant_admin' },
+    actor: { kind: 'user', userId: side.users.tenant_admin.id, role: TenantRole.tenant_admin },
   };
   return withScope(scope, async (tx) => fn(tx, await loadAccess(tx, scope, testClock(now))));
 }

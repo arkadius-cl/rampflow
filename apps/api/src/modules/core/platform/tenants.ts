@@ -17,6 +17,7 @@ import type {
   TenantSummary,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
+import { ErrorCode, OrgKind, Role } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -65,10 +66,10 @@ export async function createTenant(tx: Tx, input: NewTenant, now: Date): Promise
     tx,
     {
       orgId: id,
-      orgKind: 'tenant',
+      orgKind: OrgKind.tenant,
       orgName: input.name,
       email: input.adminEmail,
-      role: 'tenant_admin',
+      role: Role.tenant_admin,
       invitedBy: input.createdBy,
       fromPlatform: true,
       locale: input.locale,
@@ -96,7 +97,7 @@ async function tenantRows(tx: Tx, tenantId?: TenantId): Promise<TenantRow[]> {
 
 async function requireTenant(tx: Tx, tenantId: TenantId): Promise<TenantRow> {
   const [row] = await tenantRows(tx, tenantId);
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -202,13 +203,13 @@ export async function putOverride(
   if (!parsed.ok) {
     const { error } = parsed;
     if (error.code === 'invalid_value') {
-      throw new ApiError('validation_failed', 'Invalid json', {
+      throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
         issues: [
           { path: ['value'], code: 'invalid_type', message: `Expected a ${error.expected}` },
         ],
       });
     }
-    throw new ApiError('bad_request', `${error.code} ${key}`, { reason: error.code });
+    throw new ApiError(ErrorCode.bad_request, `${error.code} ${key}`, { reason: error.code });
   }
   const set = {
     value: wrapJson(input.value),
@@ -251,10 +252,10 @@ export async function inviteTenantAdmin(
     tx,
     {
       orgId: tenantId,
-      orgKind: 'tenant',
+      orgKind: OrgKind.tenant,
       orgName: row.name,
       email,
-      role: 'tenant_admin',
+      role: Role.tenant_admin,
       invitedBy,
       fromPlatform: true,
       locale,

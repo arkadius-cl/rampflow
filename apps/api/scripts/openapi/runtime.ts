@@ -1,3 +1,4 @@
+import { OrgKind } from '@rampflow/shared/values';
 import type { RouterRoute } from 'hono/types';
 import type * as z from 'zod';
 import {
@@ -20,9 +21,9 @@ const PARTY_PREFIXES: readonly (readonly [string, Party])[] = [
   ['/api/c/:orgId/at/:tenantId', 'carrier_at_tenant'],
   // The one /api/auth route that runs in the user scope.
   ['/api/auth/logout', 'user'],
-  ['/api/c/:orgId', 'carrier'],
-  ['/api/t/:orgId', 'tenant'],
-  ['/api/platform', 'platform'],
+  ['/api/c/:orgId', OrgKind.carrier],
+  ['/api/t/:orgId', OrgKind.tenant],
+  ['/api/platform', OrgKind.platform],
   ['/api/driver', 'driver'],
   ['/api/public', 'public'],
   ['/api/auth', 'anonymous'],

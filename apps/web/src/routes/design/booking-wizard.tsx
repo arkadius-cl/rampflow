@@ -1,3 +1,4 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarPlusIcon,
@@ -356,7 +357,7 @@ function ConfirmedStep() {
           <div className="flex flex-col items-center gap-2">
             <QrPlaceholder code="Z4KQ-7MDP" size={168} className="border" />
             <div className="font-mono text-2xl font-semibold tracking-wide">Z4KQ-7MDP</div>
-            <BookingStatusBadge status="confirmed" size="lg" />
+            <BookingStatusBadge status={BookingStatus.confirmed} size="lg" />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">Booked. See you on Wednesday.</h2>

@@ -1,4 +1,4 @@
-import type { FitFailure } from '@rampflow/shared/modules/booking/values';
+import { FitFailure } from '@rampflow/shared/modules/booking/values';
 import type { GridSlot } from '@rampflow/shared/time';
 
 // The capacity timeline of one resource on one site-local day (ADR-0004, "Availability").
@@ -106,13 +106,13 @@ export function checkFit(day: ResourceDay, startsAt: Date, blockMinutes: number)
   let full = false;
   for (let i = from; i < to; i++) {
     const capacity = day.capacity[i] ?? 0;
-    if (capacity === 0) return { ok: false, reason: 'closed' };
+    if (capacity === 0) return { ok: false, reason: FitFailure.closed };
     if ((day.load[i] ?? 0) >= capacity) full = true;
   }
   if (day.dailyCap !== null && day.startsOnDay >= day.dailyCap) {
-    return { ok: false, reason: 'daily_cap_reached' };
+    return { ok: false, reason: FitFailure.daily_cap_reached };
   }
-  return full ? { ok: false, reason: 'capacity_full' } : { ok: true };
+  return full ? { ok: false, reason: FitFailure.capacity_full } : { ok: true };
 }
 
 /** The grid slots of the day that fit, inside `bounds` (lead time and horizon) when given. */

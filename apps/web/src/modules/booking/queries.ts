@@ -8,6 +8,7 @@ import type {
   DriverLinkView,
 } from '@rampflow/shared/modules/booking/api.staff';
 import type { LocalDate } from '@rampflow/shared/time';
+import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -17,7 +18,7 @@ import { queryKeys } from '@/lib/query-keys';
 // refreshes the board, the list, the open detail and its timeline.
 
 export const bookingKey = (orgId: string) =>
-  [...queryKeys.org('tenant', orgId), 'booking'] as const;
+  [...queryKeys.org(OrgKind.tenant, orgId), 'booking'] as const;
 
 const bookings = () => api.t[':orgId'].bookings;
 const capacity = () => api.t[':orgId'].capacity;

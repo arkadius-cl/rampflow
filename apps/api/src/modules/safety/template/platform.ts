@@ -1,20 +1,17 @@
 import type { DriverLocale } from '@rampflow/shared';
-import type {
-  ContentBody,
-  PictogramId,
-  TranslationState,
-} from '@rampflow/shared/modules/safety/api.authoring';
+import type { ContentBody } from '@rampflow/shared/modules/safety/api.authoring';
+import { PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
 
 // The 12-language platform template (SF-01, domain research §4). Pictograms and correct answers
 // are fixed here once; each locale supplies only text, so every locale has the same shape.
 
 const RULE_PICTOGRAMS = [
-  'hi_vis_vest',
-  'speed_limit_10',
-  'forklift_traffic',
-  'wheel_chock',
-  'no_smoking',
-  'assembly_point',
+  PictogramId.hi_vis_vest,
+  PictogramId.speed_limit_10,
+  PictogramId.forklift_traffic,
+  PictogramId.wheel_chock,
+  PictogramId.no_smoking,
+  PictogramId.assembly_point,
 ] as const satisfies readonly PictogramId[];
 
 const CORRECT = [1, 0, 1] as const;
@@ -327,7 +324,7 @@ const TEXT: Record<DriverLocale, LocaleText> = {
 const SOURCE_LOCALES: ReadonlySet<DriverLocale> = new Set(['de', 'en']);
 
 export const translationOf = (locale: DriverLocale): TranslationState =>
-  SOURCE_LOCALES.has(locale) ? 'source' : 'machine';
+  SOURCE_LOCALES.has(locale) ? TranslationState.source : TranslationState.machine;
 
 /** One locale of the template; questions only for tenants with `safety.quiz` (SF-02). */
 export function templateContent(locale: DriverLocale, options: { quiz: boolean }): ContentBody {

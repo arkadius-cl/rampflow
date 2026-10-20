@@ -1,3 +1,4 @@
+import { ActorParty, ClosureSource } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -9,6 +10,7 @@ import {
   localDayRange,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { ErrorCode, Setting, SystemActorName } from '@rampflow/shared/values';
 import { and, eq, gt, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { type BookingId, oneOf, type SiteId, type TenantId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -79,7 +81,7 @@ export async function loadDayTimeline(
     .select({ timeZone: site.timeZone })
     .from(site)
     .where(and(eq(site.id, req.siteId), eq(site.tenantId, req.tenantId)));
-  if (!siteRow) throw new ApiError('not_found');
+  if (!siteRow) throw new ApiError(ErrorCode.not_found);
   const zone = siteRow.timeZone as TimeZone;
   const range = localDayRange(req.day, zone);
   const windowEnd = new Date(range.end.getTime() + OVERHANG_MS);
@@ -124,8 +126,9 @@ export async function loadDayTimeline(
       ),
     );
 
-  const closeOnHolidays = (await access.setting('booking.close_on_public_holidays', req.siteId))
-    .value;
+  const closeOnHolidays = (
+    await access.setting(Setting.booking.close_on_public_holidays, req.siteId)
+  ).value;
   const closures = await tx
     .select()
     .from(closure)
@@ -140,13 +143,18 @@ export async function loadDayTimeline(
       ),
     );
   const effective = closures.filter(
-    (c) => c.source === 'manual' || (closeOnHolidays && c.reopenedAt === null),
+    (c) => c.source === ClosureSource.manual || (closeOnHolidays && c.reopenedAt === null),
   );
 
   // Carriers never read other carriers' bookings; their load comes through this tenant read.
   const load = await asScope(
     tx,
-    { party: 'tenant', tenantId: req.tenantId, siteIds: 'all', actor: systemActor('capacity') },
+    {
+      party: ActorParty.tenant,
+      tenantId: req.tenantId,
+      siteIds: 'all',
+      actor: systemActor(SystemActorName.capacity),
+    },
     (inner) =>
       inner
         .select({

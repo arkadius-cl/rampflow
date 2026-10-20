@@ -1,6 +1,7 @@
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { JobName } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { TenantId } from '../db/ids.ts';
@@ -87,8 +88,10 @@ export async function forEachTenant(
     const tenantId = id as string as TenantId;
     try {
       const stats = await ctx.tx.transaction((sp) =>
-        asScope(sp, { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) }, (tx) =>
-          step(tx, tenantId),
+        asScope(
+          sp,
+          { party: ActorParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) },
+          (tx) => step(tx, tenantId),
         ),
       );
       for (const [k, v] of Object.entries(stats)) total[k] = (total[k] ?? 0) + v;

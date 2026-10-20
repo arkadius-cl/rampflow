@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { packages } from '../packages.ts';
 import { catalog } from '../registry.ts';
+import { Feature, Setting } from '../values/keys.ts';
+import { SettingScope } from '../values/settings.ts';
 import { resolveEntitlements } from './entitlements.ts';
 import { isSettingAvailable, parseSettingWrite, resolveSetting } from './settings.ts';
 
@@ -27,17 +29,23 @@ describe('resolveSetting', () => {
   });
 
   it('ignores a level the setting does not allow', () => {
-    const resolved = resolveSetting(catalog, 'safety.quiz_pass_percent', { site: 60, tenant: 80 });
+    const resolved = resolveSetting(catalog, Setting.safety.quiz_pass_percent, {
+      site: 60,
+      tenant: 80,
+    });
     expect(resolved).toEqual({ value: 80, source: 'tenant' });
   });
 
   it('falls through a stored value that no longer parses', () => {
-    const resolved = resolveSetting(catalog, 'booking.slot_grid_minutes', { site: 7, tenant: 20 });
+    const resolved = resolveSetting(catalog, Setting.booking.slot_grid_minutes, {
+      site: 7,
+      tenant: 20,
+    });
     expect(resolved).toEqual({ value: 20, source: 'tenant' });
   });
 
   it('keeps an explicit null that the schema allows', () => {
-    const resolved = resolveSetting(catalog, 'privacy.notice_url', {
+    const resolved = resolveSetting(catalog, Setting.privacy.notice_url, {
       tenant: null,
       platform: 'https://rampflow.example/privacy',
     });
@@ -49,7 +57,7 @@ describe('parseSettingWrite', () => {
   it('rejects a value outside the zod range with the issue path', () => {
     const scalar = parseSettingWrite(catalog, start, {
       key: 'yard.grace_minutes',
-      scope: 'site',
+      scope: SettingScope.site,
       value: 241,
     });
     expect(scalar).toMatchObject({
@@ -58,7 +66,7 @@ describe('parseSettingWrite', () => {
     });
     const list = parseSettingWrite(catalog, start, {
       key: 'avis.required_reference_types',
-      scope: 'tenant',
+      scope: SettingScope.tenant,
       value: ['purchase_order', 'bill_of_lading'],
     });
     expect(list).toMatchObject({ ok: false, error: { issues: [{ path: [1] }] } });
@@ -99,15 +107,15 @@ describe('parseSettingWrite', () => {
     const noYard = resolveEntitlements(
       catalog,
       packages.pro,
-      [{ key: 'yard.checkin_qr', value: false, expiresAt: null }],
+      [{ key: Feature.yard.checkin_qr, value: false, expiresAt: null }],
       now,
     );
     const yardSetting = { key: 'yard.grace_minutes', scope: 'tenant', value: 10 } as const;
     expect(parseSettingWrite(catalog, noYard, yardSetting)).toMatchObject({
       error: { code: 'entitlement_required', entitlement: 'yard.checkin_qr' },
     });
-    expect(isSettingAvailable(catalog, noYard, 'yard.grace_minutes')).toBe(false);
-    expect(isSettingAvailable(catalog, pro, 'yard.grace_minutes')).toBe(true);
+    expect(isSettingAvailable(catalog, noYard, Setting.yard.grace_minutes)).toBe(false);
+    expect(isSettingAvailable(catalog, pro, Setting.yard.grace_minutes)).toBe(true);
   });
 
   it('accepts platform writes without tenant entitlements, gated keys included', () => {
@@ -119,16 +127,28 @@ describe('parseSettingWrite', () => {
       error: { code: 'invalid_value' },
     });
     expect(() =>
-      parseSettingWrite(catalog, null, { key: 'yard.grace_minutes', scope: 'site', value: 10 }),
+      parseSettingWrite(catalog, null, {
+        key: 'yard.grace_minutes',
+        scope: SettingScope.site,
+        value: 10,
+      }),
     ).toThrow(/needs the tenant's entitlements/);
   });
 
   it('rejects unknown keys and returns the parsed value otherwise', () => {
     expect(
-      parseSettingWrite(catalog, start, { key: 'booking.teleport', scope: 'site', value: 1 }),
+      parseSettingWrite(catalog, start, {
+        key: 'booking.teleport',
+        scope: SettingScope.site,
+        value: 1,
+      }),
     ).toMatchObject({ ok: false, error: { code: 'unknown_key' } });
     expect(
-      parseSettingWrite(catalog, start, { key: 'booking.horizon_days', scope: 'site', value: 14 }),
+      parseSettingWrite(catalog, start, {
+        key: 'booking.horizon_days',
+        scope: SettingScope.site,
+        value: 14,
+      }),
     ).toEqual({ ok: true, value: { key: 'booking.horizon_days', scope: 'site', value: 14 } });
   });
 });

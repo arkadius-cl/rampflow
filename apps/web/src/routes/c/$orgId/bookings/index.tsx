@@ -1,6 +1,8 @@
 import type { PortalBookingSummary } from '@rampflow/shared/modules/booking/api.portal';
-import { BOOKING_STATUSES, type BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import { BOOKING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
+import { Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -67,7 +69,7 @@ export const Route = createFileRoute('/c/$orgId/bookings/')({
     from: localDateSchema.safeParse(s.from).data,
     to: localDateSchema.safeParse(s.to).data,
   }),
-  beforeLoad: guard({ permission: 'booking.view' }),
+  beforeLoad: guard({ permission: Permission.booking.view }),
   component: BookingsPage,
 });
 
@@ -99,12 +101,12 @@ function BookingsPage() {
   const tenants = useQuery(carrierContextQuery(orgId)).data?.tenants ?? [];
   const linked = useQuery(linkedTenantsQuery(orgId));
   const pending = (linked.data?.items ?? []).filter(
-    (x) => !x.link && x.registration?.status === 'pending_approval',
+    (x) => !x.link && x.registration?.status === RegistrationStatus.pending_approval,
   );
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const sites = [...new Map(items.map((b) => [b.site.id, b.site.name])).entries()];
   const filtered = search.tenant || search.site || search.status || search.from || search.to;
-  const canBook = access.can('booking.book');
+  const canBook = access.can(Permission.booking.book);
 
   return (
     <div className="flex flex-col gap-4">
@@ -189,7 +191,7 @@ function BookingsPage() {
             onChange={(e) => set({ status: (e.target.value || undefined) as BookingStatus })}
           >
             <NativeSelectOption value="">{t(($) => $.portal.list.any_status)}</NativeSelectOption>
-            {BOOKING_STATUSES.filter((s) => s !== 'requested').map((s) => (
+            {BOOKING_STATUSES.filter((s) => s !== BookingStatus.requested).map((s) => (
               <NativeSelectOption key={s} value={s}>
                 {t(($) => $.lifecycle.status[s])}
               </NativeSelectOption>

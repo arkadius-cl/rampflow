@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -51,7 +52,7 @@ beforeAll(async () => {
 const staffBookAtStart = (now: Date) =>
   asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
     createBooking(ctx, {
-      mode: 'staff',
+      mode: CreatedParty.staff,
       clientRequestId: randomUUID(),
       siteId: w.A.sites[0].id,
       loadTypeId: w.A.sites[0].loadTypeId,
@@ -66,7 +67,7 @@ describe('BK-08 no-show job', () => {
     const carrierUser = w.A.users.carrier_user;
     const late = await seedBooking(w.A, {
       startsAt: START,
-      createdParty: 'carrier',
+      createdParty: CreatedParty.carrier,
       createdBy: carrierUser.id,
     });
     // The pool holds two trucks at a time: with both units booked, staff cannot add a third.
@@ -102,7 +103,7 @@ describe('BK-08 no-show job', () => {
   it('changes nothing on a second run', async () => {
     const b = await seedBooking(w.A, {
       startsAt: minutes(120),
-      createdParty: 'carrier',
+      createdParty: CreatedParty.carrier,
       createdBy: w.A.users.carrier_admin.id,
     });
     await tick(minutes(180));
@@ -125,7 +126,7 @@ describe('BK-08 no-show job', () => {
       });
     const b = await seedBooking(w.B, {
       startsAt: START,
-      createdParty: 'carrier',
+      createdParty: CreatedParty.carrier,
       createdBy: w.B.users.carrier_user.id,
     });
     await tick(minutes(24 * 60));

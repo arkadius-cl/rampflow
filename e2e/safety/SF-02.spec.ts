@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiAs, overrideEntitlement } from '../support/u5.ts';
 
@@ -12,7 +13,7 @@ test.describe('SF-02 Quiz', () => {
     const created = await apiAs<{ id: string }>(
       request,
       w.A.users.tenant_admin,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/safety/instructions`,
       { name: 'Quiz rules', allSites: true, siteIds: [] },
     );
@@ -51,13 +52,13 @@ test.describe('SF-02 Quiz', () => {
     const { items } = await apiAs<{ items: { id: string }[] }>(
       request,
       admin,
-      'GET',
+      HttpMethod.GET,
       `${base}/instructions/${created.id}/versions`,
     );
     const version = await apiAs<{ content: { locale: string; questions: unknown[] }[] }>(
       request,
       admin,
-      'GET',
+      HttpMethod.GET,
       `${base}/versions/${items[0]?.id}`,
     );
     expect(version.content.find((c) => c.locale === 'de')?.questions.at(-1)).toMatchObject({

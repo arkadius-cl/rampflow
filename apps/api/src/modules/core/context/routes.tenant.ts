@@ -1,4 +1,5 @@
 import { catalog, isSettingAvailable, type Role, type SettingKey } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { ContextSetting, TenantContext } from '@rampflow/shared/modules/core/api.context';
 import { and, asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -23,7 +24,7 @@ export const tenant = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope, access, db } = c.var;
-    if (scope.party !== 'tenant' || !access.role || !access.entitlements) {
+    if (scope.party !== ActorParty.tenant || !access.role || !access.entitlements) {
       throw new Error('context runs under a tenant user scope');
     }
     const { entitlements } = access;

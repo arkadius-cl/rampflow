@@ -5,6 +5,8 @@ import {
   type PortalDriverLink,
   type PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Permission, StoryId } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type TenantId } from '../../../db/ids.ts';
@@ -20,7 +22,7 @@ export const BookingParam = z.object({ bookingId: idSchema<'booking'>() });
 
 function carrierOf(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== 'carrier') throw new Error(`portal read under party ${scope.party}`);
+  if (scope.party !== ActorParty.carrier) throw new Error(`portal read under party ${scope.party}`);
   return scope;
 }
 
@@ -30,7 +32,7 @@ export async function portalDriverLink(
   bookingId: BookingId,
 ): Promise<PortalDriverLink> {
   const link = await activeDriverLink(c.var.db, bookingId);
-  if (!link) throw new ApiError('not_found', 'The booking has no active driver link');
+  if (!link) throw new ApiError(ErrorCode.not_found, 'The booking has no active driver link');
   return { url: driverLinkUrl(link.id), expiresAt: link.expiresAt.toISOString() };
 }
 
@@ -40,12 +42,12 @@ export const carrier = new Hono<AppEnv>()
     '/',
     op({
       id: 'booking.portal.listBookings',
-      stories: ['CR-05'],
+      stories: [StoryId.CR_05],
       description:
         "all tenants; `?tenantId&siteId&from&to&status&when&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `when=upcoming` keeps trucks on site and requested or confirmed bookings starting today or later in site time, `when=past` keeps the rest (every final booking, and pending ones from earlier days); `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }`",
       responses: { 200: type<PortalBookingPage>() },
     }),
-    requirePermission('booking.view'),
+    requirePermission(Permission.booking.view),
     validate('query', PortalBookingListQuery),
     async (c) => {
       const page = await listPortalBookings(
@@ -61,11 +63,11 @@ export const carrier = new Hono<AppEnv>()
     '/:bookingId',
     op({
       id: 'booking.portal.getBooking',
-      stories: ['CR-05'],
+      stories: [StoryId.CR_05],
       description: '`PortalBookingView`',
       responses: { 200: type<PortalBookingView>() },
     }),
-    requirePermission('booking.view'),
+    requirePermission(Permission.booking.view),
     validate('param', BookingParam),
     async (c) => {
       const scope = carrierOf(c);
@@ -87,11 +89,11 @@ export const carrier = new Hono<AppEnv>()
     '/:bookingId/driver-link',
     op({
       id: 'booking.portal.getDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: '`{ url, expiresAt }`; 404 without an active link',
       responses: { 200: type<PortalDriverLink>() },
     }),
-    requirePermission('booking.book'),
+    requirePermission(Permission.booking.book),
     validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
@@ -103,12 +105,12 @@ export const carrier = new Hono<AppEnv>()
     '/:bookingId/rebook',
     op({
       id: 'booking.portal.getRebook',
-      stories: ['BK-06'],
+      stories: [StoryId.BK_06],
       description:
         '`{ tenantId, siteId, loadTypeId, avis }`: the avis without references and driver; no date',
       responses: { 200: type<PortalRebook>() },
     }),
-    requirePermission('booking.book'),
+    requirePermission(Permission.booking.book),
     validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');

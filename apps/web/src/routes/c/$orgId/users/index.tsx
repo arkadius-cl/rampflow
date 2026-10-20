@@ -4,6 +4,7 @@ import {
   InviteCarrierUser,
   UpdateCarrierUser,
 } from '@rampflow/shared/modules/core/api.staff';
+import { Permission } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,7 @@ import { carrierUsersKey, carrierUsersQuery } from '@/modules/core/queries';
 // CR-04: a carrier admin invites colleagues, changes their role and removes them.
 
 export const Route = createFileRoute('/c/$orgId/users/')({
-  beforeLoad: guard({ permission: 'core.manage_carrier_users' }),
+  beforeLoad: guard({ permission: Permission.core.manage_carrier_users }),
   component: CarrierUsersPage,
 });
 

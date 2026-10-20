@@ -1,6 +1,6 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import { STAFF_LOCALES } from '@rampflow/shared';
-import type { TokenPurpose } from '@rampflow/shared/values';
+import { TokenPurpose } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
@@ -11,14 +11,24 @@ import { deriveToken } from '../../../kernel/tokens.ts';
 // and the link carries the token derived from the payload's row id in the fragment.
 
 const TEMPLATES: { id: string; purpose: TokenPurpose; path: string; idField: string }[] = [
-  { id: 'core.magic-link', purpose: 'magic_link', path: '/auth/magic#', idField: 'authTokenId' },
+  {
+    id: 'core.magic-link',
+    purpose: TokenPurpose.magic_link,
+    path: '/auth/magic#',
+    idField: 'authTokenId',
+  },
   {
     id: 'core.password-reset',
-    purpose: 'password_reset',
+    purpose: TokenPurpose.password_reset,
     path: '/auth/reset#',
     idField: 'authTokenId',
   },
-  { id: 'core.invitation', purpose: 'invitation', path: '/invite#', idField: 'invitationId' },
+  {
+    id: 'core.invitation',
+    purpose: TokenPurpose.invitation,
+    path: '/invite#',
+    idField: 'invitationId',
+  },
 ];
 
 describe('account emails', () => {

@@ -1,11 +1,12 @@
 import { defineModule } from '../../contract/module.ts';
+import { LocaleSet } from '../../values/locales.ts';
 
 /** Declares the reserved integration keys. No MVP code belongs to this module. */
 export const integration = defineModule({
   id: 'integration',
   dependsOn: ['core'],
   enabledBy: null,
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'integration.api': { kind: 'feature', reserved: true },
     'integration.webhooks': { kind: 'feature', reserved: true },

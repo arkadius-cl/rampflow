@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { BookingStatus, CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -41,7 +42,7 @@ async function departed(days: number, minutes: number) {
   const at = ago(days, minutes);
   const b = await seedBooking(w.A, {
     startsAt: new Date(at.getTime() - 2 * 3_600_000),
-    status: 'departed',
+    status: BookingStatus.departed,
   });
   await ownerDb()
     .insert(bookingEvent)
@@ -272,7 +273,7 @@ describe('PL-05 platform rules', () => {
     const referenced = await carrierUser(days, 1);
     await seedBooking(w.A, {
       startsAt: ago(40),
-      createdParty: 'carrier',
+      createdParty: CreatedParty.carrier,
       createdBy: referenced.user.id,
     });
 

@@ -1,5 +1,7 @@
 import type { ClosureView, CreateClosure } from '@rampflow/shared/modules/booking/api.capacity';
+import { ClosureSource } from '@rampflow/shared/modules/booking/values';
 import { addDays, type LocalDate, type LocalDateTime } from '@rampflow/shared/time';
+import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { and, eq, gt, lt } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -69,7 +71,7 @@ export async function createClosure(
           eq(bookableResource.id, resourceId),
         ),
       );
-    if (!resource) throw new ApiError('not_found');
+    if (!resource) throw new ApiError(ErrorCode.not_found);
   }
   const [row] = await tx
     .insert(closure)
@@ -94,16 +96,16 @@ async function requireClosure(tx: Tx, tenantId: TenantId, id: ClosureId): Promis
     .select()
     .from(closure)
     .where(and(eq(closure.tenantId, tenantId), eq(closure.id, id)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
 /** Manual closures only: a holiday is reopened instead, so the import never brings it back. */
 export async function deleteClosure(tx: Tx, tenantId: TenantId, id: ClosureId): Promise<void> {
   const row = await requireClosure(tx, tenantId, id);
-  if (row.source === 'holiday') {
-    throw new ApiError('conflict', 'Reopen a holiday instead of deleting it', {
-      reason: 'holiday_closure',
+  if (row.source === ClosureSource.holiday) {
+    throw new ApiError(ErrorCode.conflict, 'Reopen a holiday instead of deleting it', {
+      reason: ConflictReason.holiday_closure,
     });
   }
   await tx.delete(closure).where(and(eq(closure.tenantId, tenantId), eq(closure.id, id)));
@@ -117,9 +119,9 @@ export async function reopenHoliday(
   now: Date,
 ): Promise<ClosureView> {
   const row = await requireClosure(tx, tenantId, id);
-  if (row.source !== 'holiday') {
-    throw new ApiError('conflict', 'Only holiday closures are reopened; delete this one', {
-      reason: 'manual_closure',
+  if (row.source !== ClosureSource.holiday) {
+    throw new ApiError(ErrorCode.conflict, 'Only holiday closures are reopened; delete this one', {
+      reason: ConflictReason.manual_closure,
     });
   }
   if (row.reopenedAt) return view(row);
@@ -128,6 +130,6 @@ export async function reopenHoliday(
     .set({ reopenedAt: now })
     .where(and(eq(closure.tenantId, tenantId), eq(closure.id, id)))
     .returning();
-  if (!updated) throw new ApiError('not_found');
+  if (!updated) throw new ApiError(ErrorCode.not_found);
   return view(updated);
 }

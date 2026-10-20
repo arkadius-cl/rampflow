@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Role } from '@rampflow/shared';
 import type { OrgKind } from '@rampflow/shared/values';
+import { TokenPurpose } from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import {
   type AnyOrgId,
@@ -34,7 +35,7 @@ export async function invitationFor(
   },
 ): Promise<InvitationFixture> {
   const id = randomUUID() as InvitationId;
-  const token = deriveToken('invitation', id);
+  const token = deriveToken(TokenPurpose.invitation, id);
   const email = o.email ?? `invitee-${randomBytes(4).toString('hex')}@invite.test`;
   await db.insert(invitation).values({
     id,

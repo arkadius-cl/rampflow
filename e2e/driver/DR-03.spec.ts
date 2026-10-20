@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { OnSiteStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible } from '../support/auth.ts';
 import {
   driverWorld,
@@ -24,13 +25,13 @@ test.describe('DR-03 Wait and dock call', () => {
     await page.goto(linkOf(booking.driverToken));
     await expect(page.getByTestId('booking-code')).toHaveText(booking.code);
 
-    await setVisit(booking, 'checked_in');
+    await setVisit(booking, OnSiteStatus.checked_in);
     await pollNow(page);
     await expect(page.getByRole('heading', { name: 'Please wait' })).toBeVisible();
     await expectAccessible(page);
 
     // The real 15-second poll, no nudge: the call must show within 20 seconds.
-    const { dockCode, hall } = await setVisit(booking, 'called');
+    const { dockCode, hall } = await setVisit(booking, OnSiteStatus.called);
     await expect(page.getByTestId('dock-code')).toHaveText(dockCode, { timeout: 20_000 });
     await expect(page.getByText(`Go to dock ${dockCode}, hall ${hall}`)).toBeVisible();
     await expectAccessible(page);

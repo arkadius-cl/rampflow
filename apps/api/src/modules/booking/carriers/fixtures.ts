@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { RegistrationMode } from '@rampflow/shared/modules/booking/api.carriers';
+import { TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import {
@@ -31,11 +32,11 @@ export async function carrierInvitationFor(
     tenantId: o.tenantId,
     companyName: 'Invited Spedition',
     email,
-    tokenHash: tokenHashFor('carrier_invitation', id),
+    tokenHash: tokenHashFor(TokenPurpose.carrier_invitation, id),
     invitedBy: o.invitedBy,
     expiresAt: o.expiresAt ?? new Date(Date.now() + 7 * DAY),
   });
-  return { id, email, token: deriveToken('carrier_invitation', id) };
+  return { id, email, token: deriveToken(TokenPurpose.carrier_invitation, id) };
 }
 
 /** A registration in `status` (default `pending_email`) with its emailed token. */
@@ -62,10 +63,10 @@ export async function registrationFor(
     locale: 'en',
     status: o.status ?? 'pending_email',
     carrierId: o.carrierId ?? null,
-    tokenHash: tokenHashFor('registration', id),
+    tokenHash: tokenHashFor(TokenPurpose.registration, id),
     expiresAt: new Date(Date.now() + DAY),
   });
-  return { id, email, token: deriveToken('registration', id) };
+  return { id, email, token: deriveToken(TokenPurpose.registration, id) };
 }
 
 /** Writes one setting value of a site, as TN-02's settings screen would. */

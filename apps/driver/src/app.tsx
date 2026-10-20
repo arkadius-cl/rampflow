@@ -1,3 +1,4 @@
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { ChevronRightIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -79,7 +80,7 @@ export function App({ booted }: { booted: Promise<SessionEvent> }) {
   }
 
   const briefingDue =
-    view.safety.status === 'missing' && (screen === 'booking' || screen === 'waiting');
+    view.safety.status === SafetyStatus.missing && (screen === 'booking' || screen === 'waiting');
   return (
     <DriverShell
       {...shell}

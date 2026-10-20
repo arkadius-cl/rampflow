@@ -1,4 +1,5 @@
-import type { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import type { ConflictReason } from '@rampflow/shared/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { DrizzleQueryError } from 'drizzle-orm';
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
@@ -58,7 +59,7 @@ export class ApiError extends Error {
   /** The same error with more details. A conflict keeps the reason its constructor demanded. */
   withDetails(extra: ErrorDetails & { readonly reason?: never }): ApiError {
     const details: ErrorDetails = { ...this.details, ...extra };
-    return this.code === 'conflict'
+    return this.code === ErrorCode.conflict
       ? new ApiError(this.code, this.message, details as ConflictDetails)
       : new ApiError(this.code, this.message, details);
   }
@@ -70,11 +71,12 @@ export class ApiError extends Error {
 }
 
 function fromHttpException(err: HTTPException): ApiError {
-  if (err.status === 400) return new ApiError('bad_request', err.message, { reason: 'malformed' });
-  if (err.status === 401) return new ApiError('unauthorized', err.message);
-  if (err.status === 403) return new ApiError('forbidden', err.message);
-  if (err.status === 404) return new ApiError('not_found', err.message);
-  return new ApiError('internal_error');
+  if (err.status === 400)
+    return new ApiError(ErrorCode.bad_request, err.message, { reason: 'malformed' });
+  if (err.status === 401) return new ApiError(ErrorCode.unauthorized, err.message);
+  if (err.status === 403) return new ApiError(ErrorCode.forbidden, err.message);
+  if (err.status === 404) return new ApiError(ErrorCode.not_found, err.message);
+  return new ApiError(ErrorCode.internal_error);
 }
 
 /** The fields of a node-postgres `DatabaseError` that name what failed without quoting any value. */
@@ -120,8 +122,8 @@ export const onError: ErrorHandler = (err, c) => {
       ? err
       : err instanceof HTTPException
         ? fromHttpException(err)
-        : new ApiError('internal_error');
-  if (apiError.code === 'internal_error') {
+        : new ApiError(ErrorCode.internal_error);
+  if (apiError.code === ErrorCode.internal_error) {
     const requestId = crypto.randomUUID();
     console.error(
       `internal_error ${requestId} ${c.req.method} ${c.req.routePath} ${describeForLog(err)}`,
@@ -129,7 +131,7 @@ export const onError: ErrorHandler = (err, c) => {
     return c.json<ErrorBody>(
       {
         error: {
-          code: 'internal_error',
+          code: ErrorCode.internal_error,
           message: DEFAULT_MESSAGE.internal_error,
           details: { requestId },
         },
@@ -141,4 +143,4 @@ export const onError: ErrorHandler = (err, c) => {
 };
 
 export const onNotFound: NotFoundHandler = (c) =>
-  c.json<ErrorBody>({ error: { code: 'not_found', message: 'No such route' } }, 404);
+  c.json<ErrorBody>({ error: { code: ErrorCode.not_found, message: 'No such route' } }, 404);

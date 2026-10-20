@@ -1,3 +1,4 @@
+import { ErrorCode } from '@rampflow/shared/values';
 import { type ErrorComponentProps, Link, useRouter } from '@tanstack/react-router';
 import { CircleAlertIcon, CompassIcon, LockIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +62,7 @@ export function RouteNotFound() {
 export function RouteError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  if (error instanceof AccessDenied || isFailure(error, 'not_found')) return <NoAccess />;
+  if (error instanceof AccessDenied || isFailure(error, ErrorCode.not_found)) return <NoAccess />;
   return (
     <Empty className="min-h-[60svh]">
       <EmptyHeader>

@@ -1,4 +1,5 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
+import { PackageId } from '@rampflow/shared/values';
 import { and, count, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -13,7 +14,7 @@ const app = createApp({ clock: testClock(new Date('2026-10-19T08:00:00Z')) });
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'start', B: 'pro' } });
+  w = await world({ packages: { A: PackageId.start, B: PackageId.pro } });
 });
 
 const garching = {

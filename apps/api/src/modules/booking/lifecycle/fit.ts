@@ -1,7 +1,8 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
-import type { FitFailure } from '@rampflow/shared/modules/booking/values';
+import { CreatedParty, FitFailure } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, siteDay, slotGrid, type TimeZone } from '@rampflow/shared/time';
 import type { ConflictReason } from '@rampflow/shared/values';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -79,7 +80,7 @@ export async function conflictWithOffers(
       day,
     },
   );
-  throw new ApiError('conflict', `Not bookable: ${reason}`, { reason, offers });
+  throw new ApiError(ErrorCode.conflict, `Not bookable: ${reason}`, { reason, offers });
 }
 
 /**
@@ -94,13 +95,13 @@ export async function isOffered(
   audience: Audience,
   now: Date,
 ): Promise<boolean> {
-  const grid = (await access.setting('booking.slot_grid_minutes', siteId)).value;
+  const grid = (await access.setting(Setting.booking.slot_grid_minutes, siteId)).value;
   const onGrid = slotGrid(siteDay(startsAt, zone), zone, grid).some(
     (s) => s.start.getTime() === startsAt.getTime(),
   );
-  if (!onGrid || audience === 'staff') return onGrid;
-  const lead = (await access.setting('booking.min_lead_minutes', siteId)).value;
-  const horizon = (await access.setting('booking.horizon_days', siteId)).value;
+  if (!onGrid || audience === CreatedParty.staff) return onGrid;
+  const lead = (await access.setting(Setting.booking.min_lead_minutes, siteId)).value;
+  const horizon = (await access.setting(Setting.booking.horizon_days, siteId)).value;
   const t = startsAt.getTime();
   return t >= now.getTime() + lead * 60_000 && t <= now.getTime() + horizon * 86_400_000;
 }
@@ -138,7 +139,7 @@ export async function findFit(
     force: boolean;
   },
 ): Promise<FitResult> {
-  if (req.candidates.length === 0) return { ok: false, reason: 'closed' };
+  if (req.candidates.length === 0) return { ok: false, reason: FitFailure.closed };
   const timeline = await loadDayTimeline(tx, access, {
     tenantId: req.tenantId,
     siteId: req.siteId,
@@ -147,12 +148,13 @@ export async function findFit(
     excludeBookingId: req.excludeBookingId,
   });
   const minutes = req.block.durationMinutes + req.block.bufferMinutes;
-  let reason: FitFailure = 'capacity_full';
+  let reason: FitFailure = FitFailure.capacity_full;
   for (const id of req.candidates) {
     const day = timeline.resources.find((r) => r.resource.id === id)?.timeline;
     if (!day) continue;
     const fit = checkFit(day, req.startsAt, minutes);
-    if (fit.ok || (req.force && fit.reason !== 'closed')) return { ok: true, resourceId: id };
+    if (fit.ok || (req.force && fit.reason !== FitFailure.closed))
+      return { ok: true, resourceId: id };
     reason = fit.reason;
   }
   return { ok: false, reason };

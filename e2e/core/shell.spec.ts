@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { catalog, navFor } from '../../packages/shared/src/index.ts';
+import { OrgKind } from '../../packages/shared/src/values/roles.ts';
 import {
   expectAccessible,
   seedWorld,
@@ -19,7 +20,7 @@ test.describe('Org picker and area shell', () => {
   }) => {
     const w = await seedWorld(request);
     const user = w.A.users.dispatcher;
-    await addMembership(user.id, w.B.carrierId, 'carrier', 'carrier_admin');
+    await addMembership(user.id, w.B.carrierId, OrgKind.carrier, 'carrier_admin');
     await signInAs(context, user);
 
     await page.goto('/');
@@ -46,13 +47,13 @@ test.describe('Org picker and area shell', () => {
   });
 
   const areas: { key: string; area: 'tenant' | 'carrier' | 'platform' }[] = [
-    { key: 'tenant_admin', area: 'tenant' },
-    { key: 'dispatcher', area: 'tenant' },
-    { key: 'gate_operator', area: 'tenant' },
-    { key: 'dock_operator', area: 'tenant' },
-    { key: 'carrier_admin', area: 'carrier' },
-    { key: 'carrier_user', area: 'carrier' },
-    { key: 'platform_admin', area: 'platform' },
+    { key: 'tenant_admin', area: OrgKind.tenant },
+    { key: 'dispatcher', area: OrgKind.tenant },
+    { key: 'gate_operator', area: OrgKind.tenant },
+    { key: 'dock_operator', area: OrgKind.tenant },
+    { key: 'carrier_admin', area: OrgKind.carrier },
+    { key: 'carrier_user', area: OrgKind.carrier },
+    { key: 'platform_admin', area: OrgKind.platform },
   ];
   for (const { key, area } of areas) {
     test(`the sidebar of a ${key} matches navFor`, async ({ page, context, request }) => {
@@ -60,13 +61,14 @@ test.describe('Org picker and area shell', () => {
       const user: WorldUser =
         key === 'platform_admin' ? w.platformAdmin : w.A.users[key as WorldUserKey];
       await signInAs(context, user);
-      const orgId = area === 'tenant' ? w.A.tenantId : area === 'carrier' ? w.A.carrierId : null;
-      const base = area === 'platform' ? '/platform' : `/${area[0]}/${orgId}`;
+      const orgId =
+        area === OrgKind.tenant ? w.A.tenantId : area === OrgKind.carrier ? w.A.carrierId : null;
+      const base = area === OrgKind.platform ? '/platform' : `/${area[0]}/${orgId}`;
       const ctxRes = await context.request.get(`/api${base}/context`);
       const ctx = (await ctxRes.json()) as { permissions: string[]; entitlements?: unknown };
       const permissions = new Set(ctx.permissions) as never;
       const expected = (
-        area === 'tenant'
+        area === OrgKind.tenant
           ? navFor(catalog, { area, permissions, entitlements: ctx.entitlements as never })
           : navFor(catalog, { area, permissions })
       ).map((item) => (orgId ? item.to.replace('$orgId', orgId) : item.to));

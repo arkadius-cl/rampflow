@@ -1,3 +1,4 @@
+import { HttpMethod } from '@rampflow/shared/values';
 import { defineAccountCases } from '../../../../test/route-cases.ts';
 import {
   carrierInvitationFor,
@@ -8,7 +9,7 @@ import {
 
 export const accountCases = defineAccountCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/public/links/:slug',
     credential: 'none',
     arrange: async (w, db) => {
@@ -21,7 +22,7 @@ export const accountCases = defineAccountCases([
     },
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/links/:slug/registrations',
     credential: 'none',
     arrange: async (w, db) => {
@@ -43,7 +44,7 @@ export const accountCases = defineAccountCases([
     },
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/registrations/verify',
     credential: 'token',
     arrange: async (w, db) => {

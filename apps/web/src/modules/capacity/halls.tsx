@@ -9,6 +9,7 @@ import {
   type HallView,
   TEMPERATURE_ZONES,
 } from '@rampflow/shared/modules/core/api.sites';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { useMutation } from '@tanstack/react-query';
 import { PencilIcon, PlusIcon, WrenchIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -121,7 +122,7 @@ export function HallCard({
               {docks.map((d) => (
                 <TableRow
                   key={d.id}
-                  className={cn(d.status === 'inactive' && 'text-muted-foreground')}
+                  className={cn(d.status === DockStatus.inactive && 'text-muted-foreground')}
                 >
                   <TableCell className="pl-6 font-semibold">{d.code}</TableCell>
                   <TableCell>{t(($) => $.sites.door_types[d.doorType])}</TableCell>
@@ -133,7 +134,7 @@ export function HallCard({
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="gap-1">
-                      {d.status === 'maintenance' ? <WrenchIcon aria-hidden /> : null}
+                      {d.status === DockStatus.maintenance ? <WrenchIcon aria-hidden /> : null}
                       {t(($) => $.sites.statuses[d.status])}
                     </Badge>
                   </TableCell>
@@ -278,10 +279,10 @@ export function DockDialog({
       : {
           hallId: edit && 'hallId' in edit ? edit.hallId : (halls[0]?.id ?? ''),
           code: '',
-          doorType: 'dock_leveler',
-          temperatureZone: 'ambient',
+          doorType: DoorType.dock_leveler,
+          temperatureZone: TemperatureZone.ambient,
           adrAllowed: false,
-          status: 'active',
+          status: DockStatus.active,
         },
   });
   const save = useMutation({

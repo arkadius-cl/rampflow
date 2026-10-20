@@ -1,4 +1,5 @@
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
+import { OrgKind } from '@rampflow/shared/values';
 import { useTranslation } from 'react-i18next';
 import { OfficeShell } from '@/components/shells/office-shell';
 import type { AreaAccess } from '@/lib/access';
@@ -21,10 +22,10 @@ export function AppShell({
   const { t } = useTranslation();
   const nav = useShellNav(access);
   const memberships = useMemberships(me);
-  const orgId = access.area === 'platform' ? 'platform' : access.orgId;
+  const orgId = access.area === OrgKind.platform ? 'platform' : access.orgId;
   const org = memberships.find((m) => m.id === orgId) ?? {
     id: orgId,
-    name: access.area === 'platform' ? 'rampflow' : access.context.org.name,
+    name: access.area === OrgKind.platform ? 'rampflow' : access.context.org.name,
     kind: access.area,
     role: t(($) => $.shell.roles[access.context.role]),
   };

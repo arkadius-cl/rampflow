@@ -1,3 +1,4 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   BanIcon,
@@ -231,7 +232,7 @@ function BookingList({
 
 function DetailPanel({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const resource = resources.find((r) => r.id === booking.resourceId);
-  const beforeCheckIn = booking.status === 'confirmed';
+  const beforeCheckIn = booking.status === BookingStatus.confirmed;
   return (
     <aside
       className="flex w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l bg-background p-4"

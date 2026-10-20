@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { type AnyModuleManifest, catalog, DRIVER_LOCALES } from '@rampflow/shared';
-import { ConflictReason, StaffLocale, values } from '@rampflow/shared/values';
+import { ConflictReason, LocaleSet, OrgKind, StaffLocale, values } from '@rampflow/shared/values';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkCatalogs, formatProblem, readCatalogs } from './check.ts';
 import { createServerI18n, LOCALES_DIR } from './server.ts';
@@ -23,7 +23,7 @@ describe('catalog check', () => {
       id: 'yard',
       dependsOn: [],
       enabledBy: null,
-      locales: 'staff',
+      locales: LocaleSet.staff,
       entitlements: {
         'yard.checkin_qr': { kind: 'feature' },
         'yard.map': { kind: 'feature', reserved: true },
@@ -33,7 +33,7 @@ describe('catalog check', () => {
       nav: [
         {
           id: 'gate',
-          area: 'tenant',
+          area: OrgKind.tenant,
           to: '/t/$orgId/gate',
           icon: 'door-open',
           permission: 'yard.gate',

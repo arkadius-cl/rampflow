@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { APP_NAME } from '@rampflow/shared';
+import { NodeEnv } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { createApp } from './app.ts';
 import { db, pool } from './db/pool.ts';
@@ -32,7 +33,7 @@ const app = createApp({
   testRoutes: env.ENABLE_TEST_ROUTES,
   apiDocs: env.ENABLE_API_DOCS,
   static:
-    env.NODE_ENV === 'production'
+    env.NODE_ENV === NodeEnv.production
       ? {
           web: fileURLToPath(new URL('../../web/dist', import.meta.url)),
           driver: fileURLToPath(new URL('../../driver/dist', import.meta.url)),

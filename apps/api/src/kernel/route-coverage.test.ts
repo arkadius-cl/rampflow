@@ -1,3 +1,4 @@
+import { HttpMethod, Role } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import {
@@ -41,9 +42,9 @@ describe('route coverage', () => {
     );
     const cases = defineRouteCases([
       {
-        method: 'GET',
+        method: HttpMethod.GET,
         path: '/api/t/:orgId/toys',
-        as: 'dispatcher',
+        as: Role.dispatcher,
         permission: 'member',
         entitlement: null,
         params: (w) => ({ orgId: w.A.tenantId }),
@@ -51,9 +52,9 @@ describe('route coverage', () => {
         siteScoped: false,
       },
       {
-        method: 'DELETE',
+        method: HttpMethod.DELETE,
         path: '/api/t/:orgId/toys/:toyId',
-        as: 'dispatcher',
+        as: Role.dispatcher,
         permission: 'member',
         entitlement: null,
         params: (w) => ({ orgId: w.A.tenantId, toyId: w.A.sites[0].id }),

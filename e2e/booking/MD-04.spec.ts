@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiCall, newSiteBody, nextMonday, poolWorldDocks, siteOf } from '../support/u4.ts';
 
@@ -18,7 +19,7 @@ test.describe('MD-04 Hours and closures', () => {
     await poolWorldDocks(context, w);
     await apiCall(
       context,
-      'PUT',
+      HttpMethod.PUT,
       `/t/${w.A.tenantId}/capacity/load-types/${s.loadTypeId}/resources`,
       {
         resourceIds: [s.resourceId],
@@ -29,7 +30,7 @@ test.describe('MD-04 Hours and closures', () => {
       (
         await apiCall<Offers>(
           context,
-          'GET',
+          HttpMethod.GET,
           `/t/${w.A.tenantId}/capacity/availability?siteId=${s.id}&date=${monday}&loadTypeId=${s.loadTypeId}`,
         )
       ).starts.map((x) => x.wallTime);
@@ -87,7 +88,7 @@ test.describe('MD-04 Hours and closures', () => {
     await poolWorldDocks(context, w);
     const site = await apiCall<{ id: string }>(
       context,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/sites`,
       newSiteBody('Garching'),
     );

@@ -1,10 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import type { Entitlements, StaffLocale } from '@rampflow/shared';
+import type { Entitlements } from '@rampflow/shared';
 import type {
   PublicLinkInfo,
   RegistrationBody,
   RegistrationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { CarrierLinkSource, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { RateLimitBucket } from '@rampflow/shared/modules/core/values';
+import {
+  ConflictReason,
+  EmailTemplate,
+  ErrorCode,
+  StaffLocale,
+  TokenPurpose,
+} from '@rampflow/shared/values';
 import { and, desc, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -33,7 +42,7 @@ async function withinLimit(
     await consumeRateLimit(bucket, key, now);
     return true;
   } catch (e) {
-    if (e instanceof ApiError && e.code === 'rate_limited') return false;
+    if (e instanceof ApiError && e.code === ErrorCode.rate_limited) return false;
     throw e;
   }
 }
@@ -45,8 +54,8 @@ async function withinLimit(
  */
 export async function registrationAllowed(email: string, ip: string, now: Date) {
   return (
-    (await withinLimit('registration_ip', ip, now)) &&
-    (await withinLimit('registration_request', email.toLowerCase(), now))
+    (await withinLimit(RateLimitBucket.registration_ip, ip, now)) &&
+    (await withinLimit(RateLimitBucket.registration_request, email.toLowerCase(), now))
   );
 }
 
@@ -81,13 +90,13 @@ export async function submitRegistration(
     publicLinkSlug: o.slug,
     locale: body.locale ?? null,
     status: 'pending_email',
-    tokenHash: tokenHashFor('registration', id),
+    tokenHash: tokenHashFor(TokenPurpose.registration, id),
     expiresAt: new Date(now.getTime() + REGISTRATION_TOKEN_MS),
   });
   await enqueueEmail(
     tx,
     {
-      template: 'booking.registration-verify',
+      template: EmailTemplate.booking_registration_verify,
       to: body.email,
       locale: body.locale ?? 'en',
       tenantId: link.tenantId,
@@ -159,29 +168,29 @@ export async function decideRegistration(
     eq(carrierRegistration.tenantId, tenantId),
   );
   const [current] = await tx.select().from(carrierRegistration).where(where);
-  if (!current) throw new ApiError('not_found');
+  if (!current) throw new ApiError(ErrorCode.not_found);
   const [row] = await tx
     .update(carrierRegistration)
     .set({
       status: decision.status,
-      rejectReason: decision.status === 'rejected' ? decision.reason : null,
+      rejectReason: decision.status === RegistrationStatus.rejected ? decision.reason : null,
       decidedAt: now,
       decidedBy: o.decidedBy,
     })
     .where(and(where, eq(carrierRegistration.status, 'pending_approval')))
     .returning();
   if (!row) {
-    throw new ApiError('conflict', `Registration is ${current.status}`, {
-      reason: 'invalid_transition',
+    throw new ApiError(ErrorCode.conflict, `Registration is ${current.status}`, {
+      reason: ConflictReason.invalid_transition,
       status: current.status,
     });
   }
   const carrierId = row.carrierId as CarrierId;
-  if (decision.status === 'approved') {
+  if (decision.status === RegistrationStatus.approved) {
     await linkCarrier(tx, {
       tenantId,
       carrierId,
-      source: 'public_link',
+      source: CarrierLinkSource.public_link,
       reactivateDeactivatedBefore: now,
     });
   }
@@ -200,15 +209,15 @@ export async function decideRegistration(
   };
   const email = {
     to: row.email,
-    locale: (row.locale as StaffLocale | null) ?? 'en',
+    locale: (row.locale as StaffLocale | null) ?? StaffLocale.en,
     tenantId,
   };
-  if (decision.status === 'approved') {
+  if (decision.status === RegistrationStatus.approved) {
     await enqueueEmail(
       tx,
       {
         ...email,
-        template: 'booking.registration-approved',
+        template: EmailTemplate.booking_registration_approved,
         payload: { ...common, carrierId, carrierName },
       },
       o.entitlements,
@@ -218,7 +227,7 @@ export async function decideRegistration(
       tx,
       {
         ...email,
-        template: 'booking.registration-rejected',
+        template: EmailTemplate.booking_registration_rejected,
         payload: { ...common, reason: decision.reason },
       },
       o.entitlements,

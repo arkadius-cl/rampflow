@@ -1,7 +1,8 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
 import { values } from '../../values/define.ts';
-import { everyScope } from '../../values/settings.ts';
+import { LocaleSet } from '../../values/locales.ts';
+import { everyScope, SettingScope } from '../../values/settings.ts';
 import { ReferenceType } from './values.ts';
 
 export { ReferenceType };
@@ -11,7 +12,7 @@ export const avis = defineModule({
   id: 'avis',
   dependsOn: ['booking'],
   enabledBy: 'avis.basic',
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'avis.basic': { kind: 'feature' },
     'avis.custom_fields': { kind: 'feature', reserved: true },
@@ -29,7 +30,11 @@ export const avis = defineModule({
       default: [],
       scopes: everyScope,
     },
-    'avis.unique_references': { schema: z.boolean(), default: false, scopes: ['tenant', 'site'] },
+    'avis.unique_references': {
+      schema: z.boolean(),
+      default: false,
+      scopes: [SettingScope.tenant, SettingScope.site],
+    },
     'avis.require_gross_weight': { schema: z.boolean(), default: false, scopes: everyScope },
     'avis.require_driver_phone': { schema: z.boolean(), default: false, scopes: everyScope },
   },

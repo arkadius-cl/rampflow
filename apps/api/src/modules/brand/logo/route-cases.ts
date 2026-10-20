@@ -1,3 +1,4 @@
+import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
 import {
   defineAccountCases,
   defineRouteCases,
@@ -10,8 +11,8 @@ const P = '/api/t/:orgId/brand/logo';
 
 // The module gate (`brand.logo` off) is checked by the harness through the module's enabledBy.
 const base = {
-  as: 'tenant_admin',
-  permission: 'brand.manage',
+  as: Role.tenant_admin,
+  permission: Permission.brand.manage,
   entitlement: null,
   foreign: 'empty',
   siteScoped: false,
@@ -22,7 +23,7 @@ const org = (w: World) => ({ orgId: w.A.tenantId });
 export const cases = defineRouteCases([
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: P,
     params: org,
     setup: async (w, db) => {
@@ -31,17 +32,17 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'PUT',
+    method: HttpMethod.PUT,
     path: P,
     params: org,
     raw: () => ({ type: 'image/png', bytes: PNG_1PX }),
   },
-  { ...base, method: 'DELETE', path: P, params: org },
+  { ...base, method: HttpMethod.DELETE, path: P, params: org },
 ]);
 
 export const accountCases = defineAccountCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/public/logos/:tenantId/:sha',
     credential: 'none',
     arrange: async (w, db) => {

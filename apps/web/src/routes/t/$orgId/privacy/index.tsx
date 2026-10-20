@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import {
   type SubjectAcknowledgement,
   type SubjectMatches,
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
+import { EmailCategory, Permission } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { DownloadIcon, EraserIcon, SearchIcon, UserSearchIcon } from 'lucide-react';
@@ -54,7 +56,7 @@ import { LOCALE_TAG } from '@/modules/report/display';
 // Nothing typed here reaches the URL or the query cache.
 
 export const Route = createFileRoute('/t/$orgId/privacy/')({
-  beforeLoad: guard({ permission: 'privacy.manage_requests' }),
+  beforeLoad: guard({ permission: Permission.privacy.manage_requests }),
   component: PrivacyPage,
 });
 
@@ -264,11 +266,13 @@ function Results({ matches }: { matches: SubjectMatches }) {
                         {plates.length > 0 ? plates.join(', ') : none}
                       </TableCell>
                       <TableCell className="pr-4">
-                        {b.status === 'requested' ? null : (
+                        {b.status === BookingStatus.requested ? null : (
                           <BookingStatusBadge
                             status={b.status}
                             size="sm"
-                            label={t(($) => $.lifecycle.status[b.status], { ns: 'booking' })}
+                            label={t(($) => $.lifecycle.status[b.status], {
+                              ns: EmailCategory.booking,
+                            })}
                           />
                         )}
                       </TableCell>

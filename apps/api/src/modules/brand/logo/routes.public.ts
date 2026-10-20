@@ -1,3 +1,4 @@
+import { ErrorCode, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type TenantId } from '../../../db/ids.ts';
@@ -23,7 +24,7 @@ export const publicApi = new Hono<AppEnv>().get(
   '/:tenantId/:sha',
   op({
     id: 'brand.logo.getLogoImage',
-    stories: ['TN-05'],
+    stories: [StoryId.TN_05],
     description:
       "Needs the tenant's module `brand`. The image with `Cache-Control: public, max-age=31536000, immutable`; 404 for another hash, no logo or `brand.logo` off. URLs come from `logoUrl(tenantId, sha, origin?)` in `@rampflow/shared/modules/brand/api`, or `currentLogoUrl(tx, tenantId, entitlements, origin)` in `brand/logo/logo.ts`",
     responses: { 200: file('image/png', 'image/jpeg') },
@@ -37,7 +38,7 @@ export const publicApi = new Hono<AppEnv>().get(
       if (!entitlements?.modules.brand) return null;
       return logoBytes(tx, tenantId as TenantId, sha);
     });
-    if (!logo) throw new ApiError('not_found');
+    if (!logo) throw new ApiError(ErrorCode.not_found);
     return c.body(new Uint8Array(logo.bytes), 200, {
       'Content-Type': logo.contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',

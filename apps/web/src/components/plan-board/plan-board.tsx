@@ -1,15 +1,16 @@
+import { LoadStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { BOOKING_STATUS, BookingStatusBadge, toneClasses } from '@/components/status-badge';
 import type { BookableResource, Booking, BookingStatus } from '@/lib/domain';
 import { cn } from '@/lib/utils';
 
 const COUNTED: ReadonlySet<BookingStatus> = new Set([
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
+  LoadStatus.confirmed,
+  LoadStatus.checked_in,
+  LoadStatus.called,
+  LoadStatus.at_dock,
+  LoadStatus.loading,
+  LoadStatus.done,
 ]);
 
 export function toMinutes(hhmm: string): number {
@@ -90,7 +91,9 @@ export function PlanBoard({
         className="grid min-w-max"
         style={{
           gridTemplateColumns: `4.5rem ${resources
-            .map((r) => (r.kind === 'pool' ? 'minmax(18rem, 2fr)' : 'minmax(11rem, 1fr)'))
+            .map((r) =>
+              r.kind === ResourceKind.pool ? 'minmax(18rem, 2fr)' : 'minmax(11rem, 1fr)',
+            )
             .join(' ')}`,
         }}
       >
@@ -148,7 +151,7 @@ export function PlanBoard({
                     )}
                     style={{ top: (min - start) * scale, height: gridMinutes * scale }}
                   >
-                    {r.kind === 'pool' ? (
+                    {r.kind === ResourceKind.pool ? (
                       <span
                         className={cn(
                           'absolute right-1 bottom-0.5 rounded-sm px-1 text-[10px] tabular-nums',
@@ -213,7 +216,7 @@ export function PlanBoard({
 }
 
 function ResourceHeader({ resource }: { resource: BookableResource }) {
-  const Icon = resource.kind === 'pool' ? LayersIcon : SquareIcon;
+  const Icon = resource.kind === ResourceKind.pool ? LayersIcon : SquareIcon;
   return (
     <div className="sticky top-0 z-20 border-r border-b bg-background px-2 py-1.5 last:border-r-0">
       <div className="flex items-center gap-1.5 text-sm font-semibold">
@@ -221,7 +224,7 @@ function ResourceHeader({ resource }: { resource: BookableResource }) {
         <span className="truncate">{resource.name}</span>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        {resource.kind === 'pool'
+        {resource.kind === ResourceKind.pool
           ? `Pool · ${resource.capacity} per slot · ${resource.dockIds.length} docks`
           : 'Single dock'}
         {resource.dailyCap ? ` · cap ${resource.dailyCap}/day` : ''}

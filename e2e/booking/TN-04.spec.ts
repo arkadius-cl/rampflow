@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { Setting } from '../../packages/shared/src/values/keys.ts';
 import { expectAccessible, seedWorld, signInAs, type World } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { latestEmailTo, linkIn } from '../support/mailpit.ts';
@@ -50,7 +51,7 @@ test.describe('TN-04 Public booking link', () => {
 
     const site = w.A.sites[0]?.id as string;
     const on = { tenantId: w.A.tenantId, siteId: site, by: w.A.users.tenant_admin.id };
-    await setSiteSetting({ ...on, key: 'booking.public_link_enabled', value: true });
+    await setSiteSetting({ ...on, key: Setting.booking.public_link_enabled, value: true });
     await tab.goto(`/r/${slug}`);
     await expect(tab.getByRole('button', { name: 'Register' })).toBeVisible();
     await expectAccessible(tab);
@@ -82,7 +83,7 @@ test.describe('TN-04 Public booking link', () => {
       tenantId: w.A.tenantId,
       siteId: site,
       by,
-      key: 'booking.public_link_enabled',
+      key: Setting.booking.public_link_enabled,
       value: true,
     });
 

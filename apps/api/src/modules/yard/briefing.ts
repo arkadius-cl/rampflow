@@ -1,6 +1,10 @@
 import { sourceStates } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingParty } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
 import type { AcknowledgementCandidate, BriefingSession } from '@rampflow/shared/modules/yard/api';
+import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { and, desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import type { BookingId, UserId } from '../../db/ids.ts';
 import { ApiError } from '../../kernel/errors.ts';
@@ -16,17 +20,17 @@ import { safetyAcknowledgement, safetyVersion } from '../safety/schema.ts';
 const CANDIDATE_LIMIT = 20;
 const BRIEFING_SESSION_MS = 30 * 60_000;
 /** States in which a briefing can still be linked: the gate's `link_acknowledgement`. */
-const LINKABLE = sourceStates('link_acknowledgement', 'staff');
+const LINKABLE = sourceStates('link_acknowledgement', BookingParty.staff);
 
 async function linkableBooking(ctx: BookingContext, bookingId: BookingId) {
   const [b] = await ctx.tx
     .select()
     .from(booking)
     .where(and(eq(booking.id, bookingId), eq(booking.tenantId, ctx.tenantId)));
-  if (!b) throw new ApiError('not_found');
+  if (!b) throw new ApiError(ErrorCode.not_found);
   if (!LINKABLE.includes(b.status)) {
-    throw new ApiError('conflict', 'The visit can no longer take a briefing', {
-      reason: 'invalid_transition',
+    throw new ApiError(ErrorCode.conflict, 'The visit can no longer take a briefing', {
+      reason: ConflictReason.invalid_transition,
       status: b.status,
     });
   }
@@ -81,7 +85,7 @@ export async function acknowledgementCandidates(
         bookingId: b.id,
         materialFloor: instruction.materialFloor,
       });
-      if (status !== 'valid') return [];
+      if (status !== AckStatus.valid) return [];
       return [
         {
           id: r.id,
@@ -104,7 +108,7 @@ export async function briefingSession(
 ): Promise<BriefingSession> {
   const b = await linkableBooking(ctx, bookingId);
   const link = await issueDriverLink(ctx.tx, b, {
-    channel: 'staff',
+    channel: DriverChannel.staff,
     createdBy: userId,
     expiresAt: new Date(ctx.now.getTime() + BRIEFING_SESSION_MS),
   });

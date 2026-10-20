@@ -1,10 +1,12 @@
 import { defineModule } from '../../contract/module.ts';
+import { LocaleSet } from '../../values/locales.ts';
+import { OrgKind, Role } from '../../values/roles.ts';
 
 export const report = defineModule({
   id: 'report',
   dependsOn: ['booking', 'yard'],
   enabledBy: 'report.basic',
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'report.basic': { kind: 'feature' },
     'report.export': { kind: 'feature' },
@@ -12,13 +14,13 @@ export const report = defineModule({
     'report.scheduled': { kind: 'feature', reserved: true },
   },
   permissions: {
-    'report.view': { roles: ['dispatcher'] },
+    'report.view': { roles: [Role.dispatcher] },
   },
   settings: {},
   nav: [
     {
       id: 'reports',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/reports',
       icon: 'chart-column',
       permission: 'report.view',

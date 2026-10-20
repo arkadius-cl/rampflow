@@ -1,3 +1,4 @@
+import { PackageId } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { CalendarIcon, PlusIcon, TrashIcon, TriangleAlertIcon } from 'lucide-react';
 import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
@@ -37,7 +38,7 @@ const usage: Usage[] = [
   {
     id: 'acme',
     name: 'Acme Logistics GmbH',
-    pkg: 'pro',
+    pkg: PackageId.pro,
     sites: [2, 5],
     docks: [8, 60],
     users: [31, 75],
@@ -46,7 +47,7 @@ const usage: Usage[] = [
   {
     id: 'nordfrost',
     name: 'Nordfrost Lager AG',
-    pkg: 'start',
+    pkg: PackageId.start,
     sites: [1, 1],
     docks: [6, 10],
     users: [7, 10],
@@ -55,7 +56,7 @@ const usage: Usage[] = [
   {
     id: 'mueller',
     name: 'Müller Handel KG',
-    pkg: 'enterprise',
+    pkg: PackageId.enterprise,
     sites: [9, null],
     docks: [140, null],
     users: [210, null],

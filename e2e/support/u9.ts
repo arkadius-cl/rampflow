@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
 import pg from 'pg';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import type { World } from './auth.ts';
 
 // Yard fixtures for the gate and dock specs (U9), written as the owner: bookings of world A's
@@ -64,9 +65,10 @@ export interface Visit {
 export async function seedVisit(w: World, v: Visit): Promise<{ id: string; code: string }> {
   const s = siteOf(w);
   const code = randomBytes(4).toString('hex').toUpperCase();
-  const status = v.status ?? 'confirmed';
+  const status = v.status ?? LoadStatus.confirmed;
   const startsAt = minutesFromNow(v.start);
-  const checkedInAt = status === 'confirmed' ? null : minutesFromNow(v.checkedIn ?? v.start);
+  const checkedInAt =
+    status === LoadStatus.confirmed ? null : minutesFromNow(v.checkedIn ?? v.start);
   const { rows } = await db().query<{ id: string }>(
     `insert into booking (tenant_id, site_id, resource_id, load_type_id, carrier_id, carrier_name,
        code, status, direction, starts_at, ends_at, blocks_until, site_time_zone, load_units,

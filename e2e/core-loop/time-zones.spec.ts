@@ -1,4 +1,5 @@
 import { devices, expect, test } from '@playwright/test';
+import { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { planSite, siteSetting } from '../support/u6b.ts';
 import { dayButton } from '../support/u8.ts';
@@ -68,7 +69,7 @@ test.describe('Time zones', () => {
     await carrier.close();
 
     // A German dispatcher in Berlin: the zone in German, the own time labelled in German.
-    await setLocale(w.A.users.dispatcher.id, 'de');
+    await setLocale(w.A.users.dispatcher.id, StaffLocale.de);
     const dispatcher = await browser.newContext(berlin);
     await signInAs(dispatcher, w.A.users.dispatcher);
     const office = await dispatcher.newPage();

@@ -4,6 +4,7 @@ import type {
   PlatformContext,
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
+import { PackageId, Role } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -17,7 +18,7 @@ import { entitlementOverride, tenantCarrierLink } from '../schema.ts';
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'pro', B: 'start' } });
+  w = await world({ packages: { A: PackageId.pro, B: PackageId.start } });
 });
 
 const json = async <T>(res: Response) => {
@@ -32,7 +33,7 @@ describe('GET /api/t/:orgId/context', () => {
     );
     expect(ctx.org.id).toBe(w.A.tenantId);
     expect(ctx.role).toBe('dispatcher');
-    expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, 'dispatcher'));
+    expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, Role.dispatcher));
     expect(ctx.entitlements.limits['core.max_sites']).toBe(5);
     expect(ctx.entitlements.features['safety.quiz']).toBe(true);
     expect(ctx.sites.map((s) => s.id).sort()).toEqual(w.A.sites.map((s) => s.id).sort());
@@ -121,7 +122,7 @@ describe('GET /api/platform/context', () => {
     const ctx = await json<PlatformContext>(
       await as(app, w.platformAdmin).get('/api/platform/context'),
     );
-    expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, 'platform_admin'));
+    expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, Role.platform_admin));
     expect((await as(app, w.A.users.tenant_admin).get('/api/platform/context')).status).toBe(404);
     expect((await as(app, null).get('/api/platform/context')).status).toBe(401);
   });

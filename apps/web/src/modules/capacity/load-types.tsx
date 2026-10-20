@@ -7,7 +7,9 @@ import {
   type ResourceView,
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { Direction } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
+import { Feature, StaffLocale } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LockIcon, PencilIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -106,7 +108,7 @@ const durationOf = (v: LoadTypeValues): LoadTypeDuration =>
 
 const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
   name: lt?.name ?? { de: '', en: '' },
-  direction: lt?.direction ?? 'inbound',
+  direction: lt?.direction ?? Direction.inbound,
   bufferMinutes: lt?.bufferMinutes ?? 0,
   carrierBookable: lt?.carrierBookable ?? true,
   active: lt?.active ?? true,
@@ -188,7 +190,7 @@ export function LoadTypesCard({
           </TableHeader>
           <TableBody>
             {loadTypes.map((lt) => {
-              const name = locale === 'de' ? lt.name.de : lt.name.en;
+              const name = locale === StaffLocale.de ? lt.name.de : lt.name.en;
               const eligible = resources.filter((r) => lt.resourceIds.includes(r.id));
               return (
                 <TableRow key={lt.id} className={cn(!lt.active && 'text-muted-foreground')}>
@@ -243,7 +245,10 @@ export function LoadTypesCard({
             <SheetTitle>
               {editing?.loadType
                 ? t(($) => $.capacity.load_types.edit, {
-                    name: locale === 'de' ? editing.loadType.name.de : editing.loadType.name.en,
+                    name:
+                      locale === StaffLocale.de
+                        ? editing.loadType.name.de
+                        : editing.loadType.name.en,
                   })
                 : t(($) => $.capacity.load_types.new)}
             </SheetTitle>
@@ -283,7 +288,7 @@ function LoadTypeFormView({
   const { t } = useTranslation('booking');
   const message = useIssueText();
   const { has } = useAccess();
-  const tiersOn = has('booking.duration_rules');
+  const tiersOn = has(Feature.booking.duration_rules);
   const refresh = useRefreshMasterData(orgId);
   const form = useForm<LoadTypeValues>({
     resolver: zodResolver(LoadTypeForm),
@@ -382,7 +387,7 @@ function LoadTypeFormView({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={`lt-name-${lang}`}>
-                    {lang === 'de'
+                    {lang === StaffLocale.de
                       ? t(($) => $.capacity.load_types.fields.name_de)
                       : t(($) => $.capacity.load_types.fields.name_en)}
                   </FieldLabel>

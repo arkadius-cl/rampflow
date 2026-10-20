@@ -1,8 +1,9 @@
 import type {
   CarrierLinkSource,
-  CarrierLinkStatus,
   CarrierLinkView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -27,8 +28,10 @@ export async function assertActiveLink(
     .where(
       and(eq(tenantCarrierLink.tenantId, tenantId), eq(tenantCarrierLink.carrierId, carrierId)),
     );
-  if (link?.status !== 'active') {
-    throw new ApiError('forbidden', 'The carrier link is not active', { reason: 'link_inactive' });
+  if (link?.status !== CarrierLinkStatus.active) {
+    throw new ApiError(ErrorCode.forbidden, 'The carrier link is not active', {
+      reason: 'link_inactive',
+    });
   }
 }
 
@@ -104,14 +107,14 @@ export async function setLinkStatus(
 ): Promise<CarrierLinkView> {
   const updated = await tx
     .update(tenantCarrierLink)
-    .set({ status, deactivatedAt: status === 'deactivated' ? now : null })
+    .set({ status, deactivatedAt: status === CarrierLinkStatus.deactivated ? now : null })
     .where(
       and(eq(tenantCarrierLink.tenantId, tenantId), eq(tenantCarrierLink.carrierId, carrierId)),
     )
     .returning({ carrierId: tenantCarrierLink.carrierId });
-  if (updated.length === 0) throw new ApiError('not_found');
+  if (updated.length === 0) throw new ApiError(ErrorCode.not_found);
   const [view] = await listLinks(tx, tenantId, [carrierId]);
-  if (!view) throw new ApiError('not_found');
+  if (!view) throw new ApiError(ErrorCode.not_found);
   return view;
 }
 

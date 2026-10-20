@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type {
   PortalBookingPage,
   PortalBookingView,
@@ -6,7 +7,12 @@ import type {
   PortalRebook,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  BookingStatus,
+  CarrierLinkStatus,
+  CreatedParty,
+} from '@rampflow/shared/modules/booking/values';
+import { DriverLocale } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -82,8 +88,10 @@ function book(
       loadTypeId: s.loadTypeId,
       startsAt,
       avis: avisInput({
-        references: [{ type: 'purchase_order', value: `PO-${randomUUID().slice(0, 6)}` }],
-        driver: { name: 'Jan Kowalski', phone: '+48 600 100 200', locale: 'pl' },
+        references: [
+          { type: ReferenceType.purchase_order, value: `PO-${randomUUID().slice(0, 6)}` },
+        ],
+        driver: { name: 'Jan Kowalski', phone: '+48 600 100 200', locale: DriverLocale.pl },
         vehicle: { plate: 'wgm-4521k' },
       }),
     },
@@ -215,7 +223,7 @@ describe('booking a slot (BK-04)', () => {
   it('answers 403 link_inactive on create after the tenant deactivated the link, while cancel still works', async () => {
     const s = await site();
     const b = await booked(s, mon('11:00'));
-    await setLink(w.A, w.A.carrierId, 'deactivated');
+    await setLink(w.A, w.A.carrierId, CarrierLinkStatus.deactivated);
     try {
       const create = await book(s, mon('12:00'));
       expect(create.status).toBe(403);
@@ -231,7 +239,7 @@ describe('booking a slot (BK-04)', () => {
       const read = await carrierAs(carrierUser()).get(`${mine()}/${b.id}`);
       expect(((await read.json()) as PortalBookingView).linkActive).toBe(false);
     } finally {
-      await setLink(w.A, w.A.carrierId, 'active');
+      await setLink(w.A, w.A.carrierId, CarrierLinkStatus.active);
     }
   });
 });
@@ -239,7 +247,7 @@ describe('booking a slot (BK-04)', () => {
 async function setLink(side: WorldSide, carrierId: string, status: 'active' | 'deactivated') {
   await ownerDb()
     .update(tenantCarrierLink)
-    .set({ status, deactivatedAt: status === 'active' ? null : new Date() })
+    .set({ status, deactivatedAt: status === CarrierLinkStatus.active ? null : new Date() })
     .where(
       and(
         eq(tenantCarrierLink.tenantId, side.tenantId),
@@ -316,7 +324,7 @@ describe('change and cancel (BK-05)', () => {
     const b = await booked(s, mon('09:00'));
     const res = await carrierAs(carrierUser()).put(`${at(w.A)}/bookings/${b.id}/avis`, {
       body: {
-        avis: avisInput({ loadUnits: [{ type: 'eur_pallet', quantity: 33 }] }),
+        avis: avisInput({ loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 33 }] }),
         version: b.version,
       },
     });
@@ -381,14 +389,15 @@ describe('upcoming and past tabs (CR-05)', () => {
     const sun = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() - 86_400_000);
     const tue = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() + 86_400_000);
     const seeded = async (startsAt: Date, status: BookingStatus) =>
-      (await seedBooking(w.A, { startsAt, status, site: s, createdParty: 'carrier' })).id;
-    const departedToday = await seeded(new Date(mon('07:00')), 'departed');
-    const doneToday = await seeded(new Date(mon('08:00')), 'done');
-    const laterToday = await seeded(new Date(mon('16:00')), 'confirmed');
-    const staleYesterday = await seeded(sun('10:00'), 'confirmed');
-    const stillOnSite = await seeded(sun('22:00'), 'checked_in');
-    const cancelledTomorrow = await seeded(tue('09:00'), 'cancelled');
-    const tomorrow = await seeded(tue('10:00'), 'requested');
+      (await seedBooking(w.A, { startsAt, status, site: s, createdParty: CreatedParty.carrier }))
+        .id;
+    const departedToday = await seeded(new Date(mon('07:00')), BookingStatus.departed);
+    const doneToday = await seeded(new Date(mon('08:00')), BookingStatus.done);
+    const laterToday = await seeded(new Date(mon('16:00')), BookingStatus.confirmed);
+    const staleYesterday = await seeded(sun('10:00'), BookingStatus.confirmed);
+    const stillOnSite = await seeded(sun('22:00'), BookingStatus.checked_in);
+    const cancelledTomorrow = await seeded(tue('09:00'), BookingStatus.cancelled);
+    const tomorrow = await seeded(tue('10:00'), BookingStatus.requested);
     const noon = new Date(mon('12:00'));
     const tab = async (when: string) => {
       const q = new URLSearchParams({ siteId: s.siteId, when });

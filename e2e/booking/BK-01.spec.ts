@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, type Locator, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiAs, bookingsOf } from '../support/u5.ts';
 import { at, avis, ownBooking, planSite, staffBooking, WORLD_DAY, walkIn } from '../support/u6b.ts';
@@ -97,7 +98,7 @@ test.describe('BK-01 Plan board', () => {
     const made = await apiAs<{ code: string }>(
       other.request,
       w.A.users.dispatcher,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/bookings`,
       {
         clientRequestId: randomUUID(),
@@ -128,7 +129,7 @@ test.describe('BK-01 Plan board', () => {
       await apiAs(
         request,
         w.A.users.dispatcher,
-        'POST',
+        HttpMethod.POST,
         `/t/${w.A.tenantId}/bookings/${b.id}/cancel`,
         {},
       );

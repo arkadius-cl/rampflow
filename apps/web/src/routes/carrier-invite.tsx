@@ -4,6 +4,7 @@ import type {
   CarrierInvitationInspect,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -51,7 +52,7 @@ function CarrierInvitePage() {
     ),
   );
   if (!token || inspect.status === 'failed') {
-    const known = inspect.status === 'failed' && !isFailure(inspect.error, 'unauthorized');
+    const known = inspect.status === 'failed' && !isFailure(inspect.error, ErrorCode.unauthorized);
     return (
       <AuthLayout title={t(($) => $.carriers.accept.title)}>
         <div className="flex flex-col gap-4">
@@ -109,7 +110,8 @@ function Invitation({
       await navigate({ to: '/c/$orgId/tenants', params: { orgId: carrierId }, replace: true });
     },
     onError: (e) => {
-      if (isFailure(e, 'unauthorized') && e.reason === 'sign_in_required') setNeedsSignIn(true);
+      if (isFailure(e, ErrorCode.unauthorized) && e.reason === 'sign_in_required')
+        setNeedsSignIn(true);
     },
   });
 
@@ -130,11 +132,11 @@ function Invitation({
         </div>
         {failure &&
         failure.reason !== 'sign_in_required' &&
-        failure.code !== 'validation_failed' ? (
+        failure.code !== ErrorCode.validation_failed ? (
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {failure.code === 'unauthorized'
+              {failure.code === ErrorCode.unauthorized
                 ? t(($) => $.carriers.accept.invalid)
                 : failure.reason === 'carrier_admin_required'
                   ? t(($) => $.carriers.accept.admin_required, { tenant: invitation.tenantName })

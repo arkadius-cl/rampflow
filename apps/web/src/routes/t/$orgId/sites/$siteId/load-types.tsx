@@ -1,3 +1,4 @@
+import { Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { guard } from '@/lib/access';
@@ -7,7 +8,7 @@ import { capacityQueries, siteQueries } from '@/modules/capacity/queries';
 // MD-05: load types and their duration rules of one site.
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId/load-types')({
-  beforeLoad: guard({ permission: 'booking.manage_resources' }),
+  beforeLoad: guard({ permission: Permission.booking.manage_resources }),
   loader: ({ context, params }) => {
     const { orgId, siteId } = params;
     const q = context.queryClient;

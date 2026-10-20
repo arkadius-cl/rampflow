@@ -6,9 +6,9 @@ import {
   resolveSetting,
   type SettingKey,
   type SettingLevels,
-  type SettingScope,
 } from '@rampflow/shared';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
+import { ErrorCode, SettingScope } from '@rampflow/shared/values';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { type SiteId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -30,10 +30,12 @@ const ALL_SETTINGS = catalog.flatMap((m) =>
 
 const rowOf = (target: SettingTarget) =>
   and(
-    target.scope === 'platform'
+    target.scope === SettingScope.platform
       ? isNull(settingValue.tenantId)
       : eq(settingValue.tenantId, target.tenantId),
-    target.scope === 'site' ? eq(settingValue.siteId, target.siteId) : isNull(settingValue.siteId),
+    target.scope === SettingScope.site
+      ? eq(settingValue.siteId, target.siteId)
+      : isNull(settingValue.siteId),
   );
 
 /** Stored levels per key for the target and everything it inherits from. */
@@ -42,13 +44,13 @@ async function levelsFor(tx: Tx, target: SettingTarget): Promise<Map<string, Set
     .select()
     .from(settingValue)
     .where(
-      target.scope === 'platform'
+      target.scope === SettingScope.platform
         ? isNull(settingValue.tenantId)
         : or(
             isNull(settingValue.tenantId),
             and(
               eq(settingValue.tenantId, target.tenantId),
-              target.scope === 'site'
+              target.scope === SettingScope.site
                 ? or(isNull(settingValue.siteId), eq(settingValue.siteId, target.siteId))
                 : isNull(settingValue.siteId),
             ),
@@ -57,7 +59,11 @@ async function levelsFor(tx: Tx, target: SettingTarget): Promise<Map<string, Set
   const levels = new Map<string, { -readonly [S in SettingScope]?: unknown }>();
   for (const row of rows) {
     const scope: SettingScope =
-      row.tenantId === null ? 'platform' : row.siteId === null ? 'tenant' : 'site';
+      row.tenantId === null
+        ? SettingScope.platform
+        : row.siteId === null
+          ? SettingScope.tenant
+          : SettingScope.site;
     const entry = levels.get(row.key) ?? {};
     entry[scope] = row.value.v;
     levels.set(row.key, entry);
@@ -89,7 +95,11 @@ export async function settingsView(
       inherited: resolveSetting(catalog, key, above),
     });
   }
-  return { scope: target.scope, siteId: target.scope === 'site' ? target.siteId : null, items };
+  return {
+    scope: target.scope,
+    siteId: target.scope === SettingScope.site ? target.siteId : null,
+    items,
+  };
 }
 
 function writeError(
@@ -97,18 +107,20 @@ function writeError(
 ): ApiError {
   switch (error.code) {
     case 'unknown_key':
-      return new ApiError('bad_request', `Unknown setting ${error.key}`, { reason: 'unknown_key' });
+      return new ApiError(ErrorCode.bad_request, `Unknown setting ${error.key}`, {
+        reason: 'unknown_key',
+      });
     case 'scope_not_allowed':
-      return new ApiError('bad_request', `${error.key} has no ${error.scope} level`, {
+      return new ApiError(ErrorCode.bad_request, `${error.key} has no ${error.scope} level`, {
         reason: 'scope_not_allowed',
         allowed: error.allowed,
       });
     case 'entitlement_required':
-      return new ApiError('entitlement_required', `${error.entitlement} is off`, {
+      return new ApiError(ErrorCode.entitlement_required, `${error.entitlement} is off`, {
         key: error.entitlement,
       });
     case 'invalid_value':
-      return new ApiError('validation_failed', 'Invalid json', {
+      return new ApiError(ErrorCode.validation_failed, 'Invalid json', {
         issues: error.issues.map((i) => ({ ...i, path: ['value', ...i.path] })),
       });
   }
@@ -140,8 +152,8 @@ export async function writeSetting(
   await tx
     .insert(settingValue)
     .values({
-      tenantId: target.scope === 'platform' ? null : target.tenantId,
-      siteId: target.scope === 'site' ? target.siteId : null,
+      tenantId: target.scope === SettingScope.platform ? null : target.tenantId,
+      siteId: target.scope === SettingScope.site ? target.siteId : null,
       key,
       ...set,
     })

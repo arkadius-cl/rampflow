@@ -146,7 +146,7 @@ export const booking = pgTable(
       sql`${t.dockId} is not null or ${t.status} not in (${inStatuses(DOCK_HOLDING_STATUSES)})`,
     ),
     ...carrierOwnedPolicies({ ...t, bookingId: t.id }, { update: true, driver: true }),
-    lockOnly('driver', bookingIs(t.id)),
+    lockOnly(ActorParty.driver, bookingIs(t.id)),
   ],
 );
 
@@ -179,6 +179,6 @@ export const bookingEvent = pgTable(
     index('booking_event_carrier_id_idx').on(t.carrierId),
     check('booking_event_actor_party_check', oneOf(t.actorParty, values(ActorParty))),
     ...carrierOwnedPolicies(t, { update: false, driver: true }),
-    allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(ActorParty.driver, 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
   ],
 );

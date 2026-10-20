@@ -1,4 +1,5 @@
 import type { ContentBody } from '@rampflow/shared/modules/safety/api.authoring';
+import { PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import {
@@ -25,12 +26,12 @@ export const QUIZ: ContentBody['questions'] = [1, 2, 3].map((n) => ({
 export const contentFixture = (overrides: Partial<ContentBody> = {}): ContentBody => ({
   title: 'Site rules',
   blocks: [
-    { kind: 'pictogram', id: 'hi_vis_vest' },
+    { kind: 'pictogram', id: PictogramId.hi_vis_vest },
     { kind: 'text', text: 'Wear a vest.' },
   ],
   questions: QUIZ,
   statement: 'I will follow the rules.',
-  translation: 'source',
+  translation: TranslationState.source,
   ...overrides,
 });
 

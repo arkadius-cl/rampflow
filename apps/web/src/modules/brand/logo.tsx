@@ -3,6 +3,7 @@ import {
   LOGO_MAX_BYTES,
   type LogoResponse,
 } from '@rampflow/shared/modules/brand/api';
+import { ErrorCode } from '@rampflow/shared/values';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, TrashIcon, UploadIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
@@ -65,7 +66,7 @@ export function LogoScreen({ orgId }: { orgId: string }) {
       toast.success(t(($) => $.logo.uploaded));
     },
     onError: (e) => {
-      if (!isFailure(e, 'validation_failed')) return;
+      if (!isFailure(e, ErrorCode.validation_failed)) return;
       setProblem(e.issues.some((i) => i.code === 'too_big') ? 'size' : 'type');
     },
   });

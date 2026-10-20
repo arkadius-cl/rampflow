@@ -1,9 +1,10 @@
+import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 
 const base = {
-  method: 'POST',
-  as: 'tenant_admin',
-  permission: 'privacy.manage_requests',
+  method: HttpMethod.POST,
+  as: Role.tenant_admin,
+  permission: Permission.privacy.manage_requests,
   // The privacy module has no entitlement: GDPR duties hold in every package.
   entitlement: null,
   params: (w) => ({ orgId: w.A.tenantId }),

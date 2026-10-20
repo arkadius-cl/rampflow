@@ -1,5 +1,6 @@
 import type { OfferedStart } from '@rampflow/shared/modules/booking/api.capacity';
 import type { LocalDate } from '@rampflow/shared/time';
+import { StaffLocale } from '@rampflow/shared/values';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,7 @@ export function PortalSlotPicker({
   const { t } = useTranslation('booking');
   const locale = useLocale();
   const siteTime = useSiteTime();
-  const tag = locale === 'en' ? 'en-GB' : locale;
+  const tag = locale === StaffLocale.en ? 'en-GB' : locale;
   const weekday = new Intl.DateTimeFormat(tag, { weekday: 'short', timeZone: 'UTC' });
   const dayNumber = new Intl.DateTimeFormat(tag, { day: 'numeric', timeZone: 'UTC' });
   const longDay = new Intl.DateTimeFormat(tag, { dateStyle: 'full', timeZone: 'UTC' });

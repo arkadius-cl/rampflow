@@ -4,6 +4,7 @@ import type {
   BookingView,
 } from '@rampflow/shared/modules/booking/api.staff';
 import type { TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Permission } from '@rampflow/shared/values';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import * as z from 'zod';
 import type { BookingId, TenantId, UserId } from '../../../db/ids.ts';
@@ -70,7 +71,7 @@ export async function loadBookingView(
     .innerJoin(loadType, eq(loadType.id, booking.loadTypeId))
     .leftJoin(dock, eq(dock.id, booking.dockId))
     .where(and(eq(booking.id, bookingId), eq(booking.tenantId, tenantId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const { b } = row;
   const { overCapacity: _, ...summary } = bookingSummary(b, false);
   const link = await activeDriverLink(tx, b.id);
@@ -116,7 +117,7 @@ export function decodeCursor(cursor: string): { at: Date; id: string } {
     const c = Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
     return { at: new Date(c.t), id: c.id };
   } catch {
-    throw new ApiError('validation_failed', 'Invalid cursor', {
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
       issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
     });
   }
@@ -128,7 +129,7 @@ export async function requireBooking(tx: Tx, tenantId: TenantId, bookingId: Book
     .select({ id: booking.id })
     .from(booking)
     .where(and(eq(booking.id, bookingId), eq(booking.tenantId, tenantId)));
-  if (!visible) throw new ApiError('not_found');
+  if (!visible) throw new ApiError(ErrorCode.not_found);
 }
 
 /**
@@ -159,7 +160,7 @@ export async function loadBookingEvents(
     .limit(page.limit + 1);
   const more = rows.length > page.limit;
   const items = rows.slice(0, page.limit);
-  const withActors = access.permissions.has('booking.view_actors');
+  const withActors = access.permissions.has(Permission.booking.view_actors);
   const names = withActors
     ? await userDisplay(
         tx,

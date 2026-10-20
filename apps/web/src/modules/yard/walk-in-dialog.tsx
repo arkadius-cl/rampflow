@@ -1,8 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LOAD_UNIT_TYPES, phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
 import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import { TURN_AWAY_REASONS } from '@rampflow/shared/modules/booking/lifecycle';
+import { TurnAwayReason } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { WalkInBody } from '@rampflow/shared/modules/yard/api';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { LogInIcon, OctagonXIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -70,7 +74,11 @@ function bodyOf(f: WalkInFormOutput, siteId: string, clientRequestId: string): W
     plateSeen: f.plateSeen,
   };
   if (f.outcome === 'turn_away') {
-    return { ...base, outcome: 'turn_away', reason: f.reason === '' ? 'other' : f.reason };
+    return {
+      ...base,
+      outcome: 'turn_away',
+      reason: f.reason === '' ? TurnAwayReason.other : f.reason,
+    };
   }
   return {
     ...base,
@@ -133,10 +141,10 @@ export function WalkInDialog({
       loadTypeId: '',
       plateSeen: '',
       reason: '',
-      referenceType: 'delivery_note',
+      referenceType: ReferenceType.delivery_note,
       referenceValue: '',
       counterpartyName: '',
-      loadUnitType: 'eur_pallet',
+      loadUnitType: LoadUnitType.eur_pallet,
       quantity: '',
       driverName: '',
       driverPhone: '',
@@ -147,11 +155,11 @@ export function WalkInDialog({
       toast.success(
         t(($) => $.gate.walk_in.done, { carrier: 'name' in body.carrier ? body.carrier.name : '' }),
       );
-      if (result.safety === 'missing') setSafetyMissing(true);
+      if (result.safety === SafetyStatus.missing) setSafetyMissing(true);
       else onDone();
     },
     onError: (e) => {
-      if (!(e instanceof ApiFailure) || e.code !== 'validation_failed') return;
+      if (!(e instanceof ApiFailure) || e.code !== ErrorCode.validation_failed) return;
       for (const issue of e.issues) {
         const key = Object.keys(SERVER_FIELDS).find((k) => issue.path.join('.').startsWith(k));
         if (key) form.setError(SERVER_FIELDS[key] as Path<WalkInFormInput>, { type: issue.code });

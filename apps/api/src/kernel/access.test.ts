@@ -1,4 +1,14 @@
 import { randomUUID } from 'node:crypto';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import {
+  Feature,
+  Limit,
+  Module,
+  PackageId,
+  Permission,
+  Setting,
+  TenantRole,
+} from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -24,14 +34,14 @@ import { tenantScope } from './scopes.ts';
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'start', B: 'pro' } });
+  w = await world({ packages: { A: PackageId.start, B: PackageId.pro } });
 });
 
 const tenantOf = (
   side: World['A'],
-  userKey: 'dispatcher' | 'tenant_admin' = 'dispatcher',
+  userKey: 'dispatcher' | 'tenant_admin' = TenantRole.dispatcher,
 ): Scope => ({
-  party: 'tenant',
+  party: ActorParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
   actor: { kind: 'user', userId: side.users[userKey].id, role: userKey },
@@ -48,14 +58,17 @@ const override = (tenantId: World['A']['tenantId'], key: string, value: unknown)
 
 function gatedApp() {
   const yard = new Hono<AppEnv>()
-    .get('/gate', requirePermission('yard.gate'), (c) => c.json({ ok: true }))
-    .get('/docks', requirePermission('yard.call'), requireEntitlement('yard.call_to_dock'), (c) =>
-      c.json({ ok: true }),
+    .get('/gate', requirePermission(Permission.yard.gate), (c) => c.json({ ok: true }))
+    .get(
+      '/docks',
+      requirePermission(Permission.yard.call),
+      requireEntitlement(Feature.yard.call_to_dock),
+      (c) => c.json({ ok: true }),
     );
   const tenant = new Hono<AppEnv>()
     .use(scoped(tenantScope))
-    .route('/yard', withModule('yard', yard))
-    .get('/report', requireModule('report'), (c) => c.json({ ok: true }));
+    .route('/yard', withModule(Module.yard, yard))
+    .get('/report', requireModule(Module.report), (c) => c.json({ ok: true }));
   return new Hono<AppEnv>()
     .use(async (c, next) => {
       c.set('clock', systemClock);
@@ -134,7 +147,7 @@ describe('loadAccess', () => {
     expect(
       await withScope(tenantOf(w.B), (tx) =>
         loadAccess(tx, tenantOf(w.B), systemClock).then((a) =>
-          a.setting('privacy.notice_url', null),
+          a.setting(Setting.privacy.notice_url, null),
         ),
       ),
     ).toEqual({ value: null, source: 'tenant' });
@@ -162,8 +175,8 @@ describe('loadAccess', () => {
     const resolved = await withScope(tenantOf(w.B), async (tx) => {
       const access = await loadAccess(tx, tenantOf(w.B), systemClock);
       return [
-        await access.setting('yard.grace_minutes', siteId),
-        await access.setting('yard.grace_minutes', w.B.sites[0].id),
+        await access.setting(Setting.yard.grace_minutes, siteId),
+        await access.setting(Setting.yard.grace_minutes, w.B.sites[0].id),
       ];
     });
     expect(resolved).toEqual([
@@ -182,17 +195,17 @@ describe('withinLimit', () => {
              + (select count(*) from invitation where org_id = ${tenantId} and accepted_at is null)::int as n`);
       return rows[0]?.n ?? 0;
     };
-    const before = await withScope(tenantOf(w.A, 'tenant_admin'), countStaff);
+    const before = await withScope(tenantOf(w.A, TenantRole.tenant_admin), countStaff);
     await override(tenantId, 'core.max_internal_users', before + 1);
     const invite = () =>
-      withScope(tenantOf(w.A, 'tenant_admin'), async (tx) => {
-        const access = await loadAccess(tx, tenantOf(w.A, 'tenant_admin'), systemClock);
+      withScope(tenantOf(w.A, TenantRole.tenant_admin), async (tx) => {
+        const access = await loadAccess(tx, tenantOf(w.A, TenantRole.tenant_admin), systemClock);
         if (!access.entitlements) throw new Error('no entitlements');
         await withinLimit(
           tx,
           tenantId,
           access.entitlements,
-          'core.max_internal_users',
+          Limit.core.max_internal_users,
           async (inner) => {
             const n = await countStaff(inner);
             await new Promise((r) => setTimeout(r, 100));
@@ -215,7 +228,7 @@ describe('withinLimit', () => {
       code: 'limit_reached',
       details: { key: 'core.max_internal_users', limit: before + 1 },
     });
-    expect(await withScope(tenantOf(w.A, 'tenant_admin'), countStaff)).toBe(before + 1);
+    expect(await withScope(tenantOf(w.A, TenantRole.tenant_admin), countStaff)).toBe(before + 1);
     await ownerDb()
       .delete(entitlementOverride)
       .where(eq(entitlementOverride.key, 'core.max_internal_users'));

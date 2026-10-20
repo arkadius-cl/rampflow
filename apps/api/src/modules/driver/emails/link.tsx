@@ -1,4 +1,4 @@
-import type { DriverLocale } from '@rampflow/shared';
+import { DriverLocale } from '@rampflow/shared/values';
 import { Button, Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
 import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
@@ -51,7 +51,7 @@ export const render: EmailTemplateModule<DriverLinkPayload>['render'] = (p, t) =
 });
 
 export const example: DriverLinkPayload = {
-  locale: 'pl',
+  locale: DriverLocale.pl,
   driverAccessId: '00000000-0000-0000-0000-000000000000',
   code: 'K7M2Q9XA',
   site: {

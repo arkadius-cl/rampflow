@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { StaffLocale } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { CarrierRole, ErrorCode } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import type { CarrierId, MembershipId, TenantId, UserId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -18,7 +20,10 @@ import { linkCarrier } from './links.ts';
 
 /** The token holder proved access to `email`, so the answer names it for the sign-in form. */
 const signInRequired = (email: string) =>
-  new ApiError('unauthorized', 'Sign in to continue', { reason: 'sign_in_required', email });
+  new ApiError(ErrorCode.unauthorized, 'Sign in to continue', {
+    reason: 'sign_in_required',
+    email,
+  });
 
 export interface NewAccount {
   name: string;
@@ -89,7 +94,7 @@ export async function carrierOfUser(
   const administered = memberships.find((m) => m.role === 'carrier_admin');
   if (administered) return administered.orgId as CarrierId;
   if (memberships.length > 0) {
-    throw new ApiError('forbidden', 'Only a carrier admin can link the company', {
+    throw new ApiError(ErrorCode.forbidden, 'Only a carrier admin can link the company', {
       reason: 'carrier_admin_required',
     });
   }
@@ -100,7 +105,7 @@ export async function carrierOfUser(
     .values({ id: carrierId, kind: 'carrier', name: company.name, country: company.country });
   await asScope(
     tx,
-    { party: 'carrier', carrierId, userId, role: 'carrier_admin' },
+    { party: ActorParty.carrier, carrierId, userId, role: CarrierRole.carrier_admin },
     async (inner) => {
       await inner.insert(membership).values({
         id: randomUUID() as MembershipId,
@@ -122,7 +127,7 @@ export function linkAsTenant(
 ): Promise<void> {
   return asScope(
     tx,
-    { party: 'tenant', tenantId: o.tenantId, siteIds: 'all', actor: systemActor(job) },
+    { party: ActorParty.tenant, tenantId: o.tenantId, siteIds: 'all', actor: systemActor(job) },
     (inner) => linkCarrier(inner, o),
   );
 }
@@ -130,7 +135,7 @@ export function linkAsTenant(
 type RedeemJob = 'carrier_invitation' | 'registration';
 
 const asTenant = <T>(tx: Tx, job: RedeemJob, tenantId: TenantId, fn: (inner: Tx) => Promise<T>) =>
-  asScope(tx, { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) }, fn);
+  asScope(tx, { party: ActorParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) }, fn);
 
 /** The tenant's name, read as the tenant: the token party sees no org. */
 export async function tenantName(tx: Tx, job: RedeemJob, tenantId: TenantId): Promise<string> {

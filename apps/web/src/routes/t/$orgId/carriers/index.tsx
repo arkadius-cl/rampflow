@@ -1,3 +1,4 @@
+import { Feature, Permission } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +21,7 @@ const CarriersSearch = z.object({ tab: z.enum(TABS).optional().catch(undefined) 
 
 export const Route = createFileRoute('/t/$orgId/carriers/')({
   validateSearch: CarriersSearch,
-  beforeLoad: guard({ permission: 'booking.manage_carriers' }),
+  beforeLoad: guard({ permission: Permission.booking.manage_carriers }),
   component: CarriersPage,
 });
 
@@ -39,7 +40,7 @@ function CarriersPage() {
   const { orgId } = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
   const { has } = useAccess();
-  const publicLinks = has('booking.public_link');
+  const publicLinks = has(Feature.booking.public_link);
   const requested = Route.useSearch().tab ?? 'linked';
   const tab: Tab = publicLinks ? requested : 'linked';
   return (
@@ -47,7 +48,7 @@ function CarriersPage() {
       <PageHeader
         title={t(($) => $.carriers.title)}
         description={t(($) => $.carriers.description)}
-        actions={has('booking.carrier_portal') ? <InviteCarrierDialog orgId={orgId} /> : null}
+        actions={has(Feature.booking.carrier_portal) ? <InviteCarrierDialog orgId={orgId} /> : null}
       />
       <Tabs
         value={tab}

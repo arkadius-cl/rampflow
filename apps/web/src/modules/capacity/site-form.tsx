@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { STAFF_LOCALES } from '@rampflow/shared';
 import { CreateSite, type SiteView } from '@rampflow/shared/modules/core/api.sites';
+import { StaffLocale } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -39,7 +40,7 @@ const EMPTY: SiteValues = {
   country: 'DE',
   subdivision: null,
   timeZone: 'Europe/Berlin',
-  defaultLocale: 'de',
+  defaultLocale: StaffLocale.de,
   phone: null,
 };
 

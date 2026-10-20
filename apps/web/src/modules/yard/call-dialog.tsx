@@ -1,3 +1,5 @@
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
 import type { YardDock, YardTruck } from '@rampflow/shared/modules/yard/api';
 import { useQuery } from '@tanstack/react-query';
 import { BellRingIcon, PhoneIcon, TriangleAlertIcon } from 'lucide-react';
@@ -19,7 +21,7 @@ import { docksQuery, useYardMutation, yardApi } from './queries';
 // (a single-dock booking preselects its dock); other active docks work with a warning.
 
 const blocked = (d: YardDock, truck: YardTruck) =>
-  d.status !== 'active' || (d.occupant !== null && d.occupant.id !== truck.id);
+  d.status !== DockStatus.active || (d.occupant !== null && d.occupant.id !== truck.id);
 
 export function CallDialog({
   orgId,
@@ -63,7 +65,7 @@ export function CallDialog({
           {t(($) => $.docks.call.title, { carrier: truck.carrierName })}
         </DialogTitle>
         <DialogDescription>
-          {truck.resource.kind === 'pool'
+          {truck.resource.kind === ResourceKind.pool
             ? t(($) => $.docks.call.pool, { resource: truck.resource.name })
             : t(($) => $.docks.call.single, { resource: truck.resource.name })}{' '}
           {truck.plate ? <span className="font-mono">{truck.plate}</span> : null}
@@ -100,7 +102,7 @@ export function CallDialog({
               >
                 {d.occupant && d.occupant.id !== truck.id
                   ? d.occupant.carrierName
-                  : d.status === 'maintenance'
+                  : d.status === DockStatus.maintenance
                     ? t(($) => $.docks.dock.maintenance)
                     : member(d)
                       ? t(($) => $.docks.call.suggested)

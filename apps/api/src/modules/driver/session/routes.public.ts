@@ -1,4 +1,6 @@
+import { RateLimitBucket } from '@rampflow/shared/modules/core/values';
 import { ExchangeBody } from '@rampflow/shared/modules/driver/api';
+import { ErrorCode, StoryId } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { noBody, op } from '../../../kernel/describe.ts';
@@ -18,12 +20,12 @@ export const publicApi = new Hono<AppEnv>().post(
   '/',
   op({
     id: 'driver.session.createSession',
-    stories: ['DR-01'],
+    stories: [StoryId.DR_01],
     description:
       "`{ token }`; 204 and `rf_driver=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/driver; Max-Age=<seconds to the link's expiry>`; unknown, expired and revoked tokens answer the same 401 `unauthorized`; every call counts against `driver_exchange` (10 per minute per IP, 429 `rate_limited`); sets `driver_access.last_used_at`",
     responses: { 204: noBody },
   }),
-  rateLimit('driver_exchange'),
+  rateLimit(RateLimitBucket.driver_exchange),
   validate('json', ExchangeBody),
   async (c) => {
     const { token } = c.req.valid('json');
@@ -31,7 +33,7 @@ export const publicApi = new Hono<AppEnv>().post(
     const access = await withScope(tokenScope(token, null), (tx) =>
       exchangeDriverToken(tx, token, now),
     );
-    if (!access) throw new ApiError('unauthorized');
+    if (!access) throw new ApiError(ErrorCode.unauthorized);
     setDriverCookie(c, token, access.expiresAt, now);
     return c.body(null, 204);
   },

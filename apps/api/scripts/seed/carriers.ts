@@ -1,3 +1,4 @@
+import { OrgKind } from '@rampflow/shared/values';
 import { and, asc, eq, ilike, isNull } from 'drizzle-orm';
 import {
   type CarrierId,
@@ -26,7 +27,7 @@ export const BALTIC = 'Baltic Freight UAB';
 export const ACME_HAMBURG_SLUG = 'acmehambrg';
 
 async function ensureCarrier(ctx: SeedContext, name: string, country: string) {
-  const found = await findOrg(ctx.db, 'carrier', name);
+  const found = await findOrg(ctx.db, OrgKind.carrier, name);
   if (found) return found as CarrierId;
   const [row] = await ctx.db
     .insert(org)
@@ -89,8 +90,8 @@ async function hamburgLink(ctx: SeedContext, tenantId: TenantId) {
 }
 
 export async function seed(ctx: SeedContext): Promise<void> {
-  const acme = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
-  const transPol = await findOrg(ctx.db, 'carrier', TRANS_POL);
+  const acme = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
+  const transPol = await findOrg(ctx.db, OrgKind.carrier, TRANS_POL);
   if (!acme || !transPol) throw new Error('run the core seed first');
   await linkActive(ctx, acme, transPol as CarrierId);
   await linkActive(ctx, acme, await ensureCarrier(ctx, BALTIC, 'LT'));

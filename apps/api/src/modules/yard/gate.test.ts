@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { BookingStatus, OnSiteStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
 import type {
   CandidatesView,
   DocksView,
@@ -8,6 +9,7 @@ import type {
   WalkInResult,
   YardTruck,
 } from '@rampflow/shared/modules/yard/api';
+import { PackageId } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
@@ -59,7 +61,7 @@ describe('YD-01 expected trucks and search', () => {
     // A 23:30 slot of Sunday, marked no-show at 00:30 on Monday: it belongs to Monday's gate.
     const noShow = await seedBooking(w.A, {
       startsAt: new Date('2026-11-01T22:30:00Z'),
-      status: 'no_show',
+      status: BookingStatus.no_show,
       noShowAt: new Date('2026-11-01T23:30:00Z'),
     });
     ids = { early: early.id, later: later.id, otherDay: otherDay.id, noShow: noShow.id };
@@ -144,10 +146,10 @@ describe('YD-02 check in', () => {
     new Date(new Date(iso).getTime() + m * 60_000).toISOString();
 
   it.each([
-    [-31, 'early'],
-    [-30, 'on_time'],
-    [15, 'on_time'],
-    [16, 'late'],
+    [-31, Punctuality.early],
+    [-30, Punctuality.on_time],
+    [15, Punctuality.on_time],
+    [16, Punctuality.late],
   ] as const)('records punctuality at %i minutes as %s (tolerance 30, grace 15)', async (m, p) => {
     const b = await fresh();
     const truck = await json<YardTruck>(
@@ -181,7 +183,7 @@ describe('YD-02 check in', () => {
     const seed = () =>
       seedBooking(w.A, {
         startsAt: new Date('2026-10-24T21:30:00Z'),
-        status: 'no_show',
+        status: BookingStatus.no_show,
         noShowAt: new Date('2026-10-24T22:30:00Z'),
       });
     const sameDay = await seed();
@@ -200,7 +202,7 @@ describe('YD-02 safety at the gate', () => {
   let start: World;
   beforeAll(async () => {
     pro = await world();
-    start = await world({ packages: { A: 'start' } });
+    start = await world({ packages: { A: PackageId.start } });
     await seedBriefing(ownerDb(), pro.A);
     await seedBriefing(ownerDb(), start.A);
   });
@@ -364,7 +366,7 @@ describe('YD-04 on site and YD-05 check out', () => {
   it.each(['checked_in', 'called', 'at_dock', 'loading'] as const)(
     'departs from %s only with a reason and shortens the driver link',
     async (status) => {
-      const holds = status !== 'checked_in';
+      const holds = status !== OnSiteStatus.checked_in;
       const b = await seedBooking(w.A, {
         startsAt: new Date(MON_0900),
         status,
@@ -384,7 +386,7 @@ describe('YD-04 on site and YD-05 check out', () => {
   );
 
   it('departs from done without a reason; the link expires driver_link_hours later', async () => {
-    const b = await seedBooking(w.A, { startsAt: new Date(MON_0900), status: 'done' });
+    const b = await seedBooking(w.A, { startsAt: new Date(MON_0900), status: BookingStatus.done });
     const truck = await json<YardTruck>(
       await at('2026-11-02T10:00:00.000Z', w.A.users.gate_operator).post(
         `${yard(w.A)}/bookings/${b.id}/depart`,

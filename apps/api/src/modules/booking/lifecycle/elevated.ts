@@ -1,3 +1,5 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { CarrierRole, SystemActorName } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne, or, type SQL } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import { oneOf } from '../../../db/ids.ts';
@@ -23,7 +25,7 @@ export interface Recipient {
 export function carrierAdmins(tx: Tx, carrierId: CarrierId, asUser: UserId): Promise<Recipient[]> {
   return asScope(
     tx,
-    { party: 'carrier', carrierId, userId: asUser, role: 'carrier_admin' },
+    { party: ActorParty.carrier, carrierId, userId: asUser, role: CarrierRole.carrier_admin },
     (inner) =>
       inner
         .select({ email: appUser.email, locale: appUser.locale })
@@ -46,11 +48,14 @@ export async function carrierNames(
   ids: readonly CarrierId[],
 ): Promise<Map<CarrierId, string>> {
   if (ids.length === 0) return new Map();
-  const rows = await asScope(tx, { party: 'system', job: 'booking_carrier_names' }, (inner) =>
-    inner
-      .select({ id: org.id, name: org.name })
-      .from(org)
-      .where(and(inArray(org.id, [...ids]), eq(org.kind, 'carrier'))),
+  const rows = await asScope(
+    tx,
+    { party: ActorParty.system, job: SystemActorName.booking_carrier_names },
+    (inner) =>
+      inner
+        .select({ id: org.id, name: org.name })
+        .from(org)
+        .where(and(inArray(org.id, [...ids]), eq(org.kind, 'carrier'))),
   );
   return new Map(rows.map((r) => [r.id as CarrierId, r.name]));
 }
@@ -77,10 +82,10 @@ export async function referenceTaken(
   const rows = await asScope(
     tx,
     {
-      party: 'tenant',
+      party: ActorParty.tenant,
       tenantId: where.tenantId,
       siteIds: 'all',
-      actor: { kind: 'system', job: 'avis_unique_references' },
+      actor: { kind: 'system', job: SystemActorName.avis_unique_references },
     },
     (inner) =>
       inner

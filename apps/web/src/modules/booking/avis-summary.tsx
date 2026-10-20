@@ -1,4 +1,5 @@
 import type { AvisView } from '@rampflow/shared/modules/avis/avis';
+import { Direction } from '@rampflow/shared/modules/booking/values';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/lib/i18n';
 
@@ -34,7 +35,7 @@ export function AvisSummary({
       )),
     ],
     [
-      direction === 'inbound'
+      direction === Direction.inbound
         ? tAvis(($) => $.avis.field.counterpartyInbound)
         : tAvis(($) => $.avis.field.counterpartyOutbound),
       avis.counterpartyName,

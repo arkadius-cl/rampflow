@@ -6,6 +6,7 @@ import {
   type VisitPage,
   VisitQuery,
 } from '@rampflow/shared/modules/report/api';
+import { Feature, Permission, Setting, StoryId } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
 import { file, op, type } from '../../../kernel/describe.ts';
@@ -16,8 +17,8 @@ import { tenantRequest } from '../../core/sites/tenant.ts';
 import { kpiCsv, visitsCsv } from './csv.ts';
 import { allVisits, kpiReport, type ReportContext, visitPage } from './kpis.ts';
 
-const view = requirePermission('report.view');
-const exportCsv = requireEntitlement('report.export');
+const view = requirePermission(Permission.report.view);
+const exportCsv = requireEntitlement(Feature.report.export);
 
 function reportContext(c: Context<AppEnv>): ReportContext {
   return {
@@ -36,7 +37,7 @@ async function csvLocale(c: Context<AppEnv>): Promise<StaffLocale> {
   const { userId } = tenantRequest(c);
   const user = userId ? (await userDisplay(c.var.db, [userId])).get(userId) : undefined;
   if (isStaffLocale(user?.locale)) return user.locale;
-  return (await c.var.access.setting('i18n.default_locale', null)).value;
+  return (await c.var.access.setting(Setting.i18n.default_locale, null)).value;
 }
 
 const csvHeaders = (name: string) => ({
@@ -50,7 +51,7 @@ export const tenant = new Hono<AppEnv>()
     '/kpis',
     op({
       id: 'report.kpi.getKpis',
-      stories: ['RP-01'],
+      stories: [StoryId.RP_01],
       description: '`?siteId&from&to&resourceId?&carrierId?`; dates are site-local',
       responses: { 200: type<KpiReport>() },
     }),
@@ -64,7 +65,7 @@ export const tenant = new Hono<AppEnv>()
     '/kpis.csv',
     op({
       id: 'report.kpi.exportKpis',
-      stories: ['RP-02'],
+      stories: [StoryId.RP_02],
       description: 'The KPI report of `GET /reports/kpis` as CSV, with the same filter.',
       responses: { 200: file('text/csv') },
     }),
@@ -87,7 +88,7 @@ export const tenant = new Hono<AppEnv>()
     '/visits',
     op({
       id: 'report.kpi.listVisits',
-      stories: ['RP-02'],
+      stories: [StoryId.RP_02],
       description: 'paginated visit list with all timestamps',
       responses: { 200: type<VisitPage>() },
     }),
@@ -101,7 +102,7 @@ export const tenant = new Hono<AppEnv>()
     '/visits.csv',
     op({
       id: 'report.kpi.exportVisits',
-      stories: ['RP-02'],
+      stories: [StoryId.RP_02],
       description:
         'Every visit in the filter as CSV, with the timestamps in the time zone of the site.',
       responses: { 200: file('text/csv') },

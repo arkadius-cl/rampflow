@@ -1,3 +1,4 @@
+import { HttpMethod, Limit, Module, OrgKind, Permission, StoryId } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { type } from '../../src/kernel/describe.ts';
@@ -9,20 +10,20 @@ const checkIn: Operation = {
   file: 'modules/yard/routes.tenant.ts',
   section: 'Yard',
   endpoint: {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/check-in',
-    party: 'tenant',
+    party: OrgKind.tenant,
     meta: {
       id: 'yard.gate.checkIn',
-      stories: ['YD-02'],
+      stories: [StoryId.YD_02],
       description: '`{ plateSeen? }`; 409 `safety_missing` | under enforcement',
-      limits: ['core.max_sites'],
+      limits: [Limit.core.max_sites],
       responses: { 200: type<unknown>() },
     },
     validators: {},
     guards: [
-      { kind: 'module', id: 'yard' },
-      { kind: 'permission', key: 'yard.gate' },
+      { kind: 'module', id: Module.yard },
+      { kind: 'permission', key: Permission.yard.gate },
     ],
   },
 };
@@ -31,7 +32,7 @@ const inspect: Operation = {
   file: 'modules/core/invitations/routes.public.ts',
   section: 'Auth, me and invitations',
   endpoint: {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/invitations/inspect',
     party: 'public',
     meta: { id: 'core.invitations.inspect', stories: [], description: 'Inspect.', responses: {} },

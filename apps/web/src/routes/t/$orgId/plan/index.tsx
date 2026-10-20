@@ -5,6 +5,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -62,7 +63,7 @@ export type PlanSearch = z.infer<typeof PlanSearch>;
 
 export const Route = createFileRoute('/t/$orgId/plan/')({
   validateSearch: (search) => PlanSearch.parse(search),
-  beforeLoad: guard({ permission: 'booking.view' }),
+  beforeLoad: guard({ permission: Permission.booking.view }),
   component: PlanPage,
 });
 
@@ -151,7 +152,7 @@ function PlanPage() {
         </ToggleGroup>
         <div className="ml-auto flex items-center gap-2">
           <Legend />
-          {access.can('booking.walk_in') && access.can('yard.gate') ? (
+          {access.can(Permission.booking.walk_in) && access.can(Permission.yard.gate) ? (
             <a
               href={`/t/${orgId}/gate?site=${site.id}&walkin=1`}
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
@@ -160,7 +161,7 @@ function PlanPage() {
               {t(($) => $.plan.toolbar.walk_in)}
             </a>
           ) : null}
-          {access.can('booking.staff_book') ? (
+          {access.can(Permission.booking.staff_book) ? (
             <Button size="sm" onClick={() => set({ new: 1 })}>
               <PlusIcon />
               {t(($) => $.plan.toolbar.new)}
@@ -202,7 +203,7 @@ function PlanPage() {
         ) : null}
       </div>
 
-      {access.can('booking.staff_book') ? (
+      {access.can(Permission.booking.staff_book) ? (
         <BookingSheet
           orgId={orgId}
           siteId={site.id}

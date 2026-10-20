@@ -1,4 +1,6 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { VisibilityState } from '@rampflow/shared/values';
 import { useCallback, useEffect, useReducer } from 'react';
 import { ApiFailure, api, NetworkFailure } from './api';
 
@@ -54,21 +56,21 @@ export type HomeScreen = 'booking' | 'waiting' | 'called' | 'done' | 'closed';
 /** DR-03: the screen for a booking status. */
 export function homeScreen(status: DriverBookingView['booking']['status']): HomeScreen {
   switch (status) {
-    case 'requested':
-    case 'confirmed':
+    case BookingStatus.requested:
+    case BookingStatus.confirmed:
       return 'booking';
-    case 'checked_in':
+    case BookingStatus.checked_in:
       return 'waiting';
-    case 'called':
-    case 'at_dock':
-    case 'loading':
+    case BookingStatus.called:
+    case BookingStatus.at_dock:
+    case BookingStatus.loading:
       return 'called';
-    case 'done':
+    case BookingStatus.done:
       return 'done';
-    case 'departed':
-    case 'cancelled':
-    case 'no_show':
-    case 'turned_away':
+    case BookingStatus.departed:
+    case BookingStatus.cancelled:
+    case BookingStatus.no_show:
+    case BookingStatus.turned_away:
       return 'closed';
   }
 }
@@ -127,7 +129,7 @@ export function useDriverSession(booted: Promise<Event>) {
   useEffect(() => {
     if (!polling) return;
     const tick = () => {
-      if (document.visibilityState === 'visible') void poll();
+      if (document.visibilityState === VisibilityState.visible) void poll();
     };
     const timer = window.setInterval(tick, POLL_MS);
     document.addEventListener('visibilitychange', tick);

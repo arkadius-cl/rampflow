@@ -1,3 +1,4 @@
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { sql } from 'drizzle-orm';
 import { index, integer, jsonb, pgPolicy, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { citext, createdAt, instant, primaryId, type TenantId } from '../../db/ids.ts';
@@ -33,8 +34,8 @@ export const outboxMessage = pgTable(
       for: 'insert',
       withCheck: sql`(select app.party()) is not null and (${t.tenantId} is null or ${t.tenantId} = (select app.tenant_id()))`,
     }),
-    allow('system', 'select', always),
-    allow('system', 'update', always),
-    allow('system', 'delete', always),
+    allow(ActorParty.system, 'select', always),
+    allow(ActorParty.system, 'update', always),
+    allow(ActorParty.system, 'delete', always),
   ],
 );

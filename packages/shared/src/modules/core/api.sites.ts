@@ -107,7 +107,7 @@ const dockFields = {
 export const CreateDock = z.object({
   ...dockFields,
   adrAllowed: dockFields.adrAllowed.default(false),
-  status: dockFields.status.default('active'),
+  status: dockFields.status.default(DockStatus.active),
   sort: dockFields.sort.optional(),
 });
 export const UpdateDock = z.object(dockFields).partial();

@@ -1,10 +1,13 @@
 import { DRIVER_LOCALES } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type {
   Instruction,
   VersionDetail,
   VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { isAcknowledgementValid } from '@rampflow/shared/modules/safety/validity';
+import { DriverLocale, PackageId, TenantRole } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -25,7 +28,7 @@ const app = createApp({ clock });
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'pro', B: 'start' } });
+  w = await world({ packages: { A: PackageId.pro, B: PackageId.start } });
 });
 
 const base = (side: WorldSide) => `/api/t/${side.tenantId}/safety`;
@@ -54,16 +57,16 @@ const publish = (side: WorldSide, versionId: string, materialChange = false) =>
   admin(side).post(`${base(side)}/versions/${versionId}/publish`, { body: { materialChange } });
 
 const tenantScope = (side: WorldSide): Scope => ({
-  party: 'tenant',
+  party: ActorParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: side.users.dispatcher.id, role: 'dispatcher' },
+  actor: { kind: 'user', userId: side.users.dispatcher.id, role: TenantRole.dispatcher },
 });
 const driverScope = (side: WorldSide): Scope => ({
-  party: 'driver',
+  party: ActorParty.driver,
   tenantId: side.tenantId,
   bookingId: side.bookings.own.id,
-  channel: 'link',
+  channel: DriverChannel.link,
 });
 
 const applicable = (scope: Scope, side: WorldSide, siteId: SiteId = side.sites[0].id) =>
@@ -80,7 +83,10 @@ describe('SF-01 author a briefing', () => {
     const flags = Object.fromEntries(draft.content.map((c) => [c.locale, c.translation]));
     expect(flags).toEqual(
       Object.fromEntries(
-        DRIVER_LOCALES.map((l) => [l, l === 'de' || l === 'en' ? 'source' : 'machine']),
+        DRIVER_LOCALES.map((l) => [
+          l,
+          l === DriverLocale.de || l === DriverLocale.en ? 'source' : 'machine',
+        ]),
       ),
     );
     for (const c of draft.content) {
@@ -134,8 +140,8 @@ describe('SF-01 author a briefing', () => {
       await admin(w.A).get(`${base(w.A)}/versions/${v1}`),
       200,
     );
-    expect(after.content.find((c) => c.locale === 'en')?.title).toBe(
-      published.content.find((c) => c.locale === 'en')?.title,
+    expect(after.content.find((c) => c.locale === DriverLocale.en)?.title).toBe(
+      published.content.find((c) => c.locale === DriverLocale.en)?.title,
     );
 
     await json(await publish(w.A, v2.id), 200);
@@ -160,9 +166,9 @@ describe('SF-01 author a briefing', () => {
         bookingId: own.id,
         carrierId: own.carrierId,
         instructionId: instruction.id as never,
-        locale: 'pl',
+        locale: DriverLocale.pl,
         driverName: 'Jan Kowalski',
-        channel: 'link',
+        channel: DriverChannel.link,
         score: 100,
         attempts: 1,
         completedAt: clock.now(),
@@ -293,7 +299,7 @@ describe('SF-02 quiz', () => {
 
 describe('safety.max_briefing_templates', () => {
   it('answers 409 limit_reached beyond the limit, counting unarchived instructions', async () => {
-    const side = (await world({ packages: { A: 'start' } })).A;
+    const side = (await world({ packages: { A: PackageId.start } })).A;
     const first = await create(side, 'One');
     await create(side, 'Two');
     const third = await admin(side).post(`${base(side)}/instructions`, {
@@ -333,9 +339,9 @@ describe('recordAcknowledgement', () => {
           bookingId: own.id,
           carrierId: own.carrierId,
           instructionId: instruction.id as never,
-          locale: 'uk',
+          locale: DriverLocale.uk,
           driverName: 'Олег',
-          channel: 'link',
+          channel: DriverChannel.link,
           score: 67,
           attempts: 2,
           completedAt: clock.now(),
@@ -351,7 +357,7 @@ describe('recordAcknowledgement', () => {
       .select()
       .from(safetyAcknowledgement)
       .where(eq(safetyAcknowledgement.id, second.id));
-    const uk = draft.content.find((c) => c.locale === 'uk');
+    const uk = draft.content.find((c) => c.locale === DriverLocale.uk);
     expect(row).toMatchObject({
       versionId: draft.id,
       locale: 'uk',

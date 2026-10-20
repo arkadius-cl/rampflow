@@ -1,9 +1,10 @@
+import { HttpMethod, Permission, Role } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import { seedBriefing } from '../authoring/fixtures.ts';
 
 const base = {
-  as: 'dispatcher',
-  permission: 'safety.view_register',
+  as: Role.dispatcher,
+  permission: Permission.safety.view_register,
   entitlement: null,
   // B's own register lists only B's acknowledgements, none of A's ids or booking codes.
   foreign: 'empty',
@@ -19,10 +20,10 @@ const base = {
 export const cases = defineRouteCases([
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/t/:orgId/safety/acknowledgements/filters',
     body: undefined,
   },
-  { ...base, method: 'POST', path: '/api/t/:orgId/safety/acknowledgements/search' },
-  { ...base, method: 'POST', path: '/api/t/:orgId/safety/acknowledgements.csv' },
+  { ...base, method: HttpMethod.POST, path: '/api/t/:orgId/safety/acknowledgements/search' },
+  { ...base, method: HttpMethod.POST, path: '/api/t/:orgId/safety/acknowledgements.csv' },
 ]);

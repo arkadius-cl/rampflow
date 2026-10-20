@@ -1,5 +1,6 @@
 import { STAFF_LOCALES } from '@rampflow/shared';
 import { REGISTRATION_STATUSES } from '@rampflow/shared/modules/booking/api.carriers';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { sql } from 'drizzle-orm';
 import { char, check, index, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
@@ -119,7 +120,7 @@ export const carrierRegistration = pgTable(
     check('carrier_registration_locale_check', oneOf(t.locale, STAFF_LOCALES)),
     ...tenantPolicies(t, { site: null, readers: [] }),
     allow('public', 'insert', tenantIs(t.tenantId)),
-    allow('carrier', 'select', carrierIs(t.carrierId)),
+    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
     allow('token', 'select', tokenIs(t.tokenHash)),
     allow('token', 'update', tokenIs(t.tokenHash)),
   ],

@@ -1,4 +1,7 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import {
   BellRingIcon,
   CircleCheckIcon,
@@ -106,8 +109,8 @@ function SafetyCard({ view }: { view: View }) {
   const { t } = useTranslation();
   const locale = useLocale();
   const { safety, site } = view;
-  if (safety.status === 'not_required') return null;
-  if (safety.status === 'valid') {
+  if (safety.status === SafetyStatus.not_required) return null;
+  if (safety.status === SafetyStatus.valid) {
     return (
       <div
         data-testid="safety-valid"
@@ -135,7 +138,7 @@ function SafetyCard({ view }: { view: View }) {
 
 function GateDeviceNote({ view }: { view: View }) {
   const { t } = useTranslation();
-  if (view.channel !== 'staff') return null;
+  if (view.channel !== DriverChannel.staff) return null;
   return (
     <p className="flex items-start gap-2 text-sm text-muted-foreground">
       <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -286,11 +289,11 @@ function ClosedScreen({ view }: { view: View }) {
   const { t } = useTranslation();
   const status = view.booking.status;
   const text =
-    status === 'cancelled'
+    status === BookingStatus.cancelled
       ? t(($) => $.app.closed.cancelled)
-      : status === 'no_show'
+      : status === BookingStatus.no_show
         ? t(($) => $.app.closed.no_show)
-        : status === 'turned_away'
+        : status === BookingStatus.turned_away
           ? t(($) => $.app.closed.turned_away)
           : t(($) => $.app.closed.departed);
   return (
@@ -299,7 +302,7 @@ function ClosedScreen({ view }: { view: View }) {
         <BookingStatusBadge status={status} size="xl" />
         <h1 className="text-xl font-semibold">{text}</h1>
       </section>
-      {status === 'departed' ? <LinkExpiry view={view} /> : <CallSite view={view} />}
+      {status === BookingStatus.departed ? <LinkExpiry view={view} /> : <CallSite view={view} />}
     </>
   );
 }

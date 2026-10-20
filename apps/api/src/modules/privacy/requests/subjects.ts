@@ -4,7 +4,7 @@ import type {
   SubjectBooking,
   SubjectMatches,
 } from '@rampflow/shared/modules/privacy/api';
-import type { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
+import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
 import { and, asc, desc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import type { BookingId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -144,7 +144,7 @@ export async function exportSubject(
   q: Subject,
 ): Promise<SubjectMatches & { exportedAt: string }> {
   const matches = await findSubject(ctx, q);
-  await logRequest(ctx, 'export', matches);
+  await logRequest(ctx, PrivacyRequestKind.export, matches);
   return { exportedAt: ctx.now.toISOString(), ...matches };
 }
 
@@ -186,7 +186,7 @@ export async function eraseSubject(ctx: SubjectContext, q: Subject): Promise<Era
           inArray(safetyAcknowledgement.id, expired as never[]),
           ctx.now,
         );
-  await logRequest(ctx, 'erase', matches);
+  await logRequest(ctx, PrivacyRequestKind.erase, matches);
   return {
     pseudonymizedBookings,
     restrictedAcknowledgements: restricted.length,

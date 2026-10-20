@@ -1,3 +1,4 @@
+import { ErrorCode } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { world } from '../../test/world.ts';
@@ -24,6 +25,6 @@ export const testRoutes = (clock: PinnableClock) =>
     })
     .post('/jobs/:name/run', async (c) => {
       const job = (await discoverJobs()).find((j) => j.name === c.req.param('name'));
-      if (!job) throw new ApiError('not_found', 'No such job');
+      if (!job) throw new ApiError(ErrorCode.not_found, 'No such job');
       return c.json(await runJobTick(job, { clock: c.var.clock, mailer: smtpMailer() }), 200);
     });

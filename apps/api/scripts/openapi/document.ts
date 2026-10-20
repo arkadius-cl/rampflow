@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, OrgKind } from '@rampflow/shared/values';
 import type { Guard } from '../../src/kernel/describe.ts';
 import { DEFAULT_MESSAGE, ERROR_STATUS } from '../../src/kernel/errors.ts';
 import { DRIVER_COOKIE, SESSION_COOKIE } from '../../src/kernel/scopes.ts';
@@ -22,9 +22,9 @@ type Doc = Record<string, unknown>;
 
 const SESSION_PARTIES = new Set<Party>([
   'user',
-  'platform',
-  'tenant',
-  'carrier',
+  OrgKind.platform,
+  OrgKind.tenant,
+  OrgKind.carrier,
   'carrier_at_tenant',
   'driver',
 ]);
@@ -50,29 +50,29 @@ export function errorStatuses(e: Endpoint): number[] {
 const ERROR_RESPONSES: Record<number, { name: string; code: ErrorCode; description: string }> = {
   401: {
     name: 'Unauthorized',
-    code: 'unauthorized',
+    code: ErrorCode.unauthorized,
     description: '`unauthorized`: no valid session or driver link.',
   },
   403: {
     name: 'Forbidden',
-    code: 'forbidden',
+    code: ErrorCode.forbidden,
     description:
       '`forbidden` without the permission or from a foreign `Origin`, `entitlement_required` when the package does not include the module or feature (`details.key`).',
   },
   404: {
     name: 'NotFound',
-    code: 'not_found',
+    code: ErrorCode.not_found,
     description:
       '`not_found`: an unknown or malformed id, or an org the caller does not belong to.',
   },
   409: {
     name: 'LimitReached',
-    code: 'limit_reached',
+    code: ErrorCode.limit_reached,
     description: '`limit_reached` at a hard limit of the package (`details.key`, `details.limit`).',
   },
   422: {
     name: 'ValidationFailed',
-    code: 'validation_failed',
+    code: ErrorCode.validation_failed,
     description:
       '`validation_failed` with the zod issues in `details.issues` (`path`, `code`, `message`).',
   },

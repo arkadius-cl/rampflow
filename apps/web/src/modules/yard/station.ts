@@ -1,4 +1,5 @@
 import type { ContextSite } from '@rampflow/shared/modules/core/api.context';
+import { OrgKind } from '@rampflow/shared/values';
 import { useRouteContext, useSearch } from '@tanstack/react-router';
 import type { AreaRouteContext } from '@/lib/access';
 
@@ -9,7 +10,7 @@ import type { AreaRouteContext } from '@/lib/access';
 export function useStationSite(): ContextSite | undefined {
   const { access } = useRouteContext({ strict: false }) as Partial<AreaRouteContext>;
   const { site } = useSearch({ strict: false }) as { site?: string };
-  if (access?.area !== 'tenant') return undefined;
+  if (access?.area !== OrgKind.tenant) return undefined;
   return access.context.sites.find((s) => s.id === site);
 }
 

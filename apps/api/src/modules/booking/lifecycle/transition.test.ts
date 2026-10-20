@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import {
   BOOKING_STATUSES,
-  type BookingStatus,
   COMMAND_NAMES,
   COMMANDS,
   type CommandDef,
@@ -9,6 +9,8 @@ import {
   type CommandName,
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingParty, BookingStatus, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { DriverLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -57,7 +59,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
         startsAt: new Date('2026-11-02T07:00:00Z'),
         status,
         dockId: holding.includes(status) ? site.dockIds[holding.indexOf(status)] : null,
-        noShowAt: status === 'no_show' ? new Date('2026-11-02T08:00:00Z') : null,
+        noShowAt: status === BookingStatus.no_show ? new Date('2026-11-02T08:00:00Z') : null,
       });
       byStatus.set(status, b.id);
     }
@@ -71,14 +73,14 @@ describe('transitionBooking rejects every command from a state outside its sourc
         return {
           type: name,
           avis: {
-            references: [{ type: 'delivery_note', value: 'LS-1' }],
+            references: [{ type: ReferenceType.delivery_note, value: 'LS-1' }],
             counterpartyName: 'Andere GmbH',
-            loadUnits: [{ type: 'carton', quantity: 3 }],
+            loadUnits: [{ type: LoadUnitType.carton, quantity: 3 }],
           },
           version: 1,
         };
       case 'send_driver_link':
-        return { type: name, email: 'driver@example.test', locale: 'ro' };
+        return { type: name, email: 'driver@example.test', locale: DriverLocale.ro };
       case 'turn_away':
         return { type: name, reason: 'other' };
       case 'call':
@@ -90,7 +92,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
       case 'depart':
         return { type: name, reason: 'Fahrer abgereist' };
       case 'link_acknowledgement':
-        return { type: name, acknowledgementId: randomUUID(), via: 'gate_lookup' };
+        return { type: name, acknowledgementId: randomUUID(), via: LinkVia.gate_lookup };
       default:
         return { type: name } as CommandInput;
     }
@@ -106,7 +108,7 @@ describe('transitionBooking rejects every command from a state outside its sourc
       for (const status of invalid) {
         const id = byStatus.get(status) as string;
         const run =
-          party === 'staff'
+          party === BookingParty.staff
             ? asStaff(w.A, w.A.users.tenant_admin, NOW, (ctx) =>
                 transitionBooking(ctx, id, input(name)),
               )
@@ -117,12 +119,12 @@ describe('transitionBooking rejects every command from a state outside its sourc
           reason: 'invalid_transition',
         });
       }
-      expect((await bookingRow(byStatus.get('departed') as never)).version).toBe(1);
+      expect((await bookingRow(byStatus.get(BookingStatus.departed) as never)).version).toBe(1);
     });
   }
 
   it('answers 403 for a party the table does not name', async () => {
-    const id = byStatus.get('confirmed') as string;
+    const id = byStatus.get(BookingStatus.confirmed) as string;
     expect(
       await outcome(
         asStaff(w.A, w.A.users.tenant_admin, NOW, (ctx) =>
@@ -278,7 +280,7 @@ describe('yard commands', () => {
 
   it('answers 409, not a no-op, for a repeat-looking command on a final booking', async () => {
     const startsAt = new Date('2026-11-06T11:00:00Z');
-    const b = await seedBooking(w.A, { startsAt, status: 'cancelled' });
+    const b = await seedBooking(w.A, { startsAt, status: BookingStatus.cancelled });
     expect(
       await outcome(
         asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
@@ -294,7 +296,7 @@ describe('yard commands', () => {
 
   it('turns a truck away after check-in and shortens its driver link', async () => {
     const startsAt = new Date('2026-11-07T08:00:00Z');
-    const b = await seedBooking(w.A, { startsAt, status: 'checked_in' });
+    const b = await seedBooking(w.A, { startsAt, status: BookingStatus.checked_in });
     const at = new Date('2026-11-07T08:20:00Z');
     const r = await gate(at, (ctx) =>
       transitionBooking(ctx, b.id, { type: 'turn_away', reason: 'wrong_load' }),
@@ -307,8 +309,8 @@ describe('yard commands', () => {
   });
 
   it('frees the dock on uncall, so another truck can be called to it (YD-07)', async () => {
-    const first = await seedBooking(w.A, { startsAt: NOW, status: 'checked_in' });
-    const second = await seedBooking(w.A, { startsAt: NOW, status: 'checked_in' });
+    const first = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
+    const second = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     await dockOp(NOW, (ctx) => transitionBooking(ctx, first.id, { type: 'call', dockId: dock1() }));
     expect(
       await outcome(
@@ -329,8 +331,12 @@ describe('yard commands', () => {
   });
 
   it('rejects a second truck on a dock through the index and still reads afterwards', async () => {
-    const holder = await seedBooking(w.A, { startsAt: NOW, status: 'at_dock', dockId: dock2() });
-    const other = await seedBooking(w.A, { startsAt: NOW, status: 'checked_in' });
+    const holder = await seedBooking(w.A, {
+      startsAt: NOW,
+      status: BookingStatus.at_dock,
+      dockId: dock2(),
+    });
+    const other = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     const afterwards = await dockOp(NOW, async (ctx) => {
       const err = await outcome(
         transitionBooking(ctx, other.id, { type: 'dock', dockId: dock2() }),
@@ -348,7 +354,7 @@ describe('yard commands', () => {
   });
 
   it('needs a reason to depart before done, and a dock for dock commands', async () => {
-    const b = await seedBooking(w.A, { startsAt: NOW, status: 'checked_in' });
+    const b = await seedBooking(w.A, { startsAt: NOW, status: BookingStatus.checked_in });
     expect(
       await outcome(gate(NOW, (ctx) => transitionBooking(ctx, b.id, { type: 'depart' }))),
     ).toMatchObject({ code: 'validation_failed' });
@@ -377,7 +383,7 @@ describe('check-in under safety enforcement (YD-02)', () => {
       transitionBooking(ctx, b.id, {
         type: 'link_acknowledgement',
         acknowledgementId: briefing.acknowledgementId,
-        via: 'gate_lookup',
+        via: LinkVia.gate_lookup,
       }),
     );
     expect(linked.changed).toBe(true);
@@ -410,7 +416,7 @@ describe('check-in under safety enforcement (YD-02)', () => {
           transitionBooking(ctx, b.id, {
             type: 'link_acknowledgement',
             acknowledgementId: briefing.acknowledgementId,
-            via: 'gate_lookup',
+            via: LinkVia.gate_lookup,
           }),
         ),
       ),

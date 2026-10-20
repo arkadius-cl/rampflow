@@ -4,6 +4,7 @@ import {
   type AvisView,
   avisRuleIssues,
 } from '@rampflow/shared/modules/avis/avis';
+import { ConflictReason, ErrorCode, Setting } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../db/ids.ts';
 import type { Tx } from '../../db/scope.ts';
@@ -175,10 +176,11 @@ export function changedFields(before: Avis, after: Avis): (keyof Avis)[] {
 
 export async function avisRules(access: Access, siteId: SiteId): Promise<AvisRules> {
   return {
-    requiredReferenceTypes: (await access.setting('avis.required_reference_types', siteId)).value,
-    requireGrossWeight: (await access.setting('avis.require_gross_weight', siteId)).value,
-    requireDriverPhone: (await access.setting('avis.require_driver_phone', siteId)).value,
-    requirePlate: (await access.setting('booking.require_plate', siteId)).value,
+    requiredReferenceTypes: (await access.setting(Setting.avis.required_reference_types, siteId))
+      .value,
+    requireGrossWeight: (await access.setting(Setting.avis.require_gross_weight, siteId)).value,
+    requireDriverPhone: (await access.setting(Setting.avis.require_driver_phone, siteId)).value,
+    requirePlate: (await access.setting(Setting.booking.require_plate, siteId)).value,
   };
 }
 
@@ -194,11 +196,11 @@ export async function checkAvis(
 ): Promise<void> {
   const issues = avisRuleIssues(a, await avisRules(access, owner.siteId));
   if (issues.length > 0) {
-    throw new ApiError('validation_failed', 'Invalid json', {
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
       issues: issues.map((i) => ({ ...i, path: ['avis', ...i.path] })),
     });
   }
-  if (!(await access.setting('avis.unique_references', owner.siteId)).value) return;
+  if (!(await access.setting(Setting.avis.unique_references, owner.siteId)).value) return;
   const taken = await referenceTaken(tx, {
     tenantId: owner.tenantId,
     siteId: owner.siteId,
@@ -206,8 +208,8 @@ export async function checkAvis(
     excludeBookingId: owner.id,
   });
   if (taken) {
-    throw new ApiError('conflict', 'A reference is already booked', {
-      reason: 'duplicate_reference',
+    throw new ApiError(ErrorCode.conflict, 'A reference is already booked', {
+      reason: ConflictReason.duplicate_reference,
     });
   }
 }

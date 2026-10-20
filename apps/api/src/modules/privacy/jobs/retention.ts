@@ -1,4 +1,6 @@
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
+import { STAFF_LOCALES } from '@rampflow/shared';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { EmailTemplate, OrgKind, Setting, StaffLocale } from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
 import type { AnyOrgId, UserId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -24,7 +26,7 @@ const OUTBOX_DAYS = 7;
 
 /** Carrier accounts are platform data; no user acts, so the scope carries the nil id. */
 const PLATFORM: Scope = {
-  party: 'platform',
+  party: OrgKind.platform,
   userId: '00000000-0000-0000-0000-000000000000' as UserId,
 };
 
@@ -48,7 +50,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
   const now = clock.now();
   const { value: days } = await asScope(tx, systemScope(JOB), async (s) =>
     (await loadAccess(s, systemScope(JOB), clock)).setting(
-      'privacy.retention.carrier_inactive_days',
+      Setting.privacy.retention.carrier_inactive_days,
       null,
     ),
   );
@@ -85,12 +87,12 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
         const sent = await enqueueEmail(
           tx,
           {
-            template: 'privacy.inactive-notice',
+            template: EmailTemplate.privacy_inactive_notice,
             to: u.email,
             locale: isStaffLocale(u.locale) ? u.locale : 'en',
             tenantId: null,
             payload: {
-              locale: isStaffLocale(u.locale) ? u.locale : 'en',
+              locale: isStaffLocale(u.locale) ? u.locale : StaffLocale.en,
               deletesOn: deletesAt.toISOString().slice(0, 10),
             },
             // A sign-in moves the deadline and so makes a new notice due.
@@ -188,7 +190,7 @@ async function runRetention(ctx: JobContext): Promise<JobStats> {
   const now = ctx.clock.now();
   const tenants = await forEachTenant(ctx, JOB, async (tx, tenantId) => {
     const scope: Scope = {
-      party: 'tenant',
+      party: ActorParty.tenant,
       tenantId,
       siteIds: 'all',
       actor: { kind: 'system', job: JOB },

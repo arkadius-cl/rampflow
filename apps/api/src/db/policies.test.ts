@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { ActorParty } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { CarrierRole, SystemActorName } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
@@ -22,17 +25,17 @@ beforeAll(async () => {
 });
 
 const driver = (): Scope => ({
-  party: 'driver',
+  party: ActorParty.driver,
   tenantId: w.A.tenantId,
   bookingId: w.A.bookings.own.id,
-  channel: 'link',
+  channel: DriverChannel.link,
 });
 const carrierAt = (rival = false): Scope => ({
   party: 'carrier_at_tenant',
   carrierId: rival ? w.A.rivalCarrierId : w.A.carrierId,
   tenantId: w.A.tenantId,
   userId: rival ? w.A.users.rival_user.id : w.A.users.carrier_user.id,
-  role: 'carrier_user',
+  role: CarrierRole.carrier_user,
 });
 
 const statusOf = async (id: string) =>
@@ -124,10 +127,10 @@ describe('carrier at a tenant', () => {
       return asScope(
         tx,
         {
-          party: 'tenant',
+          party: ActorParty.tenant,
           tenantId: w.A.tenantId,
           siteIds: 'all',
-          actor: { kind: 'system', job: 'capacity' },
+          actor: { kind: 'system', job: SystemActorName.capacity },
         },
         (inner) =>
           inner
@@ -148,7 +151,12 @@ describe('carrier company creation', () => {
       await tx.insert(org).values({ id: carrierId, kind: 'carrier', name: 'New Spedition' });
       await asScope(
         tx,
-        { party: 'carrier', carrierId: carrierId as never, userId, role: 'carrier_admin' },
+        {
+          party: ActorParty.carrier,
+          carrierId: carrierId as never,
+          userId,
+          role: CarrierRole.carrier_admin,
+        },
         (inner) =>
           inner
             .insert(membership)
@@ -220,10 +228,10 @@ describe('scope switching', () => {
         await asScope(
           tx,
           {
-            party: 'tenant',
+            party: ActorParty.tenant,
             tenantId: w.A.tenantId,
             siteIds: 'all',
-            actor: { kind: 'system', job: 'invitation' },
+            actor: { kind: 'system', job: SystemActorName.invitation },
           },
           (inner) =>
             inner

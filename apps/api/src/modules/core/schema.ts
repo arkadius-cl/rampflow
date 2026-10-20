@@ -1,5 +1,9 @@
 import { PACKAGE_IDS, ROLE_PARTY, STAFF_LOCALES } from '@rampflow/shared';
-import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  ActorParty,
+  CarrierLinkSource,
+  CarrierLinkStatus,
+} from '@rampflow/shared/modules/booking/values';
 import {
   AuthTokenKind,
   DockStatus,
@@ -77,7 +81,7 @@ export const org = pgTable(
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
     check('org_kind_check', oneOf(t.kind, values(OrgKind))),
     check('org_name_length', sql`char_length(${t.name}) between 1 and 120`),
-    allow('platform', 'all', always),
+    allow(OrgKind.platform, 'all', always),
     allow(
       'user',
       'select',
@@ -86,20 +90,20 @@ export const org = pgTable(
     // A tenant reads its own org, the carriers linked to it (TN-03), and the carriers a
     // registration would link, so it decides on the company it actually gets (TN-04).
     allow(
-      'tenant',
+      ActorParty.tenant,
       'select',
       sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id}) or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = ${t.id})`,
     ),
     allow('carrier_at_tenant', 'select', sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`),
-    allow('driver', 'select', tenantIs(t.id)),
+    allow(ActorParty.driver, 'select', tenantIs(t.id)),
     allow('public', 'select', tenantIs(t.id)),
     // A carrier reads its own org, linked tenants, and tenants it registered at (CR-02).
     allow(
-      'carrier',
+      ActorParty.carrier,
       'select',
       sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
     ),
-    allow('system', 'select', always),
+    allow(ActorParty.system, 'select', always),
     // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02).
     allow('user', 'insert', sql`${t.kind} = 'carrier'`),
     allow('token', 'insert', sql`${t.kind} = 'carrier'`),
@@ -125,15 +129,15 @@ export const appUser = pgTable(
   (t) => [
     check('app_user_locale_check', oneOf(t.locale, STAFF_LOCALES)),
     check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
-    allow('platform', 'all', always),
+    allow(OrgKind.platform, 'all', always),
     allow('user', 'select', userIs(t.id)),
     allow('user', 'update', userIs(t.id)),
     allow('token', 'select', userIs(t.id)),
     allow('token', 'update', userIs(t.id)),
     allow('token', 'insert', always),
     allow('public', 'insert', always),
-    allow('tenant', 'select', sharesOrg(t.id)),
-    allow('carrier', 'select', sharesOrg(t.id)),
+    allow(ActorParty.tenant, 'select', sharesOrg(t.id)),
+    allow(ActorParty.carrier, 'select', sharesOrg(t.id)),
     allow('carrier_at_tenant', 'select', sharesOrg(t.id)),
   ],
 );
@@ -223,9 +227,9 @@ export const membership = pgTable(
     index('membership_org_id_idx').on(t.orgId),
     check('membership_role_check', membershipRoleCheck(t.orgKind, t.role)),
     allow('user', 'select', userIs(t.userId)),
-    allow('platform', 'all', always),
-    allow('tenant', 'all', tenantIs(t.orgId)),
-    allow('carrier', 'all', carrierIs(t.orgId)),
+    allow(OrgKind.platform, 'all', always),
+    allow(ActorParty.tenant, 'all', tenantIs(t.orgId)),
+    allow(ActorParty.carrier, 'all', carrierIs(t.orgId)),
   ],
 );
 
@@ -253,12 +257,12 @@ export const tenantSubscription = pgTable(
 
 function tenantEntitlementPolicies(t: { tenantId: AnyPgColumn }) {
   return [
-    allow('platform', 'all', always),
-    allow('tenant', 'select', tenantIs(t.tenantId)),
+    allow(OrgKind.platform, 'all', always),
+    allow(ActorParty.tenant, 'select', tenantIs(t.tenantId)),
     allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow('driver', 'select', tenantIs(t.tenantId)),
+    allow(ActorParty.driver, 'select', tenantIs(t.tenantId)),
     allow('public', 'select', tenantIs(t.tenantId)),
-    allow('carrier', 'select', linkedTenant(t.tenantId)),
+    allow(ActorParty.carrier, 'select', linkedTenant(t.tenantId)),
   ];
 }
 
@@ -285,8 +289,8 @@ export const entitlementOverride = pgTable(
     check('entitlement_override_value_wrapped', isWrappedJson(t.value)),
     // The note is the platform's internal reason: carriers, drivers and the public never read
     // overrides; loadAccess resolves their tenant's entitlements as the tenant (kernel/access.ts).
-    allow('platform', 'all', always),
-    allow('tenant', 'select', tenantIs(t.tenantId)),
+    allow(OrgKind.platform, 'all', always),
+    allow(ActorParty.tenant, 'select', tenantIs(t.tenantId)),
   ],
 );
 
@@ -382,9 +386,9 @@ export const invitation = pgTable(
       .on(t.orgId, t.email)
       .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
     check('invitation_role_check', membershipRoleCheck(t.orgKind, t.role)),
-    allow('platform', 'all', always),
-    allow('tenant', 'all', tenantIs(t.orgId)),
-    allow('carrier', 'all', carrierIs(t.orgId)),
+    allow(OrgKind.platform, 'all', always),
+    allow(ActorParty.tenant, 'all', tenantIs(t.orgId)),
+    allow(ActorParty.carrier, 'all', carrierIs(t.orgId)),
     allow('token', 'select', tokenIs(t.tokenHash)),
     allow('token', 'update', tokenIs(t.tokenHash)),
   ],
@@ -421,16 +425,16 @@ export const settingValue = pgTable(
       for: 'select',
       using: sql`(select app.party()) is not null and ${t.tenantId} is null`,
     }),
-    allow('platform', 'all', sql`${t.tenantId} is null`),
+    allow(OrgKind.platform, 'all', sql`${t.tenantId} is null`),
     allow(
-      'tenant',
+      ActorParty.tenant,
       'all',
       and(tenantIs(t.tenantId), sql`${t.siteId} is null or ${siteAllowed(t.siteId)}`),
     ),
     allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow('driver', 'select', tenantIs(t.tenantId)),
+    allow(ActorParty.driver, 'select', tenantIs(t.tenantId)),
     allow('public', 'select', tenantIs(t.tenantId)),
-    allow('carrier', 'select', linkedTenant(t.tenantId)),
+    allow(ActorParty.carrier, 'select', linkedTenant(t.tenantId)),
   ],
 );
 
@@ -504,8 +508,8 @@ export const tenantCarrierLink = pgTable(
     index('tenant_carrier_link_carrier_id_idx').on(t.carrierId),
     check('tenant_carrier_link_status_check', oneOf(t.status, values(CarrierLinkStatus))),
     check('tenant_carrier_link_source_check', oneOf(t.source, values(CarrierLinkSource))),
-    allow('tenant', 'all', tenantIs(t.tenantId)),
-    allow('carrier', 'select', carrierIs(t.carrierId)),
+    allow(ActorParty.tenant, 'all', tenantIs(t.tenantId)),
+    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
     allow('carrier_at_tenant', 'select', and(tenantIs(t.tenantId), carrierIs(t.carrierId))),
   ],
 );

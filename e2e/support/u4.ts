@@ -1,5 +1,6 @@
 import { type BrowserContext, expect } from '@playwright/test';
 import pg from 'pg';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { World, WorldSide } from './auth.ts';
 
 // U4 helpers for the sites and capacity specs (MD-01 to MD-05): the world's site fixtures,
@@ -60,9 +61,14 @@ export async function apiCall<T>(
 /** The world's "Ramp pool" starts without docks; this puts D-01 and D-02 of the site into it. */
 export async function poolWorldDocks(context: BrowserContext, w: World, n = 0): Promise<void> {
   const s = siteOf(w.A, n);
-  await apiCall(context, 'PUT', `/t/${w.A.tenantId}/capacity/resources/${s.resourceId}/docks`, {
-    dockIds: s.dockIds,
-  });
+  await apiCall(
+    context,
+    HttpMethod.PUT,
+    `/t/${w.A.tenantId}/capacity/resources/${s.resourceId}/docks`,
+    {
+      dockIds: s.dockIds,
+    },
+  );
 }
 
 /** The next Monday after today, as YYYY-MM-DD. */

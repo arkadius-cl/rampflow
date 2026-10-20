@@ -1,4 +1,5 @@
 import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, UserId } from '../../../db/ids.ts';
 import { type EmailTemplates, enqueueEmail, type TemplateId } from '../../../kernel/outbox.ts';
@@ -17,7 +18,7 @@ export type BookingRow = typeof booking.$inferSelect;
  * for a staff booking of a linked carrier, every `carrier_admin` of it; nobody for free text.
  */
 export async function bookingContacts(ctx: BookingContext, b: BookingRow): Promise<Recipient[]> {
-  if (b.createdParty === 'carrier' && b.createdBy) {
+  if (b.createdParty === CreatedParty.carrier && b.createdBy) {
     const user = (await userDisplay(ctx.tx, [b.createdBy])).get(b.createdBy);
     return user ? [{ email: user.email, locale: user.locale }] : [];
   }

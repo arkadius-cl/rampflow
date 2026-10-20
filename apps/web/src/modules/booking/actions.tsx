@@ -4,7 +4,9 @@ import {
   type BookingStatus,
   ON_SITE_STATUSES,
 } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingParty } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Feature, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,8 +57,8 @@ export type ChangeLock = 'on_site' | 'closed' | 'no_permission';
 /** Whether staff may reschedule and cancel `status`, and why not. */
 export function useChangeAccess(status: BookingStatus) {
   const access = useAccess();
-  const commands = availableCommands(status, 'staff', access.can);
-  const lock: ChangeLock | null = !access.can('booking.staff_book')
+  const commands = availableCommands(status, BookingParty.staff, access.can);
+  const lock: ChangeLock | null = !access.can(Permission.booking.staff_book)
     ? 'no_permission'
     : commands.includes('reschedule')
       ? null
@@ -67,7 +69,7 @@ export function useChangeAccess(status: BookingStatus) {
     lock,
     canReschedule: commands.includes('reschedule'),
     canCancel: commands.includes('cancel'),
-    canEditAvis: commands.includes('update_avis') && access.has('avis.basic'),
+    canEditAvis: commands.includes('update_avis') && access.has(Feature.avis.basic),
   };
 }
 
@@ -127,7 +129,7 @@ function RescheduleForm({
   const { t } = useTranslation('booking');
   const id = useId();
   const access = useAccess();
-  const canForce = access.can('booking.force');
+  const canForce = access.can(Permission.booking.force);
   const queryClient = useQueryClient();
   const bookedDay = siteDay(new Date(booking.startsAt), booking.timeZone as TimeZone);
   const [day, setDay] = useState<string>(bookedDay);
@@ -172,7 +174,7 @@ function RescheduleForm({
     onError: (e) => {
       if (
         e instanceof ApiFailure &&
-        e.code === 'conflict' &&
+        e.code === ErrorCode.conflict &&
         FORCE_REASONS.has(e.conflictReason ?? '')
       ) {
         setForceNeeded(canForce);

@@ -6,6 +6,7 @@ import {
   SOURCE_LOCALE,
   STAFF_LOCALES,
 } from '@rampflow/shared';
+import { LocaleSet } from '@rampflow/shared/values';
 
 // The CI check of ADR-0009, point 6. Catalogs live in <dir>/<locale>/<namespace>/<part>.json.
 
@@ -113,7 +114,7 @@ export function checkCatalogs(
   const catalogs = readCatalogs(dir, problems);
   const modules = new Map(catalog.map((m) => [m.id, m]));
   const localesOf = (m: AnyModuleManifest): readonly string[] =>
-    m.locales === 'driver' ? DRIVER_LOCALES : STAFF_LOCALES;
+    m.locales === LocaleSet.driver ? DRIVER_LOCALES : STAFF_LOCALES;
 
   for (const [locale, namespaces] of catalogs) {
     for (const ns of namespaces.keys()) {

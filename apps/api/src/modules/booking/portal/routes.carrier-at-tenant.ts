@@ -10,6 +10,8 @@ import {
   type PortalOffers,
 } from '@rampflow/shared/modules/booking/api.portal';
 import { PutAvis, SendDriverLink } from '@rampflow/shared/modules/booking/api.staff';
+import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Feature, Permission, StoryId } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -73,8 +75,8 @@ function view(c: Context<AppEnv>, bookingId: BookingId) {
   );
 }
 
-const book = requirePermission('booking.book');
-const portal = requireEntitlement('booking.carrier_portal');
+const book = requirePermission(Permission.booking.book);
+const portal = requireEntitlement(Feature.booking.carrier_portal);
 
 /** Mounted at `/api/c/:orgId/at/:tenantId` by modules/index.ts. */
 export const carrierAtTenant = new Hono<AppEnv>()
@@ -82,7 +84,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/sites',
     op({
       id: 'booking.portal.listSites',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`{ items }`: active sites with address, phone, `timeZone`, `cutoffMinutes`, `leadMinutes`, `horizonDays` and `avisRules`',
       responses: {},
@@ -99,7 +101,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/load-types',
     op({
       id: 'booking.portal.listLoadTypes',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`?siteId=`; active, carrier-bookable only: `{ items: [{ id, name, direction }] }`',
       responses: {},
@@ -119,7 +121,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/availability',
     op({
       id: 'booking.portal.getAvailability',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`?siteId&loadTypeId&date&loadUnits`; `PortalOffers` with lead time and horizon applied; 404 for a load type carriers cannot book',
       responses: { 200: type<PortalOffers>() },
@@ -135,7 +137,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
       const loadTypeId = q.loadTypeId as LoadTypeId;
       await requireCarrierSite(c.var.db, tenantId, siteId);
       const lt = await loadTypeAt(c.var.db, tenantId, siteId, loadTypeId);
-      if (!lt?.carrierBookable) throw new ApiError('not_found', 'No such load type');
+      if (!lt?.carrierBookable) throw new ApiError(ErrorCode.not_found, 'No such load type');
       const { entitlements, setting } = c.var.access;
       if (!entitlements) throw new Error('carrier at a tenant without entitlements');
       const offers = await offersFor(
@@ -147,7 +149,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
           day: q.date,
           loadTypeId,
           loadUnits: q.loadUnits,
-          audience: 'carrier',
+          audience: CreatedParty.carrier,
         },
       );
       return c.json(forCarrier(offers), 200);
@@ -157,7 +159,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings',
     op({
       id: 'booking.portal.createBooking',
-      stories: ['BK-04', 'AV-01'],
+      stories: [StoryId.BK_04, StoryId.AV_01],
       description:
         '`{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 201 `PortalBookingView`, 200 for a repeated `clientRequestId`; 409 with `offers` when the last unit went elsewhere',
       responses: { 200: type<PortalBookingView>(), 201: type<PortalBookingView>() },
@@ -170,7 +172,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
       const body = c.req.valid('json');
       const result = await withCarrierOffers(() =>
         createBooking(bookingContext(c), {
-          mode: 'carrier',
+          mode: CreatedParty.carrier,
           clientRequestId: body.clientRequestId,
           siteId: body.siteId as SiteId,
           loadTypeId: body.loadTypeId as LoadTypeId,
@@ -185,7 +187,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId',
     op({
       id: 'booking.portal.updateBooking',
-      stories: ['BK-05'],
+      stories: [StoryId.BK_05],
       description: '`{ startsAt, version }`; before the cutoff, else 409 `cutoff_passed`',
       responses: { 200: type<PortalBookingView>() },
     }),
@@ -211,7 +213,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/cancel',
     op({
       id: 'booking.portal.cancelBooking',
-      stories: ['BK-05'],
+      stories: [StoryId.BK_05],
       description: '`{ reason? }`; before the cutoff; revokes the driver link',
       responses: { 200: type<PortalBookingView>() },
     }),
@@ -230,13 +232,13 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/avis',
     op({
       id: 'booking.portal.putAvis',
-      stories: ['AV-02'],
+      stories: [StoryId.AV_02],
       description:
         '`{ avis, version }`; before the cutoff; 409 when the new duration does not fit, and the avis stays',
       responses: { 200: type<PortalBookingView>() },
     }),
     book,
-    requireEntitlement('avis.basic'),
+    requireEntitlement(Feature.avis.basic),
     activeLink,
     validate('param', BookingParam),
     validate('json', PutAvis),
@@ -257,7 +259,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/driver-link',
     op({
       id: 'booking.portal.regenerateDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: 'regenerate; `{ url, expiresAt }`',
       responses: { 200: type<PortalDriverLink>() },
     }),
@@ -274,12 +276,12 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/driver-link/email',
     op({
       id: 'booking.portal.emailDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: '`{ email, locale }` with one of the 12 driver locales; 202',
       responses: { 202: noBody },
     }),
     book,
-    requireEntitlement('notify.email'),
+    requireEntitlement(Feature.notify.email),
     activeLink,
     validate('param', BookingParam),
     validate('json', SendDriverLink),

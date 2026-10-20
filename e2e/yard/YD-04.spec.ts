@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { expectTouchTargets, openStation, seedVisit, siteOf } from '../support/u9.ts';
 
@@ -14,14 +15,14 @@ test.describe('YD-04 On-site list', () => {
       plate: 'HHLL1',
       start: -180,
       checkedIn: -150,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
     });
     await seedVisit(w, {
       carrier: 'Schnell Spedition',
       plate: 'HHSS2',
       start: -20,
       checkedIn: -25,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
     });
     await signInAs(context, w.A.users.gate_operator);
     await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);

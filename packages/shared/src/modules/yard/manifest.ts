@@ -1,12 +1,14 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
+import { LocaleSet } from '../../values/locales.ts';
+import { OrgKind, Role } from '../../values/roles.ts';
 import { everyScope } from '../../values/settings.ts';
 
 export const yard = defineModule({
   id: 'yard',
   dependsOn: ['booking'],
   enabledBy: 'yard.checkin_qr',
-  locales: 'staff',
+  locales: LocaleSet.staff,
   entitlements: {
     'yard.checkin_qr': { kind: 'feature' },
     'yard.call_to_dock': { kind: 'feature' },
@@ -16,9 +18,9 @@ export const yard = defineModule({
     'yard.map': { kind: 'feature', reserved: true },
   },
   permissions: {
-    'yard.gate': { roles: ['gate_operator'] },
-    'yard.call': { roles: ['gate_operator', 'dock_operator'] },
-    'yard.dock': { roles: ['dock_operator'] },
+    'yard.gate': { roles: [Role.gate_operator] },
+    'yard.call': { roles: [Role.gate_operator, Role.dock_operator] },
+    'yard.dock': { roles: [Role.dock_operator] },
   },
   settings: {
     'yard.early_tolerance_minutes': {
@@ -41,14 +43,14 @@ export const yard = defineModule({
   nav: [
     {
       id: 'gate',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/gate',
       icon: 'door-open',
       permission: 'yard.gate',
     },
     {
       id: 'docks',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/docks',
       icon: 'container',
       permission: 'yard.call',
