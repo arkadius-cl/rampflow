@@ -1,9 +1,9 @@
 import {
   type CarrierRole,
-  type InvitationView,
+  type CarrierUserInvitationView,
+  type CarrierUserList,
+  type CarrierUserView,
   InviteCarrierUser,
-  type MemberList,
-  type MemberView,
   UpdateCarrierUser,
 } from '@rampflow/shared/modules/core/api.staff';
 import { eq } from 'drizzle-orm';
@@ -38,7 +38,7 @@ export const carrier = new Hono<AppEnv>()
       id: 'core.carrier-users.listUsers',
       stories: ['CR-04'],
       description: 'as the staff list, without site lists',
-      responses: { 200: type<MemberList<CarrierRole>>() },
+      responses: { 200: type<CarrierUserList>() },
     }),
     async (c) => {
       const { org: org_, userId } = carrierRequest(c);
@@ -51,7 +51,7 @@ export const carrier = new Hono<AppEnv>()
       id: 'core.carrier-users.createInvitation',
       stories: ['CR-04'],
       description: "`{ email, role }` → 201; the email goes out in the inviter's locale",
-      responses: { 201: type<InvitationView<CarrierRole>>() },
+      responses: { 201: type<CarrierUserInvitationView>() },
     }),
     validate('json', InviteCarrierUser),
     async (c) => {
@@ -102,7 +102,7 @@ export const carrier = new Hono<AppEnv>()
       id: 'core.carrier-users.updateMember',
       stories: ['CR-04'],
       description: '`{ role }`',
-      responses: { 200: type<MemberView<CarrierRole>>() },
+      responses: { 200: type<CarrierUserView>() },
     }),
     validate('param', MembershipParam),
     validate('json', UpdateCarrierUser),

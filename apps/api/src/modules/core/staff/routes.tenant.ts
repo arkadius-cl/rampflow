@@ -1,8 +1,8 @@
 import {
-  type InvitationView,
   InviteStaff,
-  type MemberList,
-  type MemberView,
+  type StaffInvitationView,
+  type StaffList,
+  type StaffMemberView,
   type TenantRole,
   UpdateStaff,
 } from '@rampflow/shared/modules/core/api.staff';
@@ -38,7 +38,7 @@ export const tenant = new Hono<AppEnv>()
       stories: ['TN-01'],
       description:
         '`{ members: [{ membershipId, userId, name, email, role, siteIds, self }], invitations: [{ id, email, role, siteIds, expiresAt, expired }] }`',
-      responses: { 200: type<MemberList<TenantRole>>() },
+      responses: { 200: type<StaffList>() },
     }),
     async (c) => {
       const { tenantId, userId } = tenantRequest(c);
@@ -54,7 +54,7 @@ export const tenant = new Hono<AppEnv>()
       description:
         'The limit `core.max_internal_users` counts members plus pending invitations. `{ email, role, siteIds? }` → 201 invitation. `siteIds` only for gate and dock operators (422 on `["siteIds"]` otherwise, on `["siteIds", i]` for another tenant\'s site). A pending invitation to the same email is replaced and does not count twice; a member\'s email answers 409 `conflict` `already_member`',
       limits: ['core.max_internal_users'],
-      responses: { 201: type<InvitationView<TenantRole>>() },
+      responses: { 201: type<StaffInvitationView>() },
     }),
     validate('json', InviteStaff),
     async (c) => {
@@ -108,7 +108,7 @@ export const tenant = new Hono<AppEnv>()
       stories: ['TN-01'],
       description:
         '`{ role?, siteIds? }` → the member; a role without a site list drops its `membership_site` rows',
-      responses: { 200: type<MemberView<TenantRole>>() },
+      responses: { 200: type<StaffMemberView>() },
     }),
     validate('param', MembershipParam),
     validate('json', UpdateStaff),
