@@ -378,18 +378,19 @@ function LoadTypeFormView({
     >
       <FieldGroup className="px-4">
         <div className="grid grid-cols-2 gap-3">
-          {(['de', 'en'] as const).map((lang) => (
+          {(
+            [
+              [StaffLocale.de, t(($) => $.capacity.load_types.fields.name_de)],
+              [StaffLocale.en, t(($) => $.capacity.load_types.fields.name_en)],
+            ] as const
+          ).map(([lang, label]) => (
             <Controller
               key={lang}
               name={`name.${lang}`}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={`lt-name-${lang}`}>
-                    {lang === StaffLocale.de
-                      ? t(($) => $.capacity.load_types.fields.name_de)
-                      : t(($) => $.capacity.load_types.fields.name_en)}
-                  </FieldLabel>
+                  <FieldLabel htmlFor={`lt-name-${lang}`}>{label}</FieldLabel>
                   <Input id={`lt-name-${lang}`} {...field} aria-invalid={fieldState.invalid} />
                   <FieldError>{message(fieldState.error)}</FieldError>
                 </Field>
@@ -566,7 +567,12 @@ function LoadTypeFormView({
             </FieldSet>
           )}
         />
-        {(['carrierBookable', 'active'] as const).map((name) => (
+        {(
+          [
+            ['carrierBookable', t(($) => $.capacity.load_types.fields.carrier_bookable)],
+            ['active', t(($) => $.capacity.load_types.fields.active)],
+          ] as const
+        ).map(([name, label]) => (
           <Controller
             key={name}
             name={name}
@@ -574,11 +580,7 @@ function LoadTypeFormView({
             render={({ field }) => (
               <Field orientation="horizontal">
                 <Switch id={`lt-${name}`} checked={field.value} onCheckedChange={field.onChange} />
-                <FieldLabel htmlFor={`lt-${name}`}>
-                  {name === 'active'
-                    ? t(($) => $.capacity.load_types.fields.active)
-                    : t(($) => $.capacity.load_types.fields.carrier_bookable)}
-                </FieldLabel>
+                <FieldLabel htmlFor={`lt-${name}`}>{label}</FieldLabel>
               </Field>
             )}
           />

@@ -1,3 +1,4 @@
+import { DisplayNamesType } from '@rampflow/shared/values';
 import { useLocale } from '@/lib/i18n';
 
 /**
@@ -13,6 +14,6 @@ export function useDate() {
 /** A country's name in the viewer's language, for example "Litauen" for LT. */
 export function useCountryName() {
   const locale = useLocale();
-  const names = new Intl.DisplayNames([locale], { type: 'region' });
+  const names = new Intl.DisplayNames([locale], { type: DisplayNamesType.region });
   return (code: string | null) => (code ? (names.of(code) ?? code) : '');
 }

@@ -4,7 +4,7 @@ import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/value
 import { TurnAwayReason } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { WalkInBody } from '@rampflow/shared/modules/yard/api';
-import { ErrorCode, values } from '@rampflow/shared/values';
+import { ErrorCode, HtmlInputType, values } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { LogInIcon, OctagonXIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -172,7 +172,7 @@ export function WalkInDialog({
   const text = (
     name: Path<WalkInFormInput>,
     label: string,
-    o: { mono?: boolean; type?: string } = {},
+    o: { mono?: boolean; type?: HtmlInputType } = {},
   ) => (
     <Controller
       name={name}
@@ -198,6 +198,8 @@ export function WalkInDialog({
     name: Path<WalkInFormInput>,
     label: string,
     options: { value: string; label: string }[],
+    /** The message of a refinement (`custom`) issue on this field. */
+    refinement?: string,
   ) => (
     <Controller
       name={name}
@@ -219,8 +221,8 @@ export function WalkInDialog({
             ))}
           </NativeSelect>
           <FieldError>
-            {name === 'loadTypeId' && fieldState.error?.type === 'custom'
-              ? t(($) => $.gate.walk_in.load_type_unavailable)
+            {refinement && fieldState.error?.type === 'custom'
+              ? refinement
               : message(fieldState.error)}
           </FieldError>
         </Field>
@@ -262,6 +264,7 @@ export function WalkInDialog({
               'loadTypeId',
               t(($) => $.gate.walk_in.load_type),
               [choose, ...loadTypes.map((l) => ({ value: l.id, label: loadTypeName(l.name) }))],
+              t(($) => $.gate.walk_in.load_type_unavailable),
             )}
             {text(
               'counterpartyName',
@@ -290,7 +293,7 @@ export function WalkInDialog({
             {text(
               'quantity',
               ta(($) => $.avis.field.quantity),
-              { type: 'number' },
+              { type: HtmlInputType.number },
             )}
             {text(
               'driverName',
@@ -299,7 +302,7 @@ export function WalkInDialog({
             {text(
               'driverPhone',
               ta(($) => $.avis.field.driverPhone),
-              { type: 'tel' },
+              { type: HtmlInputType.tel },
             )}
           </FieldGroup>
           <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border p-4">

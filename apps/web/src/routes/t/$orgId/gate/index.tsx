@@ -71,6 +71,7 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
     ...stationSearch(search),
     tab: isValueOf(GateTab, search.tab) ? search.tab : undefined,
     checkin: typeof search.checkin === 'string' ? search.checkin : undefined,
+    // biome-ignore lint/plugin: the flag as a number or as the string a typed URL gives, not a value set
     walkin: search.walkin === 1 || search.walkin === '1' ? 1 : undefined,
   }),
   component: GateScreen,

@@ -544,6 +544,10 @@ export const carrierBookings: Booking[] = [
   }),
 ];
 
+/** How the prototype shows the value of a switch setting. */
+export const SWITCH_ON = 'On';
+export const SWITCH_OFF = 'Off';
+
 export interface SettingRow {
   key: string;
   label: string;
@@ -591,7 +595,7 @@ export const siteSettings: SettingRow[] = [
     key: 'booking.close_on_public_holidays',
     label: 'Close on public holidays',
     description: 'Imports the subdivision holidays as closures.',
-    value: 'On',
+    value: SWITCH_ON,
     source: 'default',
     entitled: true,
   },
@@ -631,7 +635,7 @@ export const siteSettings: SettingRow[] = [
     key: 'safety.require_for_checkin',
     label: 'Require briefing at check-in',
     description: 'Gate check-in stays disabled until a valid acknowledgement is linked.',
-    value: 'On',
+    value: SWITCH_ON,
     source: SettingScope.tenant,
     entitlement: 'safety.gate_enforcement',
     entitled: true,

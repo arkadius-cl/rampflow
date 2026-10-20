@@ -3,7 +3,7 @@ import {
   PrototypeWizardStep,
   SlotAvailability,
 } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, StepState } from '@rampflow/shared/values';
+import { BadgeSize, PrototypeScreen, StepState } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarPlusIcon,
@@ -98,7 +98,7 @@ function BookingWizardScreen() {
     <OfficeShell
       org={carrierMembership}
       memberships={memberships}
-      nav={carrierNav('wizard')}
+      nav={carrierNav(PrototypeScreen.wizard)}
       breadcrumbs={['New booking', STEPS[index]?.title ?? '']}
       user={carrierUser}
     >

@@ -5,7 +5,7 @@ import {
   type SubjectMatches,
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
-import { BadgeSize, EmailCategory, Permission } from '@rampflow/shared/values';
+import { BadgeSize, EmailCategory, HtmlInputType, Permission } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { DownloadIcon, EraserIcon, SearchIcon, UserSearchIcon } from 'lucide-react';
@@ -62,7 +62,14 @@ export const Route = createFileRoute('/t/$orgId/privacy/')({
 
 type Values = { name: string; phone: string; plate: string };
 const EMPTY: Values = { name: '', phone: '', plate: '' };
-const FIELDS = ['name', 'phone', 'plate'] as const;
+const FIELDS = Object.keys(EMPTY) as (keyof Values)[];
+/** The field the shared schema's "at least one identifier" refinement reports on. */
+const IDENTIFIER_FIELD: keyof Values = 'name';
+const INPUT_TYPE: Record<keyof Values, HtmlInputType> = {
+  name: HtmlInputType.search,
+  phone: HtmlInputType.tel,
+  plate: HtmlInputType.search,
+};
 
 function PrivacyPage() {
   const { t } = useTranslation('privacy');
@@ -88,9 +95,10 @@ function PrivacyPage() {
     setQuery(null);
     search.reset();
   };
-  const message = (field: (typeof FIELDS)[number], error: FormFieldError | undefined) => {
+  const message = (field: keyof Values, error: FormFieldError | undefined) => {
     if (!error) return undefined;
-    if (field === 'name' && error.type === 'custom') return t(($) => $.requests.errors.identifier);
+    if (field === IDENTIFIER_FIELD && error.type === 'custom')
+      return t(($) => $.requests.errors.identifier);
     return t(($) => $.requests.errors[field]);
   };
   const matches = search.data;
@@ -136,7 +144,7 @@ function PrivacyPage() {
                   <Input
                     {...input}
                     id={`privacy-${field}`}
-                    type={field === 'phone' ? 'tel' : 'search'}
+                    type={INPUT_TYPE[field]}
                     autoComplete="off"
                     placeholder={t(($) => $.requests.form[`${field}_placeholder`])}
                     aria-invalid={fieldState.invalid}

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { HttpMethod } from '../../packages/shared/src/values/http.ts';
+import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiAs, overrideEntitlement } from '../support/u5.ts';
 
@@ -61,7 +62,9 @@ test.describe('SF-02 Quiz', () => {
       HttpMethod.GET,
       `${base}/versions/${items[0]?.id}`,
     );
-    expect(version.content.find((c) => c.locale === 'de')?.questions.at(-1)).toMatchObject({
+    expect(
+      version.content.find((c) => c.locale === DriverLocale.de)?.questions.at(-1),
+    ).toMatchObject({
       prompt: 'Wo ist der Sammelplatz?',
       options: ['Am Tor', 'In der Halle', 'Auf dem Dach'],
       correct: 0,

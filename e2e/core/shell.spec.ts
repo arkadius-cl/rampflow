@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { catalog, navFor } from '../../packages/shared/src/index.ts';
-import { OrgKind } from '../../packages/shared/src/values/roles.ts';
+import { OrgKind, Role } from '../../packages/shared/src/values/roles.ts';
 import {
   expectAccessible,
   seedWorld,
@@ -46,20 +46,21 @@ test.describe('Org picker and area shell', () => {
     await expect(page.getByText('No access')).toBeVisible();
   });
 
-  const areas: { key: string; area: OrgKind }[] = [
-    { key: 'tenant_admin', area: OrgKind.tenant },
-    { key: 'dispatcher', area: OrgKind.tenant },
-    { key: 'gate_operator', area: OrgKind.tenant },
-    { key: 'dock_operator', area: OrgKind.tenant },
-    { key: 'carrier_admin', area: OrgKind.carrier },
-    { key: 'carrier_user', area: OrgKind.carrier },
-    { key: 'platform_admin', area: OrgKind.platform },
+  // Each role's user of the world, signed in to the area of its org.
+  const areas: { role: Role; area: OrgKind }[] = [
+    { role: Role.tenant_admin, area: OrgKind.tenant },
+    { role: Role.dispatcher, area: OrgKind.tenant },
+    { role: Role.gate_operator, area: OrgKind.tenant },
+    { role: Role.dock_operator, area: OrgKind.tenant },
+    { role: Role.carrier_admin, area: OrgKind.carrier },
+    { role: Role.carrier_user, area: OrgKind.carrier },
+    { role: Role.platform_admin, area: OrgKind.platform },
   ];
-  for (const { key, area } of areas) {
-    test(`the sidebar of a ${key} matches navFor`, async ({ page, context, request }) => {
+  for (const { role, area } of areas) {
+    test(`the sidebar of a ${role} matches navFor`, async ({ page, context, request }) => {
       const w = await seedWorld(request);
       const user: WorldUser =
-        key === 'platform_admin' ? w.platformAdmin : w.A.users[key as WorldUserKey];
+        role === Role.platform_admin ? w.platformAdmin : w.A.users[role as WorldUserKey];
       await signInAs(context, user);
       const orgId =
         area === OrgKind.tenant ? w.A.tenantId : area === OrgKind.carrier ? w.A.carrierId : null;
@@ -78,7 +79,7 @@ test.describe('Org picker and area shell', () => {
       await expect(links.first()).toBeVisible();
       const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')));
       expect([...hrefs].sort()).toEqual([...expected].sort());
-      if (key === 'dispatcher') await expectAccessible(page);
+      if (role === Role.dispatcher) await expectAccessible(page);
     });
   }
 });

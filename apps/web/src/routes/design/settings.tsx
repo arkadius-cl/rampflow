@@ -1,4 +1,4 @@
-import { SettingScope } from '@rampflow/shared/values';
+import { PrototypeScreen, Setting, SettingScope } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
 import { UpsellHint } from '@/components/entitlement-gate';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type SettingRow, siteSettings } from './-mock';
+import { type SettingRow, SWITCH_OFF, SWITCH_ON, siteSettings } from './-mock';
 import { dispatcherUser, memberships, startTenantMembership, tenantNav } from './-nav';
 
 export const Route = createFileRoute('/design/settings')({
@@ -41,7 +41,7 @@ function SettingsScreen() {
     <OfficeShell
       org={startTenantMembership}
       memberships={memberships}
-      nav={tenantNav('settings')}
+      nav={tenantNav(PrototypeScreen.settings)}
       breadcrumbs={['Administration', 'Settings', 'Bremen Kühlhaus']}
       user={dispatcherUser}
     >
@@ -111,19 +111,19 @@ function SettingsScreen() {
 
 function inheritedValue(row: SettingRow): string | undefined {
   if (row.source !== SettingScope.site) return undefined;
-  return row.key === 'booking.horizon_days' ? '30 days' : '15 min';
+  return row.key === Setting.booking.horizon_days ? '30 days' : '15 min';
 }
 
 function Control({ row }: { row: SettingRow }) {
-  if (row.value === 'On' || row.value === 'Off') {
+  if (row.value === SWITCH_ON || row.value === SWITCH_OFF) {
     return (
       <label htmlFor={row.key} className="flex h-8 items-center gap-2 text-sm">
-        <Switch id={row.key} defaultChecked={row.value === 'On'} />
+        <Switch id={row.key} defaultChecked={row.value === SWITCH_ON} />
         {row.value}
       </label>
     );
   }
-  if (row.key === 'booking.slot_grid_minutes') {
+  if (row.key === Setting.booking.slot_grid_minutes) {
     return (
       <NativeSelect id={row.key} defaultValue="30">
         {[5, 10, 15, 20, 30, 60].map((n) => (

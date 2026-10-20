@@ -12,8 +12,16 @@ import {
   ReferenceType,
   VehicleType,
 } from '@rampflow/shared/modules/avis/values';
+import type { PutAvis } from '@rampflow/shared/modules/booking/api.staff';
 import { Direction } from '@rampflow/shared/modules/booking/values';
-import { DriverLocale, ErrorCode, Setting, values, YesNo } from '@rampflow/shared/values';
+import {
+  DisplayNamesType,
+  DriverLocale,
+  ErrorCode,
+  Setting,
+  values,
+  YesNo,
+} from '@rampflow/shared/values';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
 import {
@@ -232,6 +240,9 @@ export const avisResolver: Resolver<AvisFormValues, unknown, Avis> = async (valu
   return { values: {}, errors: nest(flat) };
 };
 
+/** Where the avis sits in a request body, and so in the paths of its 422 issues. */
+const AVIS_KEY = 'avis' satisfies keyof PutAvis;
+
 /**
  * Puts the 422 issues under `avis` of an API answer on the avis form's fields (AV-01). Returns
  * whether there were any.
@@ -241,7 +252,7 @@ export function applyAvisIssues(
   form: UseFormReturn<AvisFormValues, unknown, Avis>,
 ) {
   if (!(error instanceof ApiFailure) || error.code !== ErrorCode.validation_failed) return false;
-  const avisIssues = error.issues.filter((i) => i.path[0] === 'avis');
+  const avisIssues = error.issues.filter((i) => i.path[0] === AVIS_KEY);
   for (const issue of avisIssues) {
     form.setError(avisErrorPath(issue.path.slice(1)) as FieldPath<AvisFormValues>, {
       type: issue.code,
@@ -251,39 +262,48 @@ export function applyAvisIssues(
   return avisIssues.length > 0;
 }
 
+/** Fields whose too-small number means "must be positive". */
+const POSITIVE_FIELDS = new Set(['quantity', 'grossWeightKg']);
+/** A choice, whose invalid type means no answer rather than a wrong number. */
+const CHOICE_FIELDS = new Set(['adrClass']);
+
+type IssueType = string | number | undefined;
+
 /** The message of a field error in the UI language, by issue code and field. */
 export function useAvisMessage() {
   const { t } = useTranslation('booking');
   const { t: tAvis } = useTranslation('avis');
+  const plate = (type: IssueType) =>
+    type === 'invalid_format' ? t(($) => $.plan.validation.plate) : undefined;
+  // A field's own message, which wins over the messages every field shares.
+  const own = new Map<string, (type: IssueType) => string | undefined>([
+    ['plate', plate],
+    ['trailerPlate', plate],
+    ['phone', (type) => (type === 'invalid_format' ? tAvis(($) => $.avis.hint.phone) : undefined)],
+    [
+      'unNumber',
+      (type) => (type === 'invalid_format' ? tAvis(($) => $.avis.hint.unNumber) : undefined),
+    ],
+    ['plateCountry', () => t(($) => $.plan.validation.country)],
+    ['label', () => tAvis(($) => $.avis.hint.otherLabel)],
+    [
+      'maxC',
+      (type) => (type === 'custom' ? t(($) => $.plan.validation.temperature_order) : undefined),
+    ],
+    [
+      'references',
+      (type) => (type === 'custom' ? t(($) => $.plan.validation.reference_type) : undefined),
+    ],
+  ]);
   return (error: { type?: string | number } | undefined, field: string): string | undefined => {
     if (!error) return undefined;
-    switch (field) {
-      case 'plate':
-      case 'trailerPlate':
-        if (error.type === 'invalid_format') return t(($) => $.plan.validation.plate);
-        break;
-      case 'phone':
-        if (error.type === 'invalid_format') return tAvis(($) => $.avis.hint.phone);
-        break;
-      case 'unNumber':
-        if (error.type === 'invalid_format') return tAvis(($) => $.avis.hint.unNumber);
-        break;
-      case 'plateCountry':
-        return t(($) => $.plan.validation.country);
-      case 'label':
-        return tAvis(($) => $.avis.hint.otherLabel);
-      case 'maxC':
-        if (error.type === 'custom') return t(($) => $.plan.validation.temperature_order);
-        break;
-      case 'references':
-        if (error.type === 'custom') return t(($) => $.plan.validation.reference_type);
-        break;
-    }
+    const specific = own.get(field)?.(error.type);
+    if (specific) return specific;
     if (error.type === 'custom') return t(($) => $.plan.validation.required_here);
     if (error.type === 'too_big') return t(($) => $.plan.validation.too_big);
-    if (error.type === 'too_small' && (field === 'quantity' || field === 'grossWeightKg'))
+    if (error.type === 'too_small' && POSITIVE_FIELDS.has(field))
       return t(($) => $.plan.validation.positive);
-    if (error.type === 'invalid_type' && field !== 'adrClass')
+    if (error.type === 'invalid_type' && !CHOICE_FIELDS.has(field))
       return t(($) => $.plan.validation.number);
     return t(($) => $.plan.validation.required);
   };
@@ -306,8 +326,8 @@ export function AvisFields({
   const message = useAvisMessage();
   const id = useId();
   const locale = useLocale();
-  const languageName = new Intl.DisplayNames([locale], { type: 'language' });
-  const regionName = new Intl.DisplayNames([locale], { type: 'region' });
+  const languageName = new Intl.DisplayNames([locale], { type: DisplayNamesType.language });
+  const regionName = new Intl.DisplayNames([locale], { type: DisplayNamesType.region });
   const control = form.control;
   const references = useFieldArray({ control, name: 'references' });
   const loadUnits = useFieldArray({ control, name: 'loadUnits' });

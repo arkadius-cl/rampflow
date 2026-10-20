@@ -1,3 +1,4 @@
+import { ViteMode } from '@rampflow/shared/values';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense } from 'react';
@@ -22,7 +23,7 @@ function RootLayout() {
       <Outlet />
       {/* Sheets and dialogs keep their actions bottom right; toasts there would cover them. */}
       <Toaster position="top-center" />
-      {isDesign || import.meta.env.MODE === 'e2e' ? null : (
+      {isDesign || import.meta.env.MODE === ViteMode.e2e ? null : (
         <Suspense>
           <Devtools />
         </Suspense>

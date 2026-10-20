@@ -4,6 +4,7 @@ import {
   CreateInstructionBody,
   type Instruction,
 } from '@rampflow/shared/modules/safety/api.authoring';
+import { SiteSelection } from '@rampflow/shared/modules/safety/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -123,21 +124,21 @@ export function InstructionDialog({
                 <FieldSet>
                   <FieldLegend variant="label">{t(($) => $.briefings.form.applies_to)}</FieldLegend>
                   <RadioGroup
-                    value={field.value ? 'all' : 'chosen'}
+                    value={field.value ? SiteSelection.all : SiteSelection.chosen}
                     onValueChange={(v) => {
-                      field.onChange(v === 'all');
+                      field.onChange(v === SiteSelection.all);
                       // The API takes site ids only together with `allSites: false`.
-                      if (v === 'all') form.setValue('siteIds', []);
+                      if (v === SiteSelection.all) form.setValue('siteIds', []);
                     }}
                   >
                     <Field orientation="horizontal">
-                      <RadioGroupItem value="all" id="instruction-all-sites" />
+                      <RadioGroupItem value={SiteSelection.all} id="instruction-all-sites" />
                       <FieldLabel htmlFor="instruction-all-sites" className="font-normal">
                         {t(($) => $.briefings.form.all_sites)}
                       </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
-                      <RadioGroupItem value="chosen" id="instruction-chosen-sites" />
+                      <RadioGroupItem value={SiteSelection.chosen} id="instruction-chosen-sites" />
                       <FieldLabel htmlFor="instruction-chosen-sites" className="font-normal">
                         {t(($) => $.briefings.form.chosen_sites)}
                       </FieldLabel>

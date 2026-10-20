@@ -3,7 +3,7 @@ import {
   CarrierInvitationBody,
   type CarrierInvitationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
-import { StaffLocale, values } from '@rampflow/shared/values';
+import { DisplayNamesType, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MailPlusIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -35,7 +35,7 @@ type InviteForm = z.input<typeof CarrierInvitationBody>;
 
 /** Each language named in itself, as the language menu does. */
 const languageName = (locale: string) =>
-  new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale;
+  new Intl.DisplayNames([locale], { type: DisplayNamesType.language }).of(locale) ?? locale;
 
 /** TN-03: invite a carrier company by name and email. */
 export function InviteCarrierDialog({ orgId }: { orgId: string }) {

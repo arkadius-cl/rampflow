@@ -24,7 +24,7 @@ import { queryKeys } from '@/lib/query-keys';
 
 const LoginSearch = z.object({
   redirect: z.string().optional().catch(undefined),
-  mode: z.enum(['password', 'magic', 'reset']).optional().catch(undefined),
+  mode: z.enum(SignInMode).optional().catch(undefined),
 });
 
 /** Only same-app paths, so a crafted link cannot send a signed-in user elsewhere. */

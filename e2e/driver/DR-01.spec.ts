@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { CookieName } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible } from '../support/auth.ts';
 import {
   APP_ORIGIN,
@@ -43,7 +44,7 @@ test.describe('DR-01 Open the link', () => {
     for (const personal of await personalDataOf(booking)) expect(text).not.toContain(personal);
 
     const cookies = await page.context().cookies();
-    const driver = cookies.find((c) => c.name === 'rf_driver');
+    const driver = cookies.find((c) => c.name === CookieName.rf_driver);
     expect(driver).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/api/driver' });
     await expectAccessible(page);
   });

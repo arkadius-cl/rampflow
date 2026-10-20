@@ -5,7 +5,7 @@ import {
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
 import { SignInMode } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -138,7 +138,7 @@ function Invitation({
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {failure.reason === 'already_member'
+              {failure.reason === ConflictReason.already_member
                 ? t(($) => $.auth.invite.already_member)
                 : failure.code === ErrorCode.unauthorized
                   ? t(($) => $.auth.invite.invalid)

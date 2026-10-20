@@ -273,13 +273,15 @@ function SheetForm({
   const resources = (board.data?.resources ?? []).filter(
     (r) => !loadType || loadType.resourceIds.includes(r.id),
   );
-  const fieldError = (name: keyof SheetInput) => {
-    const error = form.formState.errors[name];
-    if (!error) return undefined;
-    if (name === 'forceReason') return t(($) => $.plan.sheet.force_reason_required);
-    if (name === 'startsAt') return t(($) => $.plan.sheet.choose_time);
-    return t(($) => $.plan.validation.required);
+  // Fields with a message of their own; any other field is simply required.
+  const ownError: Partial<Record<keyof SheetInput, string>> = {
+    forceReason: t(($) => $.plan.sheet.force_reason_required),
+    startsAt: t(($) => $.plan.sheet.choose_time),
   };
+  const fieldError = (name: keyof SheetInput) =>
+    form.formState.errors[name]
+      ? (ownError[name] ?? t(($) => $.plan.validation.required))
+      : undefined;
 
   return (
     <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">

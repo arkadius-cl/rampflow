@@ -2,7 +2,13 @@ import type {
   PortalBookingView,
   PortalDriverLink,
 } from '@rampflow/shared/modules/booking/api.portal';
-import { DriverLocale, isValueOf, values } from '@rampflow/shared/values';
+import {
+  DisplayNamesType,
+  DomExceptionName,
+  DriverLocale,
+  isValueOf,
+  values,
+} from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CopyIcon, MailIcon, RefreshCwIcon, Share2Icon } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
@@ -90,7 +96,7 @@ function LinkActions({
   const id = useId();
   const uiLocale = useLocale();
   const queryClient = useQueryClient();
-  const languageName = new Intl.DisplayNames([uiLocale], { type: 'language' });
+  const languageName = new Intl.DisplayNames([uiLocale], { type: DisplayNamesType.language });
   const initial: DriverLocale =
     booking.avis?.driver.locale ??
     (isValueOf(DriverLocale, uiLocale) ? (uiLocale as DriverLocale) : DriverLocale.en);
@@ -119,7 +125,7 @@ function LinkActions({
       });
     } catch (e) {
       // Closing the share sheet rejects with AbortError; nothing to report.
-      if (!(e instanceof DOMException && e.name === 'AbortError')) throw e;
+      if (!(e instanceof DOMException && e.name === DomExceptionName.AbortError)) throw e;
     }
   };
   const send = useMutation({

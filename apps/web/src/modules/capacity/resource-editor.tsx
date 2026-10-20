@@ -242,7 +242,12 @@ function ResourceDetails({
   const holderOf = (dockId: string) =>
     resources.find((r) => r.id !== resource?.id && r.dockIds.includes(dockId));
 
-  const number = (name: 'capacityCap' | 'dailyCap', label: string, unit: string, hint: string) => (
+  const number = (
+    name: keyof Pick<ResourceValues, 'capacityCap' | 'dailyCap'>,
+    label: string,
+    unit: string,
+    hint: string,
+  ) => (
     <Controller
       name={name}
       control={form.control}

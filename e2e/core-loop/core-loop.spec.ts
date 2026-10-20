@@ -21,6 +21,8 @@ const ZONE = 'Europe/Berlin';
 /** The en quiz of the platform template the admin publishes unchanged. */
 const QUIZ = templateContent(DriverLocale.en, { quiz: true }).questions;
 const SITE = 'Lager Garching';
+/** The booking horizon the walk-through pins at the site, as the settings field shows it. */
+const HORIZON_DAYS = '30';
 
 type SettingRow = ReturnType<Page['getByTestId']>;
 
@@ -176,12 +178,12 @@ test.describe('Core loop', () => {
         // The row offers "Save" only for a changed value; an inherited 30 already pins it.
         const horizon = page.getByTestId('setting-booking.horizon_days').getByRole('spinbutton');
         await expect(horizon).not.toHaveValue('');
-        if ((await horizon.inputValue()) !== '30') {
+        if ((await horizon.inputValue()) !== HORIZON_DAYS) {
           await setSiteValue(page, 'booking.horizon_days', (r) =>
-            r.getByRole('spinbutton').fill('30'),
+            r.getByRole('spinbutton').fill(HORIZON_DAYS),
           );
         }
-        await expect(horizon).toHaveValue('30');
+        await expect(horizon).toHaveValue(HORIZON_DAYS);
         await setSiteValue(page, 'booking.slot_grid_minutes', async (r) => {
           await r.getByRole('combobox').selectOption('15');
         });

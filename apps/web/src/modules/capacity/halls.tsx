@@ -303,7 +303,7 @@ export function DockDialog({
     onError: (e) => applyServerIssues(e, form.setError),
   });
   const select = (
-    name: 'hallId' | 'doorType' | 'temperatureZone' | 'status',
+    name: keyof Pick<DockValues, 'hallId' | 'doorType' | 'temperatureZone' | 'status'>,
     label: string,
     options: { value: string; label: string }[],
   ) => (

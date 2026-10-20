@@ -5,16 +5,17 @@ import type {
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
 import type { CarrierUserList, StaffList } from '@rampflow/shared/modules/core/api.staff';
+import { OrgKind } from '@rampflow/shared/values';
 import { queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 
 // Query options of the core administration screens (U3). Keys follow lib/query-keys.ts.
 
 export const platformKeys = {
-  tenants: () => ['platform', 'tenants'] as const,
-  tenant: (tenantId: string) => ['platform', 'tenants', tenantId] as const,
-  packages: () => ['platform', 'packages'] as const,
-  settings: () => ['platform', 'settings'] as const,
+  tenants: () => [OrgKind.platform, 'tenants'] as const,
+  tenant: (tenantId: string) => [OrgKind.platform, 'tenants', tenantId] as const,
+  packages: () => [OrgKind.platform, 'packages'] as const,
+  settings: () => [OrgKind.platform, 'settings'] as const,
 };
 
 export const tenantsQuery = queryOptions({

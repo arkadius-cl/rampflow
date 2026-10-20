@@ -1,4 +1,4 @@
-import { PlanView } from '@rampflow/shared/modules/booking/values';
+import { BookingStatus, PlanView } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   type LocalDate,
@@ -290,7 +290,13 @@ function DayNav({
 
 function Legend() {
   const { t } = useTranslation('booking');
-  const shown = ['confirmed', 'checked_in', 'called', 'loading', 'done'] as const;
+  const shown = [
+    BookingStatus.confirmed,
+    BookingStatus.checked_in,
+    BookingStatus.called,
+    BookingStatus.loading,
+    BookingStatus.done,
+  ];
   return (
     <ul className="hidden items-center gap-1 2xl:flex" aria-label={t(($) => $.plan.toolbar.legend)}>
       {shown.map((s) => (

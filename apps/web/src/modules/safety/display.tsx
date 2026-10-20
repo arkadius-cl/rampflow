@@ -5,7 +5,7 @@ import type {
 } from '@rampflow/shared/modules/safety/api.authoring';
 import type { AckStatus } from '@rampflow/shared/modules/safety/validity';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { BadgeTone } from '@rampflow/shared/values';
+import { BadgeTone, DisplayNamesType } from '@rampflow/shared/values';
 import {
   ArchiveIcon,
   BadgeCheckIcon,
@@ -53,7 +53,7 @@ export function usePictogramName() {
 /** "Polski", "Deutsch", ...: a briefing language in the UI language, by Intl. */
 export function useLanguageName() {
   const locale = useLocale();
-  const names = new Intl.DisplayNames([locale], { type: 'language' });
+  const names = new Intl.DisplayNames([locale], { type: DisplayNamesType.language });
   return (code: string) => {
     const name = names.of(code) ?? code;
     return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);

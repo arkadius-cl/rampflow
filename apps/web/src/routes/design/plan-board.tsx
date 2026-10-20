@@ -1,5 +1,5 @@
 import { BookingStatus, PlanView } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, isValueOf } from '@rampflow/shared/values';
+import { BadgeSize, isValueOf, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   BanIcon,
@@ -56,7 +56,7 @@ export const Route = createFileRoute('/design/plan-board')({
 
 const site = sites[0];
 const siteItems = sites
-  .filter((s) => s.tenantId === 'acme')
+  .filter((s) => s.tenantId === tenantMembership.id)
   .map((s) => ({ value: s.id, label: s.name }));
 
 function PlanBoardScreen() {
@@ -69,7 +69,7 @@ function PlanBoardScreen() {
     <OfficeShell
       org={tenantMembership}
       memberships={memberships}
-      nav={tenantNav('board')}
+      nav={tenantNav(PrototypeScreen.board)}
       breadcrumbs={['Operations', 'Plan board']}
       user={dispatcherUser}
       flush
@@ -165,7 +165,13 @@ function PlanBoardScreen() {
 }
 
 function Legend() {
-  const shown = ['confirmed', 'checked_in', 'called', 'loading', 'done'] as const;
+  const shown = [
+    BookingStatus.confirmed,
+    BookingStatus.checked_in,
+    BookingStatus.called,
+    BookingStatus.loading,
+    BookingStatus.done,
+  ];
   return (
     <ul className="hidden items-center gap-1 xl:flex" aria-label="Status legend">
       {shown.map((s) => (

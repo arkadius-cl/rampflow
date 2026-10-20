@@ -6,7 +6,7 @@ import {
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { BadgeSize, Permission, values } from '@rampflow/shared/values';
+import { BadgeSize, isValueOf, Permission, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -48,11 +48,8 @@ import { type BookingFilters, portalBookingsQuery } from '@/modules/portal/queri
 // site's zone, with the visit from gate-in to gate-out. Filters live in the URL. A registration
 // waiting for approval shows as an alert (CR-02).
 
-const TABS = ['upcoming', 'today', 'past'] as const;
-type Tab = (typeof TABS)[number];
-
 interface Search {
-  tab: Tab;
+  tab: CarrierBookingsTab;
   tenant?: string;
   site?: string;
   status?: BookingStatus;
@@ -64,12 +61,10 @@ const text = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : undefi
 
 export const Route = createFileRoute('/c/$orgId/bookings/')({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    tab: TABS.includes(s.tab as Tab) ? (s.tab as Tab) : CarrierBookingsTab.upcoming,
+    tab: isValueOf(CarrierBookingsTab, s.tab) ? s.tab : CarrierBookingsTab.upcoming,
     tenant: text(s.tenant),
     site: text(s.site),
-    status: values(BookingStatus).includes(s.status as BookingStatus)
-      ? (s.status as BookingStatus)
-      : undefined,
+    status: isValueOf(BookingStatus, s.status) ? s.status : undefined,
     from: localDateSchema.safeParse(s.from).data,
     to: localDateSchema.safeParse(s.to).data,
   }),
@@ -139,9 +134,9 @@ function BookingsPage() {
       ))}
 
       <div className="flex flex-wrap items-end gap-2">
-        <Tabs value={search.tab} onValueChange={(v) => set({ tab: v as Tab })}>
+        <Tabs value={search.tab} onValueChange={(v) => set({ tab: v as CarrierBookingsTab })}>
           <TabsList aria-label={t(($) => $.portal.list.range)}>
-            {TABS.map((tab) => (
+            {values(CarrierBookingsTab).map((tab) => (
               <TabsTrigger key={tab} value={tab}>
                 {t(($) => $.portal.list.tabs[tab])}
               </TabsTrigger>

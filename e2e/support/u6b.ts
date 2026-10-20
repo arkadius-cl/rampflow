@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect } from '@playwright/test';
 import pg from 'pg';
+import { LoadUnitType, ReferenceType } from '../../packages/shared/src/modules/avis/values.ts';
 import {
   firstInstantFrom,
   type LocalDate,
@@ -140,10 +141,13 @@ export async function tieredLoadType(loadTypeId: string): Promise<void> {
 
 export const avis = (o: { units?: number; reference?: string; plate?: string } = {}) => ({
   references: [
-    { type: 'purchase_order', value: o.reference ?? `PO-${randomBytes(3).toString('hex')}` },
+    {
+      type: ReferenceType.purchase_order,
+      value: o.reference ?? `PO-${randomBytes(3).toString('hex')}`,
+    },
   ],
   counterpartyName: 'Lieferant GmbH',
-  loadUnits: [{ type: 'eur_pallet', quantity: o.units ?? 4 }],
+  loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: o.units ?? 4 }],
   ...(o.plate ? { vehicle: { plate: o.plate } } : {}),
 });
 

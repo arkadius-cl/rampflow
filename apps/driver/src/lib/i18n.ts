@@ -1,5 +1,6 @@
 import { createBrowserI18n } from '@rampflow/i18n/browser';
 import status from '@rampflow/i18n/locales/status.json';
+import { TranslationState } from '@rampflow/shared/modules/safety/values';
 import { DriverLocale, isValueOf } from '@rampflow/shared/values';
 import type { i18n } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,7 @@ export const LANGUAGE_NAMES: Record<DriverLocale, string> = {
 
 /** The DR-02 badge: the locale's catalogs are machine translations nobody reviewed yet. */
 export const isMachineTranslated = (locale: DriverLocale) =>
-  (status as Record<string, string>)[locale] === 'machine';
+  (status as Record<string, string>)[locale] === TranslationState.machine;
 
 export function preferredLocale(
   stored: string | null = localStorage.getItem(STORAGE_KEY),

@@ -26,3 +26,12 @@ export const DisplayNamesType = {
   region: 'region',
 } as const;
 export type DisplayNamesType = ValueOf<typeof DisplayNamesType>;
+
+/** `<input type>` values the forms pass as data. */
+export const HtmlInputType = {
+  text: 'text',
+  number: 'number',
+  tel: 'tel',
+  search: 'search',
+} as const;
+export type HtmlInputType = ValueOf<typeof HtmlInputType>;

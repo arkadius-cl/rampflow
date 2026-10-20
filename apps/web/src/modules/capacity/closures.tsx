@@ -59,11 +59,14 @@ import { formatLocalDate, zoneAt } from './time';
 
 const DATE_HOLIDAYS = 'https://github.com/commenthol/date-holidays';
 
+/** A closure from midnight to midnight covers whole days. */
+const MIDNIGHT = '00:00';
+
 function When({ c, timeZone }: { c: ClosureView; timeZone: string }) {
   const locale = useLocale();
   const [startDay, startTime] = c.startsLocal.split('T') as [string, string];
   const [endDay, endTime] = c.endsLocal.split('T') as [string, string];
-  const wholeDays = startTime === '00:00' && endTime === '00:00';
+  const wholeDays = startTime === MIDNIGHT && endTime === MIDNIGHT;
   const zone = zoneAt(c.startsLocal, timeZone, locale);
   if (wholeDays) {
     const lastDay = new Date(Date.parse(`${endDay}T00:00:00Z`) - 86_400_000).toISOString();
@@ -344,18 +347,19 @@ function ClosureDialog({
                   </Field>
                 )}
               />
-              {(['startsLocal', 'endsLocal'] as const).map((name) => (
+              {(
+                [
+                  ['startsLocal', t(($) => $.capacity.closures.starts)],
+                  ['endsLocal', t(($) => $.capacity.closures.ends)],
+                ] as const
+              ).map(([name, label]) => (
                 <Controller
                   key={name}
                   name={name}
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor={`closure-${name}`}>
-                        {name === 'startsLocal'
-                          ? t(($) => $.capacity.closures.starts)
-                          : t(($) => $.capacity.closures.ends)}
-                      </FieldLabel>
+                      <FieldLabel htmlFor={`closure-${name}`}>{label}</FieldLabel>
                       <Input
                         id={`closure-${name}`}
                         type="datetime-local"

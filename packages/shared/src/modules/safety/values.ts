@@ -75,3 +75,10 @@ export const BriefingStep = {
   confirm: 'confirm',
 } as const;
 export type BriefingStep = ValueOf<typeof BriefingStep>;
+
+/** Whether a briefing applies to every site of the tenant or to the sites chosen for it. */
+export const SiteSelection = {
+  all: 'all',
+  chosen: 'chosen',
+} as const;
+export type SiteSelection = ValueOf<typeof SiteSelection>;

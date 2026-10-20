@@ -1,5 +1,5 @@
 import { BookingStatus, PrototypeWizardStep } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize } from '@rampflow/shared/values';
+import { BadgeSize, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarIcon,
@@ -39,7 +39,7 @@ function CarrierBookingsScreen() {
     <OfficeShell
       org={carrierMembership}
       memberships={memberships}
-      nav={carrierNav('bookings')}
+      nav={carrierNav(PrototypeScreen.bookings)}
       breadcrumbs={['Bookings']}
       user={carrierUser}
     >

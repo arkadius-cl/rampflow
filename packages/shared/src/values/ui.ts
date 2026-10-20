@@ -1,4 +1,5 @@
 import type { ValueOf } from './define.ts';
+import { HtmlInputType } from './dom.ts';
 
 // Value sets of the web app and the driver PWA that no single module owns.
 
@@ -46,8 +47,8 @@ export type EditMode = ValueOf<typeof EditMode>;
 
 /** Which validation messages a form field gets: text says "required", a number "too small". */
 export const InputKind = {
-  text: 'text',
-  number: 'number',
+  text: HtmlInputType.text,
+  number: HtmlInputType.number,
 } as const;
 export type InputKind = ValueOf<typeof InputKind>;
 
@@ -72,3 +73,14 @@ export const YesNo = {
   no: 'no',
 } as const;
 export type YesNo = ValueOf<typeof YesNo>;
+
+/** The screens of the design prototype (`/design`) that its navigation marks as active. */
+export const PrototypeScreen = {
+  board: 'board',
+  master_data: 'master-data',
+  settings: 'settings',
+  bookings: 'bookings',
+  wizard: 'wizard',
+  tenants: 'tenants',
+} as const;
+export type PrototypeScreen = ValueOf<typeof PrototypeScreen>;
