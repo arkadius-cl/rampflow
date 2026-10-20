@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "strict": true,
+    "jsx": "preserve",
+    "types": [],
+    "paths": {
+      "@rampflow/shared/values": ["./packages/shared/src/values/index.ts"],
+      "@rampflow/shared/*": ["./packages/shared/src/*.ts"]
+    }
+  },
+  "include": ["apps", "packages"]
+}
