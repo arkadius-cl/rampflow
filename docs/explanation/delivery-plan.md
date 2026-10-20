@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [plan, delivery, units, waves, testing, mvp]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/explanation/mvp-scope.md, docs/reference/module-contract.md, docs/reference/api-routes.md, docs/reference/data-model.md, docs/reference/booking-lifecycle.md, docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md]
 ---
 
@@ -66,7 +66,7 @@ These files are touched by more than one unit. The rule column is binding.
 | `apps/web/src/routeTree.gen.ts` | generated | On conflict take either side and run `pnpm --filter @rampflow/web routes:gen`. |
 | `pnpm-lock.yaml`, `*/package.json` dependency lists | unit adding the dependency | U1 and U2 add the foreseeable dependencies (listed in their units). On a lockfile conflict take `main`'s lockfile and rerun `pnpm install`. Pin exact versions. |
 | `packages/i18n/` (package, loaders, catalog test) | U1, or U2 if U1's report says it left the package out | Whoever ships it owns it until merge; afterwards only the coordinator changes the package code. |
-| `packages/i18n/locales/<locale>/<ns>/nav.json`, `entitlements.json`, `settings.json` | U2 | Derived label parts for every module. Afterwards the coordinator updates them with manifest changes. Other parts belong to the unit that created them. |
+| `packages/i18n/locales/<locale>/<ns>/module.json`, `nav.json`, `entitlements.json`, `settings.json` | U2 | Derived label parts for every module (`module.json` since group-entitlements-by-module). Afterwards the coordinator updates them with manifest changes. Other parts belong to the unit that created them. |
 | `apps/api/test/world.ts` | U1 | The two-world fixture (two tenants with two sites each, two carriers linked to tenant A, a user and session per role). Units add module fixtures through `setup` in their route cases or in their own `fixtures.ts`. |
 | `e2e/support/**` | U2 | Login, Mailpit and seed helpers. Units add `e2e/support/<unit>.ts` (`u6b.ts`, `u8.ts`, ...), never a file per module, because several units share a module. |
 | `playwright.config.ts` | U2, then U10 | U2 adds the staff project; U10 adds the Pixel 7 driver project and the driver dev server. |

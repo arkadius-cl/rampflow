@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, i18n, translations, testing]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/explanation/research/domain-standards.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
 ---
 
@@ -34,11 +34,12 @@ The staff and carrier UI ships in de, en and pl. The driver PWA, driver emails a
 3. **Namespaces are module ids** from the catalog. `core` holds the app shell, common actions and error messages (`core:errors.<code>`). There is no separate `common` namespace.
 4. **Locale sets come from the manifest.** A module with `locales: 'staff'` ships `STAFF_LOCALES` (de, en, pl). The `driver` module ships `DRIVER_LOCALES` (12). Safety briefing content is data in the database, not a catalog, so it is not part of this check.
 5. **Derived keys.** Every manifest item that the UI labels has a fixed key:
+   - module name: `<module>:module.name`, for every module
    - nav item: `<module>:nav.<id>`
    - entitlement: `<module>:entitlements.<key without module prefix>`
    - setting: `<module>:settings.<key without module prefix>.label` and `.description`
    - API error code: `core:errors.<code>`
-   U2 writes these part files (`nav.json`, `entitlements.json`, `settings.json`) for every module, because it builds the shell that shows them.
+   U2 writes these part files (`nav.json`, `entitlements.json`, `settings.json`) for every module, and `pnpm i18n:derive` writes them with `module.json`, because it builds the shell that shows them.
 6. **CI check.** `packages/i18n/src/catalogs.test.ts` fails when:
    - a part file exists in `en` but not in another locale of the module's set, or the reverse,
    - the key sets of a part differ between `en` and any other locale,

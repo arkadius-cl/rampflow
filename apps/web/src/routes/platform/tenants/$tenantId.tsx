@@ -16,23 +16,29 @@ import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-
 import { PageHeader } from '@/components/shells/office-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { TableCell } from '@/components/ui/table';
 import { guard } from '@/lib/access';
 import { api, call } from '@/lib/api';
-import { useEntitlementLabel, useEntitlementValue } from '@/modules/core/entitlements';
+import {
+  groupByModule,
+  ModuleGroupTable,
+  ToggleAllGroups,
+  useModuleGroups,
+} from '@/modules/core/entitlement-groups';
+import { useEntitlementValue } from '@/modules/core/entitlements';
 import { useFormat } from '@/modules/core/format';
 import { AddOverrideCard, OverridesCard } from '@/modules/core/overrides';
 import { platformKeys, tenantQuery } from '@/modules/core/queries';
@@ -168,9 +174,13 @@ function TenantForm({ tenant }: { tenant: TenantDetail }) {
 
 function EntitlementsCard({ tenant }: { tenant: TenantDetail }) {
   const { t } = useTranslation();
-  const label = useEntitlementLabel();
   const valueText = useEntitlementValue();
   const sourceText = (source: EntitlementSource) => t(($) => $.platform.sources[source]);
+  const groups = groupByModule(tenant.entitlements);
+  const state = useModuleGroups(
+    'platform.tenant.openModules',
+    groups.map((g) => g.module),
+  );
   return (
     <Card>
       <CardHeader>
@@ -178,44 +188,49 @@ function EntitlementsCard({ tenant }: { tenant: TenantDetail }) {
           <h2>{t(($) => $.platform.entitlements.title)}</h2>
         </CardTitle>
         <CardDescription>{t(($) => $.platform.entitlements.description)}</CardDescription>
+        <CardAction>
+          <ToggleAllGroups state={state} />
+        </CardAction>
       </CardHeader>
       <CardContent className="px-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="pl-6">{t(($) => $.platform.columns.entitlement)}</TableHead>
-              <TableHead>{t(($) => $.platform.columns.value)}</TableHead>
-              <TableHead>{t(($) => $.platform.columns.package_value)}</TableHead>
-              <TableHead className="pr-6">{t(($) => $.platform.columns.source)}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tenant.entitlements.map((e) => (
-              <TableRow key={e.key} data-testid={`entitlement-${e.key}`}>
-                <TableCell className="pl-6">
-                  <div className="font-medium">{label(e.key)}</div>
-                  <code className="text-xs text-muted-foreground">{e.key}</code>
-                </TableCell>
-                <TableCell className="tabular-nums font-semibold">
-                  {valueText(e.value)}
-                  {e.soft ? (
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">
-                      {t(($) => $.platform.soft)}
-                    </span>
-                  ) : null}
-                </TableCell>
-                <TableCell className="tabular-nums text-muted-foreground">
-                  {valueText(e.packageValue)}
-                </TableCell>
-                <TableCell className="pr-6">
-                  <Badge variant={e.source === 'override' ? 'default' : 'outline'}>
-                    {sourceText(e.source)}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ModuleGroupTable
+          groups={groups}
+          state={state}
+          label={{ header: t(($) => $.platform.columns.entitlement), className: 'pl-6' }}
+          columns={[
+            {
+              id: 'value',
+              header: t(($) => $.platform.columns.value),
+              isOn: (e) => e.value === true,
+            },
+            {
+              id: 'package_value',
+              header: t(($) => $.platform.columns.package_value),
+              isOn: (e) => e.packageValue === true,
+            },
+            { id: 'source', header: t(($) => $.platform.columns.source), className: 'pr-6' },
+          ]}
+          renderCells={(e) => (
+            <>
+              <TableCell className="tabular-nums font-semibold">
+                {valueText(e.value)}
+                {e.soft ? (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    {t(($) => $.platform.soft)}
+                  </span>
+                ) : null}
+              </TableCell>
+              <TableCell className="tabular-nums text-muted-foreground">
+                {valueText(e.packageValue)}
+              </TableCell>
+              <TableCell className="pr-6">
+                <Badge variant={e.source === 'override' ? 'default' : 'outline'}>
+                  {sourceText(e.source)}
+                </Badge>
+              </TableCell>
+            </>
+          )}
+        />
       </CardContent>
     </Card>
   );

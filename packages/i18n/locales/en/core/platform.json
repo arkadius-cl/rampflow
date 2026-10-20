@@ -96,5 +96,11 @@
     "email": "Admin email",
     "reinvite": "Invite admin again",
     "sent": "Invitation sent to {{email}}."
+  },
+  "groups": {
+    "expand_all": "Expand all",
+    "collapse_all": "Collapse all",
+    "header": "{{module}} ({{count}})",
+    "summary": "{{on}} of {{total}} features on"
   }
 }

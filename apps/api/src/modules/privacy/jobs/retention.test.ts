@@ -244,6 +244,7 @@ describe('PL-05 platform rules', () => {
         name: 'Inactive Carrier User',
         locale: 'pl',
         lastSeenAt: ago(lastSeenDaysAgo, minutes),
+        uiPrefs: { 'platform.tenant.openModules': ['yard'] },
       })
       .returning();
     if (!u) throw new Error('no user');
@@ -286,6 +287,7 @@ describe('PL-05 platform rules', () => {
       name: '-',
       passwordHash: null,
     });
+    expect((await userRow(referenced.user.id))?.uiPrefs).toEqual({});
     expect((await userRow(referenced.user.id))?.disabledAt).not.toBeNull();
     expect(await ownerCount('membership', sql`user_id = ${referenced.user.id}`)).toBe(0);
 

@@ -96,5 +96,11 @@
     "email": "E-mail administratora",
     "reinvite": "Zaproś administratora ponownie",
     "sent": "Wysłano zaproszenie do {{email}}."
+  },
+  "groups": {
+    "expand_all": "Rozwiń wszystkie",
+    "collapse_all": "Zwiń wszystkie",
+    "header": "{{module}} ({{count}})",
+    "summary": "{{on}} z {{total}} funkcji włączonych"
   }
 }

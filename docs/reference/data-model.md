@@ -5,7 +5,7 @@ type: reference
 audience: [agent, developer]
 tags: [database, data-model, tenancy, rls, booking, safety, yard]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
 ---
 
@@ -130,6 +130,7 @@ Every party organisation: the single platform org, tenants and carriers.
 | `email_verified_at` | timestamptz | yes | sign-in requires it |
 | `last_seen_at` | timestamptz | yes | drives `privacy.retention.carrier_inactive_days` |
 | `disabled_at` | timestamptz | yes | |
+| `ui_prefs` | jsonb | no | default `{}`; check `jsonb_typeof(ui_prefs) = 'object'`. UI state only, keys from `UI_PREFS` in `packages/shared/src/modules/core/ui-prefs.ts`; written only by `PATCH /api/me`, merged per key; cleared when the retention job anonymizes the user ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) |
 
 RLS custom: `platform` all; `user` select and update its own row (`id = app.user_id()`); `token` select and update the accepting user's row, and insert; `public` insert (registration); `tenant`, `carrier` and `carrier_at_tenant` select where `app.shares_org(id)`: members of the scope's org and, for a tenant, members of its linked carriers. Lookups by email before sign-in go through `app.user_by_email()`. Modules read names and emails with `userDisplay(tx, ids)` (`kernel/users.ts`).
 

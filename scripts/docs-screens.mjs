@@ -14,7 +14,7 @@ const out = process.env.DOCS_SCREENS_OUT ?? 'docs/assets/screens';
 const PASSWORD = 'rampflow-demo';
 
 const DEVICES = {
-  desktop: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
+  desktop: { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 },
   tablet: { viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1, hasTouch: true },
   phone: { ...devices['Pixel 7'], deviceScaleFactor: 1 },
 };

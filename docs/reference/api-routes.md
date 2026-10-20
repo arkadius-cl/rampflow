@@ -118,6 +118,8 @@ Routes under `/api/me`, `/api/auth` and `/api/public` take no org id. Each has a
 
 Unit U2. Router files in `apps/api/src/modules/core/`.
 
+`/api/me` also carries the signed-in user's UI preferences, `uiPrefs`. `GET` returns the stored keys that are known and valid; `PATCH` accepts any subset of the known keys and merges it key by key into the stored object, so two browsers writing different keys keep both ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)).
+
 <!-- routes:auth-me-and-invitations:start -->
 
 | Method | Path | Party | Permission | Entitlement | Story | Router | Notes |
@@ -130,8 +132,8 @@ Unit U2. Router files in `apps/api/src/modules/core/`.
 | POST | `/api/auth/magic-link/exchange` | anonymous | token |  | CR-03 | `core/auth/routes.anonymous.ts` | `{ token }` → 200 `{ ok }`; sets `rf_session`; single use, 15 minutes |
 | POST | `/api/auth/password-reset` | anonymous | none |  | CR-03 | `core/auth/routes.anonymous.ts` | `{ email, locale? }`; 202, as for the magic link (unverified accounts included) |
 | POST | `/api/auth/password-reset/confirm` | anonymous | token |  | CR-03 | `core/auth/routes.anonymous.ts` | `{ token, password }` → 200 `{ ok }`; sets the password, verifies the email, deletes every session of the user and signs this browser in; single use, 60 minutes |
-| GET | `/api/me` | user | member |  |  | `core/me/routes.user.ts` | `{ user, memberships }` for the org picker ([Module contract](module-contract.md#context-endpoints)) |
-| PATCH | `/api/me` | user | member |  |  | `core/me/routes.user.ts` | `{ name?, locale? }`; answers like GET |
+| GET | `/api/me` | user | member |  |  | `core/me/routes.user.ts` | `{ user, memberships, uiPrefs }` for the org picker and the stored UI state ([Module contract](module-contract.md#context-endpoints), [ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) |
+| PATCH | `/api/me` | user | member |  |  | `core/me/routes.user.ts` | `{ name?, locale?, uiPrefs? }`; `uiPrefs` merges key by key into the stored object; answers like GET |
 | POST | `/api/public/invitations/inspect` | public | token |  | PL-01, TN-01, CR-01, CR-04 | `core/invitations/routes.public.ts` | `{ token }` → `{ orgKind, orgName, role, email, hasAccount }`; 401 when unknown, used, revoked or expired |
 | POST | `/api/public/invitations/accept` | public | token |  | PL-01, TN-01, CR-01, CR-04 | `core/invitations/routes.public.ts` | Runs with the token, then in the scope of the org. `{ token, name?, password?, locale? }` → `{ orgId, orgKind }`. A user signed in with the invited email just joins. Otherwise an email with an account answers 401 with `reason: 'sign_in_required'`; a new user needs `name` and `password` (422 without) and gets a verified account and a session. Gate and dock site lists become `membership_site` rows. 409 `already_member` leaves the invitation pending. Service: `acceptInvitation` in `core/invitations/accept.redeem.ts` |
 | GET | `/api/t/:orgId/context` | tenant | member |  |  | `core/context/routes.tenant.ts` | The tenant context of the signed-in member: org, role, permissions, entitlements, the visible sites and their settings. |

@@ -13,7 +13,14 @@ import type {
   PlatformContext,
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
-import { type QueryClient, queryOptions, useQuery } from '@tanstack/react-query';
+import type { UiPrefKey, UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import {
+  type QueryClient,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { redirect, useRouteContext } from '@tanstack/react-router';
 import { api, call, isFailure } from './api';
 import { queryKeys } from './query-keys';
@@ -28,6 +35,39 @@ export const meQuery = queryOptions({
   queryFn: () => call<MeResponse>(api.me.$get()),
   staleTime: 60_000,
 });
+
+const UI_PREF_DEBOUNCE_MS = 400;
+const pendingUiPrefs = new Map<UiPrefKey, ReturnType<typeof setTimeout>>();
+
+/**
+ * One UI preference of the signed-in user, stored on the server (ADR-0014): `[value, set]`.
+ * `set` shows the value at once and sends it after 400 ms without another change to the key.
+ */
+export function useUiPref<K extends UiPrefKey>(key: K) {
+  const queryClient = useQueryClient();
+  const { data: me } = useQuery(meQuery);
+  const save = useMutation({
+    mutationFn: (uiPrefs: UiPrefs) => call<MeResponse>(api.me.$patch({ json: { uiPrefs } })),
+    // The global mutation handler shows the toast; refetching drops the unsaved value.
+    onError: () => queryClient.invalidateQueries({ queryKey: meQuery.queryKey }),
+  });
+  const set = (value: NonNullable<UiPrefs[K]>) => {
+    // A refetch in flight would bring back the old value until the write lands.
+    void queryClient.cancelQueries({ queryKey: meQuery.queryKey });
+    queryClient.setQueryData(meQuery.queryKey, (old) =>
+      old ? { ...old, uiPrefs: { ...old.uiPrefs, [key]: value } } : old,
+    );
+    clearTimeout(pendingUiPrefs.get(key));
+    pendingUiPrefs.set(
+      key,
+      setTimeout(() => {
+        pendingUiPrefs.delete(key);
+        save.mutate({ [key]: value });
+      }, UI_PREF_DEBOUNCE_MS),
+    );
+  };
+  return [me?.uiPrefs[key], set] as const;
+}
 
 export const tenantContextQuery = (orgId: string) =>
   queryOptions({

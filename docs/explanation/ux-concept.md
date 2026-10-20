@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [ux, design, booking, yard, safety, settings, entitlements, i18n, accessibility]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/explanation/mvp-scope.md, docs/explanation/domain-glossary.md, docs/explanation/research/market-and-features.md]
 ---
 
@@ -15,7 +15,7 @@ This document explains how rampflow looks and behaves for each role, and why. Th
 
 ## Design principles
 
-1. **Three devices, three densities.** The office desktop is dense and keyboard-first. Gate and dock tablets are glanceable with 44 px targets and gloves in mind. The driver phone shows one thing at a time with one thumb-sized action. The same components serve all three through a `data-density` attribute, so implementation does not fork.
+1. **Three devices, three densities.** The office desktop is dense and keyboard-first. Office screens (carrier, tenant office roles such as dispatcher and tenant admin, platform admin) are laid out for 1920 × 1080 at 100 % zoom; narrower windows scroll a wide table instead of breaking the page. Gate and dock tablets are glanceable with 44 px targets and gloves in mind. The driver phone shows one thing at a time with one thumb-sized action. The same components serve all three through a `data-density` attribute, so implementation does not fork.
 2. **Status is icon plus label, never colour alone.** Every booking, safety and punctuality state renders from one registry (`status-badge.tsx`) with a Lucide icon, a text label and a tone. Tones reinforce, they do not carry meaning. This satisfies the WCAG 2.2 AA requirement in the scope and keeps the board readable in daylight and in greyscale.
 3. **Site time, labelled, everywhere.** Every time shows the site wall clock with its zone abbreviation ("08:30 CET"). When the viewer sits in another zone, the viewer time follows in parentheses. The `SiteTime` component is the only way to render a time.
 4. **The booking is the spine.** Dispatcher, gate, dock, carrier and driver all look at the same booking, in different clothes. The booking code and the status badge look identical on every screen, so a phone call between gate and carrier can refer to "K7MQ-4D2P, checked in" and both sides see the same thing.

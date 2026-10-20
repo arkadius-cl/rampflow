@@ -10,7 +10,7 @@ const base = process.env.UX_SCREENS_BASE ?? 'http://localhost:5173';
 const out = process.env.UX_SCREENS_OUT ?? '.audit/ux-screens';
 const only = process.argv[2];
 
-const desktop = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 };
+const desktop = { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 };
 const tablet = {
   viewport: { width: 1024, height: 768 },
   deviceScaleFactor: 1,

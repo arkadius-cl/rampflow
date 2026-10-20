@@ -31,7 +31,8 @@ export interface DerivedPart {
 
 export interface CheckOptions {
   /**
-   * Whether every module must already ship `nav.json`, `entitlements.json` and `settings.json`.
+   * Whether every module must already ship `module.json`, `nav.json`, `entitlements.json` and
+   * `settings.json`.
    * When false, derived keys are checked only in parts that exist.
    */
   requireDerivedParts: boolean;
@@ -83,6 +84,7 @@ const baseKeys = (part: Part | undefined) =>
 export function derivedParts(catalog: readonly AnyModuleManifest[]): DerivedPart[] {
   const strip = (id: string, key: string) => key.slice(id.length + 1);
   return catalog.flatMap((m) => [
+    { ns: m.id, part: 'module', keys: ['name'] },
     { ns: m.id, part: 'nav', keys: m.nav.map((n) => n.id) },
     {
       ns: m.id,

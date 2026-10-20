@@ -378,7 +378,7 @@ export function defineAccountCases(cases: readonly AccountRouteCase[]): readonly
 
 | Endpoint | Body |
 |---|---|
-| `GET /api/me` | `{ user: { id, name, email, locale }, memberships: [{ orgId, orgKind, orgName, role }] }` |
+| `GET /api/me` | `{ user: { id, name, email, locale }, memberships: [{ orgId, orgKind, orgName, role }], uiPrefs }` ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) |
 | `GET /api/t/:orgId/context` | `{ org, role, permissions, entitlements, sites: [{ id, name, timeZone }], settings: { [siteId]: { [key]: { value, source } } } }`. Settings include only available keys. |
 | `GET /api/c/:orgId/context` | `{ org, role, permissions, tenants: [{ id, name, linkStatus, carrierPortal, logoUrl }] }` |
 | `GET /api/platform/context` | `{ role, permissions }` |
@@ -462,7 +462,7 @@ The step-by-step checklist with commands is [Add a module or an entitlement](../
    2. Add it to `catalog` in `registry.ts` after every module in its `dependsOn`.
    3. Add its implemented keys to the packages in `packages.ts` where the pricing places them.
    4. Run `pnpm --filter @rampflow/shared test` and `pnpm docs:index`.
-   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
+   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `module.json`, `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
 2. **Implementation (unit).**
    1. Tables in `schema*.ts` with policies from `apps/api/src/db/rls.ts`; then `pnpm db:generate --name <unit-id>`.
    2. Routes with `op()`, `requirePermission`, `requireEntitlement` where finer than the module, and `validate()`.

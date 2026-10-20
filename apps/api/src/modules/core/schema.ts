@@ -112,10 +112,13 @@ export const appUser = pgTable(
     emailVerifiedAt: instant('email_verified_at'),
     lastSeenAt: instant('last_seen_at'),
     disabledAt: instant('disabled_at'),
+    /** UI state only: readable wherever the user row is (ADR-0014). */
+    uiPrefs: jsonb('ui_prefs').notNull().default({}),
     createdAt: createdAt(),
   },
   (t) => [
     check('app_user_locale_check', oneOf(t.locale, STAFF_LOCALES)),
+    check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
     allow('platform', 'all', always),
     allow('user', 'select', userIs(t.id)),
     allow('user', 'update', userIs(t.id)),

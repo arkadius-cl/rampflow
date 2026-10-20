@@ -1,6 +1,7 @@
 import type { Role } from '@rampflow/shared';
 import { MePatchBody, type MeResponse } from '@rampflow/shared/modules/core/api.auth';
-import { asc, eq } from 'drizzle-orm';
+import { parseStoredUiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import { asc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -15,11 +16,18 @@ import { appUser, membership, org } from '../schema.ts';
 const KIND_ORDER = { platform: 0, tenant: 1, carrier: 2 } as const;
 
 async function me(tx: Tx, userId: UserId): Promise<MeResponse> {
-  const [user] = await tx
-    .select({ id: appUser.id, name: appUser.name, email: appUser.email, locale: appUser.locale })
+  const [row] = await tx
+    .select({
+      id: appUser.id,
+      name: appUser.name,
+      email: appUser.email,
+      locale: appUser.locale,
+      uiPrefs: appUser.uiPrefs,
+    })
     .from(appUser)
     .where(eq(appUser.id, userId));
-  if (!user) throw new ApiError('unauthorized');
+  if (!row) throw new ApiError('unauthorized');
+  const { uiPrefs, ...user } = row;
   const rows = await tx
     .select({
       orgId: membership.orgId,
@@ -34,7 +42,7 @@ async function me(tx: Tx, userId: UserId): Promise<MeResponse> {
   const memberships = rows
     .map((m) => ({ ...m, role: m.role as Role }))
     .sort((a, b) => KIND_ORDER[a.orgKind] - KIND_ORDER[b.orgKind]);
-  return { user, memberships };
+  return { user, memberships, uiPrefs: parseStoredUiPrefs(uiPrefs) };
 }
 
 const userOf = (scope: AppEnv['Variables']['scope']): UserId => {
@@ -49,7 +57,7 @@ export const user = new Hono<AppEnv>()
       id: 'core.me.getMe',
       stories: [],
       description:
-        '`{ user, memberships }` for the org picker ([Module contract](module-contract.md#context-endpoints))',
+        '`{ user, memberships, uiPrefs }` for the org picker and the stored UI state ([Module contract](module-contract.md#context-endpoints), [ADR-0014](../decisions/ADR-0014-user-ui-preferences.md))',
       responses: {},
     }),
     async (c) => c.json(await me(c.var.db, userOf(c.var.scope)), 200),
@@ -59,15 +67,20 @@ export const user = new Hono<AppEnv>()
     op({
       id: 'core.me.updateMe',
       stories: [],
-      description: '`{ name?, locale? }`; answers like GET',
+      description:
+        '`{ name?, locale?, uiPrefs? }`; `uiPrefs` merges key by key into the stored object; answers like GET',
       responses: {},
     }),
     validate('json', MePatchBody),
     async (c) => {
       const userId = userOf(c.var.scope);
-      const patch = c.req.valid('json');
-      if (Object.keys(patch).length > 0) {
-        await c.var.db.update(appUser).set(patch).where(eq(appUser.id, userId));
+      const { uiPrefs, ...patch } = c.req.valid('json');
+      // Per-key merge: a write from one browser keeps the keys another browser wrote.
+      const set = uiPrefs
+        ? { ...patch, uiPrefs: sql`${appUser.uiPrefs} || ${JSON.stringify(uiPrefs)}::jsonb` }
+        : patch;
+      if (Object.keys(set).length > 0) {
+        await c.var.db.update(appUser).set(set).where(eq(appUser.id, userId));
       }
       return c.json(await me(c.var.db, userId), 200);
     },

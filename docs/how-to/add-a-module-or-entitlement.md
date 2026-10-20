@@ -5,7 +5,7 @@ type: how-to
 audience: [developer, agent]
 tags: [modules, entitlements, permissions, packages, i18n, rls, testing, docs]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/reference/module-contract.md, docs/tutorials/first-module-change.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0009-i18n-catalogs.md]
 ---
 
@@ -83,7 +83,7 @@ Do the steps of the previous section for each of the module's keys, plus these.
    pnpm --filter @rampflow/shared typecheck
    ```
 
-3. **i18n namespace.** Create `packages/i18n/locales/<locale>/<id>/` for each locale of the module's set, with the part files of your screens, for example `<id>/<screen>.json`. Then derive the label parts (`nav.json`, `entitlements.json`, `settings.json`) and the typed web resources in `apps/web/src/lib/i18n-resources.gen.ts`:
+3. **i18n namespace.** Create `packages/i18n/locales/<locale>/<id>/` for each locale of the module's set, with the part files of your screens, for example `<id>/<screen>.json`. Then derive the label parts (`module.json`, `nav.json`, `entitlements.json`, `settings.json`), translate the module's name in `module.json`, and the typed web resources in `apps/web/src/lib/i18n-resources.gen.ts`:
 
    ```sh
    pnpm i18n:derive
