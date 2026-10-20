@@ -44,3 +44,7 @@ export const cancelled = { reason: 'Ware nicht fertig' };
 // Labels and codes in fields named like discriminants are text, not set members.
 export const membership = { role: 'Tenant admin', code: 'A-01' };
 export const emptyForm = { type: '', status: '' };
+
+// Comparisons against free text: a name and a code.
+export const isPalletised = (name: string) => name === 'Palletised';
+export const isFirstDock = (code: string) => code === 'X-1';
