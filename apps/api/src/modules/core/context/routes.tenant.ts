@@ -3,6 +3,7 @@ import type { ContextSetting, TenantContext } from '@rampflow/shared/modules/cor
 import { and, asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { SiteId } from '../../../db/ids.ts';
+import { op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { org, site } from '../schema.ts';
 
@@ -11,35 +12,45 @@ import { org, site } from '../schema.ts';
 
 const SETTING_KEYS = catalog.flatMap((m) => Object.keys(m.settings)) as SettingKey[];
 
-export const tenant = new Hono<AppEnv>().get('/', async (c) => {
-  const { scope, access, db } = c.var;
-  if (scope.party !== 'tenant' || !access.role || !access.entitlements) {
-    throw new Error('context runs under a tenant user scope');
-  }
-  const { entitlements } = access;
-  const [named] = await db
-    .select({ id: org.id, name: org.name })
-    .from(org)
-    .where(eq(org.id, scope.tenantId));
-  const sites = await db
-    .select({ id: site.id, name: site.name, timeZone: site.timeZone })
-    .from(site)
-    .where(and(eq(site.tenantId, scope.tenantId), eq(site.active, true)))
-    .orderBy(asc(site.name));
-  const available = SETTING_KEYS.filter((key) => isSettingAvailable(catalog, entitlements, key));
-  const settings: TenantContext['settings'] = {};
-  for (const s of sites) {
-    const values: Partial<Record<SettingKey, ContextSetting>> = {};
-    for (const key of available) values[key] = await access.setting(key, s.id as SiteId);
-    settings[s.id] = values;
-  }
-  const body: TenantContext = {
-    org: { id: scope.tenantId, name: named?.name ?? '' },
-    role: access.role as Role,
-    permissions: [...access.permissions],
-    entitlements,
-    sites,
-    settings,
-  };
-  return c.json(body, 200);
-});
+export const tenant = new Hono<AppEnv>().get(
+  '/',
+  op({
+    id: 'core.context.getTenantContext',
+    stories: [],
+    description:
+      'The tenant context of the signed-in member: org, role, permissions, entitlements, the visible sites and their settings.',
+    responses: { 200: type<TenantContext>() },
+  }),
+  async (c) => {
+    const { scope, access, db } = c.var;
+    if (scope.party !== 'tenant' || !access.role || !access.entitlements) {
+      throw new Error('context runs under a tenant user scope');
+    }
+    const { entitlements } = access;
+    const [named] = await db
+      .select({ id: org.id, name: org.name })
+      .from(org)
+      .where(eq(org.id, scope.tenantId));
+    const sites = await db
+      .select({ id: site.id, name: site.name, timeZone: site.timeZone })
+      .from(site)
+      .where(and(eq(site.tenantId, scope.tenantId), eq(site.active, true)))
+      .orderBy(asc(site.name));
+    const available = SETTING_KEYS.filter((key) => isSettingAvailable(catalog, entitlements, key));
+    const settings: TenantContext['settings'] = {};
+    for (const s of sites) {
+      const values: Partial<Record<SettingKey, ContextSetting>> = {};
+      for (const key of available) values[key] = await access.setting(key, s.id as SiteId);
+      settings[s.id] = values;
+    }
+    const body: TenantContext = {
+      org: { id: scope.tenantId, name: named?.name ?? '' },
+      role: access.role as Role,
+      permissions: [...access.permissions],
+      entitlements,
+      sites,
+      settings,
+    };
+    return c.json(body, 200);
+  },
+);

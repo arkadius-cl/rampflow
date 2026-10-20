@@ -11,7 +11,7 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 - **Architecture**: `docs/explanation/architecture-overview.md`. How the apps, packages, request scope, manifests, booking engine and jobs fit together.
 - **Scope**: `docs/explanation/mvp-scope.md`. Stories (BK-04, YD-07, ...), entitlements, packages, settings, NFRs.
 - **Your unit**: `docs/explanation/delivery-plan.md`. Status of the units, owned files, interfaces, required tests, and the rules for shared files.
-- **Contracts**: `docs/reference/` (data model, module contract, booking lifecycle, API routes).
+- **Contracts**: `docs/reference/` (data model, module contract, booking lifecycle, API routes). Every route with its request and response schemas: `apps/api/openapi.gen.json`.
 - **Why**: `docs/decisions/ADR-*.md`. Read the ADR before changing anything it decides.
 
 ## Commands
@@ -21,11 +21,12 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 | `pnpm db:up` | Start Postgres and Mailpit (podman). Tests need it. |
 | `pnpm db:seed` | Load the demo data. Accounts are in `docs/how-to/run-locally.md`. |
 | `pnpm dev` | Run the API, the web app and the driver app, reachable from the LAN at the printed `APP_ORIGIN`. |
-| `pnpm verify` | Lint, typecheck, unit and integration tests, docs check, i18n check. Green before every commit. |
+| `pnpm verify` | Lint, typecheck, unit and integration tests, docs check, i18n check, API description check. Green before every commit. |
 | `pnpm test:e2e` | Playwright inside the pinned container, on a fresh `<checkout db>_e2e` and ports +5, never the dev database or `pnpm dev`. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
 | `pnpm format` | Biome fixes. |
 | `pnpm docs:index` | Regenerate `docs/INDEX.md` and the catalog tables in `docs/reference/module-contract.md`. Run after changing any doc or manifest. |
 | `pnpm i18n:derive` | Write the label parts derived from the manifests and `apps/web/src/lib/i18n-resources.gen.ts`. Run after changing a manifest or adding a part file. |
+| `pnpm api:docs` | Write `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md` (ADR-0013). Run after changing a route, a request schema or a response type. |
 | `pnpm db:generate --name <unit>`, `pnpm db:regen --name <unit>` | Generate your unit's migration; regenerate it after rebasing onto `main` (ADR-0001). |
 | `pnpm docs:screens` | Capture the doc screenshots against a running `pnpm dev` with the dev seed. |
 
@@ -45,6 +46,7 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 - **TypeScript 7.** No `baseUrl`; use `paths`. Every tsconfig lists its `types` explicitly.
 - **Module layout.** Follow "Directory layout" in `docs/reference/module-contract.md`: `schema*.ts`, `<area>/routes.<party>.ts`, `<area>/route-cases.ts`, `emails/<name>.tsx`, `jobs/<name>.ts`.
 - **Tenancy.** Handlers use `c.var.db`, the request transaction opened by `scoped()` (ADR-0002). Every query also filters by `tenant_id` or `carrier_id` itself; RLS is the backstop.
+- **Routes** start with `op({ id, stories, description, responses })` from `kernel/describe.ts` and validate with `validate(target, schema)` from `kernel/validate.ts`. A JSON response is `type<Name>()` with `Name` a named type exported from `packages/shared/src/modules/<id>/api*.ts`; `pnpm api:docs` fails for a route without one unless it is on `apps/api/openapi.allowlist.json`, which only shrinks.
 - **Every route gets a route case** in its `route-cases.ts`: foreign tenant, foreign site, missing permission, entitlement off. Routes under `/api/me`, `/api/auth` and `/api/public` get `accountCases` instead. `route-coverage.test.ts` fails for a route without one.
 - **Every new table** gets an `ORACLE` rule in `apps/api/src/db/rls.test.ts` and rows in `apps/api/test/model.ts`, or the party matrix fails.
 - **Booking status** changes only through `transitionBooking` (ADR-0005).
@@ -74,7 +76,7 @@ Several checkouts run in parallel on one machine (`node scripts/checkout-env.mjs
 
 - Stop only processes you started, by PID or session. Never `pkill -f` or `killall` with a pattern: the other checkouts run identical command lines.
 - Never use bare `git stash`; the stash stack is shared by all worktrees. Use a WIP commit.
-- On a rebase conflict in a generated file (`apps/web/src/routeTree.gen.ts`, `apps/web/src/lib/i18n-resources.gen.ts`, `docs/INDEX.md`), take either side and regenerate it. Never `git rebase --skip`: it drops the whole commit.
+- On a rebase conflict in a generated file (`apps/web/src/routeTree.gen.ts`, `apps/web/src/lib/i18n-resources.gen.ts`, `apps/api/openapi.gen.json`, `docs/INDEX.md`), take either side and regenerate it. Never `git rebase --skip`: it drops the whole commit.
 
 ## Docs
 

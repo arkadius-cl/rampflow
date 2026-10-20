@@ -25,6 +25,7 @@ import type { SiteId, TenantId } from '../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../db/scope.ts';
 import { entitlementOverride, settingValue, tenantSubscription } from '../modules/core/schema.ts';
 import type { Clock } from './clock.ts';
+import { register } from './describe.ts';
 import type { AppEnv } from './env.ts';
 import { ApiError } from './errors.ts';
 import { systemActor } from './system.ts';
@@ -156,7 +157,7 @@ function catalogPermissions(role: Role): ReadonlySet<PermissionKey> {
 
 /** 403 `entitlement_required` with the feature that keeps the module off. Applied at mount. */
 export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
-  return createMiddleware<AppEnv>(async (c, next) => {
+  const guard = createMiddleware<AppEnv>(async (c, next) => {
     const { entitlements } = c.var.access;
     if (entitlements && !entitlements.modules[id]) {
       throw new ApiError('entitlement_required', `Module ${id} is off`, {
@@ -165,23 +166,26 @@ export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
     }
     await next();
   });
+  return register(guard, { kind: 'guard', guard: { kind: 'module', id } });
 }
 
 export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv> {
-  return createMiddleware<AppEnv>(async (c, next) => {
+  const guard = createMiddleware<AppEnv>(async (c, next) => {
     if (!c.var.access.permissions.has(key)) throw new ApiError('forbidden', `Missing ${key}`);
     await next();
   });
+  return register(guard, { kind: 'guard', guard: { kind: 'permission', key } });
 }
 
 /** For features finer than the module, for example `yard.call_to_dock`. */
 export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandler<AppEnv> {
-  return createMiddleware<AppEnv>(async (c, next) => {
+  const guard = createMiddleware<AppEnv>(async (c, next) => {
     if (!c.var.access.entitlements?.features[key]) {
       throw new ApiError('entitlement_required', `${key} is off`, { key });
     }
     await next();
   });
+  return register(guard, { kind: 'guard', guard: { kind: 'entitlement', key } });
 }
 
 /** Mounts a router of a module that can be off. Needs a non-root prefix. */

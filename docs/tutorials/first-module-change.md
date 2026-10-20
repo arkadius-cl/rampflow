@@ -5,7 +5,7 @@ type: tutorial
 audience: [developer, agent]
 tags: [tutorial, modules, entitlements, packages, navigation, i18n, testing]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/reference/module-contract.md, docs/how-to/add-a-module-or-entitlement.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
 ---
 
@@ -187,10 +187,13 @@ import { requireEntitlement, requirePermission } from '../../../kernel/access.ts
 ```ts
   .post(
     '/acknowledgements/search',
+    op({ id: 'safety.register.searchAcknowledgements', ... }),
     view,
     requireEntitlement('safety.register'),
-    zValidator('json', RegisterSearchBody, onInvalid),
+    validate('json', RegisterSearchBody),
 ```
+
+The `op()` call stays first and unchanged. The API description reads the entitlement from the guard, so the description text does not need to mention it.
 
 Run the route cases again:
 

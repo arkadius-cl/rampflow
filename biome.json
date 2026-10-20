@@ -11,6 +11,7 @@
       "!docs",
       "!.audit",
       "!**/routeTree.gen.ts",
+      "!apps/api/openapi.gen.json",
       "!apps/web/src/components/ui",
       "!apps/driver/src/components/ui",
       "!apps/web/src/hooks/use-mobile.ts"

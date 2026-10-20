@@ -2,7 +2,9 @@ import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { db } from './db/pool.ts';
+import { apiDocs } from './kernel/api-docs.ts';
 import { type Clock, isPinnable, pinnableClock, systemClock } from './kernel/clock.ts';
+import { op } from './kernel/describe.ts';
 import { type AppEnv, env } from './kernel/env.ts';
 import { describeForLog, onError, onNotFound } from './kernel/errors.ts';
 import { requireSameOrigin } from './kernel/origin.ts';
@@ -16,21 +18,33 @@ export interface AppOptions {
   /** Origins whose mutating requests the API accepts; defaults to APP_ORIGIN and APP_EXTRA_ORIGINS. */
   origins?: readonly string[];
   testRoutes?: boolean;
+  /** Swagger UI at `/api/docs` and the document at `/api/openapi.json` (development). */
+  apiDocs?: boolean;
   /** Serve the built SPAs (production). */
   static?: StaticRoots;
   /** Production adds HSTS; defaults to `NODE_ENV=production`. */
   production?: boolean;
 }
 
-const health = new Hono<AppEnv>().get('/', async (c) => {
-  try {
-    await db.execute(sql`select 1`);
-    return c.json({ status: 'ok', db: 'ok' } as const, 200);
-  } catch (err) {
-    console.error(`health: database check failed ${describeForLog(err)}`);
-    return c.json({ status: 'degraded', db: 'error' } as const, 503);
-  }
-});
+const health = new Hono<AppEnv>().get(
+  '/',
+  op({
+    id: 'core.system.health',
+    stories: [],
+    description:
+      'Liveness and database check; 503 with `db: error` when the database does not answer.',
+    responses: {},
+  }),
+  async (c) => {
+    try {
+      await db.execute(sql`select 1`);
+      return c.json({ status: 'ok', db: 'ok' } as const, 200);
+    } catch (err) {
+      console.error(`health: database check failed ${describeForLog(err)}`);
+      return c.json({ status: 'degraded', db: 'error' } as const, 503);
+    }
+  },
+);
 
 function buildApi(options: AppOptions) {
   const base = options.clock ?? systemClock;
@@ -46,6 +60,7 @@ function buildApi(options: AppOptions) {
     .use(requireSameOrigin(options.origins ?? [env.APP_ORIGIN, ...env.APP_EXTRA_ORIGINS]))
     .route('/health', health)
     .route('/test', pinnable ? testRoutes(pinnable) : new Hono<AppEnv>())
+    .route('/', options.apiDocs ? apiDocs() : new Hono<AppEnv>())
     .route('/', modulesApi);
 }
 
@@ -59,6 +74,9 @@ export function createApp(options: AppOptions = {}) {
   return app.onError(onError).notFound(onNotFound);
 }
 
-export const app = createApp({ testRoutes: env.ENABLE_TEST_ROUTES });
+export const app = createApp({
+  testRoutes: env.ENABLE_TEST_ROUTES,
+  apiDocs: env.ENABLE_API_DOCS,
+});
 
 export type AppType = typeof app;

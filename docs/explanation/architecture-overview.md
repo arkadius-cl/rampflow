@@ -5,8 +5,8 @@ type: explanation
 audience: [developer, agent]
 tags: [architecture, tenancy, rls, modules, entitlements, booking, outbox, jobs, frontend, driver, security]
 status: stable
-updated: 2026-10-19
-related: [docs/reference/module-contract.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/reference/booking-lifecycle.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
+updated: 2026-10-20
+related: [docs/reference/module-contract.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/decisions/ADR-0013-openapi-from-routes-and-typescript.md, docs/reference/booking-lifecycle.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
 ---
 
 # Architecture overview
@@ -49,10 +49,12 @@ flowchart LR
 - `apps/api` is a Hono server on Node. It serves `/api`, runs the jobs in process, and in production also serves the built `apps/web` at `/` and `apps/driver` at `/d/` (`kernel/static.ts`), so all three share one origin.
 - `apps/web` is the back office: one Vite and React SPA with TanStack Router and Query, split into the areas `/platform`, `/t/$orgId` for tenants and `/c/$orgId` for carriers ([ADR-0011](../decisions/ADR-0011-frontend-routes-and-org-context.md)). Gate and dock screens use a station layout for tablets.
 - `apps/driver` is a separate PWA, with a budget of 150 KB gzip for its initial JavaScript, because drivers open it on phones at the gate. A driver has no account, only a link ([ADR-0008](../decisions/ADR-0008-driver-token-pwa-delivery.md)).
-- `packages/shared` holds what both sides must agree on: the module manifests and packages, the zod schemas of every request and response, the booking lifecycle table, and the time functions for site-local days ([ADR-0012](../decisions/ADR-0012-time-handling.md)).
+- `packages/shared` holds what both sides must agree on: the module manifests and packages, the zod schemas of every request, the named TypeScript types of every response, the booking lifecycle table, and the time functions for site-local days ([ADR-0012](../decisions/ADR-0012-time-handling.md)).
 - `packages/i18n` holds the catalogs, one namespace per module, in three staff locales and twelve driver locales ([ADR-0009](../decisions/ADR-0009-i18n-catalogs.md)).
 
 The web app calls the API through a typed `hc` client built from the API's route types, so a renamed field breaks the web build, not production.
+
+The same routes also give an OpenAPI 3.1 description, `apps/api/openapi.gen.json`, for people and REST clients. `pnpm api:docs` builds it from the running app, which supplies the paths, guards and zod request schemas. The TypeScript checker supplies the response types, each checked against what its handler returns ([ADR-0013](../decisions/ADR-0013-openapi-from-routes-and-typescript.md)). The route tables in [API routes](../reference/api-routes.md) are generated with it. In development the API serves it in Swagger UI at `/api/docs`.
 
 ## Every request runs in one scoped transaction
 
@@ -113,7 +115,7 @@ The security review of 2026-10-19 found these low-severity gaps. They are open o
 | Question | Document |
 |---|---|
 | Which tables exist and who reads which row? | [Data model](../reference/data-model.md) |
-| Which routes exist, with which permission and entitlement? | [API routes](../reference/api-routes.md) |
+| Which routes exist, with which permission and entitlement? | [API routes](../reference/api-routes.md), and `apps/api/openapi.gen.json` for the schemas |
 | Which commands move a booking, and who may run them? | [Booking lifecycle](../reference/booking-lifecycle.md) |
 | What does a manifest contain, and what is in each package? | [Module contract](../reference/module-contract.md) |
 | Why Drizzle, and how do migrations work on parallel branches? | [ADR-0001](../decisions/ADR-0001-data-access-drizzle-node-postgres.md) |

@@ -9,7 +9,7 @@
 // The main checkout (where .git is a directory) keeps rampflow, 3000, 5173 and 5174.
 // A worktree gets rampflow_<slug> and port block n: 3000+10n, 5173+10n, 5174+10n.
 // The e2e profile derives from the dev env: database <db>_e2e and every port +5, so e2e runs
-// never write to the dev database and never reuse a running `pnpm dev`.
+// never write to the dev database and never reuse a running `pnpm dev`. It turns ENABLE_API_DOCS off.
 //
 // The dev profile serves the app on the LAN: APP_ORIGIN is http://<DEV_HOST>:<WEB_PORT>, where
 // DEV_HOST is the machine's LAN address unless set, and APP_EXTRA_ORIGINS lists its other
@@ -203,6 +203,8 @@ function e2eEnv(env) {
     APP_EXTRA_ORIGINS: '',
     DATABASE_URL: suffixed('DATABASE_URL'),
     MIGRATION_DATABASE_URL: suffixed('MIGRATION_DATABASE_URL'),
+    // Swagger UI is a dev tool; e2e runs the app as users get it.
+    ENABLE_API_DOCS: '0',
   };
 }
 

@@ -1,18 +1,26 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   CreateTenant,
   InviteTenantAdmin,
+  type OverrideView,
+  type PackageList,
   PutOverride,
+  type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
-import { PutPlatformSetting } from '@rampflow/shared/modules/core/api.settings';
+import {
+  PutPlatformSetting,
+  type SettingEntry,
+  type SettingsView,
+} from '@rampflow/shared/modules/core/api.settings';
+import type { InvitationView } from '@rampflow/shared/modules/core/api.staff';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type TenantId } from '../../../db/ids.ts';
 import { requirePermission } from '../../../kernel/access.ts';
+import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { resetSetting, settingsView, writeSetting } from '../settings/settings.ts';
 import { invitationView } from '../staff/invitations.ts';
 import {
@@ -47,27 +55,66 @@ const settings = requirePermission('core.manage_platform_settings');
 
 /** Mounted at `/api/platform` by modules/index.ts (PL-01 to PL-04). */
 export const platform = new Hono<AppEnv>()
-  .get('/tenants', tenants, async (c) =>
-    c.json({ items: await listTenants(c.var.db, c.var.clock.now()) }, 200),
+  .get(
+    '/tenants',
+    op({
+      id: 'core.platform.listTenants',
+      stories: ['PL-01', 'PL-04'],
+      description:
+        '`{ items: [{ id, name, package, usage }] }`. `usage` holds one meter `{ used, limit, soft, over }` per limit: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
+      responses: {},
+    }),
+    tenants,
+    async (c) => c.json({ items: await listTenants(c.var.db, c.var.clock.now()) }, 200),
   )
-  .post('/tenants', tenants, zValidator('json', CreateTenant, onInvalid), async (c) => {
-    const now = c.var.clock.now();
-    const id = await createTenant(
-      c.var.db,
-      { ...c.req.valid('json'), createdBy: platformUser(c), locale: await platformLocale(c) },
-      now,
-    );
-    return c.json(await tenantDetail(c.var.db, id, now), 201);
-  })
-  .get('/tenants/:tenantId', tenants, zValidator('param', TenantParam, onInvalid), async (c) => {
-    const { tenantId } = c.req.valid('param');
-    return c.json(await tenantDetail(c.var.db, tenantId as TenantId, c.var.clock.now()), 200);
-  })
+  .post(
+    '/tenants',
+    op({
+      id: 'core.platform.createTenant',
+      stories: ['PL-01'],
+      description:
+        '`{ name, package, adminEmail }` → 201 tenant detail. Creates org, subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`',
+      responses: { 201: type<TenantDetail>() },
+    }),
+    tenants,
+    validate('json', CreateTenant),
+    async (c) => {
+      const now = c.var.clock.now();
+      const id = await createTenant(
+        c.var.db,
+        { ...c.req.valid('json'), createdBy: platformUser(c), locale: await platformLocale(c) },
+        now,
+      );
+      return c.json(await tenantDetail(c.var.db, id, now), 201);
+    },
+  )
+  .get(
+    '/tenants/:tenantId',
+    op({
+      id: 'core.platform.getTenant',
+      stories: ['PL-02'],
+      description:
+        '`{ id, name, package, usage, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. Reserved keys are left out; 404 for an id that is not a tenant',
+      responses: { 200: type<TenantDetail>() },
+    }),
+    tenants,
+    validate('param', TenantParam),
+    async (c) => {
+      const { tenantId } = c.req.valid('param');
+      return c.json(await tenantDetail(c.var.db, tenantId as TenantId, c.var.clock.now()), 200);
+    },
+  )
   .patch(
     '/tenants/:tenantId',
+    op({
+      id: 'core.platform.updateTenant',
+      stories: ['PL-02'],
+      description: '`{ name?, package? }` → tenant detail',
+      responses: { 200: type<TenantDetail>() },
+    }),
     tenants,
-    zValidator('param', TenantParam, onInvalid),
-    zValidator('json', UpdateTenant, onInvalid),
+    validate('param', TenantParam),
+    validate('json', UpdateTenant),
     async (c) => {
       const tenantId = c.req.valid('param').tenantId as TenantId;
       const now = c.var.clock.now();
@@ -77,9 +124,16 @@ export const platform = new Hono<AppEnv>()
   )
   .put(
     '/tenants/:tenantId/overrides/:key',
+    op({
+      id: 'core.platform.putOverride',
+      stories: ['PL-02'],
+      description:
+        '`{ value, expiresAt?, note? }`, `value` a boolean, a non-negative integer or `null` (unlimited) → the override. 400 `bad_request` with `reason` `unknown_key` or `reserved_key`, then 422 on `["value"]` for a value of the wrong kind. Applies from the tenant\'s next request',
+      responses: { 200: type<OverrideView>() },
+    }),
     tenants,
-    zValidator('param', OverrideParam, onInvalid),
-    zValidator('json', PutOverride, onInvalid),
+    validate('param', OverrideParam),
+    validate('json', PutOverride),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       const view = await putOverride(
@@ -95,8 +149,14 @@ export const platform = new Hono<AppEnv>()
   )
   .delete(
     '/tenants/:tenantId/overrides/:key',
+    op({
+      id: 'core.platform.deleteOverride',
+      stories: ['PL-02'],
+      description: '204',
+      responses: { 204: noBody },
+    }),
     tenants,
-    zValidator('param', OverrideParam, onInvalid),
+    validate('param', OverrideParam),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       await deleteOverride(c.var.db, tenantId as TenantId, key);
@@ -105,9 +165,16 @@ export const platform = new Hono<AppEnv>()
   )
   .post(
     '/tenants/:tenantId/invitations',
+    op({
+      id: 'core.platform.createAdminInvitation',
+      stories: ['PL-01'],
+      description:
+        '`{ email }` → 201 invitation; re-invites a tenant admin. A pending invitation to the same email is revoked and replaced',
+      responses: { 201: type<InvitationView>() },
+    }),
     tenants,
-    zValidator('param', TenantParam, onInvalid),
-    zValidator('json', InviteTenantAdmin, onInvalid),
+    validate('param', TenantParam),
+    validate('json', InviteTenantAdmin),
     async (c) => {
       const now = c.var.clock.now();
       const row = await inviteTenantAdmin(
@@ -121,15 +188,41 @@ export const platform = new Hono<AppEnv>()
       return c.json(invitationView(row, now), 201);
     },
   )
-  .get('/packages', tenants, (c) => c.json(packageList(), 200))
-  .get('/settings', settings, async (c) =>
-    c.json(await settingsView(c.var.db, PLATFORM, null), 200),
+  .get(
+    '/packages',
+    op({
+      id: 'core.platform.listPackages',
+      stories: ['PL-02'],
+      description: '`{ items: [{ id, values: [{ key, module, kind, soft, value }] }] }`, read-only',
+      responses: { 200: type<PackageList>() },
+    }),
+    tenants,
+    (c) => c.json(packageList(), 200),
+  )
+  .get(
+    '/settings',
+    op({
+      id: 'core.platform.listSettings',
+      stories: ['PL-03'],
+      description:
+        "`{ scope: 'platform', siteId: null, items }`: every key with platform scope, shaped as in the tenant settings read",
+      responses: { 200: type<SettingsView>() },
+    }),
+    settings,
+    async (c) => c.json(await settingsView(c.var.db, PLATFORM, null), 200),
   )
   .put(
     '/settings/:key',
+    op({
+      id: 'core.platform.putSetting',
+      stories: ['PL-03'],
+      description:
+        '`{ value }` → the field. 400 for an unknown key or one without platform scope; 422 with the zod path under `["value", ...]`. Tenant and site rows stay',
+      responses: { 200: type<SettingEntry>() },
+    }),
     settings,
-    zValidator('param', KeyParam, onInvalid),
-    zValidator('json', PutPlatformSetting, onInvalid),
+    validate('param', KeyParam),
+    validate('json', PutPlatformSetting),
     async (c) => {
       const entry = await writeSetting(
         c.var.db,
@@ -142,7 +235,18 @@ export const platform = new Hono<AppEnv>()
       return c.json(entry, 200);
     },
   )
-  .delete('/settings/:key', settings, zValidator('param', KeyParam, onInvalid), async (c) => {
-    await resetSetting(c.var.db, PLATFORM, c.req.valid('param').key);
-    return c.body(null, 204);
-  });
+  .delete(
+    '/settings/:key',
+    op({
+      id: 'core.platform.deleteSetting',
+      stories: ['PL-03'],
+      description: '204; back to the code default',
+      responses: { 204: noBody },
+    }),
+    settings,
+    validate('param', KeyParam),
+    async (c) => {
+      await resetSetting(c.var.db, PLATFORM, c.req.valid('param').key);
+      return c.body(null, 204);
+    },
+  );

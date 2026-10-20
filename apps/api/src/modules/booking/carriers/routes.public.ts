@@ -1,11 +1,14 @@
-import { zValidator } from '@hono/zod-validator';
-import { CarrierInvitationAcceptBody } from '@rampflow/shared/modules/booking/api.carriers';
+import {
+  CarrierInvitationAcceptBody,
+  type CarrierInvitationInspect,
+} from '@rampflow/shared/modules/booking/api.carriers';
 import { TokenBody } from '@rampflow/shared/modules/core/api.auth';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
+import { op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { sessionUser, tokenScope } from '../../../kernel/scopes.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { startSession } from '../../core/auth/sessions.ts';
 import { acceptCarrierInvitation, inspectCarrierInvitation } from './accept.redeem.ts';
 
@@ -14,22 +17,44 @@ import { acceptCarrierInvitation, inspectCarrierInvitation } from './accept.rede
 // token's scope, so a failed acceptance leaves the invitation unused.
 
 export const publicApi = new Hono<AppEnv>()
-  .post('/inspect', zValidator('json', TokenBody, onInvalid), async (c) => {
-    const { token } = c.req.valid('json');
-    const now = c.var.clock.now();
-    const body = await withScope(tokenScope(token, null), (tx) =>
-      inspectCarrierInvitation(tx, token, now),
-    );
-    return c.json(body, 200);
-  })
-  .post('/accept', zValidator('json', CarrierInvitationAcceptBody, onInvalid), async (c) => {
-    const input = c.req.valid('json');
-    const now = c.var.clock.now();
-    const signedIn = await sessionUser(c);
-    const accepted = await withScope(tokenScope(input.token, signedIn), async (tx) => {
-      const result = await acceptCarrierInvitation(tx, { ...input, signedIn }, now);
-      if (result.userId !== signedIn) await startSession(c, tx, result.userId, now);
-      return result;
-    });
-    return c.json({ carrierId: accepted.carrierId }, 200);
-  });
+  .post(
+    '/inspect',
+    op({
+      id: 'booking.carriers.inspectCarrierInvitation',
+      stories: ['TN-03', 'CR-01'],
+      description:
+        '`{ token }` → `{ tenantName, logoUrl, companyName, email, hasAccount }`; `logoUrl` as for `/api/public/links/:slug`',
+      responses: { 200: type<CarrierInvitationInspect>() },
+    }),
+    validate('json', TokenBody),
+    async (c) => {
+      const { token } = c.req.valid('json');
+      const now = c.var.clock.now();
+      const body = await withScope(tokenScope(token, null), (tx) =>
+        inspectCarrierInvitation(tx, token, now),
+      );
+      return c.json(body, 200);
+    },
+  )
+  .post(
+    '/accept',
+    op({
+      id: 'booking.carriers.acceptCarrierInvitation',
+      stories: ['TN-03', 'CR-01'],
+      description:
+        "Runs with the token, then in the scope of the user. `{ token, name?, password?, companyName?, locale? }` → `{ carrierId }`. A new user needs `name` and `password` (422 without) and becomes carrier admin of a new org; a user signed in with the invited email links the carrier org they administer, and one who is only `carrier_user` answers 403 `forbidden` with `reason: 'carrier_admin_required'` and leaves the invitation pending; an email with an account answers 401 `sign_in_required` with `email`. The link is active, also when the tenant deactivated it before sending this invitation; a deactivation after it stays. Single use, 7 days. Service: `acceptCarrierInvitation` in `accept.redeem.ts`",
+      responses: {},
+    }),
+    validate('json', CarrierInvitationAcceptBody),
+    async (c) => {
+      const input = c.req.valid('json');
+      const now = c.var.clock.now();
+      const signedIn = await sessionUser(c);
+      const accepted = await withScope(tokenScope(input.token, signedIn), async (tx) => {
+        const result = await acceptCarrierInvitation(tx, { ...input, signedIn }, now);
+        if (result.userId !== signedIn) await startSession(c, tx, result.userId, now);
+        return result;
+      });
+      return c.json({ carrierId: accepted.carrierId }, 200);
+    },
+  );

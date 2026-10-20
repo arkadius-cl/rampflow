@@ -1,4 +1,3 @@
-import { zValidator } from '@hono/zod-validator';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +8,7 @@ import { app, createApp } from './app.ts';
 import { parseEnv } from './kernel/env.ts';
 import { onError } from './kernel/errors.ts';
 import { requireSameOrigin } from './kernel/origin.ts';
-import { onInvalid } from './kernel/validate.ts';
+import { validate } from './kernel/validate.ts';
 import { appUser } from './modules/core/schema.ts';
 
 describe('api', () => {
@@ -91,8 +90,8 @@ describe('validation', () => {
     new Hono()
       .post(
         '/items/:id',
-        zValidator('param', z.object({ id: z.uuid() }), onInvalid),
-        zValidator('json', z.object({ avis: z.object({ plate: z.string().min(2) }) }), onInvalid),
+        validate('param', z.object({ id: z.uuid() })),
+        validate('json', z.object({ avis: z.object({ plate: z.string().min(2) }) })),
         (c) => c.json(c.req.valid('json')),
       )
       .onError(onError);
@@ -179,6 +178,20 @@ describe('environment', () => {
         TOKEN_SECRET: 'x'.repeat(40),
       }),
     ).toThrow(/ENABLE_TEST_ROUTES/);
+  });
+
+  it('refuses the API docs in production', () => {
+    expect(() =>
+      parseEnv({
+        ...base,
+        NODE_ENV: 'production',
+        ENABLE_API_DOCS: '1',
+        TOKEN_SECRET: 'x'.repeat(40),
+      }),
+    ).toThrow(/ENABLE_API_DOCS=1 is not allowed with NODE_ENV=production/);
+    expect(
+      parseEnv({ ...base, NODE_ENV: 'development', ENABLE_API_DOCS: '1' }).ENABLE_API_DOCS,
+    ).toBe(true);
   });
 
   it('refuses the development token secret in production', () => {

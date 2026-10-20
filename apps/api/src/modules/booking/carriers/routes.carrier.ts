@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { CarrierId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
+import { op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { tenantCarrierLink } from '../../core/schema.ts';
 import { carrierRegistration } from '../schema.carriers.ts';
@@ -53,8 +54,18 @@ async function linkedTenants(tx: Tx, carrierId: CarrierId): Promise<LinkedTenant
 }
 
 /** Mounted at `/api/c/:orgId/tenants` by modules/index.ts. */
-export const carrier = new Hono<AppEnv>().get('/', async (c) => {
-  const { scope } = c.var;
-  if (scope.party !== 'carrier') throw new Error(`carrier route under party ${scope.party}`);
-  return c.json({ items: await linkedTenants(c.var.db, scope.carrierId) }, 200);
-});
+export const carrier = new Hono<AppEnv>().get(
+  '/',
+  op({
+    id: 'booking.carriers.listLinkedTenants',
+    stories: ['CR-02', 'CR-05'],
+    description:
+      '`{ items }`: every tenant the carrier is linked to or registered at, with `link` (status, since) and the newest `registration` (status, reject reason)',
+    responses: {},
+  }),
+  async (c) => {
+    const { scope } = c.var;
+    if (scope.party !== 'carrier') throw new Error(`carrier route under party ${scope.party}`);
+    return c.json({ items: await linkedTenants(c.var.db, scope.carrierId) }, 200);
+  },
+);

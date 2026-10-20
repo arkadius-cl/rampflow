@@ -74,4 +74,8 @@ export interface MemberList<R extends string = string> {
 }
 
 export type StaffList = MemberList<TenantRole>;
+export type StaffMemberView = MemberView<TenantRole>;
+export type StaffInvitationView = InvitationView<TenantRole>;
 export type CarrierUserList = MemberList<CarrierRole>;
+export type CarrierUserView = MemberView<CarrierRole>;
+export type CarrierUserInvitationView = InvitationView<CarrierRole>;

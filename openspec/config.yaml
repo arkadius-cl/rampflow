@@ -1,0 +1,31 @@
+schema: spec-driven
+
+context: |
+  Every change keeps two things current alongside the code:
+  - Docs under docs/ (Diátaxis, frontmatter from docs/CONVENTIONS.md, `pnpm docs:index` after any edit).
+    A change is not done while a doc still describes the old behaviour.
+  - The development seed (`pnpm db:seed`: apps/api/scripts/seed-dev.ts, one module per
+    apps/api/scripts/seed/<module>.ts with its <module>.test.ts). When the data model changes,
+    the seed fills the new tables and columns with realistic demo data, so a fresh
+    `pnpm db:seed` + `pnpm dev` shows the feature without manual setup.
+
+rules:
+  proposal:
+    - 'In Impact, list the docs the change touches by path (docs/how-to, docs/reference, docs/explanation, ADRs, AGENTS.md), or state "Docs: none" with the reason.'
+    - 'In Impact, state whether the data model changes (tables, columns, enums, checks). If it does, name the seed module under apps/api/scripts/seed/ that gets the demo data; otherwise state "Seed: no data model change".'
+  design:
+    - 'If the change decides something an ADR would record (a new dependency, a pattern, a trade-off other units must follow), plan a new ADR or an update to the ADR it touches.'
+    - 'If the data model changes, add a "Seed data" section: which demo rows the seed creates (which tenant, site, carrier, booking states), why they show the feature in pnpm dev, and how a later seed finds them by name.'
+  tasks:
+    - 'Include a "Docs" task group: one task per doc to write or update (reference docs such as data-model.md and api-routes.md, how-to guides, tutorials, ADRs, AGENTS.md, docs/how-to/run-locally.md for new demo accounts), ending with `pnpm docs:index` and `pnpm docs:check`. Omit the group only when the proposal says "Docs: none".'
+    - 'If the data model changes, include a "Seed" task group: extend or add apps/api/scripts/seed/<module>.ts (idempotent, finds earlier data by name, registered in SEEDS in seed-dev.ts after the modules it uses), extend its <module>.test.ts so two runs converge, and verify on a fresh database that `pnpm db:seed` then `pnpm dev` shows the feature.'
+    - 'New demo accounts or passwords go into docs/how-to/run-locally.md in the same task group.'
+
+operations:
+  apply:
+    guidance:
+      - 'Before marking the last task done, check the diff: if it changes the Drizzle schema under apps/api/src/modules/**/schema*.ts and no file under apps/api/scripts/seed/ changed, add the seed work or write in the report why the seed needs none.'
+      - 'Before marking the last task done, check that every doc listed in the proposal Impact changed, and that no doc still describes the old behaviour (grep docs/ for renamed routes, tables, settings and permissions).'
+  archive:
+    guidance:
+      - 'Before archiving, confirm the Docs and Seed task groups are done, or that the proposal explains their absence. Name any gap in the archive summary.'

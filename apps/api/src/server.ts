@@ -30,6 +30,7 @@ const clock = env.ENABLE_TEST_ROUTES ? pinnableClock(systemClock) : systemClock;
 const app = createApp({
   clock,
   testRoutes: env.ENABLE_TEST_ROUTES,
+  apiDocs: env.ENABLE_API_DOCS,
   static:
     env.NODE_ENV === 'production'
       ? {

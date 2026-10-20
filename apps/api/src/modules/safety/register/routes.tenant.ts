@@ -1,12 +1,12 @@
-import { zValidator } from '@hono/zod-validator';
 import { createServerI18n } from '@rampflow/i18n/server';
 import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import { RegisterFilter, RegisterSearchBody } from '@rampflow/shared/modules/safety/api.register';
 import { Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
+import { file, op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { userDisplay } from '../../../kernel/users.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { tenantActor } from '../authoring/actor.ts';
 import { exportRegister, registerFilterOptions, searchRegister } from './acknowledgements.ts';
 import { registerCsv } from './csv.ts';
@@ -21,13 +21,31 @@ const isStaffLocale = (l: string | null | undefined): l is StaffLocale =>
  * bodies because the driver name is a personal search term (API conventions, "Requests").
  */
 export const tenant = new Hono<AppEnv>()
-  .get('/acknowledgements/filters', view, async (c) => {
-    return c.json(await registerFilterOptions(c.var.db, tenantActor(c).tenantId), 200);
-  })
+  .get(
+    '/acknowledgements/filters',
+    op({
+      id: 'safety.register.getRegisterFilters',
+      stories: ['SF-03'],
+      description:
+        '`{ instructions, carriers }`: every instruction (archived too) with its non-draft versions, newest first, and the carriers of the bookings that have acknowledgements; the choices of the register filters, because `safety.view_register` alone cannot list instructions',
+      responses: {},
+    }),
+    view,
+    async (c) => {
+      return c.json(await registerFilterOptions(c.var.db, tenantActor(c).tenantId), 200);
+    },
+  )
   .post(
     '/acknowledgements/search',
+    op({
+      id: 'safety.register.searchAcknowledgements',
+      stories: ['SF-03'],
+      description:
+        '`{ siteId?, carrierId?, driverName?, instructionId?, versionId?, status?, limit?, cursor? }`; newest first, paginated; `status` is `valid`, `visit_only`, `expired` or `outdated` from `acknowledgementStatus`; restricted rows (TN-06) are left out',
+      responses: {},
+    }),
     view,
-    zValidator('json', RegisterSearchBody, onInvalid),
+    validate('json', RegisterSearchBody),
     async (c) => {
       const { limit, cursor, ...filter } = c.req.valid('json');
       const page = await searchRegister(c.var.db, {
@@ -40,16 +58,28 @@ export const tenant = new Hono<AppEnv>()
       return c.json(page, 200);
     },
   )
-  .post('/acknowledgements.csv', view, zValidator('json', RegisterFilter, onInvalid), async (c) => {
-    const { tenantId, userId } = tenantActor(c);
-    const now = c.var.clock.now();
-    const items = await exportRegister(c.var.db, { tenantId, filter: c.req.valid('json'), now });
-    const user = userId ? (await userDisplay(c.var.db, [userId])).get(userId) : undefined;
-    const locale = isStaffLocale(user?.locale) ? user.locale : 'en';
-    const i18n = await createServerI18n(locale);
-    const day = now.toISOString().slice(0, 10);
-    return c.body(registerCsv(items, locale, i18n.t), 200, {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="acknowledgements-${day}.csv"`,
-    });
-  });
+  .post(
+    '/acknowledgements.csv',
+    op({
+      id: 'safety.register.exportAcknowledgements',
+      stories: ['SF-03'],
+      description:
+        'same filters without paging, up to 50,000 rows; CSV format of [Time and formats](#time-and-formats)',
+      responses: { 200: file('text/csv') },
+    }),
+    view,
+    validate('json', RegisterFilter),
+    async (c) => {
+      const { tenantId, userId } = tenantActor(c);
+      const now = c.var.clock.now();
+      const items = await exportRegister(c.var.db, { tenantId, filter: c.req.valid('json'), now });
+      const user = userId ? (await userDisplay(c.var.db, [userId])).get(userId) : undefined;
+      const locale = isStaffLocale(user?.locale) ? user.locale : 'en';
+      const i18n = await createServerI18n(locale);
+      const day = now.toISOString().slice(0, 10);
+      return c.body(registerCsv(items, locale, i18n.t), 200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="acknowledgements-${day}.csv"`,
+      });
+    },
+  );

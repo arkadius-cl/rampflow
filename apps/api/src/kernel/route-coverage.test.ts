@@ -7,18 +7,23 @@ import {
   loadAccountCases,
   loadRouteCases,
 } from '../../test/route-cases.ts';
-import { app } from '../app.ts';
+import { app, createApp } from '../app.ts';
 import type { AppEnv } from './env.ts';
 
 describe('route coverage', () => {
+  // The docs routes sit outside every guarded prefix, like /api/test.
+  const withDocs = createApp({ apiDocs: true });
+
   it('every guarded route of the app has a route case, and every case names a route', async () => {
     const cases = (await loadRouteCases()).map((l) => l.case);
     expect(coverage(app.routes, cases)).toEqual({ uncovered: [], stale: [] });
+    expect(coverage(withDocs.routes, cases)).toEqual({ uncovered: [], stale: [] });
   });
 
   it('every /api/me, /api/auth and /api/public route has an account case', async () => {
     const cases = (await loadAccountCases()).map((l) => l.case);
     expect(accountCoverage(app.routes, cases)).toEqual({ uncovered: [], stale: [] });
+    expect(accountCoverage(withDocs.routes, cases)).toEqual({ uncovered: [], stale: [] });
   });
 
   it('fails on a toy account route without a case', () => {
@@ -66,7 +71,9 @@ describe('route coverage', () => {
     const toy = new Hono()
       .get('/api/health', (c) => c.text('ok'))
       .post('/api/auth/login', (c) => c.text('ok'))
-      .post('/api/test/seed', (c) => c.text('ok'));
+      .post('/api/test/seed', (c) => c.text('ok'))
+      .get('/api/docs/:file', (c) => c.text('ok'))
+      .get('/api/openapi.json', (c) => c.json({}));
     expect(coverage(toy.routes, [])).toEqual({ uncovered: [], stale: [] });
   });
 });
