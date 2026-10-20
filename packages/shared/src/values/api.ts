@@ -36,10 +36,10 @@ export const ApiSection = {
   bookings: 'Bookings (staff)',
   carriers: 'Carrier network',
   portal: 'Carrier booking portal',
-  yard: 'Yard',
-  driver: 'Driver',
-  reports: 'Reports',
-  privacy: 'Privacy',
+  Yard: 'Yard',
+  Driver: 'Driver',
+  Reports: 'Reports',
+  Privacy: 'Privacy',
 } as const;
 export type ApiSection = ValueOf<typeof ApiSection>;
 

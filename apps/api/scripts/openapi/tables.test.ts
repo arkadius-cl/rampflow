@@ -17,7 +17,7 @@ import { applyTables, renderTables } from './tables.ts';
 
 const checkIn: Operation = {
   file: 'modules/yard/routes.tenant.ts',
-  section: ApiSection.yard,
+  section: ApiSection.Yard,
   endpoint: {
     method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/check-in',
@@ -53,7 +53,7 @@ const inspect: Operation = {
 describe('renderTables', () => {
   it('renders the uniform columns from the guards and the op() metadata', () => {
     const tables = renderTables([checkIn, inspect]);
-    expect(tables.get(ApiSection.yard)?.split('\n').slice(2)).toEqual([
+    expect(tables.get(ApiSection.Yard)?.split('\n').slice(2)).toEqual([
       '| POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | tenant | `yard.gate` | module `yard`; limit `core.max_sites` | YD-02 | `yard/routes.tenant.ts` | `{ plateSeen? }`; 409 `safety_missing` \\| under enforcement |',
     ]);
     expect(tables.get(ApiSection.auth)).toContain(
@@ -63,7 +63,7 @@ describe('renderTables', () => {
 });
 
 describe('applyTables', () => {
-  const yard = markers(ApiSection.yard);
+  const yard = markers(ApiSection.Yard);
   const doc = `# API\n\nProse before.\n\n${yard.start}\n\n| old |\n\n${yard.end}\n\nProse after.\n`;
 
   it('rewrites only what lies between the markers', () => {

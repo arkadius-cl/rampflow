@@ -41,15 +41,15 @@ export const SECTIONS = {
     'modules/booking/portal/routes.carrier.ts',
     'modules/booking/portal/routes.carrier-at-tenant.ts',
   ],
-  [ApiSection.yard]: ['modules/yard/routes.tenant.ts'],
-  [ApiSection.driver]: [
+  [ApiSection.Yard]: ['modules/yard/routes.tenant.ts'],
+  [ApiSection.Driver]: [
     'modules/driver/session/routes.driver.ts',
     'modules/driver/session/routes.public.ts',
     'modules/driver/view/routes.driver.ts',
     'modules/safety/driver/routes.driver.ts',
   ],
-  [ApiSection.reports]: ['modules/report/kpi/routes.tenant.ts'],
-  [ApiSection.privacy]: ['modules/privacy/requests/routes.tenant.ts'],
+  [ApiSection.Reports]: ['modules/report/kpi/routes.tenant.ts'],
+  [ApiSection.Privacy]: ['modules/privacy/requests/routes.tenant.ts'],
 } as const satisfies Record<ApiSection, readonly string[]>;
 
 export type Section = ApiSection;
