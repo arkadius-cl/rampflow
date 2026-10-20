@@ -9,6 +9,7 @@ import {
   permissionsFor,
   type Role,
 } from '@rampflow/shared';
+import type { HttpMethod } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
 import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
@@ -21,10 +22,8 @@ import { world as seedWorld, type World, type WorldSide } from './world.ts';
 // has a case in a route-cases.ts next to its router; route-coverage.test.ts enforces that, and
 // test/route-cases.test.ts runs every case through checkRouteCase.
 
-export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
 export interface RouteCase {
-  method: Method;
+  method: HttpMethod;
   /** The Hono pattern as in `app.routes`, for example `/api/t/:orgId/yard/bookings/:bookingId/call`. */
   path: string;
   /** A role that may call it, or a driver holding the link of `A.bookings.own`. */
@@ -58,7 +57,7 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
  * no org id, so the harness checks who may call them and that they reveal no other world.
  */
 export interface AccountRouteCase {
-  method: Method;
+  method: HttpMethod;
   path: string;
   /**
    * `session`: a signed-in user's `rf_session` (party `user`).

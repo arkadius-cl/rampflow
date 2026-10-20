@@ -1,3 +1,4 @@
+import { NodeEnv } from '@rampflow/shared/values';
 import * as z from 'zod';
 import type { Scope, Tx } from '../db/scope.ts';
 import type { Access } from './access.ts';
@@ -29,7 +30,7 @@ const EnvSchema = z
     // dev secret, the test routes and the API docs and send Secure cookies. Dev and tests set it
     // explicitly (.env.example through scripts/checkout-env.mjs, vitest.config.ts,
     // playwright.config.ts).
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
+    NODE_ENV: z.enum(NodeEnv).default(NodeEnv.production),
     API_PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
