@@ -1,4 +1,4 @@
-import type { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { LoadStatus } from '@rampflow/shared/modules/booking/values';
 import type { PermissionKey } from '@rampflow/shared/registry';
 import { setCookie } from 'fake-hono';
@@ -64,4 +64,12 @@ export function library(free: (key: string) => string): string {
 
 export function narrowed(b: Booking): b is Booking & { status: 'cancelled' } {
   return b.status.length > 0;
+}
+
+export function wrongSet(): BookingStatus {
+  return LoadStatus.loading; // → BookingStatus.loading
+}
+
+export function rightSet(): number {
+  return count(LoadStatus.loading) + count(BookingStatus.loading); // → silent
 }
