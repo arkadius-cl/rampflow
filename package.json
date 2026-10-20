@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck && tsc -p e2e",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "pnpm -r test",
+    "test": "pnpm -r test && pnpm test:scripts",
+    "test:scripts": "node --test scripts/values-check/*.test.ts",
     "test:e2e": "node scripts/checkout-env.mjs --e2e run -- sh -c 'pnpm --silent db:reset && podman run --rm --network host --ipc host -e API_PORT -e WEB_PORT -e DRIVER_PORT -e APP_ORIGIN -e DATABASE_URL -e MIGRATION_DATABASE_URL -e SMTP_HOST -e SMTP_PORT -e CI -v \"$PWD\":/work:z -w /work mcr.microsoft.com/playwright:v1.64.1-noble node_modules/.bin/playwright test \"$@\"' sh",
     "test:e2e:host": "node scripts/checkout-env.mjs --e2e run -- sh -c 'pnpm --silent db:reset && playwright test \"$@\"' sh",
     "db:up": "podman compose up -d --wait --no-recreate",
@@ -29,6 +30,7 @@
     "docs:check": "node scripts/docs.mjs check",
     "i18n:derive": "node scripts/i18n-derive.ts",
     "api:docs": "pnpm --filter @rampflow/api api:docs",
+    "values:check": "node scripts/values-check.ts",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm i18n:derive --check && pnpm api:docs --check",
     "bench": "BENCH=1 pnpm --filter @rampflow/api test bench.test",
     "ux:screens": "podman run --rm --network host --ipc host -v \"$PWD\":/work:z -w /work -e UX_SCREENS_OUT mcr.microsoft.com/playwright:v1.64.1-noble node scripts/ux-screens.mjs",
@@ -43,6 +45,7 @@
     "@types/pg": "8.15.6",
     "concurrently": "10.0.6",
     "pg": "8.23.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "typescript-6": "npm:typescript@6.0.x"
   }
 }
