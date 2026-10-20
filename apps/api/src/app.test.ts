@@ -181,6 +181,20 @@ describe('environment', () => {
     ).toThrow(/ENABLE_TEST_ROUTES/);
   });
 
+  it('refuses the API docs in production', () => {
+    expect(() =>
+      parseEnv({
+        ...base,
+        NODE_ENV: 'production',
+        ENABLE_API_DOCS: '1',
+        TOKEN_SECRET: 'x'.repeat(40),
+      }),
+    ).toThrow(/ENABLE_API_DOCS=1 is not allowed with NODE_ENV=production/);
+    expect(
+      parseEnv({ ...base, NODE_ENV: 'development', ENABLE_API_DOCS: '1' }).ENABLE_API_DOCS,
+    ).toBe(true);
+  });
+
   it('refuses the development token secret in production', () => {
     expect(() => parseEnv({ ...base, NODE_ENV: 'production' })).toThrow(/TOKEN_SECRET/);
   });

@@ -26,8 +26,9 @@ const originList = z
 const EnvSchema = z
   .object({
     // Production unless said otherwise: a deployment that forgets NODE_ENV must still refuse the
-    // dev secret and the test routes and send Secure cookies. Dev and tests set it explicitly
-    // (.env.example through scripts/checkout-env.mjs, vitest.config.ts, playwright.config.ts).
+    // dev secret, the test routes and the API docs and send Secure cookies. Dev and tests set it
+    // explicitly (.env.example through scripts/checkout-env.mjs, vitest.config.ts,
+    // playwright.config.ts).
     NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
     API_PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
@@ -39,6 +40,8 @@ const EnvSchema = z
     TRUST_PROXY: flag.default(false),
     ENABLE_JOBS: flag.default(true),
     ENABLE_TEST_ROUTES: flag.default(false),
+    // Swagger UI and the OpenAPI document at /api/docs and /api/openapi.json, development only.
+    ENABLE_API_DOCS: flag.default(false),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('rampflow <no-reply@rampflow.local>'),
@@ -46,6 +49,10 @@ const EnvSchema = z
   .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === 'production'), {
     message: 'ENABLE_TEST_ROUTES=1 is not allowed with NODE_ENV=production',
     path: ['ENABLE_TEST_ROUTES'],
+  })
+  .refine((e) => !(e.ENABLE_API_DOCS && e.NODE_ENV === 'production'), {
+    message: 'ENABLE_API_DOCS=1 is not allowed with NODE_ENV=production',
+    path: ['ENABLE_API_DOCS'],
   })
   .refine((e) => e.NODE_ENV !== 'production' || !e.TOKEN_SECRET.startsWith('dev-only'), {
     message: 'Set TOKEN_SECRET in production',
