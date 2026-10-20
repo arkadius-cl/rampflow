@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
@@ -8,6 +8,7 @@ import {
   poolDocks,
   seedVisit,
   siteOf,
+  test,
 } from '../support/u9.ts';
 
 test.describe('YD-07 Assign and call', () => {

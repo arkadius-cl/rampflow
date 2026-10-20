@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
   bookingStatus,
@@ -7,6 +7,7 @@ import {
   publishBriefing,
   seedVisit,
   siteOf,
+  test,
 } from '../support/u9.ts';
 
 test.describe('YD-02 Check in', () => {

@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
+import { bookingStatus, openStation, poolDocks, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-08 Dock progress', () => {
   test('one tap each sets at dock, loading and done; done takes actual units and frees the dock', async ({

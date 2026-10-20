@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, openStation, seedVisit, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-04 On-site list', () => {
   test('shows state, time since gate-in and wait, and flags trucks above the detention limit', async ({

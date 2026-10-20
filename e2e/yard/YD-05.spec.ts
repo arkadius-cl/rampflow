@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, openStation, seedVisit, siteOf } from '../support/u9.ts';
+import { bookingStatus, openStation, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-05 Check out', () => {
   test('leaving before done needs a reason; after done it does not', async ({

@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, openStation, seedVisit, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-01 Expected trucks', () => {
   test('the gate lists today with plate and safety, and a scanner code with Enter opens the check-in', async ({

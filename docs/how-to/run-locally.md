@@ -188,7 +188,7 @@ The end-to-end tests never touch the development database. They run under the ch
 - Every port is the checkout's port plus 5, for example API 3005, web 5178 and driver 5179 in the main checkout. `pnpm dev` keeps running next to an e2e run, and Playwright never reuses the dev servers. It reuses only e2e servers that already listen on the e2e ports.
 - The API, the web servers and the owner-role helpers in `e2e/support/` all receive the profile's `DATABASE_URL`, `MIGRATION_DATABASE_URL` and ports. Mail still goes to the shared Mailpit.
 
-The specs in `e2e/core-loop/` (U12) pin the one API clock that every spec shares, through `POST /api/test/clock`. Their Playwright project `core-loop` therefore depends on the `staff` and `driver` projects and runs one spec at a time after them. A path filter does not apply to dependency projects, so `pnpm test:e2e e2e/core-loop` runs the whole suite. To run only the core loop, skip the dependencies:
+The specs in `e2e/core-loop/` (U12) and `e2e/yard/` (U9) pin the one API clock that every spec shares, through `POST /api/test/clock`. Their Playwright project `core-loop` therefore depends on the `staff` and `driver` projects and runs one spec at a time after them. The yard specs import `test` from `e2e/support/u9.ts`, which pins the API clock and the browser clock to `YARD_NOW` (the `WORLD_NOW` instant, Monday 10:00 in Berlin), so the gate's site-local "today" never depends on the hour of the run. A path filter does not apply to dependency projects, so `pnpm test:e2e e2e/core-loop` runs the whole suite. To run only the serial project, skip the dependencies:
 
 ```sh
 pnpm test:e2e --project core-loop --no-deps

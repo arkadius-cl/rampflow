@@ -25,14 +25,15 @@ export default defineConfig({
   },
   projects: [
     // Office and station screens of staff and carriers (U2).
-    { name: 'staff', testIgnore: /(driver|core-loop)\//, use: office },
+    { name: 'staff', testIgnore: /(driver|core-loop|yard)\//, use: office },
     // The driver PWA on a phone (U10), through the web dev server's /d proxy.
     { name: 'driver', testMatch: /driver\//, use: { ...devices['Pixel 7'] } },
-    // The core loop (U12) pins the one API clock that every spec shares, so it runs alone after
-    // the other projects, one spec at a time. Each actor opens its own context and device.
+    // The core loop (U12) and the yard specs (U9) pin the one API clock that every spec shares, so
+    // they run alone after the other projects, one spec at a time. Each actor opens its own
+    // context and device.
     {
       name: 'core-loop',
-      testMatch: /core-loop\//,
+      testMatch: /(core-loop|yard)\//,
       dependencies: ['staff', 'driver'],
       workers: 1,
       // One long story on a shared machine: a stuck step fails with its locator, not the timeout.

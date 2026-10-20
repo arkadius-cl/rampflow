@@ -178,13 +178,16 @@ test.describe('BK-01 Plan board', () => {
     const w = await seedWorld(request);
     const site = await planSite(w, w.A, ['00:00', '24:00']);
     await signInAs(context, w.A.users.dispatcher);
+    // The page and the assertion read one frozen instant, so a full hour cannot pass in between.
+    const at = new Date();
+    await context.clock.setFixedTime(at);
     await page.goto(`/t/${w.A.tenantId}/plan?site=${site.siteId}`);
     const now = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Europe/Berlin',
       hour: '2-digit',
       minute: '2-digit',
       hourCycle: 'h23',
-    }).format(new Date());
+    }).format(at);
     await expect(page.getByTestId('now-line')).toContainText(/\d{2}:\d{2}\s*CES?T/);
     await expect(page.getByTestId('now-line')).toContainText(now.slice(0, 2));
     await expect(page.getByRole('button', { name: 'Today' })).toBeDisabled();

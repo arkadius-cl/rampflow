@@ -1,7 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, openStation, poolDocks, seedVisit, siteOf } from '../support/u9.ts';
+import {
+  expectTouchTargets,
+  openStation,
+  poolDocks,
+  seedVisit,
+  siteOf,
+  test,
+} from '../support/u9.ts';
 
 test.describe('YD-06 Dock overview', () => {
   test('docks by hall show their truck; the queue lists checked-in trucks by slot start', async ({
