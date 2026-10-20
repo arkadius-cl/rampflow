@@ -10,10 +10,10 @@ What 04 builds on, from the code today and from the three earlier changes:
   - The web renders `components/data-table/` with `use-list-state.ts`. `/platform/tenants/$tenantId` has a loader, so an unknown id shows `NoAccess`.
   - ADR-0015: every managed entity has a view, detail tabs are child routes, and the first tab is the index.
 - **02:**
-  - New `org` columns: `tax_id_type`, `tax_id_value` (normalized), `tax_id_status` (`pending`, `verified`, `unverified`, `unavailable`), `tax_id_checked_at`, `possible_duplicate` and `activated_at`. Each has a check that ties it to `kind = 'tenant'`.
+  - New `org` columns: `tax_id_type` (`TaxIdType`), `tax_id_value` (normalized), `tax_id_status` (`TaxIdStatus`: `pending`, `verified`, `unverified`, `unavailable`), `tax_id_checked_at`, `possible_duplicate` and `activated_at`. Each has a check that ties it to `kind = 'tenant'`.
   - New `app_user` columns: `given_name`, `family_name`, `salutation`.
-  - Registration stores the company's `country` (EU-27) in the existing `org.country`.
-  - `packages/shared/src/modules/core/tenant-status.ts` has `TENANT_STATUSES = ['onboarding', 'active']` and `tenantStatus({ activatedAt })`, with the note "04 adds `suspended`".
+  - Registration stores the company's `country` (`EuCountry`, EU-27) in the existing `org.country`.
+  - `packages/shared/src/modules/core/values.ts` has the value set `TenantStatus` (`onboarding`, `active`), and `packages/shared/src/modules/core/tenant-status.ts` has `tenantStatus({ activatedAt })`, with the note "04 adds `suspended`".
   - 02 adds the status facet to `TenantListQuery`, the greeting helper `core/emails/greeting.ts`, and the seed tenants Nordhafen Kühllogistik, Acme Logistik Süd and Wisła Magazyny.
 - **03:**
   - `Access.tenantStatus` in `kernel/access.ts`, with `requireActiveTenant` (409 `onboarding_incomplete`).
@@ -27,6 +27,7 @@ What 04 builds on, from the code today and from the three earlier changes:
   - Public link routes open their own `withScope(publicScope(link))` and go through `openPublicLink` (`booking/registration/public-links.ts`).
   - Jobs iterate tenants with `forEachTenant` (`kernel/jobs.ts`). It is used by `reminders`, `no_show`, `holiday_import` and `retention`.
 - **The driver PWA** (`apps/driver/src/lib/session.ts`) shows the `invalid` phase only for 401. It treats any other failed poll as network trouble and keeps the last state on screen.
+- **Value sets** follow ADR-0019: each closed set is one self-keyed `as const` object with a type of the same name, and code uses its members, never the string. This change adds `TenantStatus.suspended` and these sets to `packages/shared/src/modules/core/values.ts`: `TenantFlag`, `TenantCountryFacet`, `PlatformMemberSortKey`, `PlatformMemberState`, `PlatformMemberKind`, `PlatformSiteSortKey`, `ActiveFacet`, `TenantNoteSortKey`, `TenantNoteKind` and `SuspendedTenants`, and the members `status`, `package`, `country` and `lastActivityAt` to 01's `TenantSortKey`. It adds members to the cross-cutting sets of `@rampflow/shared/values`: `ErrorCode.tenant_suspended`, `ConflictReason.tax_id_country`, `SystemActorName.platform_read`, `EmailTemplate.core_tenant_suspended` and `.core_tenant_reactivated`, and `StoryId.PL_06` to `PL_08`. `ScopeParty` (the scope `party`) and `PolicyCommand` (the policy command of `db/rls.ts`) come from 00's migration of existing unions; their names are this plan's assumption until 00 lands. SQL below is written as plain SQL for reading; Drizzle code interpolates set members (`${TenantStatus.suspended}`) and `values(Set)`.
 
 ## Goals / Non-Goals
 
@@ -49,13 +50,21 @@ What 04 builds on, from the code today and from the three earlier changes:
 `api.platform.ts`:
 
 ```ts
-export const TENANT_FLAGS = ['possible_duplicate', 'tax_id_unverified'] as const;
+// packages/shared/src/modules/core/values.ts
+export const TenantFlag = {
+  possible_duplicate: 'possible_duplicate',
+  tax_id_unverified: 'tax_id_unverified',
+} as const;
+export type TenantFlag = ValueOf<typeof TenantFlag>;
+export const TenantCountryFacet = { ...EuCountry, none: 'none' } as const; // 02's EU-27 plus "not set"
+export type TenantCountryFacet = ValueOf<typeof TenantCountryFacet>;
+// TenantSortKey (01) gains status, package, country and lastActivityAt.
+
+// packages/shared/src/modules/core/api.platform.ts
 export const TenantListQuery = defineList({
-  sort: ['name', 'createdAt', 'status', 'package', 'country', 'lastActivityAt'],
-  defaultSort: 'name', defaultOrder: 'asc',
-  facets: { status: TENANT_STATUSES, package: PACKAGE_IDS, country: TENANT_COUNTRY_FACET, flag: TENANT_FLAGS },
+  sort: TenantSortKey, defaultSort: TenantSortKey.name, defaultOrder: SortOrder.asc,
+  facets: { status: TenantStatus, package: PackageId, country: TenantCountryFacet, flag: TenantFlag },
 });
-// TENANT_COUNTRY_FACET = [...EU_COUNTRIES (02's EU-27 list), 'none']
 export interface TenantSummary {
   id: string; name: string; package: PackageId; createdAt: string; status: TenantStatus;
   country: string | null;
@@ -73,11 +82,11 @@ export interface TenantList extends ListPage<TenantSummary> {
 
 `listTenants` builds one `from org join tenant_subscription` with these expressions:
 
-- `status`: `case when suspended_at is not null then 'suspended' when activated_at is null then 'onboarding' else 'active' end`. It serves the filter, the facet count and the sort. The sort uses the order of `TENANT_STATUSES` (`onboarding`, `active`, `suspended`) through `array_position`. `package` sorts in the order of `PACKAGE_IDS` the same way.
+- `status`: `case when suspended_at is not null then 'suspended' when activated_at is null then 'onboarding' else 'active' end`. It serves the filter, the facet count and the sort. The sort uses the order of `values(TenantStatus)` (`onboarding`, `active`, `suspended`) through `array_position`. `package` sorts in the order of `values(PackageId)` the same way.
 - `lastActivityAt`: a grouped subquery `select m.org_id, max(u.last_seen_at) from membership m join app_user u ... where m.org_kind = 'tenant' group by m.org_id`, left-joined.
 - `admin`: a lateral subquery. It takes the email of the earliest `tenant_admin` membership (`order by membership.created_at, membership.id`). Without one, it takes the email of the newest open `tenant_admin` invitation, with `invited = true`.
-- `flag`: `possible_duplicate` and `tax_id_status = 'unverified'`, OR-ed within the facet.
-- `country`: `none` maps to `org.country is null`.
+- `flag`: `TenantFlag.possible_duplicate` is `org.possible_duplicate`, and `TenantFlag.tax_id_unverified` is `tax_id_status = TaxIdStatus.unverified`, OR-ed within the facet.
+- `country`: `TenantCountryFacet.none` maps to `org.country is null`.
 - **Search.** The search is one OR of three parts:
   - `contains(q, org.name)`;
   - `contains(normalizeSearchTaxId(q), org.taxIdValue)`, where the term drops spaces, `.`, `-` and `/` and is upper-cased. The stored value is already normalized by 02.
@@ -91,11 +100,11 @@ Alternatives: compute status, admin and activity in TypeScript after loading all
 
 ### 2. Country is `org.country`; the platform admin edits it within the EU-27
 
-02 fills `org.country` from the registration form, and its tax id rules force the tax id to match it. Tenants created through PL-01 have no country, so `UpdateTenant` gains `country: z.enum(EU_COUNTRIES).nullable()`. The Overview form edits it next to name and package. The country is the tenant's legal seat. 05 hands it to Stripe for tax.
+02 fills `org.country` from the registration form, and its tax id rules force the tax id to match it. Tenants created through PL-01 have no country, so `UpdateTenant` gains `country: z.enum(EuCountry).nullable()`. The Overview form edits it next to name and package. The country is the tenant's legal seat. 05 hands it to Stripe for tax.
 
 The country must stay consistent with the stored tax id, by the same rule the registration enforces (02, `checkTaxId(type, value, country)`):
 - A tenant without a tax id may change or clear its country freely.
-- A tenant with a tax id may change the country only to one that `checkTaxId` accepts for the stored type and value. For example, a W-IdNr or `de_stn` only with `DE`, `pl_nip` only with `PL`, and an `eu_vat` only with the country of its prefix. Otherwise `updateTenant` answers 409 `conflict` with reason `tax_id_country`, and nothing changes.
+- A tenant with a tax id may change the country only to one that `checkTaxId` accepts for the stored type and value. For example, a W-IdNr or `de_stn` only with `DE`, `pl_nip` only with `PL`, and an `eu_vat` only with the country of its prefix. Otherwise `updateTenant` answers 409 `conflict` with `ConflictReason.tax_id_country`, and nothing changes.
 - Clearing the country of a tenant with a tax id answers the same 409.
 - The tax id and its check status stay untouched in every case.
 
@@ -123,7 +132,7 @@ Alternatives:
 
 ### 4. Platform reads of tenant master data go through `platform/tenant-reads.ts`
 
-The Sites tab and the Overview's onboarding progress read `site`, `hall`, `dock` and `opening_hours`. These tables have no platform policy. Like `usage.ts`, `tenant-reads.ts` switches with `asScope` to `{ party: 'tenant', tenantId, siteIds: 'all', actor: systemActor('platform_read') }`. It exports two reads:
+The Sites tab and the Overview's onboarding progress read `site`, `hall`, `dock` and `opening_hours`. These tables have no platform policy. Like `usage.ts`, `tenant-reads.ts` switches with `asScope` to the tenant scope `usage.ts` builds (party `ScopeParty.tenant`, the tenant id, every site), with the actor `systemActor(SystemActorName.platform_read)`. It exports two reads:
 
 - `siteList(tx, tenantId, state)`: the sites data table, with hall and counted dock numbers from grouped subqueries.
 - `onboardingOf(tx, tenantId)`: it calls 03's step function from `core/onboarding/onboarding.ts`.
@@ -137,15 +146,15 @@ Alternative: a `platform` select policy on `site`, `hall` and `dock`. Rejected f
 
 ### 5. Members, sites and notes are data tables with their own `defineList`
 
-Each list gets its own named query and response type in `api.platform.ts` (01, decision 3):
+Each list gets its own named query and response type in `api.platform.ts` (01, decision 3). Its sort keys and facet values are value sets in `packages/shared/src/modules/core/values.ts`:
 
 | List | Route | Sort | Facets | Search |
 |---|---|---|---|---|
-| `PlatformMemberListQuery` → `PlatformMemberList` | `GET /tenants/:tenantId/members` | `name`, `email`, `role`, `lastActivityAt`, `since` (default `name`) | `role` (`TENANT_ROLES`), `state` (`member`, `disabled`, `invited`, `expired`) | name, email |
-| `PlatformSiteListQuery` → `PlatformSiteList` | `GET /tenants/:tenantId/sites` | `name`, `city`, `createdAt` (default `name`) | `active` (`yes`, `no`) | name, city |
-| `TenantNoteListQuery` → `TenantNoteList` | `GET /tenants/:tenantId/notes` | `createdAt` (default `desc`) | `kind` (`note`, `suspended`, `reactivated`) | body |
+| `PlatformMemberListQuery` → `PlatformMemberList` | `GET /tenants/:tenantId/members` | `PlatformMemberSortKey`: `name`, `email`, `role`, `lastActivityAt`, `since` (default `name`) | `role` (`TenantRole`), `state` (`PlatformMemberState`: `member`, `disabled`, `invited`, `expired`) | name, email |
+| `PlatformSiteListQuery` → `PlatformSiteList` | `GET /tenants/:tenantId/sites` | `PlatformSiteSortKey`: `name`, `city`, `createdAt` (default `name`) | `active` (`ActiveFacet`: `yes`, `no`) | name, city |
+| `TenantNoteListQuery` → `TenantNoteList` | `GET /tenants/:tenantId/notes` | `TenantNoteSortKey`: `createdAt` (default `SortOrder.desc`) | `kind` (`TenantNoteKind`: `note`, `suspended`, `reactivated`) | body |
 
-- **Members** is a `union all` under the platform party of two parts: `membership ⨝ app_user` (rows with kind `member`), and open invitations (`accepted_at is null and revoked_at is null`, kind `invitation`, `expired` when `expires_at <= now`). Count, facets and page run over the union as a subquery. A member row reads its name through `app_user.name` (the display name; 02 keeps it). The row type is a discriminated union `{ kind: 'member', ... } | { kind: 'invitation', ... }`, so the web renders state without optional-field guessing.
+- **Members** is a `union all` under the platform party of two parts: `membership ⨝ app_user` (rows with kind `PlatformMemberKind.member`), and open invitations (`accepted_at is null and revoked_at is null`, kind `PlatformMemberKind.invitation`, state `PlatformMemberState.expired` when `expires_at <= now`). Count, facets and page run over the union as a subquery. A member row reads its name through `app_user.name` (the display name; 02 keeps it). The row type is a discriminated union `{ kind: typeof PlatformMemberKind.member; ... } | { kind: typeof PlatformMemberKind.invitation; ... }` (zod `z.literal(PlatformMemberKind.member)`), so the web renders state without optional-field guessing.
 - **Sites** runs inside `tenant-reads.ts` (decision 4).
 - **Notes** reads `tenant_note ⨝ app_user` (author) under the platform party.
 
@@ -173,9 +182,9 @@ apps/web/src/routes/platform/tenants/$tenantId/
 
 - `activatedAt`;
 - `taxId.checkedAt`;
-- `suspension: { at, reason, by } | null`, read from the latest `suspended` note;
+- `suspension: { at, reason, by } | null`, read from the latest `TenantNoteKind.suspended` note;
 - `admins: { name, email }[]`;
-- `onboarding: OnboardingProgress | null` (03's type), set only while the status is `onboarding`.
+- `onboarding: OnboardingProgress | null` (03's type), set only while the status is `TenantStatus.onboarding`.
 
 The possible-duplicate link navigates to `/platform/tenants` with `toQuery({ duplicateOf: tenantId })`. A text search on the tax id would miss two kinds of matches that 02's detection finds: an equivalent id in another form (`pl_nip` `N` and `eu_vat` `PLN`, a W-IdNr and its `eu_vat`) and a shared admin email domain with different tax ids. So the list uses the detection itself:
 
@@ -193,20 +202,20 @@ Alternative: keep one detail page with cards. Rejected by the product owner's de
 
 The commands live in `core/platform/suspension.ts`:
 
-- **`suspendTenant(tx, tenantId, reason, userId, locale, now)`.** A guarded update `update org set suspended_at = $now where id = $1 and kind = 'tenant' and suspended_at is null returning id`. With a row, it inserts the `suspended` note and enqueues one email per admin. Without one, it calls `requireTenant` (404 for a non-tenant), and a suspended tenant is a no-op. Two concurrent suspensions therefore write one note and one email set.
-- **`reactivateTenant`.** The mirror: `set suspended_at = null where ... and suspended_at is not null`, then the `reactivated` note and emails.
+- **`suspendTenant(tx, tenantId, reason, userId, locale, now)`.** A guarded update `update org set suspended_at = $now where id = $1 and kind = 'tenant' and suspended_at is null returning id`. With a row, it inserts the `TenantNoteKind.suspended` note and enqueues one email per admin. Without one, it calls `requireTenant` (404 for a non-tenant), and a suspended tenant is a no-op. Two concurrent suspensions therefore write one note and one email set.
+- **`reactivateTenant`.** The mirror: `set suspended_at = null where ... and suspended_at is not null`, then the `TenantNoteKind.reactivated` note and emails.
 - **Routes.** `POST /api/platform/tenants/:tenantId/suspend` and `/reactivate` with body `SuspensionBody = { reason: z.string().trim().min(1).max(500) }`. Both answer 200 with `TenantDetail`. They are command routes, like `.../publish` in safety. A repeated command answers 200 (api-routes.md "Idempotency").
 
 ### 8. Enforcement: the tenant status in `Access`, the refusal in `scoped()`
 
-- **Status.** 02's `tenant-status.ts` gets `TENANT_STATUSES = ['onboarding', 'active', 'suspended']`, and `tenantStatus({ activatedAt, suspendedAt })` with `suspended` first. 03's `loadAccess` already reads the tenant org for `Access.tenantStatus`, and it now also selects `suspended_at`. That is the same single-row read, with no extra statement. 03's `requireActiveTenant` keeps treating anything but `active` as blocked.
-- **`scoped()`**, after `loadAccess`, when `access.tenantStatus === 'suspended'`:
-  - `tenant` scope with a user actor, and `carrier_at_tenant` → `throw new ApiError('tenant_suspended')` (403).
-  - `driver` → `throw new ApiError('unauthorized')` (401).
+- **Status.** 02's `TenantStatus` in `packages/shared/src/modules/core/values.ts` gains `suspended`, and `tenantStatus({ activatedAt, suspendedAt })` in `tenant-status.ts` returns `TenantStatus.suspended` first. 03's `loadAccess` already reads the tenant org for `Access.tenantStatus`, and it now also selects `suspended_at`. That is the same single-row read, with no extra statement. 03's `requireActiveTenant` keeps treating anything but `TenantStatus.active` as blocked.
+- **`scoped()`**, after `loadAccess`, when `access.tenantStatus === TenantStatus.suspended`:
+  - `tenant` scope with a user actor, and `carrier_at_tenant` → `throw new ApiError(ErrorCode.tenant_suspended)` (403).
+  - `driver` → `throw new ApiError(ErrorCode.unauthorized)` (401).
   - Platform, user, carrier (cross-tenant), token and anonymous scopes have no `tenantStatus` and pass.
-- **Public links.** `openPublicLink` already loads `Access` for the public scope. It answers 404 when the status is `suspended`, next to its existing feature and site checks. Registration verification goes through `assertLinkOpen` → `openPublicLink` as well, but `verifyRegistration` (`booking/registration/verify.redeem.ts`) deliberately turns that `not_found` into 401 `unauthorized`, like any invalid or expired link. It throws before redeeming, so the registration stays pending and verifies after reactivation. The spec follows this mapping (404 for the link and the form, 401 for verification) instead of changing the service. The link page and the verify page already handle exactly these two answers. Logos stay served: they carry no data and appear in old emails.
+- **Public links.** `openPublicLink` already loads `Access` for the public scope. It answers 404 when the status is `TenantStatus.suspended`, next to its existing feature and site checks. Registration verification goes through `assertLinkOpen` → `openPublicLink` as well, but `verifyRegistration` (`booking/registration/verify.redeem.ts`) deliberately turns that `ErrorCode.not_found` into 401 `ErrorCode.unauthorized`, like any invalid or expired link. It throws before redeeming, so the registration stays pending and verifies after reactivation. The spec follows this mapping (404 for the link and the form, 401 for verification) instead of changing the service. The link page and the verify page already handle exactly these two answers. Logos stay served: they carry no data and appear in old emails.
 - **Carrier context.** `core/context/routes.carrier.ts` already calls `loadAccess` per linked tenant. `CarrierContextTenant` gains `suspended: boolean`, and `carrierPortal` is `false` when suspended. The booking wizard filters on `carrierPortal`. The warehouse list (`routes/c/$orgId/tenants/`) shows "Temporarily unavailable" with an icon.
-- **Jobs.** `forEachTenant(ctx, job, step, { suspended: 'skip' | 'include' })`, with `'skip'` as the default, lists tenants with `suspended_at is null` under the system scope (which reads `org`). `retention.ts` passes `'include'`. Reminders, no-show and holiday import use the default. The outbox drains as before.
+- **Jobs.** `forEachTenant(ctx, job, step, { suspended: SuspendedTenants })`, with `SuspendedTenants.skip` as the default, lists tenants with `suspended_at is null` under the system scope (which reads `org`). `retention.ts` passes `SuspendedTenants.include`. Reminders, no-show and holiday import use the default. The outbox drains as before.
 
 Why `scoped()` and not the scope resolvers:
 - The resolvers run in their own short transactions before the request transaction.
@@ -219,7 +228,7 @@ Why 404 for public links: a prospective carrier must not learn that the operator
 
 Why carriers keep read access: their bookings are their own delivery schedule. A carrier needs to see what was booked at a tenant that stopped answering.
 
-**Web.** `t/$orgId/route.tsx`'s `errorComponent` renders a new `TenantSuspended` page (`route-states.tsx`) for `isFailure(error, 'tenant_suspended')`. The page has a title, a sentence to contact the organisation's admin, and a link to `/`. `lib/api.ts` `call` invalidates the area context query and the router on a `tenant_suspended` failure, so a screen that was open when the suspension happened switches to that page on the next action.
+**Web.** `t/$orgId/route.tsx`'s `errorComponent` renders a new `TenantSuspended` page (`route-states.tsx`) for `isFailure(error, ErrorCode.tenant_suspended)`. The page has a title, a sentence to contact the organisation's admin, and a link to `/`. `lib/api.ts` `call` invalidates the area context query and the router on an `ErrorCode.tenant_suspended` failure, so a screen that was open when the suspension happened switches to that page on the next action.
 
 Alternative: revoke sessions and driver links on suspension. Rejected: reactivation would then need new invitations and links, and a tenant user with other memberships would be signed out of all of them.
 
@@ -229,21 +238,21 @@ Alternative: revoke sessions and driver links on suspension. Rejected: reactivat
 |---|---|---|---|
 | `id` | uuid | no | `uuidv7()` |
 | `tenant_id` | uuid | no | FK `org` on delete cascade; index `(tenant_id, created_at)` |
-| `kind` | text | no | `note`, `suspended`, `reactivated` (check) |
+| `kind` | text | no | `TenantNoteKind`: `note`, `suspended`, `reactivated` (check `oneOf(t.kind, values(TenantNoteKind))`) |
 | `body` | text | no | 1 to 2,000 characters (check on `char_length(trim(body))`); **PD** possible |
 | `author_id` | uuid | yes | FK `app_user` on delete set null |
 | `created_at` | timestamptz | no | |
 
-- **RLS.** `allow('platform', 'select', always)` and `allow('platform', 'insert', always)`. No update or delete policy, so the app role cannot change notes. The FK cascade on tenant deletion is a referential action and is not subject to RLS. ORACLE: `tenant_note: (c) => is(c, 'platform')`. `test/model.ts` inserts one note per world tenant. `policies.test.ts` checks that an update and a delete under the platform party touch 0 rows.
+- **RLS.** `allow(ScopeParty.platform, PolicyCommand.select, always)` and `allow(ScopeParty.platform, PolicyCommand.insert, always)`. No update or delete policy, so the app role cannot change notes. The FK cascade on tenant deletion is a referential action and is not subject to RLS. ORACLE: `tenant_note: (c) => is(c, ScopeParty.platform)`. `test/model.ts` inserts one note per world tenant. `policies.test.ts` checks that an update and a delete under the platform party touch 0 rows.
 - **Routes.** `POST /api/platform/tenants/:tenantId/notes` with `NewTenantNote = { body }` answers 201 with `TenantNoteView` (`{ id, kind, body, author: { id, name } | null, createdAt }`). The suspension notes are written by the commands of decision 7, never through this route.
 
 Alternative: a generic audit table. Rejected: `core.audit_log` is reserved for later, and notes are free text written by people, not an event log.
 
 ### 10. Emails to tenant admins
 
-`core/emails/tenant-suspended.tsx` (`{ orgName, reason }`) and `tenant-reactivated.tsx` (`{ orgName }`):
+`core/emails/tenant-suspended.tsx` (`{ orgName, reason }`, `EmailTemplate.core_tenant_suspended`) and `tenant-reactivated.tsx` (`{ orgName }`, `EmailTemplate.core_tenant_reactivated`):
 
-- Category `account`, so they always send.
+- Category `EmailCategory.account`, so they always send.
 - `tenantId: null`, because the platform enqueues tenant-less, as PL-01's invitation does.
 - `dedupeKey`: `tenant-suspension:<note id>:<user id>`.
 - Recipients: `membership ⨝ app_user` with role `tenant_admin` and `disabled_at is null`.
@@ -255,11 +264,11 @@ The payloads carry no personal data beyond the org name and the reason the platf
 
 ### 11. Error code and API description
 
-- `ERROR_STATUS.tenant_suspended = 403`, with the default message "The organisation is suspended".
+- `ErrorCode` gains `tenant_suspended`, and `ERROR_STATUS` maps it to 403, with the default message "The organisation is suspended".
 - `core:errors.tenant_suspended` in de, en and pl.
 - One row in api-routes.md's error table. One sentence in "Areas and parties": a suspended tenant's tenant and carrier-at-tenant requests answer 403, driver requests 401 and public links 404 (ADR-0018).
-- `pnpm api:docs` adds the new operations. Their stories are PL-04, PL-06, PL-07 and PL-08.
-- Route cases: every new route gets a platform case (`as: 'platform_admin'`, `permission: 'core.manage_tenants'`, `foreign: 'not_found'`). The `suspend` control call suspends world A of its own fresh world. `reactivate` on an active tenant is a 200 no-op.
+- `pnpm api:docs` adds the new operations. Their stories are `StoryId.PL_04`, `StoryId.PL_06`, `StoryId.PL_07` and `StoryId.PL_08`.
+- Route cases: every new route gets a platform case (`as: Role.platform_admin`, `permission: Permission.core.manage_tenants`, and `foreign` expecting 404). The `suspend` control call suspends world A of its own fresh world. `reactivate` on an active tenant is a 200 no-op.
 
 ### 12. ADR-0018 records the suspension rule
 
@@ -269,7 +278,7 @@ Suspension is a rule every later party, route and job must follow, so it needs a
 - The effect per party, and where each is enforced: `scoped()`, `openPublicLink`, `forEachTenant`.
 - The 401 for drivers and the 404 for public links.
 - What is not revoked.
-- A new job chooses `skip` or `include`. A new party states its suspension effect.
+- A new job chooses `SuspendedTenants.skip` or `SuspendedTenants.include`. A new party states its suspension effect.
 
 ADR-0002 points to it from "How each context works".
 
@@ -301,7 +310,7 @@ PL-05 stays the retention job. Each new story has `e2e/core/PL-0x.spec.ts` with 
 
 ## Seed data
 
-New `apps/api/scripts/seed/platform.ts` with `platform.test.ts`, registered in `SEEDS` after `core`, `signups` (02) and the onboarding seed of 03. It finds every org by `findOrg(ctx.db, 'tenant', name)` and every user by email. It writes with `on conflict` or `update ... where`, so a second run converges.
+New `apps/api/scripts/seed/platform.ts` with `platform.test.ts`, registered in `SEEDS` after `core`, `signups` (02) and the onboarding seed of 03. It finds every org by `findOrg(ctx.db, OrgKind.tenant, name)` and every user by email. It writes with `on conflict` or `update ... where`, so a second run converges.
 
 | Rows | Why it shows the feature |
 |---|---|

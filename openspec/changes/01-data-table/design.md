@@ -5,6 +5,7 @@
 - **Tenant list today.** `GET /api/platform/tenants` (`core/platform/routes.platform.ts`, op `core.platform.listTenants`) returns `{ items: TenantSummary[] }` for every tenant, ordered by `org.name`. `listTenants` in `core/platform/tenants.ts` loads all tenant rows and calls `usageOf` (`core/platform/usage.ts`), which runs one statement per tenant as that tenant with the system actor `usage` (sites, docks and bookings have no platform policy, ADR-0002). The route declares no response type and is on `apps/api/openapi.allowlist.json`. `TenantList` already exists in `packages/shared/src/modules/core/api.platform.ts` and is used only by the web query and `platform.test.ts`.
 - **Web today.** `apps/web/src/routes/platform/tenants/index.tsx` renders a shadcn `Table` from `tenantsQuery` (`modules/core/queries.ts`, key `['platform', 'tenants']`). `overrides.tsx`, `$tenantId.tsx` and the create dialog invalidate that key with `exact: true`. `$tenantId.tsx` loads with `useQuery` and no loader, so an unknown id shows a skeleton forever. Other screens already keep state in search params with a zod `validateSearch` and `.catch()` per field (`t/$orgId/reports/index.tsx`), and the site view already has its tabs as child routes (`t/$orgId/sites/$siteId/route.tsx` with `hours.tsx` and `load-types.tsx`).
 - **Paging today.** `docs/reference/api-routes.md` "Pagination": unbounded streams use `?limit&cursor` with `{ items, nextCursor }`; master-data lists return `{ items }` unpaged. The cursor helpers are copied three times (`booking/lifecycle/view.ts`, `safety/register/acknowledgements.ts`, `report/kpi/kpis.ts`).
+- **Value sets.** The planned sets follow ADR-0019: one self-keyed `as const` object and its type per set. `SortOrder` (`asc`, `desc`) is cross-cutting and lives in `packages/shared/src/values/list.ts`, exported from `@rampflow/shared/values`. `TenantSortKey` (`name`, `createdAt`) lives in `packages/shared/src/modules/core/values.ts`. Sort keys and facet values are passed to `defineList` as these sets, never as string arrays. The page sizes are numbers, not a string set, so `pageSizes` stays a numeric tuple in `contract/list.ts`. SQL below is written as plain SQL for reading; Drizzle code uses set members (`OrgKind.tenant`).
 - **Constraints.** No data model change (brief, model ownership). `packages/shared/src/index.ts` is frozen; shared code is imported by path through the `"./*"` export. Response types must be named types in `packages/shared/src/modules/<id>/api*.ts` (ADR-0013); the converter refuses a declared reference with type arguments, so each list needs its own named type. Office screens target 1920 × 1080. The research note (`docs/explanation/research/tech-architecture.md`) records that the shadcn data-table guide now uses TanStack Table v9 (`useTable`, `@tanstack/react-table@9.3.1`) and that the guide is not a registry item.
 
 ## Goals / Non-Goals
@@ -37,14 +38,14 @@ Alternatives: cursor paging as in `api-routes.md` (rejected for the reasons abov
 The contract is cross-module, like `contract/settings.ts` and `contract/entitlements.ts`, so it sits in `contract/` and is imported as `@rampflow/shared/contract/list`. Sketch:
 
 ```ts
-export const PAGE_SIZES = [10, 25, 50, 100] as const;
-export const SORT_ORDERS = ['asc', 'desc'] as const;
+export const pageSizes = [10, 25, 50, 100] as const; // numbers, not a value set
 
-export interface ListSpec<S extends string, F extends Record<string, readonly [string, ...string[]]>> {
-  sort: readonly [S, ...S[]];
+type ValueSet = Readonly<Record<string, string>>;
+export interface ListSpec<S extends string, F extends Record<string, ValueSet>> {
+  sort: Readonly<Record<string, S>>;     // the list's sort key set, e.g. TenantSortKey
   defaultSort: S;
-  defaultOrder: 'asc' | 'desc';
-  facets: F;
+  defaultOrder: SortOrder;               // from @rampflow/shared/values
+  facets: F;                             // facet name → value set, e.g. { package: PackageId }
 }
 /** The parsed state: q '' = no search; every facet a list of its values, [] = no filter. */
 export type ListState<L> = ...;          // { q, sort, order, page, pageSize } & { [facet]: value[] }
@@ -69,8 +70,8 @@ Alternatives: one schema for both ends (rejected: either the API accepts garbage
 
 ```ts
 export const TenantListQuery = defineList({
-  sort: ['name', 'createdAt'], defaultSort: 'name', defaultOrder: 'asc',
-  facets: { package: PACKAGE_IDS },
+  sort: TenantSortKey, defaultSort: TenantSortKey.name, defaultOrder: SortOrder.asc,
+  facets: { package: PackageId },
 });
 export interface TenantList extends ListPage<TenantSummary> {
   facets: { package: Record<PackageId, number> };
@@ -87,10 +88,10 @@ For each facet the server counts rows per value under the search and every *othe
 
 ```ts
 export function contains(q: string, ...columns: AnyColumn[]): SQL | undefined; // ILIKE with \ escape
-export function orderBy<S extends string>(state: { sort: S; order: 'asc' | 'desc' },
+export function orderBy<S extends string>(state: { sort: S; order: SortOrder },
   columns: Record<S, AnyColumn | SQL>, id: AnyColumn): SQL[];                // sort column, then id asc
 export function pageWindow(state: { page: number; pageSize: number }): { limit: number; offset: number };
-export function facetCounts<V extends string>(values: readonly V[], rows: { value: V; count: number }[]): Record<V, number>;
+export function facetCounts<V extends string>(members: readonly V[], rows: { value: V; count: number }[]): Record<V, number>;
 export function pageOf<T>(state, total: number, items: T[]): ListPage<T>;
 ```
 
@@ -98,7 +99,7 @@ export function pageOf<T>(state, total: number, items: T[]): ListPage<T>;
 
 A list service composes these with its own `where`, joins and post-processing. Why not a generic list executor that runs the count, facet and page queries itself: the tenant list computes usage after paging and joins `tenant_subscription`; later lists add RLS-scoped joins and site filters. An executor would need hooks for each, so plain fragments keep each service readable and the kernel small. The fragments live in the kernel next to `validate.ts` because every module's routes use them.
 
-`listTenants(tx, state, now)` builds `where = kind = 'tenant' and contains(q, org.name) and package in (...)`, runs `count(*)`, one `group by tenant_subscription.package` without the package condition, and the page with `orderBy(state, { name: org.name, createdAt: org.createdAt }, org.id)`. It then calls `usageOf` for the page rows only, so the per-tenant statements are bounded by `pageSize` instead of the number of tenants. `tenantDetail` keeps its own single-row path.
+`listTenants(tx, state, now)` builds `where = kind = 'tenant' and contains(q, org.name) and package in (...)` (in code `eq(org.kind, OrgKind.tenant)`), runs `count(*)`, one `group by tenant_subscription.package` without the package condition, counted with `facetCounts(values(PackageId), rows)`, and the page with `orderBy(state, { name: org.name, createdAt: org.createdAt }, org.id)`. It then calls `usageOf` for the page rows only, so the per-tenant statements are bounded by `pageSize` instead of the number of tenants. `tenantDetail` keeps its own single-row path.
 
 ### 6. The web `DataTable` follows the shadcn guide on TanStack Table v9
 

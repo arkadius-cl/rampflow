@@ -44,7 +44,7 @@ With self-registration (02) tenants appear without the platform admin creating t
   - `kernel/access.ts` (tenant status in `Access`), `kernel/scoped.ts` (suspension check) and `kernel/errors.ts` (`tenant_suspended`).
   - `kernel/jobs.ts` (`forEachTenant` skips suspended tenants), `privacy/jobs/retention.ts` (includes them), and `booking/registration/public-links.ts` (404).
   - `biome.json`: `platform/tenant-reads.ts` may use `asScope`.
-- **Shared:** `packages/shared/src/modules/core/api.platform.ts` (list query, summary, detail, members, sites, notes, suspension types), `api.context.ts` (`CarrierContextTenant.suspended`), and `tenant-status.ts` (02) with `suspended`.
+- **Shared:** `packages/shared/src/modules/core/api.platform.ts` (list query, summary, detail, members, sites, notes, suspension types), `api.context.ts` (`CarrierContextTenant.suspended`), and `tenant-status.ts` (02) with `suspended`. Value sets per ADR-0019 in `packages/shared/src/modules/core/values.ts` (`TenantStatus.suspended`, `TenantFlag`, `TenantCountryFacet`, the sort key, member, site and note sets, `SuspendedTenants`), and new members of `ErrorCode`, `ConflictReason`, `SystemActorName`, `EmailTemplate` and `StoryId` in `packages/shared/src/values/`.
 - **Web:**
   - `apps/web/src/routes/platform/tenants/index.tsx`.
   - `$tenantId.tsx` becomes `$tenantId/route.tsx` plus `index.tsx`, `members.tsx`, `sites.tsx`, `entitlements.tsx` and `notes.tsx`.

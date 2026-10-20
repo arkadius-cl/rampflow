@@ -10,6 +10,7 @@
 - **Jobs** are discovered from `modules/<module>/jobs/<name>.ts`; `JobContext` carries `tx`, `clock` and `mailer`. No API code calls an external HTTP service yet.
 - **Migrations** are generated from the Drizzle schema; custom SQL is landed by the coordinator on `main` (ADR-0001, point 8).
 - Change 01 introduces the list query contract and the `platform-tenant-list` capability; 03 writes `org.activated_at` on activation and gates onboarding; 04 builds the platform tenant views and adds `suspended`.
+- **Value sets** follow ADR-0019: each closed set is one self-keyed `as const` object with a type of the same name, and code uses its members (`TaxIdStatus.pending`), never the string. This change adds `TenantStatus`, `SignupStatus`, `Salutation`, `TaxIdType`, `TaxIdStatus`, `TaxIdCheck`, `SignupIssue`, `EuCountry` and `ViesError` to `packages/shared/src/modules/core/values.ts`. It adds members to the cross-cutting sets of `@rampflow/shared/values`: `ConflictReason.account_exists`, `TokenPurpose.signup`, `RateLimitBucket.signup_request`, `.signup_ip` and `.altcha_solution`, `SystemActorName.signup`, `JobName.core_tax_id_check`, `EmailTemplate.core_signup_verify` and `.core_signup_known_account`, and `StoryId.RG_01` to `RG_05`. Members of dotted or hyphenated values take the value with `.` and `-` replaced by `_`, as `StoryId.BK_04` does. SQL below (checks, policies, the backfill) is written as plain SQL for reading; Drizzle code builds it with `oneOf(..., values(Set))` and interpolates set members.
 
 ## Goals / Non-Goals
 
@@ -37,7 +38,7 @@ All server code lives in `apps/api/src/modules/core/signup/` and mounts at `/api
 | `POST /inspect` | `tokenScope(token, signedIn)` | token, not single use | `SignupInspect { email, companyName, possibleDuplicate }` |
 | `POST /verify` | `tokenScope(token, signedIn)` | token, single use | `SignupVerified { tenantId, possibleDuplicate }` |
 
-Request and response types live in `packages/shared/src/modules/core/api.signup.ts`: `SignupBody` (`salutation: 'mr' | 'ms' | null`, `givenName`, `familyName`, `email`, `password`, `companyName`, `country`, `taxIdType`, `taxIdValue`, `locale?`, `altcha`), `TokenBody` reused for inspect and verify. `route-cases.ts` exports `accountCases` for all four; the token cases use a magic-link token as `otherToken`. Inspect and verify live in `verify.redeem.ts`, the only place that switches scope.
+Request and response types live in `packages/shared/src/modules/core/api.signup.ts`: `SignupBody` (`salutation: Salutation | null`, `givenName`, `familyName`, `email`, `password`, `companyName`, `country: EuCountry`, `taxIdType: TaxIdType`, `taxIdValue`, `locale?: StaffLocale`, `altcha`), `TokenBody` reused for inspect and verify. `route-cases.ts` exports `accountCases` for all four; the token cases use a magic-link token as `otherToken`. Inspect and verify live in `verify.redeem.ts`, the only place that switches scope.
 
 Alternative: put the routes into `core/auth/routes.anonymous.ts`. Rejected: `/api/auth` is for existing accounts, and the token routes of every other flow sit under `/api/public`.
 
@@ -48,16 +49,16 @@ New file `apps/api/src/modules/core/schema.signup.ts`:
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | `id` | uuid | no | `uuidv7()` |
-| `status` | text | no | `pending_email`, `verified`, `superseded` (check) |
+| `status` | text | no | `SignupStatus`: `pending_email`, `verified`, `superseded` (check `oneOf(t.status, values(SignupStatus))`) |
 | `email` | citext | no | **PD** |
-| `salutation` | text | yes | `mr`, `ms` (check); **PD** |
+| `salutation` | text | yes | `Salutation`: `mr`, `ms` (check); **PD** |
 | `given_name`, `family_name` | text | no | **PD** |
 | `password_hash` | text | yes | scrypt; set to NULL by the claim |
 | `company_name` | text | no | 1 to 120 characters |
 | `country` | char(2) | no | |
 | `tax_id_type`, `tax_id_value` | text | no | normalized (decision 7) |
-| `locale` | text | yes | `de`, `en`, `pl` |
-| `token_hash` | bytea | no | unique, `sha256` of the `signup` token |
+| `locale` | text | yes | `StaffLocale`: `de`, `en`, `pl` |
+| `token_hash` | bytea | no | unique, `sha256` of the `TokenPurpose.signup` token |
 | `expires_at` | timestamptz | no | 24 hours after creation |
 | `verified_at` | timestamptz | yes | |
 | `tenant_id` | uuid | yes | FK `org` on delete cascade; indexed |
@@ -71,17 +72,17 @@ Alternative: RLS with `anonymous` insert and `token` select and update by `token
 
 ### 3. Tenant facts as `org` columns with checks, not a `tenant_profile` table
 
-`org` gains `tax_id_type`, `tax_id_value`, `tax_id_status` (`pending`, `verified`, `unverified`, `unavailable`), `tax_id_checked_at`, `possible_duplicate boolean not null default false` and `activated_at`. Checks:
+`org` gains `tax_id_type` (`TaxIdType`), `tax_id_value`, `tax_id_status` (`TaxIdStatus`: `pending`, `verified`, `unverified`, `unavailable`), `tax_id_checked_at`, `possible_duplicate boolean not null default false` and `activated_at`. Checks:
 
 - `org_tenant_facts_check`: `kind = 'tenant' or (tax_id_type is null and tax_id_value is null and tax_id_status is null and tax_id_checked_at is null and not possible_duplicate and activated_at is null)`.
-- `org_tax_id_check`: type, value and status are all null or all set; `tax_id_type` and `tax_id_status` in their lists.
+- `org_tax_id_check`: type, value and status are all null or all set; `tax_id_type` in `values(TaxIdType)` and `tax_id_status` in `values(TaxIdStatus)` through `oneOf`.
 - Index `(tax_id_value) where kind = 'tenant'` for the duplicate lookup.
 
 Why columns: each fact is 1:1 with the tenant and has no lifecycle of its own; 03 reads `activated_at` and 04 `suspended_at` under every party that already reads the tenant's org (tenant, public link, carrier at tenant, driver), so a second table would need the same eight policies and a join in every gate; 04's list filters on them without a join. The trade-off: RLS is per row, so parties that see a tenant's org row could select these columns. No route selects them outside the platform and the tenant's own context, the tax id is printed on the company's invoices anyway, and a test asserts that the public link, carrier and driver responses carry none of them (risk below).
 
 ### 4. Person names on `app_user`
 
-`app_user` gains `given_name`, `family_name` (text, nullable, **PD**) and `salutation` (text, nullable, check `in ('mr', 'ms')`, **PD**). `name` stays `not null` and is the display name everywhere; verification writes `"<given> <family>"`. No existing flow writes the new columns. `GET /api/me` does not return them in this change (no consumer yet).
+`app_user` gains `given_name`, `family_name` (text, nullable, **PD**) and `salutation` (text, nullable, check `oneOf(t.salutation, values(Salutation))`, **PD**). `name` stays `not null` and is the display name everywhere; verification writes `"<given> <family>"`. No existing flow writes the new columns. `GET /api/me` does not return them in this change (no consumer yet).
 
 ### 5. Submission pipeline
 
@@ -89,17 +90,17 @@ Why columns: each fact is 1:1 with the tenant and has no lifecycle of its own; 0
 
 1. `validate('json', SignupBody)`: field rules and the tax id rules of decision 7 (422).
 2. ALTCHA verification (decision 6): 422 at `["altcha"]`.
-3. Disposable domain check (decision 8): 422 at `["email"]`, code `disposable_email`.
-4. `signupAllowed(email, ip, now)`: `signup_ip` then `signup_request` through `consumeRateLimit`, each on its own connection and outside any transaction, as `registrationAllowed` does. Over a limit: 202, nothing else happens.
+3. Disposable domain check (decision 8): 422 at `["email"]`, code `disposable_email` (`SignupIssue.disposable_email`).
+4. `signupAllowed(email, ip, now)`: `RateLimitBucket.signup_ip` then `RateLimitBucket.signup_request` through `consumeRateLimit`, each on its own connection and outside any transaction, as `registrationAllowed` does. Over a limit: 202, nothing else happens.
 5. `hashPassword(password)`, on both paths, so the response time does not tell a known email from a new one.
-6. One `anonymous` transaction: `accountByEmail`. Known: enqueue `core.signup-known-account` and stop. New: mark pending rows of the email `superseded`, insert the row with `token_hash = tokenHashFor('signup', id)` and `expires_at = now + 24 h`, enqueue `core.signup-verify`. The insert uses `on conflict do nothing` on the partial unique index; a concurrent submission that loses still answers 202, because the winner's email went out.
+6. One `anonymous` transaction: `accountByEmail`. Known: enqueue `EmailTemplate.core_signup_known_account` and stop. New: mark pending rows of the email `SignupStatus.superseded`, insert the row with `token_hash = tokenHashFor(TokenPurpose.signup, id)` and `expires_at = now + 24 h`, enqueue `EmailTemplate.core_signup_verify`. The insert uses `on conflict do nothing` on the partial unique index; a concurrent submission that loses still answers 202, because the winner's email went out.
 
-`kernel/tokens.ts` gains the purpose `signup`. `RATE_LIMIT_BUCKETS` and `RATE_LIMITS` gain `signup_request` (3 per hour), `signup_ip` (20 per hour) and `altcha_solution` (decision 6); the bucket check regenerates in the migration.
+`TokenPurpose` gains `signup`. `RateLimitBucket` gains `signup_request` (3 per hour), `signup_ip` (20 per hour) and `altcha_solution` (decision 6), and `RATE_LIMITS` in `kernel/rate-limit.ts` (`satisfies Record<RateLimitBucket, ...>`) their limits; the bucket check regenerates in the migration.
 
 ### 6. ALTCHA proof of work, verified by our API
 
 - API: `altcha-lib` (MIT) creates challenges in `core/signup/altcha.ts` with an HMAC key derived from `TOKEN_SECRET` (`HMAC(TOKEN_SECRET, "altcha")`), so no new secret is needed and the dev key differs from production. Challenges expire after 10 minutes; the cost targets about one second on a mid-range phone and is a constant in the file.
-- Replay: after `verifySolution` succeeds, `consumeRateLimit('altcha_solution', <challenge signature>, now)` with limit 1 and a 10-minute window records the solution; a second use hits the limit and answers 422 at `["altcha"]`. This reuses the existing table and its 24-hour cleanup instead of a new store.
+- Replay: after `verifySolution` succeeds, `consumeRateLimit(RateLimitBucket.altcha_solution, <challenge signature>, now)` with limit 1 and a 10-minute window records the solution; a second use hits the limit and answers 422 at `["altcha"]`. This reuses the existing table and its 24-hour cleanup instead of a new store.
 - Web: the `altcha` widget (MIT, a web component) with `challengeurl="/api/public/signups/challenge"`, wrapped in `apps/web/src/modules/core/altcha-field.tsx` as a react-hook-form `Controller` field. It solves automatically when the form is submitted, needs no cookie, loads nothing from a third party, and gets its labels from `core:signup.altcha.*` in the page language.
 - Both packages are pinned exactly; the integration test solves a real challenge with `altcha-lib`'s solver, so a protocol mismatch between widget and library fails CI.
 
@@ -107,13 +108,13 @@ Alternatives: hCaptcha, reCAPTCHA or Turnstile load third-party scripts and set 
 
 ### 7. Tax id rules in `packages/shared`, check digits through `jsvat`
 
-`packages/shared/src/modules/core/tax-id.ts` exports `TAX_ID_TYPES`, `TAX_ID_STATUSES`, `normalizeTaxId(type, value, country)`, `checkTaxId(type, value, country)` (returning `ok`, `tax_id_format`, `tax_id_checksum` or `tax_id_country`), `initialTaxIdStatus(type)` and `taxIdEquivalents(type, value)`. `SignupBody` calls them in a `superRefine`, so the form (through `zodResolver`) and the API apply the same rules and the API stores the normalized value.
+The sets live in `packages/shared/src/modules/core/values.ts`: `TaxIdType` (`eu_vat`, `de_stn`, `pl_nip`), `TaxIdStatus` (`pending`, `verified`, `unverified`, `unavailable`), `TaxIdCheck` (`ok`, `tax_id_format`, `tax_id_checksum`, `tax_id_country`), `EuCountry` (the EU-27 country codes) and `SignupIssue` (`disposable_email`, `altcha_failed` and the three failing `TaxIdCheck` members, referenced from it). `packages/shared/src/modules/core/tax-id.ts` exports `normalizeTaxId(type, value, country)`, `checkTaxId(type, value, country): TaxIdCheck`, `initialTaxIdStatus(type): TaxIdStatus` and `taxIdEquivalents(type, value)`. `SignupBody` calls them in a `superRefine`, so the form (through `zodResolver`) and the API apply the same rules and the API stores the normalized value.
 
 - `eu_vat`: `jsvat` (MIT, no dependencies, format and check digit per member state) with the EU-27 country list; the prefix of the chosen country is added when missing (`EL` for `GR`).
 - `pl_nip`: 10 digits, weights 6 5 7 2 3 4 5 6 7, sum mod 11 equals the last digit (10 is invalid).
 - `de_stn`: a W-IdNr `DE` + 9 + 5 digits, whose 9 digits pass the German VAT check digit (ISO 7064 MOD 11,10, also through `jsvat`); otherwise a 10- or 11-digit state tax number or a 13-digit federal tax number, format only, because the check-digit procedure differs per federal state.
 - `taxIdEquivalents` lists the forms that name the same registration: `pl_nip` `N` ≡ `eu_vat` `PLN`; a W-IdNr ≡ the `eu_vat` of its first 11 characters.
-- `initialTaxIdStatus`: `pending` for `eu_vat`, `unverified` otherwise.
+- `initialTaxIdStatus`: `TaxIdStatus.pending` for `TaxIdType.eu_vat`, `TaxIdStatus.unverified` otherwise.
 
 Alternative: an own check-digit table for 27 states. Rejected: about 27 algorithms to get right and keep current, where a small, tested library exists. Alternative: `validator`'s `isVAT`: format only.
 
@@ -127,11 +128,11 @@ Alternative: an own check-digit table for 27 states. Rejected: about 27 algorith
 
 1. Select the row by `token_hash` with `status = 'pending_email' and expires_at > now`; none: 401 `unauthorized`.
 2. Claim: `update tenant_signup set status = 'verified', verified_at = $now, password_hash = null where id = $id and token_hash = $h and status = 'pending_email' and expires_at > $now returning id`. No row: 401. A concurrent second claim waits for the row lock and then matches nothing, so the loser of a race always answers 401, whatever the winner created.
-3. `accountByEmail(email)`; found: throw 409 `conflict` with reason `account_exists`. The transaction rolls back, including the claim, so the registration stays pending. The account check comes after the claim on purpose: before it, a second request could read the pending row, then see the account the first request just committed, and answer 409 instead of 401.
+3. `accountByEmail(email)`; found: throw 409, `new ApiError(ErrorCode.conflict, ..., { reason: ConflictReason.account_exists })`. The transaction rolls back, including the claim, so the registration stays pending. The account check comes after the claim on purpose: before it, a second request could read the pending row, then see the account the first request just committed, and answer 409 instead of 401.
 4. `possibleDuplicate(tx, row)` (decision 10).
-5. Insert `app_user` (id generated in the app, `email_verified_at = now`, the hash read in step 1, names, salutation, locale) with `on conflict do nothing`; no row: 409 `account_exists` (another flow created the email in between) and the transaction rolls back.
-6. Insert `org` (kind `tenant`, name, country, normalized tax id, `initialTaxIdStatus`, `possible_duplicate`, `activated_at` null) and `tenant_subscription` (`start`, `updated_by` the new user).
-7. `asScope` as the new tenant with actor `systemActor('signup')`: insert the `tenant_admin` membership.
+5. Insert `app_user` (id generated in the app, `email_verified_at = now`, the hash read in step 1, names, salutation, locale) with `on conflict do nothing`; no row: the same 409 with `ConflictReason.account_exists` (another flow created the email in between) and the transaction rolls back.
+6. Insert `org` (kind `OrgKind.tenant`, name, country, normalized tax id, `initialTaxIdStatus`, `possible_duplicate`, `activated_at` null) and `tenant_subscription` (`PackageId.start`, `updated_by` the new user).
+7. `asScope` as the new tenant with actor `systemActor(SystemActorName.signup)`: insert the `TenantRole.tenant_admin` membership.
 8. Set `tenant_id` and `user_id` on the registration row.
 
 The route then calls `startSession` in the same transaction and answers `{ tenantId, possibleDuplicate }`. The page clears the query cache and navigates to `/t/$orgId`.
@@ -153,23 +154,23 @@ Alternative: grant the `system` party `select` on `membership` and `app_user`. R
 
 ### 11. Tenant status as a derived value
 
-`packages/shared/src/modules/core/tenant-status.ts`: `TENANT_STATUSES = ['onboarding', 'active']` and `tenantStatus({ activatedAt })`. 04 adds `suspended` there. `createTenant` (PL-01) leaves `activated_at` null. The platform list (01's `TenantListQuery`) gains the facet `status`, filtered as `activated_at is null` or `is not null`, and `TenantSummary` gains `status`; the web list adds the Status column (text plus icon) and filter.
+`TenantStatus` (`onboarding`, `active`) in `packages/shared/src/modules/core/values.ts`, and `tenantStatus({ activatedAt }): TenantStatus` in `packages/shared/src/modules/core/tenant-status.ts`. 04 adds `TenantStatus.suspended`. `createTenant` (PL-01) leaves `activated_at` null. The platform list (01's `TenantListQuery`) gains the facet `status: TenantStatus`, filtered as `activated_at is null` or `is not null`, and `TenantSummary` gains `status`; the web list adds the Status column (text plus icon) and filter.
 
 Backfill: `update org set activated_at = created_at where kind = 'tenant' and activated_at is null`. Drizzle cannot express it, so per ADR-0001 point 8 the coordinator lands it as a custom migration directly after the generated one (`pnpm db:generate --custom --name 02-tenant-self-registration-backfill`). Until then, existing tenants read as onboarding, which only 03's gating would act on.
 
 ### 12. VIES check as a job with an injected client
 
-`apps/api/src/modules/core/jobs/tax-id-check.ts` exports `makeTaxIdCheckJob(client)` and `job = makeTaxIdCheckJob(viesClient(env.VIES_URL))`, named `core.tax_id_check`, every 300 seconds. Each tick, under `platformSystemScope`, it takes up to 50 tenants with `tax_id_type = 'eu_vat'` and either `tax_id_status = 'pending'`, or `unavailable` with `tax_id_checked_at` older than 1 hour and `created_at` newer than 7 days, oldest first.
+`apps/api/src/modules/core/jobs/tax-id-check.ts` exports `makeTaxIdCheckJob(client)` and `job = makeTaxIdCheckJob(viesClient(env.VIES_URL))`, named `JobName.core_tax_id_check` (`core.tax_id_check`), every 300 seconds. Each tick, under `platformSystemScope`, it takes up to 50 tenants with `TaxIdType.eu_vat` and either `TaxIdStatus.pending`, or `TaxIdStatus.unavailable` with `tax_id_checked_at` older than 1 hour and `created_at` newer than 7 days, oldest first.
 
-`viesClient` posts `{ countryCode, vatNumber }` to `<VIES_URL>/check-vat-number` (the EC REST API, `https://ec.europa.eu/taxation_customs/vies/rest-api`, spec at https://ec.europa.eu/assets/taxud/vow-information/swagger_publicVAT.yaml) with a 10-second timeout and maps: 200 `valid: true` → `verified`; 200 `valid: false` or error `INVALID_INPUT` → `unverified`; any other error (`MS_UNAVAILABLE`, `TIMEOUT`, `MS_MAX_CONCURRENT_REQ`, `GLOBAL_MAX_CONCURRENT_REQ`, `SERVICE_UNAVAILABLE`), a network error or a timeout → `unavailable`. It writes `tax_id_status` and `tax_id_checked_at` and returns counts per result.
+`viesClient` posts `{ countryCode, vatNumber }` to `<VIES_URL>/check-vat-number` (the EC REST API, `https://ec.europa.eu/taxation_customs/vies/rest-api`, spec at https://ec.europa.eu/assets/taxud/vow-information/swagger_publicVAT.yaml) with a 10-second timeout and maps to a `TaxIdStatus`: 200 `valid: true` → `verified`; 200 `valid: false` or error `ViesError.INVALID_INPUT` → `unverified`; any other error (the other `ViesError` members `MS_UNAVAILABLE`, `TIMEOUT`, `MS_MAX_CONCURRENT_REQ`, `GLOBAL_MAX_CONCURRENT_REQ`, `SERVICE_UNAVAILABLE`, or a code VIES adds later), a network error or a timeout → `unavailable`. It writes `tax_id_status` and `tax_id_checked_at` and returns counts per result.
 
 `kernel/env.ts` gains `VIES_URL` (URL or empty, default the EC address). Empty disables the client: the job returns at once. `.env.example` sets it empty, so `pnpm dev` and the tests never call the EC service; tests pass a fake client to `makeTaxIdCheckJob`.
 
 ### 13. Emails and greeting
 
-Two `account` templates in `apps/api/src/modules/core/emails/`:
+Two templates of category `EmailCategory.account` in `apps/api/src/modules/core/emails/`:
 
-- `signup-verify.tsx`: payload `{ signupId, companyName, salutation, givenName, familyName }`; link `${APP_ORIGIN}/signup/verify#${deriveToken('signup', signupId)}`; states the 24-hour validity and "ignore this email if you did not register".
+- `signup-verify.tsx`: payload `{ signupId, companyName, salutation, givenName, familyName }`; link `${APP_ORIGIN}/signup/verify#${deriveToken(TokenPurpose.signup, signupId)}`; states the 24-hour validity and "ignore this email if you did not register".
 - `signup-known-account.tsx`: payload `{ locale }` only; says an account exists, links `/login`, mentions the password reset there.
 
 `core/emails/greeting.ts` builds the greeting of the person-names spec from `t` and the three fields. Strings live in the new part `packages/i18n/locales/{de,en,pl}/core/signup.json` (form, sent screen, verify page, duplicate hint, ALTCHA labels, emails). The known-account email uses the account's locale, else the page's. The outbox worker empties both payloads on send.
@@ -180,8 +181,8 @@ Two `account` templates in `apps/api/src/modules/core/emails/`:
 
 ### 15. Web pages
 
-- `apps/web/src/routes/signup/index.tsx`: `AuthLayout` with the form in `modules/core/signup-form.tsx` (react-hook-form, `Controller`, shadcn `Field`, `FieldLabel`, `FieldDescription`, `FieldError`, `zodResolver(SignupBody)`): salutation as `RadioGroup` ("No answer" first and preselected), names, email, password, company, country (`NativeSelect`, EU-27, sorted by translated name), tax id type (`NativeSelect`, filtered to the types valid for the country) and value with an example per type in `FieldDescription`, the ALTCHA field, submit. 422 issues land on fields through `applyServerIssues`; `useFieldMessage` learns `disposable_email`, `tax_id_format`, `tax_id_checksum`, `tax_id_country` and `altcha_failed`. After 202 it shows "Check your inbox" with the address and "Send again", which re-sends the kept values with a fresh challenge.
-- `apps/web/src/routes/signup/verify.tsx`: reads the fragment with `useFragmentToken`, calls inspect, shows email, company and the hint, and calls verify on "Create company" / "Create company anyway". 401 shows "invalid or expired" with a link to `/signup`; 409 `account_exists` shows "you already have an account" with a link to `/login`.
+- `apps/web/src/routes/signup/index.tsx`: `AuthLayout` with the form in `modules/core/signup-form.tsx` (react-hook-form, `Controller`, shadcn `Field`, `FieldLabel`, `FieldDescription`, `FieldError`, `zodResolver(SignupBody)`): salutation as `RadioGroup` ("No answer" first and preselected), names, email, password, company, country (`NativeSelect`, EU-27, sorted by translated name), tax id type (`NativeSelect`, filtered to the types valid for the country) and value with an example per type in `FieldDescription`, the ALTCHA field, submit. 422 issues land on fields through `applyServerIssues`; `useFieldMessage` learns the `SignupIssue` members `disposable_email`, `tax_id_format`, `tax_id_checksum`, `tax_id_country` and `altcha_failed`. After 202 it shows "Check your inbox" with the address and "Send again", which re-sends the kept values with a fresh challenge.
+- `apps/web/src/routes/signup/verify.tsx`: reads the fragment with `useFragmentToken`, calls inspect, shows email, company and the hint, and calls verify on "Create company" / "Create company anyway". 401 shows "invalid or expired" with a link to `/signup`; 409 `ConflictReason.account_exists` shows "you already have an account" with a link to `/login`.
 - `routes/login.tsx` links "Register your company".
 - The office viewport rules apply (1920 × 1080 screenshots); the form fits one column of `AuthLayout`.
 
@@ -223,7 +224,7 @@ New `apps/api/scripts/seed/signups.ts`, registered in `SEEDS` right after `core`
 | `kontakt@kuehlhaus-weser.local` | a pending registration whose link works | one `pending_email` row expiring 24 hours after the seed run, one older `superseded` row |
 | `info@lagerhaus-elbe.local` | an expired registration that retention deletes later | one `pending_email` row whose link expired 2 days before the seed run |
 
-All accounts use `DEMO_PASSWORD`. Tenants and users are found by org name and email; registration rows by email and status, and their times are reset on each run, so two runs converge. The seed logs the verification link of the Weser registration (derived with `deriveToken('signup', id)` and the dev `TOKEN_SECRET`), so `pnpm db:seed` + `pnpm dev` lets a developer open it and create "Kühlhaus Weser GmbH" without the form. The onboarding tenants have no sites; 03's seed decides whether to give them any.
+All accounts use `DEMO_PASSWORD`. Tenants and users are found by org name and email; registration rows by email and status, and their times are reset on each run, so two runs converge. The seed logs the verification link of the Weser registration (derived with `deriveToken(TokenPurpose.signup, id)` and the dev `TOKEN_SECRET`), so `pnpm db:seed` + `pnpm dev` lets a developer open it and create "Kühlhaus Weser GmbH" without the form. The onboarding tenants have no sites; 03's seed decides whether to give them any.
 
 ## Open Questions
 

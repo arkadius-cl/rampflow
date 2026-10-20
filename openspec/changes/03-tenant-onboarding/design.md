@@ -2,7 +2,8 @@
 
 ## Context
 
-- **Depends on 02.** 02 adds `org.activated_at` on `org` (null means onboarding; existing tenants are backfilled with `created_at`; tenants created by PL-01 also start with null) and `packages/shared/src/modules/core/tenant-status.ts` with `TENANT_STATUSES = ['onboarding', 'active']` and `tenantStatus({ activatedAt })`. Below, `TenantStatus` means `(typeof TENANT_STATUSES)[number]`, and every status is computed with `tenantStatus`. 03 writes the column; it does not add it.
+- **Depends on 02.** 02 adds `org.activated_at` on `org` (null means onboarding; existing tenants are backfilled with `created_at`; tenants created by PL-01 also start with null), the value set `TenantStatus` (`onboarding`, `active`) in `packages/shared/src/modules/core/values.ts`, and `tenantStatus({ activatedAt })` in `packages/shared/src/modules/core/tenant-status.ts`. Every status is computed with `tenantStatus`. 03 writes the column; it does not add it.
+- **Value sets** follow ADR-0019: each closed set is one self-keyed `as const` object with a type of the same name, and code uses its members, never the string. This change adds `OnboardingStep` (`site`, `hall`, `dock`), `HoursTemplate` (`one_shift`, `two_shifts`, `custom`), its subset `PresetHoursTemplate` (`one_shift`, `two_shifts`) and `OnboardingCase` (`blocked`) to `packages/shared/src/modules/core/values.ts`. It adds members to the cross-cutting sets of `@rampflow/shared/values`: `ErrorCode.onboarding_incomplete`, `ConflictReason.profile_mismatch`, `.dock_without_load_type` and `.dock_needs_resource`, and `StoryId.ON_01` to `ON_03`. Three sets come from 00's migration of existing unions, and their names are this plan's assumption until 00 lands: `GuardKind` (the guard `kind` of `kernel/describe.ts`, gaining `active_tenant`), `ScopeParty` (the scope `party`) and `PolicyCommand` (the policy command of `db/rls.ts`). SQL below (DDL, checks, the precheck) is written as plain SQL for reading; Drizzle code builds it with `oneOf(..., values(Set))` and set members.
 - **Master data today.** `createSite` (`core/sites/sites.ts`) inserts the site, calls `seedLoadTypes` and `syncHolidays`, and writes no hours, so a new site has zero capacity. `createDock` (`core/sites/docks.ts`) inserts the dock and puts it in no resource. Docks enter resources only through `booking/capacity/resources.ts`: `createResource` and `putResourceDocks` answer 409 `dock_in_resource` for a dock held elsewhere, and `bookDock` (`PUT /capacity/docks/:dockId/booking`) moves one dock to `none`, `single` or a pool. There is no delete route for sites, halls or docks.
 - **Profiles.** `dock` already has `door_type`, `temperature_zone` and `adr_allowed` (not null). `bookable_resource` has none of them, so a pool can mix a frozen door with ambient ones.
 - **Data shape.** No production database exists. Dev databases come from `pnpm db:seed`, and test and e2e databases are migrated from empty. Every seeded dock is `dock_leveler`, `ambient`, no ADR: `seed/sites.ts` (Hamburg DC T01 to T08, Bucharest R1 and R2), `seed/booking.ts` (Lager Hamburg D-01 to D-06) and the test world (`apps/api/test/world.ts`, two docks per site and a dockless pool). No seeded pool mixes profiles, and every seeded dock is in a resource.
@@ -28,7 +29,7 @@
 
 ### 1. The checklist is its own route, `/t/$orgId/onboarding`, reached from the tenant home and a notice
 
-`apps/web/src/routes/t/$orgId/onboarding/index.tsx`, guarded with `guard({ permission: 'core.manage_sites' })`. `/t/$orgId/index.tsx` gets a tenant-specific component: while `context.status === 'onboarding'` and the user has `core.manage_sites`, it redirects (`replace`) to the checklist; otherwise it renders `AreaHome` as today. The tenant layout (`t/$orgId/route.tsx`) renders `OnboardingNotice` above the outlet of office screens while the status is `onboarding`; station screens get the same notice in the station header. After activation the route stays reachable and shows every step done, the activation time and "next" links (carriers, public link, staff). ADR-0011's route map gets the row, with "reached from: tenant home while onboarding; onboarding notice".
+`apps/web/src/routes/t/$orgId/onboarding/index.tsx`, guarded with `guard({ permission: Permission.core.manage_sites })`. `/t/$orgId/index.tsx` gets a tenant-specific component: while `context.status === TenantStatus.onboarding` and the user has `core.manage_sites`, it redirects (`replace`) to the checklist; otherwise it renders `AreaHome` as today. The tenant layout (`t/$orgId/route.tsx`) renders `OnboardingNotice` above the outlet of office screens while the status is `onboarding`; station screens get the same notice in the station header. After activation the route stays reachable and shows every step done, the activation time and "next" links (carriers, public link, staff). ADR-0011's route map gets the row, with "reached from: tenant home while onboarding; onboarding notice".
 
 Alternatives:
 - Checklist inside `AreaHome`. Rejected: `AreaHome` serves three areas and only redirects. The checklist would have no URL of its own, and ADR-0011 and 01's rule want one deep-linkable screen per path.
@@ -37,16 +38,19 @@ Alternatives:
 
 ### 2. The server computes the steps: `GET /api/t/:orgId/onboarding`
 
-`core/onboarding/routes.tenant.ts`, permission `core.manage_sites`, response `OnboardingView` in `packages/shared/src/modules/core/api.onboarding.ts`:
+`core/onboarding/routes.tenant.ts`, `requirePermission(Permission.core.manage_sites)`, response `OnboardingView` in `packages/shared/src/modules/core/api.onboarding.ts`:
 
 ```ts
-export const ONBOARDING_STEPS = ['site', 'hall', 'dock'] as const;
-export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number];
-export interface OnboardingStep { id: OnboardingStepId; done: boolean; siteId: string | null }
-export interface OnboardingView { status: TenantStatus; activatedAt: string | null; steps: OnboardingStep[] }
+// packages/shared/src/modules/core/values.ts
+export const OnboardingStep = { site: 'site', hall: 'hall', dock: 'dock' } as const;
+export type OnboardingStep = ValueOf<typeof OnboardingStep>;
+
+// packages/shared/src/modules/core/api.onboarding.ts
+export interface OnboardingStepState { id: OnboardingStep; done: boolean; siteId: string | null }
+export interface OnboardingView { status: TenantStatus; activatedAt: string | null; steps: OnboardingStepState[] }
 ```
 
-The handler runs three `exists` queries plus one site lookup per step. `siteId` is the first active site for `site` and `hall`, and the first active site with a hall for `dock`. The web joins the hours of the `site` step's site through `capacityQueries.hours`. The query key `['tenant', orgId, 'core', 'onboarding']` is invalidated by `useRefreshMasterData`.
+The steps come in the order of `values(OnboardingStep)`. The handler runs three `exists` queries plus one site lookup per step. `siteId` is the first active site for `OnboardingStep.site` and `OnboardingStep.hall`, and the first active site with a hall for `OnboardingStep.dock`. The web joins the hours of the `site` step's site through `capacityQueries.hours`. The query key `['tenant', orgId, 'core', 'onboarding']` is invalidated by `useRefreshMasterData`.
 
 Alternative: derive the steps in the web from the site list plus halls and docks per site. Rejected: one request per site, and the rule would live in two places.
 
@@ -57,7 +61,7 @@ Alternative: derive the steps in the web from the site list plus halls and docks
 `org` gets one policy in `core/schema.ts`:
 
 ```ts
-allow('tenant', 'update',
+allow(ScopeParty.tenant, PolicyCommand.update,
   sql`${tenantIs(t.id)} and ${t.activatedAt} is null`,      // using: own org, still onboarding
   sql`${tenantIs(t.id)} and ${t.activatedAt} is not null`,  // check: the row leaves onboarding
   'activate'),
@@ -72,7 +76,7 @@ Alternatives:
 
 ### 4. Gating: `Access.tenantStatus`, a `requireActiveTenant()` guard, and the error `onboarding_incomplete` (409)
 
-`loadAccess` reads `activated_at` of the scope's tenant for the `tenant` and `carrier_at_tenant` parties. Both can already select that org row. It exposes `tenantStatus: TenantStatus | null`, computed with `tenantStatus({ activatedAt })`. `requireActiveTenant()` in `kernel/access.ts` throws `ApiError('onboarding_incomplete')` unless the status is `active`. It registers the guard `{ kind: 'active_tenant' }`. Routes put it after `requirePermission` and `requireEntitlement`, so 403 still wins. It goes on:
+`loadAccess` reads `activated_at` of the scope's tenant for the `tenant` and `carrier_at_tenant` parties. Both can already select that org row. It exposes `tenantStatus: TenantStatus | null`, computed with `tenantStatus({ activatedAt })`. `requireActiveTenant()` in `kernel/access.ts` throws `new ApiError(ErrorCode.onboarding_incomplete)` unless the status is `TenantStatus.active`. It registers the guard `{ kind: GuardKind.active_tenant }`. Routes put it after `requirePermission` and `requireEntitlement`, so 403 still wins. It goes on:
 
 | Route | Router |
 |---|---|
@@ -82,13 +86,13 @@ Alternatives:
 | `POST /api/t/:orgId/yard/walk-ins` | `yard/routes.tenant.ts` |
 | `POST /api/c/:orgId/at/:tenantId/bookings` | `booking/portal/routes.carrier-at-tenant.ts` |
 
-`ERROR_STATUS` gains `onboarding_incomplete: 409`, with the default message "Finish onboarding first: add a site, a hall and a dock". The catalog `core/errors.json` gets the text in de, en and pl.
+`ErrorCode` (`packages/shared/src/values/errors.ts`) gains `onboarding_incomplete`, and `ERROR_STATUS` (`satisfies Record<ErrorCode, number>`) maps it to 409, with the default message "Finish onboarding first: add a site, a hall and a dock". The catalog `core/errors.json` gets the text in de, en and pl.
 
 The public link routes (`/api/public/links/:slug...`) are not gated. A slug can only be created through the gated tenant route, and activation never reverts, so no slug of a tenant in onboarding can exist. The same reasoning covers reschedule, cancel and avis routes: no booking can exist before activation.
 
 Why 409 and a new code: 403 `forbidden` and `entitlement_required` mean "not your role" and "not your package". This state is temporary and the tenant resolves it itself, like the other 409 state conflicts. A code of its own, rather than `conflict` with a reason, fits a rule that applies across modules. The guard metadata can then name it, and the UI maps it to one text.
 
-Guard metadata: `apps/api/scripts/openapi/document.ts` writes `x-requires-active-tenant: true` and lists 409. `tables.ts` adds "active tenant" to the entitlement column. `RouteCase` gains an optional `onboarding?: 'blocked'`. `checkRouteCase` runs, for such a case, the control request once more after setting world A's tenant back to onboarding as the owner, and expects 409 `onboarding_incomplete`. `route-coverage.test.ts` fails when a route's registered guards and its case disagree about the onboarding check, as it does for undeclared entitlements.
+Guard metadata: `apps/api/scripts/openapi/document.ts` writes `x-requires-active-tenant: true` and lists 409. `tables.ts` adds "active tenant" to the entitlement column. `RouteCase` gains an optional `onboarding?: OnboardingCase`, set to `OnboardingCase.blocked`. `checkRouteCase` runs, for such a case, the control request once more after setting world A's tenant back to onboarding as the owner, and expects 409 `onboarding_incomplete`. `route-coverage.test.ts` fails when a route's registered guards and its case disagree about the onboarding check, as it does for undeclared entitlements.
 
 The web reads `status` from `TenantContext` (`core/context/routes.tenant.ts`). A hook `useTenantStatus()` next to `useAccess()` in `apps/web/src/lib/access.ts` returns it. `OnboardingGate` (in `apps/web/src/modules/core/onboarding.tsx`) wraps a gated action: it disables the action and shows the reason as text with a `LockIcon`, like the existing "pools off" note in `resource-editor.tsx`. Disabled buttons get no hover or focus, so the reason is not a tooltip.
 
@@ -96,11 +100,11 @@ The web reads `status` from `TenantContext` (`core/context/routes.tenant.ts`). A
 
 `booking/schema.resources.ts`:
 
-- `bookable_resource`: `door_type text not null default 'dock_leveler'`, `temperature_zone text not null default 'ambient'`, `adr_allowed boolean not null default false` (checks against `DOOR_TYPES` and `TEMPERATURE_ZONES`). `hall_id uuid null`, with FK `(hall_id, site_id) → hall(id, site_id)` and check `hall_id is null or kind = 'pool'`. Unique `bookable_resource_id_profile_key (id, door_type, temperature_zone, adr_allowed)`. Partial unique index `bookable_resource_default_pool_key (hall_id, door_type, temperature_zone, adr_allowed) where hall_id is not null`.
+- `bookable_resource`: `door_type text not null default 'dock_leveler'`, `temperature_zone text not null default 'ambient'`, `adr_allowed boolean not null default false` (Drizzle defaults `DoorType.dock_leveler` and `TemperatureZone.ambient`; checks `oneOf` against `values(DoorType)` and `values(TemperatureZone)`). `hall_id uuid null`, with FK `(hall_id, site_id) → hall(id, site_id)` and check `hall_id is null or kind = 'pool'`. Unique `bookable_resource_id_profile_key (id, door_type, temperature_zone, adr_allowed)`. Partial unique index `bookable_resource_default_pool_key (hall_id, door_type, temperature_zone, adr_allowed) where hall_id is not null`.
 - `resource_dock`: the same three columns with the same defaults. FK `(dock_id, door_type, temperature_zone, adr_allowed) → dock(id, door_type, temperature_zone, adr_allowed)` and FK `(resource_id, door_type, temperature_zone, adr_allowed) → bookable_resource(id, …)`, both `on update no action`. The existing FKs on `(resource_id, resource_kind)` (cascade) and `(dock_id, site_id)` stay.
 - `dock` (`core/schema.ts`): unique `dock_id_profile_key (id, door_type, temperature_zone, adr_allowed)`.
 
-The defaults exist so that the generated migration can add the columns to non-empty tables (see Migration Plan). Code never relies on them. Every writer takes a `DockProfile` (`Pick<DockRow, 'doorType' | 'temperatureZone' | 'adrAllowed'>`) from the dock row, and the composite FKs reject a wrong value. A 23503 on one of the two profile FKs maps to 409 `conflict` with reason `profile_mismatch`, as a backstop for concurrent edits. The checks in decision 7 catch the normal case first.
+The defaults exist so that the generated migration can add the columns to non-empty tables (see Migration Plan). Code never relies on them. Every writer takes a `DockProfile` (`Pick<DockRow, 'doorType' | 'temperatureZone' | 'adrAllowed'>`) from the dock row, and the composite FKs reject a wrong value. A 23503 on one of the two profile FKs maps to 409 `conflict` with `ConflictReason.profile_mismatch`, as a backstop for concurrent edits. The checks in decision 7 catch the normal case first.
 
 `ResourceView` gains `doorType`, `temperatureZone`, `adrAllowed`, `hallId` (non-null marks the default pool of that hall) and `loadTypeIds`. RLS on both tables is unchanged.
 
@@ -117,7 +121,7 @@ Alternatives (from the research in the brief):
 2. `booking.pools` on: `insert … on conflict (hall_id, door_type, temperature_zone, adr_allowed) where hall_id is not null do nothing`, then select the pool. Two concurrent first docks of one hall therefore end in one pool: under read committed, the second insert waits for the first commit, does nothing, and its next select sees the row. A pool created here is linked to every load type of the site. A found pool without an active load type is linked to them too, so a new dock never fails on a pool the admin emptied of load types.
 3. Insert the `resource_dock` row with the dock's profile.
 
-The name is the hall name plus ` · <label>` for each attribute that differs from `dock_leveler`, `ambient`, no ADR, in the order zone, door type, ADR. Labels come from `core:sites.zones`, `core:sites.door_types` and the literal "ADR", translated with `createServerI18n(site.defaultLocale)` from `@rampflow/i18n/server`, as in the safety register's CSV. The name is cut to 80 characters. Examples: "Halle 1", "Halle 2 · Tiefkühl", "Hall A · Ground level · ADR". The admin may rename a default pool. It stays the default pool, because that status is `hall_id`, not the name.
+The name is the hall name plus ` · <label>` for each attribute that differs from `DoorType.dock_leveler`, `TemperatureZone.ambient`, no ADR, in the order zone, door type, ADR. Labels come from `core:sites.zones`, `core:sites.door_types` and the literal "ADR", translated with `createServerI18n(site.defaultLocale)` from `@rampflow/i18n/server`, as in the safety register's CSV. The name is cut to 80 characters. Examples: "Halle 1", "Halle 2 · Tiefkühl", "Hall A · Ground level · ADR". The admin may rename a default pool. It stays the default pool, because that status is `hall_id`, not the name.
 
 A default pool only takes docks of its hall: `bookDock`, `createResource` and `putResourceDocks` answer 422 at `resourceId` or `dockIds[i]` otherwise. Manual pools (`hall_id` null) may span halls of the site.
 
@@ -125,19 +129,19 @@ Alternative: one default pool per hall regardless of profile, as the product own
 
 ### 7. Pool membership moves docks, and every dock always has a resource
 
-The old rules assumed free docks: `dock_in_resource` on create, `{ as: 'none' }`. With every dock always in a resource, a new pool could never get a dock. The new rules:
+The old rules assumed free docks: `ConflictReason.dock_in_resource` on create, and the `none` variant of `DockBooking`. With every dock always in a resource, a new pool could never get a dock. The new rules:
 
-- `DockBooking` loses `{ as: 'none' }` (**BREAKING**). The "Booked as" select (`modules/capacity/booked-as.tsx`) loses "Not bookable".
-- `createResource`: all docks must share one profile (409 `profile_mismatch` naming the docks that differ from the first). The pool takes that profile. Each dock moves out of its current resource; an emptied single is deactivated, as `bookDock` does today. The new resource is linked to the union of the load types of the resources the docks left.
-- `putResourceDocks`: docks added move in after the profile check. Docks removed go back through `placeDock` to their default pool. If the edited pool *is* that default pool, the answer is 409 `conflict` with reason `dock_needs_resource` and the `dockIds`.
+- `DockBooking` loses its `none` variant (**BREAKING**). The "Booked as" select (`modules/capacity/booked-as.tsx`) loses "Not bookable".
+- `createResource`: all docks must share one profile (409 `ConflictReason.profile_mismatch` naming the docks that differ from the first). The pool takes that profile. Each dock moves out of its current resource; an emptied single is deactivated, as `bookDock` does today. The new resource is linked to the union of the load types of the resources the docks left.
+- `putResourceDocks`: docks added move in after the profile check. Docks removed go back through `placeDock` to their default pool. If the edited pool *is* that default pool, the answer is 409 `conflict` with `ConflictReason.dock_needs_resource` and the `dockIds`.
 - `bookDock`: `single` and `pool` work as today, plus the profile and hall checks. `singleFor` reuses a dockless single only after setting it to the dock's profile, which the FK allows because no membership references it.
-- `dock_in_resource` stays only for the race the primary key catches (two moves of one dock).
+- `ConflictReason.dock_in_resource` stays only for the race the primary key catches (two moves of one dock).
 
-`updateDock` handles the profile and the hall in one transaction. If the profile changes, it deletes the membership, updates the dock, then either updates the single resource's profile or calls `placeDock` (pool, needs `booking.pools`, else 403 `entitlement_required`). If only the hall changes and the dock is in a default pool, it moves to the default pool of the new hall. A dock that has no resource (legacy data) is placed on its next update.
+`updateDock` handles the profile and the hall in one transaction. If the profile changes, it deletes the membership, updates the dock, then either updates the single resource's profile or calls `placeDock` (pool, needs `Feature.booking.pools`, else 403 `ErrorCode.entitlement_required`). If only the hall changes and the dock is in a default pool, it moves to the default pool of the new hall. A dock that has no resource (legacy data) is placed on its next update.
 
 ### 8. "Bookable for at least one load type" is checked per write, on the resources the write touched
 
-`assertBookable(tx, tenantId, resourceIds)` in `placement.ts` selects the given resources that have at least one dock and no linked active load type. If any are found, it throws 409 `conflict` with reason `dock_without_load_type` and their `dockIds`. It runs at the end of `createDock`, `updateDock`, `bookDock`, `createResource` and `putResourceDocks` (the target resources), `putLoadTypeResources` (the resources removed from the load type), and `updateLoadType` with `active: false` (its resources). The scoped check lets a site with legacy unplaced docks still be repaired dock by dock. A site-wide check would block every write until all were fixed.
+`assertBookable(tx, tenantId, resourceIds)` in `placement.ts` selects the given resources that have at least one dock and no linked active load type. If any are found, it throws 409 `conflict` with `ConflictReason.dock_without_load_type` and their `dockIds`. It runs at the end of `createDock`, `updateDock`, `bookDock`, `createResource` and `putResourceDocks` (the target resources), `putLoadTypeResources` (the resources removed from the load type), and `updateLoadType` with `active: false` (its resources). The scoped check lets a site with legacy unplaced docks still be repaired dock by dock. A site-wide check would block every write until all were fixed.
 
 Concurrency: under read committed, two writes can each see the other's load type as still active. For example, two requests deactivate the last two active load types of one resource. Both checks pass, and the resource ends with none. Every write path above therefore first calls `lockSiteCapacity(tx, siteId)` (`capacity/lock.ts`), the per-site advisory lock that booking creation and transitions already take. It does this before it reads or changes anything. Load types, resources and docks all belong to one site, so the lock serializes every write that can affect the invariant. A booking waits only for the duration of a master data write, which is rare and short. A separate lock key was rejected: it would need a fixed lock order against the capacity lock in `bookDock`-like paths that run during bookings, and it gains nothing.
 
@@ -149,14 +153,23 @@ The dock dialog (`modules/capacity/halls.tsx`) shows "Bookable for": the resourc
 
 `CreateSite` gains `hours: WeeklyHours.min(1)`. `WeeklyHours` and `HoursRow` (opens before closes, `24:00` allowed, at most 70 rows, no overlap on a day) move from `booking/api.capacity.ts` to `packages/shared/src/time/weekly-hours.ts`. `WeeklyHours` accepts an empty list, because `PutHours` uses `rows: []` to drop a resource's own hours and fall back to the site's; only `CreateSite` adds `.min(1)`. `PutHours` and `CreateSite` both import them, so the rules cannot diverge, and core no longer depends on a booking schema. `createSite` inserts the rows with `resource_id` null in its transaction, the same insert `putHours` does. `UpdateSite` does not take hours.
 
-`HOURS_TEMPLATES` in `api.sites.ts`:
+The template choice is a value set in `packages/shared/src/modules/core/values.ts`, and the rows per preset are a record in `api.sites.ts` keyed by its subset:
 
 ```ts
-export const HOURS_TEMPLATES = {
+// packages/shared/src/modules/core/values.ts
+export const HoursTemplate = { one_shift: 'one_shift', two_shifts: 'two_shifts', custom: 'custom' } as const;
+export type HoursTemplate = ValueOf<typeof HoursTemplate>;
+export const PresetHoursTemplate = {
+  one_shift: HoursTemplate.one_shift,
+  two_shifts: HoursTemplate.two_shifts,
+} as const;
+export type PresetHoursTemplate = ValueOf<typeof PresetHoursTemplate>;
+
+// packages/shared/src/modules/core/api.sites.ts
+export const hoursTemplateRows = {
   one_shift: weekdays(1, 5, '06:00', '14:00'),
   two_shifts: weekdays(1, 5, '06:00', '22:00'),
-} as const satisfies Record<string, HoursRow[]>;
-export type HoursTemplate = keyof typeof HOURS_TEMPLATES | 'custom';
+} as const satisfies Record<PresetHoursTemplate, HoursRow[]>;
 ```
 
 The site form (`modules/capacity/site-form.tsx`, create mode only) gets an "Opening hours" `FieldSet` with a `RadioGroup` (one shift preselected, two shifts, custom) and a read-only preview of the rows. "Custom" copies the current rows into an editable week. The week editor is extracted from `HoursEditor` in `hours.tsx` into `WeekWindowsField` (a `useFieldArray` over `rows`), which both forms use. The form's zod schema is `CreateSite` through `zodResolver`.
