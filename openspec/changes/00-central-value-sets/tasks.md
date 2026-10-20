@@ -31,7 +31,7 @@
 ## 5. Database
 
 - [x] 5.1 Build every closed column and check from `values(Set)`, widen `oneOf`'s guard to `/^[a-z0-9_.]+$/`, and add the checks `booking_event_type_check`, `booking_acknowledgement_linked_by_party_check` and `outbox_template_check` (design D5). Feed the brand MIME check from `values(LogoContentType)`. Verify `pnpm typecheck` and a unit test for `oneOf` with a dotted value.
-- [ ] 5.2 Run the precheck queries from design.md (Migration Plan) on the dev database and record the result in the report, then `pnpm db:generate --name 00-central-value-sets`. Verify the migration contains only the three new checks (no existing check changes, because the values are identical), that `pnpm db:migrate` passes on the seeded database, and with `rls.test.ts`-style tests that an insert with an unknown `booking_event.type`, `linked_by_party` or `outbox.template` fails with SQLSTATE 23514.
+- [x] 5.2 Run the precheck queries from design.md (Migration Plan) on the dev database and record the result in the report, then `pnpm db:generate --name 00-central-value-sets`. Verify the migration contains only the three new checks (no existing check changes, because the values are identical), that `pnpm db:migrate` passes on the seeded database, and with `rls.test.ts`-style tests that an insert with an unknown `booking_event.type`, `linked_by_party` or `outbox.template` fails with SQLSTATE 23514.
 
 ## 6. Lint plugin and verify
 
