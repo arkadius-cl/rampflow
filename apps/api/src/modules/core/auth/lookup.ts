@@ -1,3 +1,5 @@
+import { StaffLocale as StaffLocaleSchema } from '@rampflow/shared/modules/core/api.auth';
+import type { StaffLocale } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import type { UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -7,6 +9,7 @@ export interface AccountByEmail {
   passwordHash: string | null;
   emailVerifiedAt: Date | null;
   disabledAt: Date | null;
+  locale: StaffLocale | null;
 }
 
 /**
@@ -19,6 +22,7 @@ export async function accountByEmail(tx: Tx, email: string): Promise<AccountByEm
     password_hash: string | null;
     email_verified_at: string | Date | null;
     disabled_at: string | Date | null;
+    locale: string | null;
   }>(sql`select * from app.user_by_email(${email})`);
   const row = rows[0];
   if (!row) return null;
@@ -28,5 +32,6 @@ export async function accountByEmail(tx: Tx, email: string): Promise<AccountByEm
     passwordHash: row.password_hash,
     emailVerifiedAt: instant(row.email_verified_at),
     disabledAt: instant(row.disabled_at),
+    locale: StaffLocaleSchema.safeParse(row.locale).data ?? null,
   };
 }

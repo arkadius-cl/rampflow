@@ -50,8 +50,9 @@ export async function submitSignup(
   input: { body: SignupBody; passwordHash: string; now: Date },
 ): Promise<void> {
   const { body, now } = input;
-  const locale = body.locale ?? StaffLocale.en;
-  if (await accountByEmail(tx, body.email)) {
+  const known = await accountByEmail(tx, body.email);
+  if (known) {
+    const locale = known.locale ?? body.locale ?? StaffLocale.en;
     await enqueueEmail(
       tx,
       {
@@ -66,6 +67,7 @@ export async function submitSignup(
     return;
   }
 
+  const locale = body.locale ?? StaffLocale.en;
   await tx
     .update(tenantSignup)
     .set({ status: SignupStatus.superseded })

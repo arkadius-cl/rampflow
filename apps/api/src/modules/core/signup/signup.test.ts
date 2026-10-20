@@ -155,6 +155,27 @@ describe('RG-03 a known email', () => {
     expect(JSON.stringify(mails[0]?.payload)).not.toContain('Nordhafen');
   });
 
+  it("writes it in the account's language, else in the page's", async () => {
+    const polish = await account(ownerDb(), { email: signupEmail('known-pl') });
+    await ownerDb()
+      .update(appUser)
+      .set({ locale: StaffLocale.pl })
+      .where(eq(appUser.id, polish.id));
+    const silent = await account(ownerDb(), { email: signupEmail('known-none') });
+    await ownerDb().update(appUser).set({ locale: null }).where(eq(appUser.id, silent.id));
+    for (const a of [polish, silent]) {
+      expect((await register(a.email, { extra: { locale: StaffLocale.de } })).status).toBe(202);
+    }
+    const sent = async (email: string) =>
+      (await mailsTo(email)).map((m) => [m.template, m.locale, m.payload]);
+    expect(await sent(polish.email)).toEqual([
+      [EmailTemplate.core_signup_known_account, StaffLocale.pl, { locale: StaffLocale.pl }],
+    ]);
+    expect(await sent(silent.email)).toEqual([
+      [EmailTemplate.core_signup_known_account, StaffLocale.de, { locale: StaffLocale.de }],
+    ]);
+  });
+
   it('answers a known and a new email alike', async () => {
     const known = await register(w.B.users.tenant_admin.email);
     const fresh = await register(signupEmail());
