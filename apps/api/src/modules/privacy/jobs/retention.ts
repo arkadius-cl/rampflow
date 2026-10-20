@@ -9,13 +9,13 @@ import {
   values,
 } from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
-import type { AnyOrgId, UserId } from '../../../db/ids.ts';
+import type { AnyOrgId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
 import { loadAccess } from '../../../kernel/access.ts';
 import type { Clock } from '../../../kernel/clock.ts';
 import { forEachTenant, type Job, type JobContext, type JobStats } from '../../../kernel/jobs.ts';
 import { enqueueEmail } from '../../../kernel/outbox.ts';
-import { systemScope } from '../../../kernel/system.ts';
+import { platformSystemScope, systemScope } from '../../../kernel/system.ts';
 // biome-ignore lint/style/noRestrictedImports: retention purges every table by its rule (data model, "Retention"), the auth tables included; it deletes rows and reads none of their values
 import { appUser, authToken, membership, org, rateLimitEvent } from '../../core/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
@@ -30,12 +30,6 @@ const DAY_MS = 86_400_000;
 const NOTICE_DAYS = 30;
 const AUTH_ROWS_MS = DAY_MS;
 const OUTBOX_DAYS = 7;
-
-/** Carrier accounts are platform data; no user acts, so the scope carries the nil id. */
-const PLATFORM: Scope = {
-  party: ScopeParty.platform,
-  userId: '00000000-0000-0000-0000-000000000000' as UserId,
-};
 
 const isStaffLocale = (l: string | null): l is StaffLocale =>
   l !== null && (values(StaffLocale) as readonly string[]).includes(l);
@@ -61,7 +55,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
       null,
     ),
   );
-  return asScope(tx, PLATFORM, async () => {
+  return asScope(tx, platformSystemScope, async () => {
     const lastActive = sql<Date>`coalesce(${appUser.lastSeenAt}, ${appUser.createdAt})`;
     const carrierOnly = and(
       sql`exists (select 1 from ${membership} m where m.user_id = ${appUser.id} and m.org_kind = 'carrier')`,

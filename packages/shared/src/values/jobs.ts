@@ -22,6 +22,7 @@ export const SystemActorName = {
   invitation: 'invitation',
   carrier_invitation: 'carrier_invitation',
   registration: 'registration',
+  signup: 'signup',
   safety_pass: 'safety_pass',
   booking_carrier_names: 'booking_carrier_names',
   avis_unique_references: 'avis_unique_references',

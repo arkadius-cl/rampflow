@@ -1,4 +1,10 @@
-import { SignupBody, type SignupChallenge } from '@rampflow/shared/modules/core/api.signup';
+import { TokenBody } from '@rampflow/shared/modules/core/api.auth';
+import {
+  SignupBody,
+  type SignupChallenge,
+  type SignupInspect,
+  type SignupVerified,
+} from '@rampflow/shared/modules/core/api.signup';
 import { SignupIssue } from '@rampflow/shared/modules/core/values';
 import { ErrorCode, ScopeParty, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
@@ -7,14 +13,18 @@ import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { clientIp } from '../../../kernel/rate-limit.ts';
+import { sessionUser, tokenScope } from '../../../kernel/scopes.ts';
 import { validate } from '../../../kernel/validate.ts';
 import { hashPassword } from '../auth/password.ts';
+import { startSession } from '../auth/sessions.ts';
 import { createSignupChallenge, verifySignupSolution } from './altcha.ts';
 import { isDisposable } from './disposable-domains.ts';
 import { signupAllowed, submitSignup } from './signups.ts';
+import { inspectSignup, verifySignup } from './verify.redeem.ts';
 
 // Mounted at /api/public/signups (RG-01 to RG-04). No route has a tenant yet: the challenge
-// needs no transaction, the registration runs under the anonymous scope.
+// needs no transaction, the registration runs under the anonymous scope, inspect and verify
+// under the token scope of the emailed token.
 
 const invalid = (field: string, code: SignupIssue, message: string) =>
   new ApiError(ErrorCode.validation_failed, 'Invalid json', {
@@ -59,5 +69,49 @@ export const publicApi = new Hono<AppEnv>()
         );
       }
       return c.body(null, 202);
+    },
+  )
+  .post(
+    '/inspect',
+    op({
+      id: 'core.signup.inspectSignup',
+      stories: [StoryId.RG_02, StoryId.RG_04],
+      description:
+        '`{ token }` → `{ email, companyName, possibleDuplicate }` for the verify page, before the click. Does not use the link. `possibleDuplicate` is true when another tenant has an equivalent tax id or a member at the same non-free-mail domain; it names no tenant. 401 for an unknown, used, superseded or expired link. Service: `inspectSignup` in `verify.redeem.ts`',
+      responses: { 200: type<SignupInspect>() },
+    }),
+    validate(ValidationTarget.json, TokenBody),
+    async (c) => {
+      const { token } = c.req.valid('json');
+      const signedIn = await sessionUser(c);
+      const inspected = await withScope(tokenScope(token, signedIn), (tx) =>
+        inspectSignup(tx, token, c.var.clock.now()),
+      );
+      return c.json(inspected, 200);
+    },
+  )
+  .post(
+    '/verify',
+    op({
+      id: 'core.signup.verifySignup',
+      stories: [StoryId.RG_02, StoryId.RG_04],
+      description:
+        '`{ token }` → `{ tenantId, possibleDuplicate }`; in one transaction creates the tenant org (onboarding, the tax id with its initial status, `possible_duplicate`), its `start` subscription, the verified user with the chosen password and the only `tenant_admin` membership, then signs in, replacing any session. Single use, 24 hours: a used, superseded or expired link answers 401. An account with the email answers 409 `conflict` with `reason: account_exists` and the registration stays pending. Service: `verifySignup` in `verify.redeem.ts`',
+      responses: { 200: type<SignupVerified>() },
+    }),
+    validate(ValidationTarget.json, TokenBody),
+    async (c) => {
+      const { token } = c.req.valid('json');
+      const signedIn = await sessionUser(c);
+      const now = c.var.clock.now();
+      const verified = await withScope(tokenScope(token, signedIn), async (tx) => {
+        const result = await verifySignup(tx, token, now);
+        await startSession(c, tx, result.userId, now);
+        return result;
+      });
+      return c.json(
+        { tenantId: verified.tenantId, possibleDuplicate: verified.possibleDuplicate },
+        200,
+      );
     },
   );
