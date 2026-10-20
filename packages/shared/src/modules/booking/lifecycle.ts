@@ -1,78 +1,43 @@
 import * as z from 'zod';
 import { DRIVER_LOCALES } from '../../locales.ts';
 import type { ImplementedFeatureKey, PermissionKey } from '../../registry.ts';
+import { values } from '../../values/define.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
+import {
+  BookingParty,
+  BookingStatus,
+  DockHoldingStatus,
+  FinalBookingStatus,
+  LinkVia,
+  LoadStatus,
+  OnSiteStatus,
+  Punctuality,
+  TurnAwayReason,
+} from './values.ts';
 
 // The booking lifecycle as data (ADR-0005, docs/reference/booking-lifecycle.md). The API
 // enforces it in transitionBooking; the web app reads it to decide which actions to offer.
 
-export const BOOKING_STATUSES = [
-  'requested',
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-  'departed',
-  'cancelled',
-  'no_show',
-  'turned_away',
-] as const;
-export type BookingStatus = (typeof BOOKING_STATUSES)[number];
-
-/** Statuses that count against capacity. */
-export const LOAD_STATUSES = [
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-] as const satisfies readonly BookingStatus[];
-/** Statuses that hold a dock (index `booking_dock_occupied`). */
-export const DOCK_HOLDING_STATUSES = [
-  'called',
-  'at_dock',
-  'loading',
-] as const satisfies readonly BookingStatus[];
-/** A truck is on site in these: the yard sees it, departure is possible. */
-export const ON_SITE_STATUSES = [
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-] as const satisfies readonly BookingStatus[];
-
-/** Final statuses (docs/reference/booking-lifecycle.md): the visit is over or never happens. */
-export const FINAL_STATUSES = [
-  'departed',
-  'cancelled',
-  'no_show',
-  'turned_away',
-] as const satisfies readonly BookingStatus[];
-
-export const TURN_AWAY_REASONS = [
-  'safety_not_completed',
-  'no_capacity',
-  'too_late',
-  'documents_missing',
-  'wrong_load',
-  'damaged',
-  'other',
-] as const;
-export type TurnAwayReason = (typeof TURN_AWAY_REASONS)[number];
-
-export const PUNCTUALITY = ['early', 'on_time', 'late'] as const;
-export type Punctuality = (typeof PUNCTUALITY)[number];
-
-export const LINK_VIA = ['completed', 'pass', 'gate_lookup'] as const;
-export type LinkVia = (typeof LINK_VIA)[number];
-
-/** Who issues a command. `staff` acts under the tenant party, `carrier` under carrier_at_tenant. */
-export const BOOKING_PARTIES = ['carrier', 'staff', 'driver', 'system'] as const;
-export type BookingParty = (typeof BOOKING_PARTIES)[number];
+export {
+  BookingParty,
+  BookingStatus,
+  DockHoldingStatus,
+  FinalBookingStatus,
+  LinkVia,
+  LoadStatus,
+  OnSiteStatus,
+  Punctuality,
+  TurnAwayReason,
+};
+export const BOOKING_STATUSES = values(BookingStatus);
+export const LOAD_STATUSES = values(LoadStatus);
+export const DOCK_HOLDING_STATUSES = values(DockHoldingStatus);
+export const ON_SITE_STATUSES = values(OnSiteStatus);
+export const FINAL_STATUSES = values(FinalBookingStatus);
+export const TURN_AWAY_REASONS = values(TurnAwayReason);
+export const PUNCTUALITY = values(Punctuality);
+export const LINK_VIA = values(LinkVia);
+export const BOOKING_PARTIES = values(BookingParty);
 
 const isoInstant = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
 const reason = z.string().trim().min(1).max(500);

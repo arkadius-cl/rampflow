@@ -150,7 +150,7 @@ Each step ends green and is its own commit (AGENTS.md). Old and new exports coex
 ## Risks / Trade-offs
 
 - [The contextual-type check reports literals whose type is a project union that is not meant as a closed set, such as a test helper's `'GET' | 'POST'`] → those unions become value sets too, which is the rule. A true false positive (none expected) gets a `// values-check-ignore: <reason>` comment, and the check counts and prints the ignores so they stay visible.
-- [A mapped type over all permission keys slows type checking] → measured in step 1 against `pnpm typecheck` before and after. Fallback: the D3 alternative, a generated `keys.gen.ts`.
+- [A mapped type over all permission keys slows type checking] → measured in step 1 against `pnpm typecheck` before and after. Fallback: the D3 alternative, a generated `keys.gen.ts`. Measured on 2026-10-20 (`pnpm -r exec tsc -b --force` plus `tsc -p e2e`, two runs each): 11.0 s before, 10.9 s with the key trees. The trees split every dot of a key, so `Setting.privacy.retention.visit_days` is a path and not `Setting.privacy['retention.visit_days']`.
 - [The web diff is large (about 600 sites) and conflicts with parallel work] → 00 runs before 01 to 04 with nothing else in flight. The fixer is rerunnable after a rebase, so conflicts are resolved by taking `main` and rerunning `values:check --fix`.
 - [`values:check` adds time to `verify`] → it shares the program options with `api:docs`. The target is under 30 s on this machine; above that, cache by a source hash as `api:docs` does.
 - [A new check constraint fails on existing rows] → precheck in the Migration Plan. The seed writes only valid values.

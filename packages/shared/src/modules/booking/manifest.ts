@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-
-const PTS = ['platform', 'tenant', 'site'] as const;
+import { everyScope } from '../../values/settings.ts';
 
 export const booking = defineModule({
   id: 'booking',
@@ -34,17 +33,21 @@ export const booking = defineModule({
     'booking.slot_grid_minutes': {
       schema: z.literal([5, 10, 15, 20, 30, 60]),
       default: 30,
-      scopes: PTS,
+      scopes: everyScope,
     },
-    'booking.min_lead_minutes': { schema: z.int().min(0).max(10080), default: 120, scopes: PTS },
-    'booking.horizon_days': { schema: z.int().min(1).max(365), default: 30, scopes: PTS },
+    'booking.min_lead_minutes': {
+      schema: z.int().min(0).max(10080),
+      default: 120,
+      scopes: everyScope,
+    },
+    'booking.horizon_days': { schema: z.int().min(1).max(365), default: 30, scopes: everyScope },
     'booking.cancel_cutoff_minutes': {
       schema: z.int().min(0).max(10080),
       default: 120,
-      scopes: PTS,
+      scopes: everyScope,
     },
-    'booking.close_on_public_holidays': { schema: z.boolean(), default: true, scopes: PTS },
-    'booking.require_plate': { schema: z.boolean(), default: false, scopes: PTS },
+    'booking.close_on_public_holidays': { schema: z.boolean(), default: true, scopes: everyScope },
+    'booking.require_plate': { schema: z.boolean(), default: false, scopes: everyScope },
     'booking.public_link_enabled': {
       schema: z.boolean(),
       default: false,

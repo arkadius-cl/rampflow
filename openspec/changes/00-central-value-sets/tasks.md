@@ -2,10 +2,10 @@
 
 ## 1. Foundations
 
-- [ ] 1.1 Add `packages/shared/src/values/define.ts` with `ValueOf<T>` and `values(set)` (typed non-empty tuple), and the `@rampflow/shared/values` export. Verify with type tests that `values(BookingStatus)` is accepted by `z.enum`, Drizzle `text(..., { enum })` and `oneOf`, and with `pnpm typecheck`.
-- [ ] 1.2 Add `packages/shared/src/values/keys.ts` with `Permission`, `Feature`, `Limit`, `Setting` and `Module` built from `catalog` (design D3). Verify with type tests that `ValueOf` of each tree equals `PermissionKey`, `ImplementedFeatureKey`, `LimitKey`, `SettingKey` and `ModuleId`, and that a unit test finds `Permission.booking.view === 'booking.view'`. Record `pnpm typecheck` time before and after in design.md (Risks).
-- [ ] 1.3 Convert every existing value set in `packages/shared` (the 27 arrays, `ROLES`, `SETTING_SCOPES`, `PTS`, the locales, `PACKAGE_IDS`, `STORY_IDS` from `apps/api/src/kernel/describe.ts`) into self-keyed objects in `values.ts` files per design D1 and D2, with subsets that reference their parent. Keep the old `UPPER_CASE` exports as `values(...)` aliases for this group only. Verify `pnpm typecheck` and `pnpm test` are green.
-- [ ] 1.4 Add `packages/shared/src/values/values.test.ts`: it imports every `values.ts`, checks key equals value for identifier values, no two equal sets, and no empty set. Verify it passes, and that it fails when one member is changed to `confirmed: 'Confirmed'` or a set is duplicated.
+- [x] 1.1 Add `packages/shared/src/values/define.ts` with `ValueOf<T>` and `values(set)` (typed non-empty tuple), and the `@rampflow/shared/values` export. Verify with type tests that `values(BookingStatus)` is accepted by `z.enum`, Drizzle `text(..., { enum })` and `oneOf`, and with `pnpm typecheck`.
+- [x] 1.2 Add `packages/shared/src/values/keys.ts` with `Permission`, `Feature`, `Limit`, `Setting` and `Module` built from `catalog` (design D3). Verify with type tests that `ValueOf` of each tree equals `PermissionKey`, `ImplementedFeatureKey`, `LimitKey`, `SettingKey` and `ModuleId`, and that a unit test finds `Permission.booking.view === 'booking.view'`. Record `pnpm typecheck` time before and after in design.md (Risks).
+- [x] 1.3 Convert every existing value set in `packages/shared` (the 27 arrays, `ROLES`, `SETTING_SCOPES`, `PTS`, the locales, `PACKAGE_IDS`, `STORY_IDS` from `apps/api/src/kernel/describe.ts`) into self-keyed objects in `values.ts` files per design D1 and D2, with subsets that reference their parent. Keep the old `UPPER_CASE` exports as `values(...)` aliases for this group only. Verify `pnpm typecheck` and `pnpm test` are green.
+- [x] 1.4 Add `packages/shared/src/values/values.test.ts`: it imports every `values.ts`, checks key equals value for identifier values, no two equal sets, and no empty set. Verify it passes, and that it fails when one member is changed to `confirmed: 'Confirmed'` or a set is duplicated.
 
 ## 2. Missing value sets
 

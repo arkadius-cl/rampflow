@@ -1,28 +1,15 @@
 import * as z from 'zod';
 import { DRIVER_LOCALES } from '../../locales.ts';
+import { values } from '../../values/define.ts';
 import { REFERENCE_TYPES } from './manifest.ts';
+import { AdrClass, LoadUnitType, PackingGroup, VehicleType } from './values.ts';
 
 // The avis of a booking (AV-01): the fields of domain research §1 without loading method,
 // customs, SSCC and attachments. Parsing normalizes plates, phones and UN numbers, so the API
 // stores one spelling and searches (YD-01, TN-06) match.
 
-export const LOAD_UNIT_TYPES = [
-  'eur_pallet',
-  'eur_half_pallet',
-  'industrial_pallet',
-  'one_way_pallet',
-  'box_pallet',
-  'roll_cage',
-  'small_load_carrier',
-  'carton',
-  'parcel',
-  'loose',
-  'coil',
-  'bulk',
-  'ibc',
-  'other',
-] as const;
-export type LoadUnitType = (typeof LOAD_UNIT_TYPES)[number];
+export { AdrClass, LoadUnitType, PackingGroup, VehicleType };
+export const LOAD_UNIT_TYPES = values(LoadUnitType);
 
 /** UN/ECE Recommendation 21 package codes, so an EDI export is a lookup. */
 export const REC21_CODE: Record<LoadUnitType, string> = {
@@ -42,34 +29,9 @@ export const REC21_CODE: Record<LoadUnitType, string> = {
   other: 'ZZ',
 };
 
-export const VEHICLE_TYPES = [
-  'van_3_5t',
-  'rigid_truck',
-  'truck_trailer',
-  'semi_trailer',
-  'mega_trailer',
-  'swap_body',
-  'container',
-  'reefer',
-] as const;
-export type VehicleType = (typeof VEHICLE_TYPES)[number];
-
-export const ADR_CLASSES = [
-  '1',
-  '2',
-  '3',
-  '4.1',
-  '4.2',
-  '4.3',
-  '5.1',
-  '5.2',
-  '6.1',
-  '6.2',
-  '7',
-  '8',
-  '9',
-] as const;
-export const PACKING_GROUPS = ['I', 'II', 'III'] as const;
+export const VEHICLE_TYPES = values(VehicleType);
+export const ADR_CLASSES = values(AdrClass);
+export const PACKING_GROUPS = values(PackingGroup);
 
 /** Uppercase without spaces, dashes or dots: "hh-ab 123" and "HH AB123" are the same truck. */
 export function normalizePlate(input: string): string {

@@ -1,18 +1,16 @@
 import * as z from 'zod';
 import { STAFF_LOCALES, type StaffLocale } from '../../locales.ts';
 import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
+import { values } from '../../values/define.ts';
+import { CountedDockStatus, DockStatus, DoorType, TemperatureZone } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
 
-export const DOOR_TYPES = ['dock_leveler', 'ground_level', 'side_loading', 'yard_open'] as const;
-export const TEMPERATURE_ZONES = ['ambient', 'chilled', 'frozen'] as const;
-export const DOCK_STATUSES = ['active', 'maintenance', 'inactive'] as const;
-export type DoorType = (typeof DOOR_TYPES)[number];
-export type TemperatureZone = (typeof TEMPERATURE_ZONES)[number];
-export type DockStatus = (typeof DOCK_STATUSES)[number];
-
-/** Docks that count toward `core.max_docks`. Only `active` docks add capacity (ADR-0004). */
-export const COUNTED_DOCK_STATUSES = ['active', 'maintenance'] as const satisfies DockStatus[];
+export { CountedDockStatus, DockStatus, DoorType, TemperatureZone };
+export const DOOR_TYPES = values(DoorType);
+export const TEMPERATURE_ZONES = values(TemperatureZone);
+export const DOCK_STATUSES = values(DockStatus);
+export const COUNTED_DOCK_STATUSES = values(CountedDockStatus);
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();

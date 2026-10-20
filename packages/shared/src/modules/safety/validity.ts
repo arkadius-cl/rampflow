@@ -1,9 +1,12 @@
+import { values } from '../../values/define.ts';
+import { AckStatus } from './values.ts';
+
 /**
  * Whether a safety acknowledgement still covers a visit (SF-01, SF-04, YD-02). Pure, so the gate,
  * the driver PWA, reports and the register agree on one rule.
  */
-export const ACK_STATUSES = ['valid', 'visit_only', 'expired', 'outdated'] as const;
-export type AckStatus = (typeof ACK_STATUSES)[number];
+export { AckStatus };
+export const ACK_STATUSES = values(AckStatus);
 
 export interface AcknowledgementFacts {
   /** Version number of the acknowledged instruction version. */

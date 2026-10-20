@@ -2,7 +2,9 @@ import * as z from 'zod';
 import type { EntitlementSource } from '../../contract/entitlements.ts';
 import type { Limit } from '../../contract/module.ts';
 import { PACKAGE_IDS, type PackageId } from '../../packages.ts';
-import type { ImplementedLimitKey, ModuleId } from '../../registry.ts';
+import type { ModuleId } from '../../registry.ts';
+import { values } from '../../values/define.ts';
+import { UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
 
@@ -32,14 +34,8 @@ export const PutOverride = z.object({
 });
 export type PutOverride = z.infer<typeof PutOverride>;
 
-/** The limits a tenant's usage is measured against (PL-04). */
-export const USAGE_KEYS = [
-  'core.max_sites',
-  'core.max_docks',
-  'core.max_internal_users',
-  'booking.max_bookings_per_month',
-] as const satisfies readonly ImplementedLimitKey[];
-export type UsageKey = (typeof USAGE_KEYS)[number];
+export type { UsageKey };
+export const USAGE_KEYS = values(UsageKey);
 
 export interface UsageMeter {
   used: number;

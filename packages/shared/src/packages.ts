@@ -1,7 +1,9 @@
 import type { PackageValues } from './registry.ts';
+import { values } from './values/define.ts';
+import { PackageId } from './values/packages.ts';
 
-export const PACKAGE_IDS = ['start', 'pro', 'enterprise'] as const;
-export type PackageId = (typeof PACKAGE_IDS)[number];
+export { PackageId };
+export const PACKAGE_IDS = values(PackageId);
 
 const start = {
   'core.max_sites': 1,

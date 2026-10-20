@@ -9,15 +9,15 @@ import {
   localTimeSchema,
   type TimeZone,
 } from '../../time/index.ts';
+import { values } from '../../values/define.ts';
+import { ClosureKind, Direction, ResourceKind } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/capacity (MD-03, MD-04, MD-05).
 
-export const DIRECTIONS = ['inbound', 'outbound'] as const;
-export const RESOURCE_KINDS = ['pool', 'single'] as const;
-export const CLOSURE_KINDS = ['closed', 'blocked'] as const;
-export type Direction = (typeof DIRECTIONS)[number];
-export type ResourceKind = (typeof RESOURCE_KINDS)[number];
-export type ClosureKind = (typeof CLOSURE_KINDS)[number];
+export { ClosureKind, Direction, ResourceKind };
+export const DIRECTIONS = values(Direction);
+export const RESOURCE_KINDS = values(ResourceKind);
+export const CLOSURE_KINDS = values(ClosureKind);
 
 /** Longest duration and buffer: a booking blocks capacity for at most 16 hours (ADR-0004). */
 export const MAX_DURATION_MINUTES = 720;

@@ -1,18 +1,11 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
+import { values } from '../../values/define.ts';
+import { everyScope } from '../../values/settings.ts';
+import { ReferenceType } from './values.ts';
 
-/** Reference kinds from domain research §1. */
-export const REFERENCE_TYPES = [
-  'purchase_order',
-  'delivery_note',
-  'shipment',
-  'transport_order',
-  'customer_ref',
-  'container',
-  'other',
-] as const;
-
-const PTS = ['platform', 'tenant', 'site'] as const;
+export { ReferenceType };
+export const REFERENCE_TYPES = values(ReferenceType);
 
 export const avis = defineModule({
   id: 'avis',
@@ -34,11 +27,11 @@ export const avis = defineModule({
         .refine((types) => new Set(types).size === types.length, 'Each type may appear once')
         .readonly(),
       default: [],
-      scopes: PTS,
+      scopes: everyScope,
     },
     'avis.unique_references': { schema: z.boolean(), default: false, scopes: ['tenant', 'site'] },
-    'avis.require_gross_weight': { schema: z.boolean(), default: false, scopes: PTS },
-    'avis.require_driver_phone': { schema: z.boolean(), default: false, scopes: PTS },
+    'avis.require_gross_weight': { schema: z.boolean(), default: false, scopes: everyScope },
+    'avis.require_driver_phone': { schema: z.boolean(), default: false, scopes: everyScope },
   },
   nav: [],
 });

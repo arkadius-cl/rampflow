@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-
-const PTS = ['platform', 'tenant', 'site'] as const;
+import { everyScope } from '../../values/settings.ts';
 
 export const safety = defineModule({
   id: 'safety',
@@ -21,11 +20,11 @@ export const safety = defineModule({
     'safety.view_register': { roles: ['dispatcher'] },
   },
   settings: {
-    'safety.validity_days': { schema: z.int().min(0).max(730), default: 365, scopes: PTS },
+    'safety.validity_days': { schema: z.int().min(0).max(730), default: 365, scopes: everyScope },
     'safety.require_for_checkin': {
       schema: z.boolean(),
       default: true,
-      scopes: PTS,
+      scopes: everyScope,
       requires: 'safety.gate_enforcement',
     },
     'safety.quiz_pass_percent': {

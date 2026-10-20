@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
-
-const PTS = ['platform', 'tenant', 'site'] as const;
+import { everyScope } from '../../values/settings.ts';
 
 export const yard = defineModule({
   id: 'yard',
@@ -22,13 +21,21 @@ export const yard = defineModule({
     'yard.dock': { roles: ['dock_operator'] },
   },
   settings: {
-    'yard.early_tolerance_minutes': { schema: z.int().min(0).max(240), default: 30, scopes: PTS },
-    'yard.grace_minutes': { schema: z.int().min(0).max(240), default: 15, scopes: PTS },
-    'yard.no_show_after_minutes': { schema: z.int().min(15).max(1440), default: 60, scopes: PTS },
+    'yard.early_tolerance_minutes': {
+      schema: z.int().min(0).max(240),
+      default: 30,
+      scopes: everyScope,
+    },
+    'yard.grace_minutes': { schema: z.int().min(0).max(240), default: 15, scopes: everyScope },
+    'yard.no_show_after_minutes': {
+      schema: z.int().min(15).max(1440),
+      default: 60,
+      scopes: everyScope,
+    },
     'yard.standgeld_flag_minutes': {
       schema: z.int().min(30).max(1440),
       default: 120,
-      scopes: PTS,
+      scopes: everyScope,
     },
   },
   nav: [

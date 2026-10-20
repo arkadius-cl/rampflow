@@ -1,26 +1,12 @@
 import * as z from 'zod';
 import { DRIVER_LOCALES } from '../../locales.ts';
+import { values } from '../../values/define.ts';
+import { PictogramId, TranslationState, VersionStatus } from './values.ts';
 
-/** Bundled pictograms; each id has `src/assets/pictograms/<id>.svg`. */
-export const PICTOGRAM_IDS = [
-  'hi_vis_vest',
-  'safety_shoes',
-  'speed_limit_10',
-  'forklift_traffic',
-  'wheel_chock',
-  'no_smoking',
-  'no_phone',
-  'assembly_point',
-  'first_aid',
-] as const;
-export type PictogramId = (typeof PICTOGRAM_IDS)[number];
-
-export const VERSION_STATUSES = ['draft', 'published', 'retired'] as const;
-export type VersionStatus = (typeof VERSION_STATUSES)[number];
-
-/** `source` is the authored text, `machine` an unreviewed translation (SF-01, DR-02). */
-export const TRANSLATION_STATES = ['source', 'machine', 'reviewed'] as const;
-export type TranslationState = (typeof TRANSLATION_STATES)[number];
+export { PictogramId, TranslationState, VersionStatus };
+export const PICTOGRAM_IDS = values(PictogramId);
+export const VERSION_STATUSES = values(VersionStatus);
+export const TRANSLATION_STATES = values(TranslationState);
 
 /** Briefing content exists in the driver languages. */
 export const SafetyLocale = z.enum(DRIVER_LOCALES);

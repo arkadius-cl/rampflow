@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./time": "./src/time/index.ts",
+    "./values": "./src/values/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {

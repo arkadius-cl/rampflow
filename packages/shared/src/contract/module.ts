@@ -1,18 +1,11 @@
 import type * as z from 'zod';
+import { values } from '../values/define.ts';
+import { LocaleSet } from '../values/locales.ts';
+import { OrgParty, Role } from '../values/roles.ts';
+import { SettingScope } from '../values/settings.ts';
 
-export const ROLES = [
-  'platform_admin',
-  'tenant_admin',
-  'dispatcher',
-  'gate_operator',
-  'dock_operator',
-  'carrier_admin',
-  'carrier_user',
-] as const;
-export type Role = (typeof ROLES)[number];
-
-/** The kind of org a membership belongs to. Drivers are not an org party; they hold a booking token. */
-export type OrgParty = 'platform' | 'tenant' | 'carrier';
+export { LocaleSet, OrgParty, Role, SettingScope };
+export const ROLES = values(Role);
 
 export const ROLE_PARTY = {
   platform_admin: 'platform',
@@ -38,12 +31,7 @@ export const ROLE_INCLUDES = {
   carrier_user: [],
 } as const satisfies Record<Role, readonly Role[]>;
 
-/** Most specific first. Resolution walks this order and falls back to the code default. */
-export const SETTING_SCOPES = ['site', 'tenant', 'platform'] as const;
-export type SettingScope = (typeof SETTING_SCOPES)[number];
-
-/** `staff` modules ship de, en and pl catalogs. `driver` ships the 12 driver languages. */
-export type LocaleSet = 'staff' | 'driver';
+export const SETTING_SCOPES = values(SettingScope);
 
 export type FeatureDef = { readonly kind: 'feature'; readonly reserved?: true };
 export type LimitDef = { readonly kind: 'limit'; readonly soft?: true; readonly reserved?: true };

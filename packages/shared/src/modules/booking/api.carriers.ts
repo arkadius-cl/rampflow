@@ -1,61 +1,25 @@
 import * as z from 'zod';
 import { STAFF_LOCALES } from '../../locales.ts';
+import { values } from '../../values/define.ts';
 import { Email, EmailToken, Password } from '../core/api.auth.ts';
+import {
+  CarrierLinkSource,
+  CarrierLinkStatus,
+  RegistrationCountry,
+  RegistrationMode,
+  RegistrationStatus,
+} from './values.ts';
 
 // Request schemas and response shapes of the carrier network (U7): /api/t/:orgId/carriers,
 // /api/c/:orgId/tenants, /api/public/links, /api/public/registrations and
 // /api/public/carrier-invitations (TN-03, TN-04, CR-01, CR-02).
 
-export const CARRIER_LINK_STATUSES = ['active', 'deactivated'] as const;
-export type CarrierLinkStatus = (typeof CARRIER_LINK_STATUSES)[number];
-export const CARRIER_LINK_SOURCES = ['invitation', 'public_link'] as const;
-export type CarrierLinkSource = (typeof CARRIER_LINK_SOURCES)[number];
-export const REGISTRATION_STATUSES = [
-  'pending_email',
-  'pending_approval',
-  'approved',
-  'rejected',
-] as const;
-export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
-export const REGISTRATION_MODES = ['auto_approve', 'approval_required'] as const;
-export type RegistrationMode = (typeof REGISTRATION_MODES)[number];
-
-/** Countries offered first on the registration form; the API accepts any ISO 3166-1 code. */
-export const REGISTRATION_COUNTRIES = [
-  'AT',
-  'BE',
-  'BG',
-  'BY',
-  'CH',
-  'CZ',
-  'DE',
-  'DK',
-  'EE',
-  'ES',
-  'FI',
-  'FR',
-  'GB',
-  'GR',
-  'HR',
-  'HU',
-  'IE',
-  'IT',
-  'LT',
-  'LU',
-  'LV',
-  'MD',
-  'NL',
-  'NO',
-  'PL',
-  'PT',
-  'RO',
-  'RS',
-  'SE',
-  'SI',
-  'SK',
-  'TR',
-  'UA',
-] as const;
+export { CarrierLinkSource, CarrierLinkStatus, RegistrationMode, RegistrationStatus };
+export const CARRIER_LINK_STATUSES = values(CarrierLinkStatus);
+export const CARRIER_LINK_SOURCES = values(CarrierLinkSource);
+export const REGISTRATION_STATUSES = values(RegistrationStatus);
+export const REGISTRATION_MODES = values(RegistrationMode);
+export const REGISTRATION_COUNTRIES = values(RegistrationCountry);
 
 const CompanyName = z.string().trim().min(1).max(120);
 const PersonName = z.string().trim().min(1).max(120);

@@ -1,24 +1,14 @@
 import * as z from 'zod';
+import { values } from '../../values/define.ts';
+import { CarrierRole, SiteLimitedRole, TenantRole } from '../../values/roles.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/staff (TN-01) and /api/c/:orgId/users
 // (CR-04). Both list members and pending invitations of one org.
 
-export const TENANT_ROLES = [
-  'tenant_admin',
-  'dispatcher',
-  'gate_operator',
-  'dock_operator',
-] as const;
-export type TenantRole = (typeof TENANT_ROLES)[number];
-
-export const CARRIER_ROLES = ['carrier_admin', 'carrier_user'] as const;
-export type CarrierRole = (typeof CARRIER_ROLES)[number];
-
-/** Roles that may be limited to a site list. Without one they see every site. */
-export const SITE_LIMITED_ROLES = [
-  'gate_operator',
-  'dock_operator',
-] as const satisfies TenantRole[];
+export { CarrierRole, SiteLimitedRole, TenantRole };
+export const TENANT_ROLES = values(TenantRole);
+export const CARRIER_ROLES = values(CarrierRole);
+export const SITE_LIMITED_ROLES = values(SiteLimitedRole);
 export const isSiteLimited = (role: string) =>
   (SITE_LIMITED_ROLES as readonly string[]).includes(role);
 
