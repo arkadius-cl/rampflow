@@ -1,4 +1,7 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { YardTruck } from '@rampflow/shared/modules/yard/api';
+import { BadgeTone, StaffLocale } from '@rampflow/shared/values';
 import { ShieldIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SiteTime, SiteTimeRange } from '@/components/site-time';
@@ -42,7 +45,7 @@ export function InstantTime({
 
 export function TruckStatus({ status, size }: { status: YardTruck['status']; size?: Size }) {
   const { t } = useTranslation('booking');
-  if (status === 'requested') return null;
+  if (status === BookingStatus.requested) return null;
   return (
     <StatusBadge
       meta={BOOKING_STATUS[status]}
@@ -55,8 +58,8 @@ export function TruckStatus({ status, size }: { status: YardTruck['status']; siz
 export function TruckSafety({ safety, size }: { safety: YardTruck['safety']; size?: Size }) {
   const { t } = useTranslation('yard');
   const meta =
-    safety.status === 'not_required'
-      ? { ...SAFETY_STATUS.valid, icon: ShieldIcon, tone: 'neutral' as const }
+    safety.status === SafetyStatus.not_required
+      ? { ...SAFETY_STATUS.valid, icon: ShieldIcon, tone: BadgeTone.neutral }
       : SAFETY_STATUS[safety.status];
   return <StatusBadge meta={meta} label={t(($) => $.gate.safety[safety.status])} size={size} />;
 }
@@ -79,5 +82,5 @@ export function TruckPunctuality({ truck, size }: { truck: YardTruck; size?: Siz
 /** Load type names exist in de and en; pl users read the English one. */
 export function useLoadTypeName() {
   const locale = useLocale();
-  return (name: YardTruck['loadType']['name']) => (locale === 'de' ? name.de : name.en);
+  return (name: YardTruck['loadType']['name']) => (locale === StaffLocale.de ? name.de : name.en);
 }

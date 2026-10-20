@@ -7,6 +7,9 @@ import { booking } from './modules/booking/manifest.ts';
 import { core } from './modules/core/manifest.ts';
 import { packages } from './packages.ts';
 import { catalog } from './registry.ts';
+import { EntitlementKind } from './values/entitlements.ts';
+import { Feature, Permission, Setting } from './values/keys.ts';
+import { OrgKind, Role } from './values/roles.ts';
 
 const now = new Date('2026-10-19T08:00:00Z');
 
@@ -32,12 +35,18 @@ describe('catalog', () => {
       id: 'extra',
       dependsOn: ['later'],
       enabledBy: 'extra.later',
-      entitlements: { 'extra.later': { kind: 'feature', reserved: true } },
-      permissions: { 'extra.view': { roles: ['carrier_user'] } },
+      entitlements: { 'extra.later': { kind: EntitlementKind.feature, reserved: true } },
+      permissions: { 'extra.view': { roles: [Role.carrier_user] } },
       settings: {
-        'extra.size': { ...booking.settings['booking.horizon_days'], default: 0, requires: 'x.y' },
+        'extra.size': {
+          ...booking.settings[Setting.booking.horizon_days],
+          default: 0,
+          requires: 'x.y',
+        },
       },
-      nav: [{ id: 'list', area: 'tenant', to: '/o/list', icon: 'list', permission: 'extra.view' }],
+      nav: [
+        { id: 'list', area: OrgKind.tenant, to: '/o/list', icon: 'list', permission: 'extra.view' },
+      ],
     };
     expect(validateCatalog([core, broken], {})).toEqual([
       'module extra: depends on later, which is not listed before it',
@@ -52,21 +61,25 @@ describe('catalog', () => {
 
 describe('permissions', () => {
   it('grants higher roles everything their included roles hold', () => {
-    const admin = permissionsFor(catalog, 'tenant_admin');
-    for (const key of permissionsFor(catalog, 'dispatcher')) expect(admin.has(key)).toBe(true);
-    const dispatcher = permissionsFor(catalog, 'dispatcher');
-    expect(dispatcher.has('yard.gate') && dispatcher.has('yard.dock')).toBe(true);
-    expect(permissionsFor(catalog, 'carrier_admin').has('booking.book')).toBe(true);
+    const admin = permissionsFor(catalog, Role.tenant_admin);
+    for (const key of permissionsFor(catalog, Role.dispatcher)) expect(admin.has(key)).toBe(true);
+    const dispatcher = permissionsFor(catalog, Role.dispatcher);
+    expect(dispatcher.has(Permission.yard.gate) && dispatcher.has(Permission.yard.dock)).toBe(true);
+    expect(permissionsFor(catalog, Role.carrier_admin).has(Permission.booking.book)).toBe(true);
   });
 
   it('keeps narrow roles narrow', () => {
-    const gate = permissionsFor(catalog, 'gate_operator');
-    expect(gate.has('booking.staff_book')).toBe(false);
+    const gate = permissionsFor(catalog, Role.gate_operator);
+    expect(gate.has(Permission.booking.staff_book)).toBe(false);
     // Walk-ins skip the capacity checks, so the gate needs walk_in, never force (ADR-0004).
-    expect(gate.has('booking.walk_in') && !gate.has('booking.force')).toBe(true);
-    expect(gate.has('yard.dock')).toBe(false);
-    expect(permissionsFor(catalog, 'carrier_user').has('core.manage_carrier_users')).toBe(false);
-    expect(permissionsFor(catalog, 'dispatcher').has('booking.view_actors')).toBe(false);
+    expect(gate.has(Permission.booking.walk_in) && !gate.has(Permission.booking.force)).toBe(true);
+    expect(gate.has(Permission.yard.dock)).toBe(false);
+    expect(
+      permissionsFor(catalog, Role.carrier_user).has(Permission.core.manage_carrier_users),
+    ).toBe(false);
+    expect(permissionsFor(catalog, Role.dispatcher).has(Permission.booking.view_actors)).toBe(
+      false,
+    );
   });
 });
 
@@ -74,34 +87,33 @@ describe('navFor', () => {
   const ids = (items: { module: string; id: string }[]) => items.map((i) => `${i.module}.${i.id}`);
 
   it('shows a gate operator only the screens their permissions and entitlements open', () => {
-    const permissions = permissionsFor(catalog, 'gate_operator');
+    const permissions = permissionsFor(catalog, Role.gate_operator);
     const start = resolveEntitlements(catalog, packages.start, [], now);
-    expect(ids(navFor(catalog, { area: 'tenant', permissions, entitlements: start }))).toEqual([
-      'booking.plan',
-      'yard.gate',
-      'yard.docks',
-    ]);
+    expect(
+      ids(navFor(catalog, { area: OrgKind.tenant, permissions, entitlements: start })),
+    ).toEqual(['booking.plan', 'yard.gate', 'yard.docks']);
     const noCall = resolveEntitlements(
       catalog,
       packages.start,
-      [{ key: 'yard.call_to_dock', value: false, expiresAt: null }],
+      [{ key: Feature.yard.call_to_dock, value: false, expiresAt: null }],
       now,
     );
-    expect(ids(navFor(catalog, { area: 'tenant', permissions, entitlements: noCall }))).toEqual([
-      'booking.plan',
-      'yard.gate',
-    ]);
+    expect(
+      ids(navFor(catalog, { area: OrgKind.tenant, permissions, entitlements: noCall })),
+    ).toEqual(['booking.plan', 'yard.gate']);
   });
 
   it('hides every item of a module that is off', () => {
-    const permissions = permissionsFor(catalog, 'tenant_admin');
+    const permissions = permissionsFor(catalog, Role.tenant_admin);
     const noYard = resolveEntitlements(
       catalog,
       packages.pro,
-      [{ key: 'yard.checkin_qr', value: false, expiresAt: null }],
+      [{ key: Feature.yard.checkin_qr, value: false, expiresAt: null }],
       now,
     );
-    const visible = ids(navFor(catalog, { area: 'tenant', permissions, entitlements: noYard }));
+    const visible = ids(
+      navFor(catalog, { area: OrgKind.tenant, permissions, entitlements: noYard }),
+    );
     expect(visible).not.toContain('yard.gate');
     expect(visible).not.toContain('report.reports');
     expect(visible).toContain('safety.briefings');
@@ -109,13 +121,13 @@ describe('navFor', () => {
 
   it('shows carrier users their portal and carrier admins their users too', () => {
     const user = navFor(catalog, {
-      area: 'carrier',
-      permissions: permissionsFor(catalog, 'carrier_user'),
+      area: OrgKind.carrier,
+      permissions: permissionsFor(catalog, Role.carrier_user),
     });
     expect(ids(user)).toEqual(['booking.bookings', 'booking.book', 'booking.tenants']);
     const admin = navFor(catalog, {
-      area: 'carrier',
-      permissions: permissionsFor(catalog, 'carrier_admin'),
+      area: OrgKind.carrier,
+      permissions: permissionsFor(catalog, Role.carrier_admin),
     });
     expect(ids(admin)).toEqual([
       'core.users',

@@ -1,7 +1,7 @@
 import { formatSiteTime, type TimeZone } from '@rampflow/shared/time';
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 import { type BookingEmailPayload, BookingFacts } from '../lifecycle/email-parts.tsx';
 import { example as confirmed } from './confirmed.tsx';
 
@@ -19,7 +19,7 @@ declare module '../../../kernel/outbox.ts' {
 export const category = 'booking';
 
 /** BK-08: no check-in by the deadline; the booking is closed and its capacity free. */
-export const render: EmailTemplate<BookingNoShowPayload>['render'] = (p, t) => {
+export const render: EmailTemplateModule<BookingNoShowPayload>['render'] = (p, t) => {
   const deadline = formatSiteTime(new Date(p.dueAt), p.timeZone as TimeZone, p.locale);
   return {
     subject: t('notify:email.no_show.subject', { code: p.code }),

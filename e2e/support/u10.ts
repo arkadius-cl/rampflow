@@ -2,6 +2,9 @@ import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, type Page } from '@playwright/test';
 import pg from 'pg';
 import { deriveToken } from '../../apps/api/src/kernel/tokens.ts';
+import { OnSiteStatus } from '../../packages/shared/src/modules/booking/values.ts';
+import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
+import { TokenPurpose } from '../../packages/shared/src/values/tokens.ts';
 import { seedWorld, type World, type WorldSide } from './auth.ts';
 
 // Driver PWA fixtures (U10): seeded bookings with their link tokens, a published briefing
@@ -98,7 +101,7 @@ export async function publishBriefing(
   const version = (await detail.json()) as {
     content: { locale: string; questions: PublishedBriefing['questions'] }[];
   };
-  const en = version.content.find((c) => c.locale === 'en');
+  const en = version.content.find((c) => c.locale === DriverLocale.en);
   if (!en || en.questions.length === 0) throw new Error('the template has no en quiz');
   return {
     instructionId: instruction.id,
@@ -119,11 +122,11 @@ export async function setVisit(
   const dock = rows[0];
   if (!dock) throw new Error('the world site has no dock');
   await db().query(
-    state === 'checked_in'
+    state === OnSiteStatus.checked_in
       ? `update booking set status = 'checked_in', checked_in_at = now() where id = $1`
       : `update booking set status = 'called', dock_id = $2, called_at = now(),
            checked_in_at = coalesce(checked_in_at, now()) where id = $1`,
-    state === 'checked_in' ? [booking.id] : [booking.id, dock.id],
+    state === OnSiteStatus.checked_in ? [booking.id] : [booking.id, dock.id],
   );
   return { dockCode: dock.code, hall: dock.hall };
 }
@@ -161,7 +164,7 @@ export async function revokeLink(booking: WorldBooking): Promise<void> {
 /** A 30-minute gate-device session (YD-02), as U9's "start briefing here" issues it. */
 export async function gateDeviceToken(side: WorldSide, booking: WorldBooking): Promise<string> {
   const id = randomUUID();
-  const token = deriveToken('driver', id);
+  const token = deriveToken(TokenPurpose.driver, id);
   await db().query(
     `insert into driver_access (id, tenant_id, site_id, booking_id, carrier_id, token_hash, channel, expires_at)
      values ($1, $2, $3, $4, $5, $6, 'staff', now() + interval '30 minutes')`,

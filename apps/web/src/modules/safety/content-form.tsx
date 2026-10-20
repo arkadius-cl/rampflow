@@ -2,11 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   type Content,
   ContentBody,
-  PICTOGRAM_IDS,
-  type PictogramId,
   QUIZ_QUESTIONS,
-  TRANSLATION_STATES,
 } from '@rampflow/shared/modules/safety/api.authoring';
+import { BlockKind, PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
+import { values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDownIcon,
@@ -119,7 +118,7 @@ export function ContentForm({
                 {t(($) => $.editor.fields.translation)}
               </FieldLabel>
               <NativeSelect {...field} id={id('translation')}>
-                {TRANSLATION_STATES.map((state) => (
+                {values(TranslationState).map((state) => (
                   <NativeSelectOption key={state} value={state}>
                     {t(($) => $.editor.translation[state])}
                   </NativeSelectOption>
@@ -150,7 +149,7 @@ export function ContentForm({
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">
                     {t(($) => $.editor.block.label, { n: index + 1 })} ·{' '}
-                    {block.kind === 'text'
+                    {block.kind === BlockKind.text
                       ? t(($) => $.editor.block.text)
                       : t(($) => $.editor.block.pictogram)}
                   </span>
@@ -189,7 +188,7 @@ export function ContentForm({
                     </div>
                   )}
                 </div>
-                {block.kind === 'text' ? (
+                {block.kind === BlockKind.text ? (
                   <TextBlock control={form.control} index={index} label={id(`block-${index}`)} />
                 ) : (
                   <PictogramBlock
@@ -207,7 +206,7 @@ export function ContentForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => blocks.append({ kind: 'text', text: '' })}
+                onClick={() => blocks.append({ kind: BlockKind.text, text: '' })}
               >
                 <TextIcon /> {t(($) => $.editor.block.add_text)}
               </Button>
@@ -215,7 +214,9 @@ export function ContentForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => blocks.append({ kind: 'pictogram', id: PICTOGRAM_IDS[0] })}
+                onClick={() =>
+                  blocks.append({ kind: BlockKind.pictogram, id: values(PictogramId)[0] })
+                }
               >
                 <ImageIcon /> {t(($) => $.editor.block.add_pictogram)}
               </Button>
@@ -351,7 +352,7 @@ function PictogramBlock({
             {t(($) => $.editor.block.label, { n: index + 1 })}
           </FieldLabel>
           <NativeSelect {...field} id={label}>
-            {PICTOGRAM_IDS.map((id) => (
+            {values(PictogramId).map((id) => (
               <NativeSelectOption key={id} value={id}>
                 {name(id)}
               </NativeSelectOption>

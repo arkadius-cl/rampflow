@@ -1,7 +1,7 @@
 import * as z from 'zod';
-import type { SettingScope } from '../../contract/module.ts';
 import type { SettingSource } from '../../contract/settings.ts';
 import type { ModuleId, SettingKey } from '../../registry.ts';
+import type { SettingScope } from '../../values/settings.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/settings (TN-02) and
 // /api/platform/settings (PL-03). Values are validated against the manifest on the server.

@@ -1,28 +1,38 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES } from '@rampflow/shared';
+import { StaffLocale, TokenPurpose, values } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
 import { loadTemplateFile } from '../../../kernel/outbox.ts';
-import { deriveToken, type TokenPurpose } from '../../../kernel/tokens.ts';
+import { deriveToken } from '../../../kernel/tokens.ts';
 
 // The account emails of U2 as the outbox worker renders them: every staff locale, no raw key,
 // and the link carries the token derived from the payload's row id in the fragment.
 
 const TEMPLATES: { id: string; purpose: TokenPurpose; path: string; idField: string }[] = [
-  { id: 'core.magic-link', purpose: 'magic_link', path: '/auth/magic#', idField: 'authTokenId' },
+  {
+    id: 'core.magic-link',
+    purpose: TokenPurpose.magic_link,
+    path: '/auth/magic#',
+    idField: 'authTokenId',
+  },
   {
     id: 'core.password-reset',
-    purpose: 'password_reset',
+    purpose: TokenPurpose.password_reset,
     path: '/auth/reset#',
     idField: 'authTokenId',
   },
-  { id: 'core.invitation', purpose: 'invitation', path: '/invite#', idField: 'invitationId' },
+  {
+    id: 'core.invitation',
+    purpose: TokenPurpose.invitation,
+    path: '/invite#',
+    idField: 'invitationId',
+  },
 ];
 
 describe('account emails', () => {
   for (const tpl of TEMPLATES) {
-    for (const locale of STAFF_LOCALES) {
+    for (const locale of values(StaffLocale)) {
       it(`${tpl.id} renders in ${locale} with its fragment link`, async () => {
         const template = await loadTemplateFile(tpl.id);
         expect(template.category).toBe('account');

@@ -1,4 +1,10 @@
 import {
+  EntitlementKind,
+  EntitlementSource as EntitlementSourceSet,
+  EntitlementValueType,
+  OverrideErrorCode,
+} from '../values/entitlements.ts';
+import {
   type Catalog,
   type FeatureKeyOf,
   findEntitlement,
@@ -27,11 +33,8 @@ export type EntitlementOverrideOf<C extends Catalog> =
       readonly expiresAt: Date | null;
     };
 
-/**
- * Why a key has its value. `module_off` means a package or override turned the key on,
- * but its module is off because its enabling feature or a dependency is off.
- */
-export type EntitlementSource = 'default' | 'package' | 'override' | 'reserved' | 'module_off';
+// An alias of its own, so the API description keeps its `EntitlementSource` component.
+export type EntitlementSource = Extract<EntitlementSourceSet, string>;
 
 export interface ResolvedEntitlementsOf<C extends Catalog> {
   readonly features: { readonly [K in FeatureKeyOf<C>]: boolean };
@@ -71,16 +74,16 @@ export function resolveEntitlements<C extends Catalog>(
       const fromPackage = packaged[key];
       if (def.reserved) {
         values[key] = OFF[def.kind];
-        sources[key] = 'reserved';
+        sources[key] = EntitlementSourceSet.reserved;
       } else if (override !== undefined) {
         values[key] = override;
-        sources[key] = 'override';
+        sources[key] = EntitlementSourceSet.override;
       } else if (fromPackage !== undefined) {
         values[key] = fromPackage;
-        sources[key] = 'package';
+        sources[key] = EntitlementSourceSet.package;
       } else {
         values[key] = OFF[def.kind];
-        sources[key] = 'default';
+        sources[key] = EntitlementSourceSet.default;
       }
     }
 
@@ -93,7 +96,7 @@ export function resolveEntitlements<C extends Catalog>(
       const value = values[key];
       if (value === undefined || isOff(value)) continue;
       values[key] = OFF[def.kind];
-      sources[key] = 'module_off';
+      sources[key] = EntitlementSourceSet.module_off;
     }
   }
 
@@ -132,12 +135,12 @@ export function blockingFeature<C extends Catalog>(
 }
 
 export type OverrideError =
-  | { readonly code: 'unknown_key'; readonly key: string }
-  | { readonly code: 'reserved_key'; readonly key: string }
+  | { readonly code: typeof OverrideErrorCode.unknown_key; readonly key: string }
+  | { readonly code: typeof OverrideErrorCode.reserved_key; readonly key: string }
   | {
-      readonly code: 'invalid_value';
+      readonly code: typeof OverrideErrorCode.invalid_value;
       readonly key: string;
-      readonly expected: 'boolean' | 'limit';
+      readonly expected: EntitlementValueType;
     };
 
 export interface RawOverride {
@@ -150,7 +153,7 @@ const isLimit = (value: unknown): value is Limit =>
   value === null || (typeof value === 'number' && Number.isInteger(value) && value >= 0);
 
 export function isValidEntitlementValue(def: EntitlementDef, value: unknown): boolean {
-  return def.kind === 'feature' ? typeof value === 'boolean' : isLimit(value);
+  return def.kind === EntitlementKind.feature ? typeof value === 'boolean' : isLimit(value);
 }
 
 /**
@@ -162,12 +165,16 @@ export function parseEntitlementOverride<C extends Catalog>(
   raw: RawOverride,
 ): Result<EntitlementOverrideOf<C>, OverrideError> {
   const found = findEntitlement(catalog, raw.key);
-  if (!found) return { ok: false, error: { code: 'unknown_key', key: raw.key } };
+  if (!found) return { ok: false, error: { code: OverrideErrorCode.unknown_key, key: raw.key } };
   const { def } = found;
-  if (def.reserved) return { ok: false, error: { code: 'reserved_key', key: raw.key } };
+  if (def.reserved)
+    return { ok: false, error: { code: OverrideErrorCode.reserved_key, key: raw.key } };
   if (!isValidEntitlementValue(def, raw.value)) {
-    const expected = def.kind === 'feature' ? 'boolean' : 'limit';
-    return { ok: false, error: { code: 'invalid_value', key: raw.key, expected } };
+    const expected =
+      def.kind === EntitlementKind.feature
+        ? EntitlementValueType.boolean
+        : EntitlementValueType.limit;
+    return { ok: false, error: { code: OverrideErrorCode.invalid_value, key: raw.key, expected } };
   }
   // The key was found in C, is not reserved, and the value matches its kind.
   return { ok: true, value: raw as EntitlementOverrideOf<C> };

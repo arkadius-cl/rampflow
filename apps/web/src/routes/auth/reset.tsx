@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
+import { RefinementMessage, SignInMode } from '@rampflow/shared/modules/core/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon } from 'lucide-react';
@@ -21,7 +23,10 @@ import { api, call, isFailure } from '@/lib/api';
 
 const NewPassword = z
   .object({ password: Password, confirm: z.string() })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'password_match' });
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: RefinementMessage.password_match,
+  });
 type NewPassword = z.infer<typeof NewPassword>;
 
 export const Route = createFileRoute('/auth/reset')({
@@ -37,7 +42,7 @@ function InvalidLink() {
         <AlertTitle>{t(($) => $.auth.link_invalid.title)}</AlertTitle>
         <AlertDescription>{t(($) => $.auth.link_invalid.reset)}</AlertDescription>
       </Alert>
-      <Link to="/login" search={{ mode: 'reset' }} className={buttonVariants()}>
+      <Link to="/login" search={{ mode: SignInMode.reset }} className={buttonVariants()}>
         {t(($) => $.auth.reset.request_submit)}
       </Link>
     </div>
@@ -66,7 +71,7 @@ function ResetPage() {
     onError: (e) => applyServerIssues(e, form.setError),
   });
 
-  if (!token || isFailure(confirm.error, 'unauthorized')) {
+  if (!token || isFailure(confirm.error, ErrorCode.unauthorized)) {
     return (
       <AuthLayout title={t(($) => $.auth.reset.title)}>
         <InvalidLink />

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Captures every design prototype screen at its target viewport.
-// Run inside the Playwright container (see package.json "ux:screens") against a
-// running Vite dev server on :5173. Output dir comes from UX_SCREENS_OUT.
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, devices } from '@playwright/test';
+// Captures every design prototype screen at its target viewport.
+// Run inside the Playwright container (see package.json "ux:screens") against a
+// running Vite dev server on :5173. Output dir comes from UX_SCREENS_OUT.
+import { ConsoleMessageType } from '../packages/shared/src/values/dom.ts';
 
 const base = process.env.UX_SCREENS_BASE ?? 'http://localhost:5173';
 const out = process.env.UX_SCREENS_OUT ?? '.audit/ux-screens';
@@ -55,7 +56,7 @@ for (const [name, path, ctx] of screens) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('console', (m) => m.type() === ConsoleMessageType.error && errors.push(m.text()));
   await page.goto(base + path, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(300);

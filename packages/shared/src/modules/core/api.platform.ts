@@ -1,8 +1,10 @@
 import * as z from 'zod';
 import type { EntitlementSource } from '../../contract/entitlements.ts';
 import type { Limit } from '../../contract/module.ts';
-import { PACKAGE_IDS, type PackageId } from '../../packages.ts';
-import type { ImplementedLimitKey, ModuleId } from '../../registry.ts';
+import type { ModuleId } from '../../registry.ts';
+import type { EntitlementKind } from '../../values/entitlements.ts';
+import { PackageId } from '../../values/packages.ts';
+import type { UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
 
@@ -10,12 +12,12 @@ const name = z.string().trim().min(1).max(120);
 
 export const CreateTenant = z.object({
   name,
-  package: z.enum(PACKAGE_IDS),
+  package: z.enum(PackageId),
   adminEmail: z.email().max(254),
 });
 export type CreateTenant = z.infer<typeof CreateTenant>;
 
-export const UpdateTenant = z.object({ name, package: z.enum(PACKAGE_IDS) }).partial();
+export const UpdateTenant = z.object({ name, package: z.enum(PackageId) }).partial();
 export type UpdateTenant = z.infer<typeof UpdateTenant>;
 
 export const InviteTenantAdmin = z.object({ email: z.email().max(254) });
@@ -32,14 +34,7 @@ export const PutOverride = z.object({
 });
 export type PutOverride = z.infer<typeof PutOverride>;
 
-/** The limits a tenant's usage is measured against (PL-04). */
-export const USAGE_KEYS = [
-  'core.max_sites',
-  'core.max_docks',
-  'core.max_internal_users',
-  'booking.max_bookings_per_month',
-] as const satisfies readonly ImplementedLimitKey[];
-export type UsageKey = (typeof USAGE_KEYS)[number];
+export type { UsageKey };
 
 export interface UsageMeter {
   used: number;
@@ -67,7 +62,7 @@ export interface TenantList {
 export interface EntitlementView {
   key: string;
   module: ModuleId;
-  kind: 'feature' | 'limit';
+  kind: EntitlementKind;
   soft: boolean;
   value: boolean | Limit;
   source: EntitlementSource;
@@ -102,7 +97,7 @@ export interface PackageView {
   values: {
     key: string;
     module: ModuleId;
-    kind: 'feature' | 'limit';
+    kind: EntitlementKind;
     soft: boolean;
     value: boolean | Limit;
   }[];

@@ -1,3 +1,11 @@
+import {
+  ConflictReason,
+  ErrorCode,
+  OrgKind,
+  Role,
+  StaffLocale,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -23,7 +31,7 @@ const sessionOf = (res: Response) =>
 const signedIn = (sessionToken: string, id: UserId): WorldUser => ({
   id,
   email: '',
-  role: 'dispatcher',
+  role: Role.dispatcher,
   sessionToken,
 });
 
@@ -50,8 +58,8 @@ describe('a new user accepts', () => {
   it('a gate operator invitation: verified account, membership, site list and a session', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'gate_operator',
+      orgKind: OrgKind.tenant,
+      role: Role.gate_operator,
       invitedBy: w.A.users.tenant_admin.id,
       siteIds: [w.A.sites[1].id],
     });
@@ -60,13 +68,18 @@ describe('a new user accepts', () => {
     expect(await seen.json()).toEqual({
       orgKind: 'tenant',
       orgName: expect.stringMatching(/^Tenant A /),
-      role: 'gate_operator',
+      role: Role.gate_operator,
       email: inv.email,
       hasAccount: false,
     });
 
     const res = await anon.post('/api/public/invitations/accept', {
-      body: { token: inv.token, name: 'Gina Gate', password: 'gate password 2026', locale: 'pl' },
+      body: {
+        token: inv.token,
+        name: 'Gina Gate',
+        password: 'gate password 2026',
+        locale: StaffLocale.pl,
+      },
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ orgId: w.A.tenantId, orgKind: 'tenant' });
@@ -74,11 +87,11 @@ describe('a new user accepts', () => {
     expect(session).not.toBeNull();
 
     const [user] = await ownerDb().select().from(appUser).where(eq(appUser.email, inv.email));
-    expect(user).toMatchObject({ name: 'Gina Gate', locale: 'pl' });
+    expect(user).toMatchObject({ name: 'Gina Gate', locale: StaffLocale.pl });
     expect(user?.emailVerifiedAt).toBeInstanceOf(Date);
     const userId = user?.id as UserId;
     const [m] = await membershipsOf(userId);
-    expect(m).toMatchObject({ orgId: w.A.tenantId, role: 'gate_operator' });
+    expect(m).toMatchObject({ orgId: w.A.tenantId, role: Role.gate_operator });
     expect(
       await ownerDb()
         .select({ siteId: membershipSite.siteId })
@@ -98,8 +111,8 @@ describe('a new user accepts', () => {
   it('a carrier user invitation from a carrier admin (CR-04)', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.carrierId,
-      orgKind: 'carrier',
-      role: 'carrier_user',
+      orgKind: OrgKind.carrier,
+      role: Role.carrier_user,
       invitedBy: w.A.users.carrier_admin.id,
     });
     const res = await anon.post('/api/public/invitations/accept', {
@@ -117,8 +130,8 @@ describe('a new user accepts', () => {
   it('without name and password answers 422 and leaves the invitation pending', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const res = await anon.post('/api/public/invitations/accept', { body: { token: inv.token } });
@@ -133,8 +146,8 @@ describe('a new user accepts', () => {
   it('once: two racing acceptances create one user and one membership', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const body = { token: inv.token, name: 'Racer', password: 'race password 12' };
@@ -158,8 +171,8 @@ describe('an existing user accepts', () => {
     const existing = await account(ownerDb());
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
       email: existing.email,
     });
@@ -171,7 +184,10 @@ describe('an existing user accepts', () => {
     });
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({
-      error: { code: 'unauthorized', details: { reason: 'sign_in_required' } },
+      error: {
+        code: ErrorCode.unauthorized,
+        details: { reason: UnauthorizedReason.sign_in_required },
+      },
     });
     expect(await isPending(inv.id)).toBe(true);
 
@@ -185,7 +201,7 @@ describe('an existing user accepts', () => {
     expect(res.status).toBe(200);
     expect(sessionOf(res)).toBeNull();
     expect(await membershipsOf(existing.id)).toEqual([
-      expect.objectContaining({ orgId: w.A.tenantId, role: 'dispatcher' }),
+      expect.objectContaining({ orgId: w.A.tenantId, role: Role.dispatcher }),
     ]);
   });
 
@@ -193,8 +209,8 @@ describe('an existing user accepts', () => {
     const member = w.A.users.dispatcher;
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'tenant_admin',
+      orgKind: OrgKind.tenant,
+      role: Role.tenant_admin,
       invitedBy: w.platformAdmin.id,
       email: member.email,
     });
@@ -202,7 +218,9 @@ describe('an existing user accepts', () => {
       body: { token: inv.token },
     });
     expect(res.status).toBe(409);
-    expect(await res.json()).toMatchObject({ error: { details: { reason: 'already_member' } } });
+    expect(await res.json()).toMatchObject({
+      error: { details: { reason: ConflictReason.already_member } },
+    });
     expect(await isPending(inv.id)).toBe(true);
   });
 });
@@ -211,8 +229,8 @@ describe('a token', () => {
   it('works once', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dock_operator',
+      orgKind: OrgKind.tenant,
+      role: Role.dock_operator,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const body = { token: inv.token, name: 'Dora Dock', password: 'dock password 12' };
@@ -228,8 +246,8 @@ describe('a token', () => {
     const later = createApp({ clock: local });
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
       expiresAt: new Date(local.now().getTime() + 7 * 24 * 3600_000),
     });
@@ -244,8 +262,8 @@ describe('a token', () => {
   it('of a revoked invitation answers 401', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     await ownerDb()
@@ -259,8 +277,8 @@ describe('a token', () => {
   it('needs the same-origin header like every mutating request', async () => {
     const inv = await invitationFor(ownerDb(), {
       orgId: w.A.tenantId,
-      orgKind: 'tenant',
-      role: 'dispatcher',
+      orgKind: OrgKind.tenant,
+      role: Role.dispatcher,
       invitedBy: w.A.users.tenant_admin.id,
     });
     const res = await anon.post('/api/public/invitations/inspect', {
@@ -280,7 +298,7 @@ describe('removing a member (TN-01)', () => {
       userId: user.id,
       orgId: own.B.tenantId,
       orgKind: 'tenant',
-      role: 'dispatcher',
+      role: Role.dispatcher,
     });
     const asUser = as(app, user);
     expect((await asUser.get(`/api/t/${own.A.tenantId}/context`)).status).toBe(200);

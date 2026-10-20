@@ -1,3 +1,4 @@
+import { Permission } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CheckIcon, MinusIcon } from 'lucide-react';
@@ -18,7 +19,7 @@ import { packagesQuery } from '@/modules/core/queries';
 // PL-02: the three packages side by side, read-only. Per-tenant changes are overrides.
 
 export const Route = createFileRoute('/platform/packages/')({
-  beforeLoad: guard({ permission: 'core.manage_tenants' }),
+  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
   component: PackagesPage,
 });
 

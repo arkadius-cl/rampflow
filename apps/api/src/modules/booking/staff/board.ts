@@ -4,8 +4,9 @@ import type {
   BookingListQuery,
   BookingPage,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { type BookingStatus, LOAD_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { type BookingStatus, LoadStatus } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, slotGrid } from '@rampflow/shared/time';
+import { Setting, values } from '@rampflow/shared/values';
 import { and, asc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -21,7 +22,8 @@ import { booking } from '../schema.ts';
 // U4 and the day's bookings.
 
 const BUCKET_MS = BUCKET_MINUTES * 60_000;
-const counts = (status: BookingStatus) => (LOAD_STATUSES as readonly string[]).includes(status);
+const counts = (status: BookingStatus) =>
+  (values(LoadStatus) as readonly string[]).includes(status);
 
 /** Lowest capacity and highest load over the buckets of `[start, start + minutes)`. */
 function slotLoad(
@@ -64,7 +66,7 @@ export async function loadBoard(
   where: { tenantId: TenantId; siteId: SiteId; day: LocalDate },
 ): Promise<BoardView> {
   const timeline = await dayTimeline(tx, access, where.tenantId, where.siteId, where.day);
-  const gridMinutes = (await access.setting('booking.slot_grid_minutes', where.siteId)).value;
+  const gridMinutes = (await access.setting(Setting.booking.slot_grid_minutes, where.siteId)).value;
   const grid = slotGrid(where.day, timeline.timeZone, gridMinutes);
   const rows = await tx
     .select()

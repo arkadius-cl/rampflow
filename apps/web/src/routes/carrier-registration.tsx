@@ -1,4 +1,11 @@
 import type { RegistrationVerified } from '@rampflow/shared/modules/booking/api.carriers';
+import { SignInMode } from '@rampflow/shared/modules/core/values';
+import {
+  ErrorCode,
+  ForbiddenReason,
+  TokenExchangeStatus,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon } from 'lucide-react';
@@ -31,7 +38,7 @@ function VerifyRegistrationPage() {
     );
   const first = useExchangeOnce(token && `registration:${token}`, verify);
   const retry = useMutation({ mutationFn: verify, meta: { silent: true } });
-  const done = retry.data ?? (first.status === 'done' ? first.value : undefined);
+  const done = retry.data ?? (first.status === TokenExchangeStatus.done ? first.value : undefined);
 
   useEffect(() => {
     if (!done) return;
@@ -39,15 +46,18 @@ function VerifyRegistrationPage() {
     void navigate({ to: '/c/$orgId/tenants', params: { orgId: done.carrierId }, replace: true });
   }, [done, navigate, queryClient]);
 
-  const failure = retry.error ?? (first.status === 'failed' ? first.error : null);
+  const failure = retry.error ?? (first.status === TokenExchangeStatus.failed ? first.error : null);
   const signInEmail =
-    isFailure(failure, 'unauthorized') &&
-    failure.reason === 'sign_in_required' &&
+    isFailure(failure, ErrorCode.unauthorized) &&
+    failure.reason === UnauthorizedReason.sign_in_required &&
     typeof failure.details.email === 'string'
       ? failure.details.email
       : null;
 
-  if (token && (done || retry.isPending || (first.status === 'pending' && !failure))) {
+  if (
+    token &&
+    (done || retry.isPending || (first.status === TokenExchangeStatus.pending && !failure))
+  ) {
     return (
       <AuthLayout title={t(($) => $.registration.verify.title)}>
         <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
@@ -65,7 +75,8 @@ function VerifyRegistrationPage() {
     );
   }
   const adminRequired =
-    isFailure(failure, 'forbidden') && failure.reason === 'carrier_admin_required';
+    isFailure(failure, ErrorCode.forbidden) &&
+    failure.reason === ForbiddenReason.carrier_admin_required;
   return (
     <AuthLayout title={t(($) => $.registration.verify.title)}>
       <Alert variant="destructive">
@@ -100,7 +111,7 @@ function SignInToConfirm({ email, onSignedIn }: { email: string; onSignedIn: () 
       </p>
       <Link
         to="/login"
-        search={{ mode: 'magic' }}
+        search={{ mode: SignInMode.magic }}
         target="_blank"
         className={buttonVariants({ variant: 'link', size: 'sm' })}
       >

@@ -14,6 +14,7 @@ import type {
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
 import type { UiPrefKey, UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import { ErrorCode, OrgKind } from '@rampflow/shared/values';
 import {
   type QueryClient,
   queryOptions,
@@ -71,14 +72,14 @@ export function useUiPref<K extends UiPrefKey>(key: K) {
 
 export const tenantContextQuery = (orgId: string) =>
   queryOptions({
-    queryKey: queryKeys.context('tenant', orgId),
+    queryKey: queryKeys.context(OrgKind.tenant, orgId),
     queryFn: () => call<TenantContext>(api.t[':orgId'].context.$get({ param: { orgId } })),
     staleTime: 60_000,
   });
 
 export const carrierContextQuery = (orgId: string) =>
   queryOptions({
-    queryKey: queryKeys.context('carrier', orgId),
+    queryKey: queryKeys.context(OrgKind.carrier, orgId),
     queryFn: () => call<CarrierContext>(api.c[':orgId'].context.$get({ param: { orgId } })),
     staleTime: 60_000,
   });
@@ -105,7 +106,8 @@ export async function requireMe(queryClient: QueryClient, href: string): Promise
   try {
     return await queryClient.ensureQueryData(meQuery);
   } catch (e) {
-    if (isFailure(e, 'unauthorized')) throw redirect({ to: '/login', search: { redirect: href } });
+    if (isFailure(e, ErrorCode.unauthorized))
+      throw redirect({ to: '/login', search: { redirect: href } });
     throw e;
   }
 }
@@ -128,7 +130,7 @@ const moduleOf = (key: string) => key.slice(0, key.indexOf('.'));
 /** Whether the caller holds the permission and, at a tenant, the module and feature are on. */
 export function allows(access: AreaAccess, keys: AccessKeys): boolean {
   if (!access.context.permissions.includes(keys.permission)) return false;
-  if (access.area !== 'tenant') return true;
+  if (access.area !== OrgKind.tenant) return true;
   const { entitlements } = access.context;
   const modulesOn: Readonly<Record<string, boolean>> = entitlements.modules;
   if (!modulesOn[moduleOf(keys.permission)]) return false;
@@ -149,9 +151,9 @@ export function guard(keys: AccessKeys) {
 /** The navigation of the current area, from the manifests. */
 export function navOf(access: AreaAccess): VisibleNavItem[] {
   const permissions = new Set(access.context.permissions);
-  if (access.area === 'tenant') {
+  if (access.area === OrgKind.tenant) {
     return navFor(catalog, {
-      area: 'tenant',
+      area: OrgKind.tenant,
       permissions,
       entitlements: access.context.entitlements,
     });
@@ -169,14 +171,14 @@ function useAreaAccess(): AreaAccess {
   // Read the live query, so a refetched context (after a package change) updates actions.
   const tenant = useQuery({
     ...tenantContextQuery(access.orgId ?? ''),
-    enabled: access.area === 'tenant',
+    enabled: access.area === OrgKind.tenant,
   });
   const carrier = useQuery({
     ...carrierContextQuery(access.orgId ?? ''),
-    enabled: access.area === 'carrier',
+    enabled: access.area === OrgKind.carrier,
   });
-  if (access.area === 'tenant' && tenant.data) return { ...access, context: tenant.data };
-  if (access.area === 'carrier' && carrier.data) return { ...access, context: carrier.data };
+  if (access.area === OrgKind.tenant && tenant.data) return { ...access, context: tenant.data };
+  if (access.area === OrgKind.carrier && carrier.data) return { ...access, context: carrier.data };
   return access;
 }
 
@@ -188,9 +190,9 @@ export function useAccess() {
     orgId: access.orgId,
     can: (permission: PermissionKey) => access.context.permissions.includes(permission),
     has: (feature: ImplementedFeatureKey) =>
-      access.area === 'tenant' && access.context.entitlements.features[feature],
+      access.area === OrgKind.tenant && access.context.entitlements.features[feature],
     setting<K extends SettingKey>(key: K, siteId: string): SettingValue<K> {
-      if (access.area !== 'tenant') throw new Error('Settings exist in the tenant area only');
+      if (access.area !== OrgKind.tenant) throw new Error('Settings exist in the tenant area only');
       const value = access.context.settings[siteId]?.[key];
       if (!value) throw new Error(`Setting ${key} is not available at site ${siteId}`);
       return value.value as SettingValue<K>;

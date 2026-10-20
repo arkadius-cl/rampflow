@@ -1,3 +1,4 @@
+import type { ShellLayout } from '@rampflow/shared/values';
 import '@/index.css';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -18,7 +19,7 @@ declare module '@tanstack/react-router' {
   }
   interface StaticDataRouteOption {
     /** `station`: the tenant layout renders the tablet station layout instead of the office shell. */
-    shell?: 'office' | 'station';
+    shell?: ShellLayout;
   }
 }
 

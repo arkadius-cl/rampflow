@@ -1,3 +1,4 @@
+import { TokenPurpose } from '@rampflow/shared/values';
 import { Button, Heading, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
@@ -31,7 +32,7 @@ export const example: RegistrationVerifyPayload = {
 
 /** A single-use link to /carrier-registration#<token>, valid for 24 hours. */
 export function render(payload: RegistrationVerifyPayload, t: TFunction) {
-  const link = `${env.APP_ORIGIN}/carrier-registration#${deriveToken('registration', payload.registrationId)}`;
+  const link = `${env.APP_ORIGIN}/carrier-registration#${deriveToken(TokenPurpose.registration, payload.registrationId)}`;
   const values = { tenant: payload.tenantName, site: payload.siteName };
   const variant = payload.knownAccount ? 'known' : 'verify';
   const subject = t(`registration.email.${variant}.subject`, values);

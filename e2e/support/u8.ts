@@ -1,6 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, type Page } from '@playwright/test';
 import pg from 'pg';
+import { LoadUnitType, ReferenceType } from '../../packages/shared/src/modules/avis/values.ts';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { WorldSide, WorldUser } from './auth.ts';
 import { apiAs } from './u5.ts';
 import type { PlanSite } from './u6b.ts';
@@ -37,9 +39,11 @@ export const dayButton = (page: Page, day: string) =>
   });
 
 export const portalAvis = (o: { units?: number; plate?: string } = {}) => ({
-  references: [{ type: 'purchase_order', value: `PO-${randomBytes(3).toString('hex')}` }],
+  references: [
+    { type: ReferenceType.purchase_order, value: `PO-${randomBytes(3).toString('hex')}` },
+  ],
   counterpartyName: 'Lieferant GmbH',
-  loadUnits: [{ type: 'eur_pallet', quantity: o.units ?? 4 }],
+  loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: o.units ?? 4 }],
   vehicle: { plate: o.plate ?? 'WGM 4521K' },
   driver: { name: 'Jan Kowalski', locale: 'pl' },
 });
@@ -61,7 +65,7 @@ export function carrierBooking(
   return apiAs<PortalBooking>(
     request,
     o.user ?? side.users.carrier_user,
-    'POST',
+    HttpMethod.POST,
     `/c/${o.carrierId ?? side.carrierId}/at/${side.tenantId}/bookings`,
     {
       clientRequestId: randomUUID(),

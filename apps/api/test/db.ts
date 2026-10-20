@@ -1,3 +1,4 @@
+import { DatabaseUrlVar } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
@@ -15,7 +16,7 @@ let ownerPool: pg.Pool | undefined;
 
 export function ownerDb() {
   ownerPool ??= new pg.Pool({
-    connectionString: requireUrl('MIGRATION_DATABASE_URL').toString(),
+    connectionString: requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL).toString(),
     max: 4,
   });
   return drizzle(ownerPool);

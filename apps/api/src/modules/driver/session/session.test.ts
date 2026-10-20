@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { ConsoleMethod, ErrorCode, values } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -47,7 +48,10 @@ describe('DR-01 open the link', () => {
       expect(res.headers.get('set-cookie')).toBeNull();
       answers.push({ status: res.status, body: await res.json() });
     }
-    expect(answers[0]).toMatchObject({ status: 401, body: { error: { code: 'unauthorized' } } });
+    expect(answers[0]).toMatchObject({
+      status: 401,
+      body: { error: { code: ErrorCode.unauthorized } },
+    });
     expect(answers[1]).toEqual(answers[0]);
     expect(answers[2]).toEqual(answers[0]);
   });
@@ -70,7 +74,7 @@ describe('DR-01 open the link', () => {
     const { open, request } = driverHarness();
     const w = await world();
     const lines: string[] = [];
-    for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+    for (const level of values(ConsoleMethod)) {
       vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {
         lines.push(args.map(String).join(' '));
       });

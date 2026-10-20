@@ -1,5 +1,6 @@
 import type { PortalLoadType, PortalSite } from '@rampflow/shared/modules/booking/api.portal';
 import type { TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Setting } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -17,7 +18,7 @@ export async function requireCarrierSite(tx: Tx, tenantId: TenantId, siteId: Sit
     .select({ id: site.id })
     .from(site)
     .where(and(eq(site.id, siteId), eq(site.tenantId, tenantId), eq(site.active, true)));
-  if (!row) throw new ApiError('not_found', 'No such site');
+  if (!row) throw new ApiError(ErrorCode.not_found, 'No such site');
 }
 
 export async function carrierSites(
@@ -46,14 +47,14 @@ export async function carrierSites(
       },
       phone: s.phone,
       timeZone: s.timeZone as TimeZone,
-      cutoffMinutes: await value('booking.cancel_cutoff_minutes'),
-      leadMinutes: await value('booking.min_lead_minutes'),
-      horizonDays: await value('booking.horizon_days'),
+      cutoffMinutes: await value(Setting.booking.cancel_cutoff_minutes),
+      leadMinutes: await value(Setting.booking.min_lead_minutes),
+      horizonDays: await value(Setting.booking.horizon_days),
       avisRules: {
-        requiredReferenceTypes: await value('avis.required_reference_types'),
-        requireGrossWeight: await value('avis.require_gross_weight'),
-        requireDriverPhone: await value('avis.require_driver_phone'),
-        requirePlate: await value('booking.require_plate'),
+        requiredReferenceTypes: await value(Setting.avis.required_reference_types),
+        requireGrossWeight: await value(Setting.avis.require_gross_weight),
+        requireDriverPhone: await value(Setting.avis.require_driver_phone),
+        requirePlate: await value(Setting.booking.require_plate),
       },
     });
   }

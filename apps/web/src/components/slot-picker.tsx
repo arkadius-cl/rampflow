@@ -1,7 +1,8 @@
+import { SlotAvailability } from '@rampflow/shared/modules/booking/values';
 import { CheckIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type SlotState = 'free' | 'scarce' | 'full' | 'closed';
+export type SlotState = SlotAvailability;
 
 export interface SlotDay {
   date: string;
@@ -111,7 +112,8 @@ export function SlotPicker({
               <legend className="sr-only">{label}</legend>
               {options.map((s) => {
                 const active = s.time === selectedTime;
-                const disabled = s.state === 'full' || s.state === 'closed';
+                const disabled =
+                  s.state === SlotAvailability.full || s.state === SlotAvailability.closed;
                 return (
                   <button
                     key={s.time}
@@ -138,12 +140,12 @@ export function SlotPicker({
                         'text-[11px]',
                         active
                           ? 'text-primary-foreground/80'
-                          : s.state === 'scarce'
+                          : s.state === SlotAvailability.scarce
                             ? 'text-tone-onsite'
                             : 'text-muted-foreground',
                       )}
                     >
-                      {s.state === 'full' || s.state === 'closed'
+                      {s.state === SlotAvailability.full || s.state === SlotAvailability.closed
                         ? slotStateLabel[s.state]
                         : `${s.free} ${slotStateLabel[s.state]}`}
                     </span>

@@ -1,4 +1,6 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
+import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { BadgeTone, Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CircleCheckIcon, HourglassIcon, PauseCircleIcon, WarehouseIcon } from 'lucide-react';
@@ -32,7 +34,7 @@ import { RegistrationStatusBadge } from '@/modules/carriers/status';
 // status. A registration waiting for approval shows as an alert (UX concept, carrier bookings).
 
 export const Route = createFileRoute('/c/$orgId/tenants/')({
-  beforeLoad: guard({ permission: 'booking.view' }),
+  beforeLoad: guard({ permission: Permission.booking.view }),
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(linkedTenantsQuery(params.orgId)),
   component: WarehousesPage,
@@ -43,7 +45,7 @@ function WarehousesPage() {
   const { orgId } = Route.useParams();
   const { data } = useSuspenseQuery(linkedTenantsQuery(orgId));
   const pending = data.items.filter(
-    (tenant) => !tenant.link && tenant.registration?.status === 'pending_approval',
+    (tenant) => !tenant.link && tenant.registration?.status === RegistrationStatus.pending_approval,
   );
   return (
     <div className="flex flex-col gap-4">
@@ -110,15 +112,15 @@ function WarehouseRow({ orgId, tenant }: { orgId: string; tenant: LinkedTenant }
           <div className="flex flex-col gap-1">
             <StatusBadge
               meta={
-                link.status === 'active'
+                link.status === CarrierLinkStatus.active
                   ? {
                       icon: CircleCheckIcon,
-                      tone: 'success',
+                      tone: BadgeTone.success,
                       label: t(($) => $.carriers.tenants.can_book),
                     }
                   : {
                       icon: PauseCircleIcon,
-                      tone: 'neutral',
+                      tone: BadgeTone.neutral,
                       label: t(($) => $.carriers.tenants.paused),
                     }
               }
@@ -148,7 +150,7 @@ function WarehouseRow({ orgId, tenant }: { orgId: string; tenant: LinkedTenant }
         ) : null}
       </TableCell>
       <TableCell className="pr-6 text-right">
-        {link?.status === 'active' && can('booking.book') ? (
+        {link?.status === CarrierLinkStatus.active && can(Permission.booking.book) ? (
           <a
             href={`/c/${orgId}/book?tenant=${tenant.tenantId}`}
             className={buttonVariants({ size: 'sm', variant: 'outline' })}

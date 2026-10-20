@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import type { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { BookingId, CarrierId, SiteId, TenantId, UserId } from '../../db/ids.ts';
 import { hashToken } from '../../db/ids.ts';
@@ -11,7 +13,6 @@ import { driverAccess } from './schema.ts';
 // only its hash, and an authorized caller recomputes the link from the row id on demand.
 
 export type DriverAccessId = typeof driverAccess.$inferSelect.id;
-export type DriverChannel = 'link' | 'staff';
 
 const DAY_MS = 86_400_000;
 /** A link stays valid until a week after the slot unless departure or a turn-away shortens it. */
@@ -30,7 +31,7 @@ export interface LinkBooking {
 
 /** `https://<host>/d#<token>`: the token sits in the fragment, so no request line carries it. */
 export function driverLinkUrl(id: DriverAccessId, origin = env.APP_ORIGIN): string {
-  return `${origin.replace(/\/$/, '')}/d#${deriveToken('driver', id)}`;
+  return `${origin.replace(/\/$/, '')}/d#${deriveToken(TokenPurpose.driver, id)}`;
 }
 
 /**
@@ -50,7 +51,7 @@ export async function issueDriverLink(
     siteId: b.siteId,
     bookingId: b.id,
     carrierId: b.carrierId,
-    tokenHash: hashToken(deriveToken('driver', id)),
+    tokenHash: hashToken(deriveToken(TokenPurpose.driver, id)),
     channel: o.channel,
     createdBy: o.createdBy,
     expiresAt,

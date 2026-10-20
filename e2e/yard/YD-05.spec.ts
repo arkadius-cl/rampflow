@@ -1,6 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { seedWorld, signInAs } from '../support/auth.ts';
-import { bookingStatus, openStation, seedVisit, siteOf } from '../support/u9.ts';
+import { bookingStatus, openStation, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-05 Check out', () => {
   test('leaving before done needs a reason; after done it does not', async ({
@@ -13,13 +14,13 @@ test.describe('YD-05 Check out', () => {
       carrier: 'Abbrecher GmbH',
       plate: 'HHAB1',
       start: -30,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
     });
     const done = await seedVisit(w, {
       carrier: 'Fertig KG',
       plate: 'HHFK2',
       start: -60,
-      status: 'done',
+      status: LoadStatus.done,
     });
     await signInAs(context, w.A.users.gate_operator);
     await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);

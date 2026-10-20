@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CircleAlertIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
@@ -55,7 +56,9 @@ export function TokenSignIn({
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {isFailure(login.error, 'rate_limited') ? t(($) => $.errors.rate_limited) : wrong}
+              {isFailure(login.error, ErrorCode.rate_limited)
+                ? t(($) => $.errors.rate_limited)
+                : wrong}
             </AlertTitle>
           </Alert>
         ) : null}

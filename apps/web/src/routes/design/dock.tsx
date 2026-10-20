@@ -1,3 +1,6 @@
+import { BookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { DockStatus, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   BellRingIcon,
@@ -49,7 +52,7 @@ function DockScreen() {
   const { call } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const queue = bookings
-    .filter((b) => b.status === 'checked_in')
+    .filter((b) => b.status === BookingStatus.checked_in)
     .sort((a, b) => a.start.localeCompare(b.start));
   const calling = bookings.find((b) => b.id === call);
   if (!site) return null;
@@ -75,7 +78,7 @@ function DockScreen() {
               </h2>
               <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
                 {docks
-                  .filter((d) => d.hallId === hall.id && d.status !== 'inactive')
+                  .filter((d) => d.hallId === hall.id && d.status !== DockStatus.inactive)
                   .map((d) => (
                     <DockCard key={d.id} dock={d} booking={occupant(d)} />
                   ))}
@@ -98,7 +101,8 @@ function DockScreen() {
           </div>
           <ul className="flex flex-col divide-y overflow-y-auto">
             {queue.map((b) => {
-              const checkedIn = b.timeline.find((t) => t.status === 'checked_in')?.at ?? b.start;
+              const checkedIn =
+                b.timeline.find((t) => t.status === BookingStatus.checked_in)?.at ?? b.start;
               const waited = minutesSince(checkedIn);
               return (
                 <li key={b.id} className="flex flex-col gap-2 px-4 py-3">
@@ -154,7 +158,7 @@ function DockScreen() {
 }
 
 function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
-  const maintenance = dock.status === 'maintenance';
+  const maintenance = dock.status === DockStatus.maintenance;
   const since = booking ? booking.timeline[booking.timeline.length - 1]?.at : undefined;
   return (
     <div
@@ -167,7 +171,11 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
       <div className="flex items-center justify-between">
         <span className="text-2xl font-bold tabular-nums">{dock.code}</span>
         <span className="text-xs text-muted-foreground">
-          {dock.temperatureZone === 'chilled' ? 'Chilled' : dock.adr ? 'ADR' : 'Ambient'}
+          {dock.temperatureZone === TemperatureZone.chilled
+            ? 'Chilled'
+            : dock.adr
+              ? 'ADR'
+              : 'Ambient'}
         </span>
       </div>
       {maintenance ? (
@@ -181,7 +189,7 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
             <span className="font-mono">{booking.plate}</span> · {booking.loadUnits} units
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <BookingStatusBadge status={booking.status} size="md" />
+            <BookingStatusBadge status={booking.status} size={BadgeSize.md} />
             {since ? (
               <span className="text-xs text-muted-foreground">
                 since <SiteTime time={since} zone={site?.zoneLabel ?? ''} />
@@ -212,13 +220,13 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
 }
 
 function ProgressButton({ status }: { status: Booking['status'] }) {
-  if (status === 'called')
+  if (status === BookingStatus.called)
     return (
       <Button size="lg" className="h-11 flex-1">
         <DoorOpenIcon /> At dock
       </Button>
     );
-  if (status === 'at_dock')
+  if (status === BookingStatus.at_dock)
     return (
       <Button size="lg" className="h-11 flex-1">
         <PackageOpenIcon /> Loading
@@ -235,8 +243,9 @@ function CallDialog({ booking: b }: { booking: Booking }) {
   const resource = resources.find((r) => r.id === b.resourceId);
   const [dockId, setDockId] = useState<string | undefined>(
     () =>
-      docks.find((d) => resource?.dockIds.includes(d.id) && d.status === 'active' && !occupant(d))
-        ?.id,
+      docks.find(
+        (d) => resource?.dockIds.includes(d.id) && d.status === DockStatus.active && !occupant(d),
+      )?.id,
   );
   const chosen = docks.find((d) => d.id === dockId);
   const outsidePool =
@@ -246,7 +255,7 @@ function CallDialog({ booking: b }: { booking: Booking }) {
       <DialogHeader>
         <DialogTitle className="text-xl">Call {b.carrier} to a dock</DialogTitle>
         <DialogDescription>
-          {resource?.kind === 'pool'
+          {resource?.kind === ResourceKind.pool
             ? `Pool booking on ${resource.name}. Free member docks are suggested.`
             : 'Single-dock booking.'}{' '}
           Plate <span className="font-mono">{b.plate}</span>.
@@ -255,11 +264,11 @@ function CallDialog({ booking: b }: { booking: Booking }) {
       <fieldset className="grid grid-cols-4 gap-2">
         <legend className="sr-only">Dock</legend>
         {docks
-          .filter((d) => d.status !== 'inactive')
+          .filter((d) => d.status !== DockStatus.inactive)
           .map((d) => {
             const occ = occupant(d);
             const member = resource?.dockIds.includes(d.id) ?? false;
-            const disabled = occ !== undefined || d.status === 'maintenance';
+            const disabled = occ !== undefined || d.status === DockStatus.maintenance;
             const active = d.id === dockId;
             return (
               <button
@@ -284,7 +293,7 @@ function CallDialog({ booking: b }: { booking: Booking }) {
                 >
                   {occ
                     ? occ.carrier.split(' ')[0]
-                    : d.status === 'maintenance'
+                    : d.status === DockStatus.maintenance
                       ? 'maintenance'
                       : member
                         ? 'suggested'

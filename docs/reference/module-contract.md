@@ -28,20 +28,20 @@ interface ModuleManifest<Id, E, P, S> {
   id: Id;                                   // 'booking'
   dependsOn: readonly string[];             // ids listed earlier in the catalog
   enabledBy: ImplementedFeatureIn<E> | null; // the module is off while this feature is off
-  locales: 'staff' | 'driver';              // catalog locale set of the namespace
+  locales: LocaleSet;                       // LocaleSet.staff or LocaleSet.driver
   entitlements: E;                          // { '<id>.<name>': FeatureDef | LimitDef }
   permissions: P;                           // { '<id>.<name>': { roles: [Role, ...Role[]] } }
   settings: S;                              // { '<id>.<name>': SettingDef }
   nav: readonly NavItem[];                  // label key `<id>:nav.<item id>`
 }
 
-type FeatureDef = { kind: 'feature'; reserved?: true };
-type LimitDef = { kind: 'limit'; soft?: true; reserved?: true };   // value: number | null (unlimited)
+type FeatureDef = { kind: typeof EntitlementKind.feature; reserved?: true };
+type LimitDef = { kind: typeof EntitlementKind.limit; soft?: true; reserved?: true };   // value: number | null (unlimited)
 
 interface SettingDef<Z extends z.ZodType> {
   schema: Z;                                // zod 4; bounds are the platform maximum
   default: z.output<Z>;
-  scopes: readonly [SettingScope, ...SettingScope[]];   // 'platform' | 'tenant' | 'site'
+  scopes: readonly [SettingScope, ...SettingScope[]];   // everyScope, or e.g. [SettingScope.tenant, SettingScope.site]
   requires?: ImplementedFeatureIn<E>;       // hidden and rejected while off
 }
 
@@ -73,6 +73,20 @@ A permission names the lowest roles that hold it. `ROLE_INCLUDES` adds the rest:
 ### Derived types
 
 `packages/shared/src/registry.ts` exports `catalog` and these types: `ModuleId`, `FeatureKey`, `LimitKey`, `EntitlementKey`, `ImplementedFeatureKey`, `ImplementedLimitKey`, `HardLimitKey`, `PermissionKey`, `SettingKey`, `SettingValue<K>`, `PackageValues`, `EntitlementOverride`, `Entitlements`.
+
+The same keys exist as runtime values in `@rampflow/shared/values` (`packages/shared/src/values/keys.ts`, [ADR-0019](../decisions/ADR-0019-central-value-sets.md)). Each dot of a key opens one level, and each leaf is the full key with its literal type:
+
+```ts
+import { Feature, Limit, Module, Permission, Setting } from '@rampflow/shared/values';
+
+Permission.booking.view;                  // 'booking.view', a PermissionKey
+Feature.booking.pools;                    // 'booking.pools', an ImplementedFeatureKey
+Limit.core.max_sites;                     // 'core.max_sites', a LimitKey
+Setting.privacy.retention.visit_days;     // 'privacy.retention.visit_days', a SettingKey
+Module.yard;                              // 'yard', a ModuleId
+```
+
+Code outside the manifests uses these values, never the key as a string. A key removed from a manifest fails type checking at every use. Inside a manifest the keys stay strings, because the trees are built from the manifests.
 
 ### Pure functions
 
@@ -284,8 +298,8 @@ const tenant = new Hono<AppEnv>()
   .route('/sites', coreSites.tenant)
   .route('/capacity', bookingCapacity.tenant)
   .route('/bookings', bookingStaff.tenant)
-  .route('/yard', withModule('yard', yard.tenant))  // requireModule applies to /yard/* only
-  .route('/safety', withModule('safety', safetyAuthoring.tenant));
+  .route('/yard', withModule(Module.yard, yard.tenant))  // requireModule applies to /yard/* only
+  .route('/safety', withModule(Module.safety, safetyAuthoring.tenant));
   // ...
 const carrier = new Hono<AppEnv>()
   .use(scoped(carrierScope))                       // carrier, or carrier_at_tenant under /at/:tenantId
@@ -312,13 +326,13 @@ export const tenant = new Hono<AppEnv>().post(
   '/bookings/:bookingId/check-in',
   op({
     id: 'yard.gate.checkIn',                      // <module>.<area>.<verbNoun>, unique across the API
-    stories: ['YD-02'],
+    stories: [StoryId.YD_02],
     description: '`{ plateSeen? }`; 409 `safety_missing` under enforcement',  // Markdown
     responses: { 200: type<YardTruck>() },        // a named type from packages/shared
   }),
-  requirePermission('yard.gate'),
-  validate('param', BookingParam),                // a bad id answers 404
-  validate('json', CheckInBody),                  // 422 validation_failed with zod paths
+  requirePermission(Permission.yard.gate),
+  validate(ValidationTarget.param, BookingParam), // a bad id answers 404
+  validate(ValidationTarget.json, CheckInBody),   // 422 validation_failed with zod paths
   async (c) => {
     const { bookingId } = c.req.valid('param');
     const booking = await checkIn(c.var.db, actorOf(c), bookingId, c.req.valid('json'));
@@ -423,8 +437,8 @@ Other pieces of the web shell (U2):
 ```ts
 // apps/web/src/routes/t/$orgId/gate/index.tsx (U9)
 export const Route = createFileRoute('/t/$orgId/gate/')({
-  beforeLoad: guard({ permission: 'yard.gate' }),
-  staticData: { shell: 'station' },               // tablet layout without the sidebar (ADR-0011)
+  beforeLoad: guard({ permission: Permission.yard.gate }),
+  staticData: { shell: ShellLayout.station },     // tablet layout without the sidebar (ADR-0011)
   validateSearch: GateSearch,                     // { site?: uuid, tab?, checkin?: uuid, walkin?: 1 }
   component: GatePage,
 });
@@ -441,6 +455,7 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
 | Path | Contents |
 |---|---|
 | `packages/shared/src/modules/<id>/manifest.ts` | the manifest |
+| `packages/shared/src/modules/<id>/values.ts` | the module's value sets: `export const X = { a: 'a' } as const` with `type X = ValueOf<typeof X>`, imported as `@rampflow/shared/modules/<id>/values`; cross-cutting sets live in `packages/shared/src/values/` and come from `@rampflow/shared/values` ([ADR-0019](../decisions/ADR-0019-central-value-sets.md)) |
 | `packages/shared/src/modules/<id>/api.<area>.ts` | zod request schemas and named TypeScript response types shared by API and web, imported as `@rampflow/shared/modules/<id>/api.<area>` |
 | `apps/api/src/modules/<id>/schema*.ts` | Drizzle tables and policies, discovered by glob |
 | `apps/api/src/modules/<id>/<area>/routes.<party>.ts` | Hono routers, mounted by `modules/index.ts` |
@@ -462,10 +477,10 @@ The step-by-step checklist with commands is [Add a module or an entitlement](../
    2. Add it to `catalog` in `registry.ts` after every module in its `dependsOn`.
    3. Add its implemented keys to the packages in `packages.ts` where the pricing places them.
    4. Run `pnpm --filter @rampflow/shared test` and `pnpm docs:index`.
-   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule('<id>', ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `module.json`, `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
+   5. Create the router files named in [API routes](api-routes.md), mount them with `withModule(Module.<id>, ...)` in `apps/api/src/modules/index.ts`, and run `pnpm i18n:derive` to write the label parts `module.json`, `nav.json`, `entitlements.json` and `settings.json` in every locale of the module's set.
 2. **Implementation (unit).**
    1. Tables in `schema*.ts` with policies from `apps/api/src/db/rls.ts`; then `pnpm db:generate --name <unit-id>`.
-   2. Routes with `op()`, `requirePermission`, `requireEntitlement` where finer than the module, and `validate()`.
+   2. Routes with `op()`, `requirePermission(Permission.<id>.<name>)`, `requireEntitlement(Feature.<id>.<name>)` where finer than the module, and `validate()`. New closed sets of values go into the module's `values.ts`.
    3. A route case for every route.
    4. Screens with `guard`, components from shadcn, forms with `Field`.
    5. One Playwright spec per story ID.

@@ -1,4 +1,6 @@
+import { BookingStatus, CreatedParty, Punctuality } from '@rampflow/shared/modules/booking/values';
 import type { KpiReport, VisitPage } from '@rampflow/shared/modules/report/api';
+import { StaffLocale } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -30,34 +32,34 @@ type Visit = SeedBooking & { set?: Partial<typeof booking.$inferInsert> };
 const FIXTURE: Record<string, Visit> = {
   V1: {
     startsAt: cet('08:00'),
-    createdParty: 'carrier',
-    status: 'departed',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.departed,
     set: {
       checkedInAt: cet('07:50'),
       atDockAt: cet('08:05'),
       doneAt: cet('08:50'),
       departedAt: cet('09:00'),
-      punctuality: 'on_time',
+      punctuality: Punctuality.on_time,
       punctualityMinutes: -10,
     },
   },
   V2: {
     startsAt: cet('09:00'),
-    createdParty: 'carrier',
-    status: 'departed',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.departed,
     set: {
       checkedInAt: cet('08:20'),
       atDockAt: cet('09:10'),
       doneAt: cet('10:00'),
       departedAt: cet('10:15'),
-      punctuality: 'early',
+      punctuality: Punctuality.early,
       punctualityMinutes: -40,
     },
   },
   V3: {
     startsAt: cet('10:00'),
-    createdParty: 'staff',
-    status: 'departed',
+    createdParty: CreatedParty.staff,
+    status: BookingStatus.departed,
     set: {
       checkedInAt: cet('10:30'),
       calledAt: cet('10:35'),
@@ -65,60 +67,60 @@ const FIXTURE: Record<string, Visit> = {
       loadingAt: cet('10:45'),
       doneAt: cet('11:40'),
       departedAt: cet('12:45'),
-      punctuality: 'late',
+      punctuality: Punctuality.late,
       punctualityMinutes: 30,
     },
   },
   V4: {
     startsAt: cet('11:00'),
-    createdParty: 'carrier',
-    status: 'departed',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.departed,
     noShowAt: cet('12:00'),
     set: {
       checkedInAt: cet('12:30'),
       atDockAt: cet('12:40'),
       doneAt: cet('13:20'),
       departedAt: cet('13:30'),
-      punctuality: 'late',
+      punctuality: Punctuality.late,
       punctualityMinutes: 90,
     },
   },
   V5: {
     startsAt: cet('12:00'),
-    createdParty: 'carrier',
-    status: 'no_show',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.no_show,
     noShowAt: cet('13:00'),
   },
   V6: {
     startsAt: cet('13:00'),
-    createdParty: 'carrier',
-    status: 'cancelled',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.cancelled,
     set: { cancelledAt: cet('12:00'), cancelledLate: true },
   },
   V7: {
     startsAt: cet('14:00'),
-    createdParty: 'carrier',
-    status: 'cancelled',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.cancelled,
     set: { cancelledAt: cet('08:00'), cancelledLate: false },
   },
   V8: {
     startsAt: cet('15:00'),
-    createdParty: 'staff',
-    status: 'departed',
+    createdParty: CreatedParty.staff,
+    status: BookingStatus.departed,
     set: {
       checkedInAt: cet('14:55'),
       loadingAt: cet('15:05'),
       doneAt: cet('15:45'),
       departedAt: cet('15:50'),
-      punctuality: 'on_time',
+      punctuality: Punctuality.on_time,
       punctualityMinutes: -5,
     },
   },
   V9: {
     startsAt: cet('16:00'),
-    createdParty: 'staff',
+    createdParty: CreatedParty.staff,
     walkIn: true,
-    status: 'departed',
+    status: BookingStatus.departed,
     set: {
       checkedInAt: cet('16:10'),
       atDockAt: cet('16:20'),
@@ -128,13 +130,13 @@ const FIXTURE: Record<string, Visit> = {
   },
   V10: {
     startsAt: cet('17:00'),
-    createdParty: 'carrier',
-    status: 'done',
+    createdParty: CreatedParty.carrier,
+    status: BookingStatus.done,
     set: {
       checkedInAt: cet('16:50'),
       atDockAt: cet('17:00'),
       doneAt: cet('17:30'),
-      punctuality: 'on_time',
+      punctuality: Punctuality.on_time,
       punctualityMinutes: -10,
     },
   },
@@ -158,7 +160,7 @@ async function seedVisit(side: World['A'], v: Visit, site?: 0 | 1) {
   return row;
 }
 
-const setLocale = (u: WorldUser, locale: 'de' | 'en') =>
+const setLocale = (u: WorldUser, locale: typeof StaffLocale.de | typeof StaffLocale.en) =>
   ownerDb().update(appUser).set({ locale }).where(eq(appUser.id, u.id));
 
 beforeAll(async () => {
@@ -225,12 +227,12 @@ describe('RP-01 KPI dashboard', () => {
   it('leaves a visit missing a timestamp out of the KPIs that need it only', async () => {
     await seedVisit(w.A, {
       startsAt: new Date('2026-11-12T09:00:00Z'),
-      createdParty: 'carrier',
-      status: 'departed',
+      createdParty: CreatedParty.carrier,
+      status: BookingStatus.departed,
       set: {
         checkedInAt: new Date('2026-11-12T08:55:00Z'),
         departedAt: new Date('2026-11-12T09:40:00Z'),
-        punctuality: 'on_time',
+        punctuality: Punctuality.on_time,
         punctualityMinutes: -5,
       },
     });
@@ -252,8 +254,8 @@ describe('RP-01 KPI dashboard', () => {
   it('counts a truck docked before its slot as zero wait, not negative', async () => {
     const early = await seedVisit(w.A, {
       startsAt: new Date('2026-11-14T10:00:00Z'),
-      createdParty: 'carrier',
-      status: 'done',
+      createdParty: CreatedParty.carrier,
+      status: BookingStatus.done,
       set: {
         checkedInAt: new Date('2026-11-14T07:30:00Z'),
         atDockAt: new Date('2026-11-14T08:00:00Z'),
@@ -262,8 +264,8 @@ describe('RP-01 KPI dashboard', () => {
     });
     await seedVisit(w.A, {
       startsAt: new Date('2026-11-14T12:00:00Z'),
-      createdParty: 'carrier',
-      status: 'done',
+      createdParty: CreatedParty.carrier,
+      status: BookingStatus.done,
       set: {
         checkedInAt: new Date('2026-11-14T11:50:00Z'),
         atDockAt: new Date('2026-11-14T12:20:00Z'),
@@ -331,8 +333,8 @@ describe('RP-01 KPI dashboard', () => {
       );
     const visit = (startsAt: string, set?: Visit['set']): Visit => ({
       startsAt: new Date(startsAt),
-      createdParty: 'carrier',
-      status: set ? 'departed' : 'confirmed',
+      createdParty: CreatedParty.carrier,
+      status: set ? BookingStatus.departed : BookingStatus.confirmed,
       set,
     });
     // 00:30 CEST and 23:30 CET on the 25th belong to the day; 23:30 CEST on the 24th and 00:30
@@ -345,13 +347,13 @@ describe('RP-01 KPI dashboard', () => {
         atDockAt: new Date('2026-10-25T22:30:00Z'),
         doneAt: new Date('2026-10-25T23:45:00Z'),
         departedAt: new Date('2026-10-25T23:50:00Z'),
-        punctuality: 'on_time',
+        punctuality: Punctuality.on_time,
         punctualityMinutes: 0,
       }),
       1,
     );
-    await seedVisit(w.A, { ...visit('2026-10-24T21:30:00Z'), createdParty: 'staff' }, 1);
-    await seedVisit(w.A, { ...visit('2026-10-25T23:30:00Z'), createdParty: 'staff' }, 1);
+    await seedVisit(w.A, { ...visit('2026-10-24T21:30:00Z'), createdParty: CreatedParty.staff }, 1);
+    await seedVisit(w.A, { ...visit('2026-10-25T23:30:00Z'), createdParty: CreatedParty.staff }, 1);
 
     const report = await kpisOf(day('2026-10-25', '2026-10-25', 1));
     // Two bookings, both by carriers; the day has 25 hours: 75 / (2 docks × 1,500 minutes).
@@ -376,7 +378,7 @@ describe('RP-02 visit list and CSV export', () => {
     } while (cursor);
     expect(seen.map((v) => v.code)).toEqual(Object.values(codes));
     expect(seen[2]).toMatchObject({
-      status: 'departed',
+      status: BookingStatus.departed,
       startsAt: '2026-11-10T09:00:00.000Z',
       checkedInAt: '2026-11-10T09:30:00.000Z',
       calledAt: '2026-11-10T09:35:00.000Z',
@@ -384,7 +386,7 @@ describe('RP-02 visit list and CSV export', () => {
       loadingAt: '2026-11-10T09:45:00.000Z',
       doneAt: '2026-11-10T10:40:00.000Z',
       departedAt: '2026-11-10T11:45:00.000Z',
-      punctuality: 'late',
+      punctuality: Punctuality.late,
       waitMinutes: 10,
       dockDwellMinutes: 60,
       turnaroundMinutes: 135,
@@ -403,7 +405,7 @@ describe('RP-02 visit list and CSV export', () => {
   };
 
   it('exports the KPI table with ; and decimal commas for a de user', async () => {
-    await setLocale(w.A.users.dispatcher, 'de');
+    await setLocale(w.A.users.dispatcher, StaffLocale.de);
     const lines = await download('kpis.csv', w.A.users.dispatcher);
     expect(lines[0]).toBe('Standort;Von;Bis;Kennzahl;Wert;Einheit');
     expect(lines).toContain(`${'Site 1'};2026-11-10;2026-11-10;No-Show-Quote;25,0;%`);
@@ -411,14 +413,14 @@ describe('RP-02 visit list and CSV export', () => {
   });
 
   it('exports the KPI table with , and decimal points for an en user', async () => {
-    await setLocale(w.A.users.tenant_admin, 'en');
+    await setLocale(w.A.users.tenant_admin, StaffLocale.en);
     const lines = await download('kpis.csv', w.A.users.tenant_admin);
     expect(lines[0]).toBe('Site,From,To,KPI,Value,Unit');
     expect(lines).toContain('Site 1,2026-11-10,2026-11-10,Dock dwell,44.2,min');
   });
 
   it('exports the visits with ISO 8601 timestamps in the site offset', async () => {
-    await setLocale(w.A.users.tenant_admin, 'en');
+    await setLocale(w.A.users.tenant_admin, StaffLocale.en);
     const lines = await download('visits.csv', w.A.users.tenant_admin);
     const header = lines[0]?.split(',') ?? [];
     expect(header.slice(0, 3)).toEqual(['Booking code', 'Status', 'Carrier']);

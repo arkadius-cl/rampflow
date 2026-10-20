@@ -1,3 +1,4 @@
+import { Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MapPinIcon, PlusIcon } from 'lucide-react';
@@ -30,7 +31,7 @@ import { UsageMeters } from '@/modules/capacity/site-nav';
 // MD-01: the org's sites with usage against the package limits, and "New site".
 
 export const Route = createFileRoute('/t/$orgId/sites/')({
-  beforeLoad: guard({ permission: 'core.manage_sites' }),
+  beforeLoad: guard({ permission: Permission.core.manage_sites }),
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(siteQueries.list(params.orgId)),
   component: SitesPage,

@@ -1,5 +1,5 @@
-import { STAFF_LOCALES } from '@rampflow/shared';
-import { REGISTRATION_STATUSES } from '@rampflow/shared/modules/booking/api.carriers';
+import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { PolicyCommand, ScopeParty, StaffLocale, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { char, check, index, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
@@ -46,8 +46,8 @@ export const carrierInvitation = pgTable(
       .on(t.tenantId, t.email)
       .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );
 
@@ -87,7 +87,7 @@ export const carrierRegistration = pgTable(
       onDelete: 'set null',
     }),
     /** The language of the registration form; the carrier's emails use it. */
-    locale: text('locale', { enum: STAFF_LOCALES }),
+    locale: text('locale', { enum: values(StaffLocale) }),
     /** `sha256` of the emailed `registration` token; claimed once while `pending_email`. */
     tokenHash: bytea('token_hash').unique(),
     expiresAt: instant('expires_at'),
@@ -97,7 +97,7 @@ export const carrierRegistration = pgTable(
     carrierId: uuid('carrier_id')
       .$type<CarrierId>()
       .references(() => org.id),
-    status: text('status', { enum: REGISTRATION_STATUSES }).notNull(),
+    status: text('status', { enum: values(RegistrationStatus) }).notNull(),
     rejectReason: text('reject_reason'),
     emailVerifiedAt: instant('email_verified_at'),
     decidedAt: instant('decided_at'),
@@ -111,16 +111,16 @@ export const carrierRegistration = pgTable(
     index('carrier_registration_tenant_status_idx').on(t.tenantId, t.status),
     index('carrier_registration_site_id_idx').on(t.siteId),
     index('carrier_registration_carrier_id_idx').on(t.carrierId),
-    check('carrier_registration_status_check', oneOf(t.status, REGISTRATION_STATUSES)),
+    check('carrier_registration_status_check', oneOf(t.status, values(RegistrationStatus))),
     check(
       'carrier_registration_token_check',
       sql`${t.status} <> 'pending_email' or (${t.tokenHash} is not null and ${t.expiresAt} is not null)`,
     ),
-    check('carrier_registration_locale_check', oneOf(t.locale, STAFF_LOCALES)),
+    check('carrier_registration_locale_check', oneOf(t.locale, values(StaffLocale))),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('public', 'insert', tenantIs(t.tenantId)),
-    allow('carrier', 'select', carrierIs(t.carrierId)),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.public, PolicyCommand.insert, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );

@@ -1,3 +1,5 @@
+import { CarriersTab } from '@rampflow/shared/modules/booking/values';
+import { Feature, Permission } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,14 +15,11 @@ import { RegistrationsTab } from '@/modules/carriers/registrations-tab';
 
 // TN-03, TN-04: /t/$orgId/carriers?tab=linked|registrations|links (ADR-0011).
 
-const TABS = ['linked', 'registrations', 'links'] as const;
-type Tab = (typeof TABS)[number];
-
-const CarriersSearch = z.object({ tab: z.enum(TABS).optional().catch(undefined) });
+const CarriersSearch = z.object({ tab: z.enum(CarriersTab).optional().catch(undefined) });
 
 export const Route = createFileRoute('/t/$orgId/carriers/')({
   validateSearch: CarriersSearch,
-  beforeLoad: guard({ permission: 'booking.manage_carriers' }),
+  beforeLoad: guard({ permission: Permission.booking.manage_carriers }),
   component: CarriersPage,
 });
 
@@ -39,19 +38,21 @@ function CarriersPage() {
   const { orgId } = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
   const { has } = useAccess();
-  const publicLinks = has('booking.public_link');
-  const requested = Route.useSearch().tab ?? 'linked';
-  const tab: Tab = publicLinks ? requested : 'linked';
+  const publicLinks = has(Feature.booking.public_link);
+  const requested = Route.useSearch().tab ?? CarriersTab.linked;
+  const tab: CarriersTab = publicLinks ? requested : CarriersTab.linked;
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t(($) => $.carriers.title)}
         description={t(($) => $.carriers.description)}
-        actions={has('booking.carrier_portal') ? <InviteCarrierDialog orgId={orgId} /> : null}
+        actions={has(Feature.booking.carrier_portal) ? <InviteCarrierDialog orgId={orgId} /> : null}
       />
       <Tabs
         value={tab}
-        onValueChange={(value) => void navigate({ search: { tab: value as Tab }, replace: true })}
+        onValueChange={(value) =>
+          void navigate({ search: { tab: value as CarriersTab }, replace: true })
+        }
       >
         <TabsList>
           <TabsTrigger value="linked">{t(($) => $.carriers.tabs.linked)}</TabsTrigger>

@@ -8,13 +8,37 @@ import {
   type CommandActor,
   type CommandDef,
   type CommandInput,
-  type CommandName,
   type CommandOf,
   punctualityOf,
   sourceStates,
 } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  BookingChange,
+  BookingEventType,
+  BookingParty,
+  BookingStatus,
+  CarrierLinkStatus,
+  CheckInSafety,
+  type CommandName,
+} from '@rampflow/shared/modules/booking/values';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
+import {
+  AckLinkStatus,
+  InstructionSafety,
+  SafetyStatus,
+} from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import {
+  ConflictReason,
+  EmailTemplate,
+  ErrorCode,
+  ForbiddenReason,
+  Module,
+  Permission,
+  Setting,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, DockId } from '../../../db/ids.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -84,8 +108,8 @@ export interface TransitionResult {
   changed: boolean;
 }
 
-const conflict = (reason: string, details: Record<string, unknown> = {}) =>
-  new ApiError('conflict', `Conflict: ${reason}`, { reason, ...details });
+const conflict = (reason: ConflictReason, details: Record<string, unknown> = {}) =>
+  new ApiError(ErrorCode.conflict, `Conflict: ${reason}`, { reason, ...details });
 
 const setting = <K extends Parameters<BookingContext['access']['setting']>[0]>(
   ctx: BookingContext,
@@ -101,8 +125,8 @@ async function usableDock(ctx: BookingContext, b: BookingRow, dockId: DockId) {
     .select({ id: dock.id, status: dock.status })
     .from(dock)
     .where(and(eq(dock.id, dockId), eq(dock.siteId, b.siteId), eq(dock.tenantId, b.tenantId)));
-  if (!row) throw new ApiError('not_found', 'No such dock at this site');
-  if (row.status !== 'active') throw conflict('dock_inactive', { dockId });
+  if (!row) throw new ApiError(ErrorCode.not_found, 'No such dock at this site');
+  if (row.status !== DockStatus.active) throw conflict(ConflictReason.dock_inactive, { dockId });
   return row.id;
 }
 
@@ -115,12 +139,12 @@ async function outsideResource(ctx: BookingContext, b: BookingRow, dockId: DockI
 }
 
 async function expireLinkAfterVisit(ctx: BookingContext, b: BookingRow) {
-  const hours = await setting(ctx, 'privacy.retention.driver_link_hours', b);
+  const hours = await setting(ctx, Setting.privacy.retention.driver_link_hours, b);
   await setDriverLinkExpiry(ctx.tx, b.id, visitEndLinkExpiry(ctx.now, b.startsAt, hours));
 }
 
 function staleVersion(b: BookingRow, version: number) {
-  if (version !== b.version) throw conflict('stale_version', { version: b.version });
+  if (version !== b.version) throw conflict(ConflictReason.stale_version, { version: b.version });
 }
 
 /** Dock commands: the dock given (and usable) or the one already assigned. */
@@ -138,8 +162,12 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
     async apply(ctx, b, cmd) {
       staleVersion(b, cmd.version);
       const force = cmd.forceReason !== undefined;
-      if (force && (ctx.actor.party !== 'staff' || !ctx.access.permissions.has('booking.force'))) {
-        throw new ApiError('forbidden', 'Missing booking.force');
+      if (
+        force &&
+        (ctx.actor.party !== BookingParty.staff ||
+          !ctx.access.permissions.has(Permission.booking.force))
+      ) {
+        throw new ApiError(ErrorCode.forbidden, 'Missing booking.force');
       }
       const lt = await loadTypeAt(ctx.tx, b.tenantId, b.siteId, b.loadTypeId);
       if (!lt) throw new Error(`booking ${b.id} without load type`);
@@ -147,7 +175,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
         durationMinutes: (b.endsAt.getTime() - b.startsAt.getTime()) / 60_000,
         bufferMinutes: (b.blocksUntil.getTime() - b.endsAt.getTime()) / 60_000,
       };
-      const audience = ctx.actor.party === 'carrier' ? 'carrier' : 'staff';
+      const audience = ctx.actor.party === BookingParty.carrier ? 'carrier' : 'staff';
       const scope = {
         tenantId: b.tenantId,
         siteId: b.siteId,
@@ -160,7 +188,14 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       const zone = zoneOf(b);
       const day = siteDay(cmd.startsAt, zone);
       if (!(await isOffered(ctx.access, b.siteId, zone, cmd.startsAt, audience, ctx.now))) {
-        return conflictWithOffers(ctx.tx, ctx.access, ctx.now, scope, day, 'not_offered');
+        return conflictWithOffers(
+          ctx.tx,
+          ctx.access,
+          ctx.now,
+          scope,
+          day,
+          ConflictReason.not_offered,
+        );
       }
       const only = cmd.resourceId as ResourceId | undefined;
       const tryOrder = await candidates(ctx.tx, b.tenantId, lt, { only, preferred: b.resourceId });
@@ -183,7 +218,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       return {
         patch: { ...to, forced: force },
         event: {
-          type: 'rescheduled',
+          type: BookingEventType.rescheduled,
           from: { resourceId: b.resourceId, ...previous },
           to: {
             resourceId: to.resourceId,
@@ -195,10 +230,10 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
         },
         after: async () => {
           await setDriverLinkExpiry(ctx.tx, b.id, linkExpiryFor(to.startsAt));
-          if (ctx.actor.party === 'staff') {
+          if (ctx.actor.party === BookingParty.staff) {
             const updated = { ...b, ...to };
-            await emailContacts(ctx, updated, 'booking.changed', {
-              change: 'rescheduled',
+            await emailContacts(ctx, updated, EmailTemplate.booking_changed, {
+              change: BookingChange.rescheduled,
               previous,
             });
           }
@@ -232,7 +267,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
         if (durationChanged) {
           window = windowOf(b.startsAt, block);
           // From check-in on the truck carries what it carries: no capacity check (AV-02).
-          if (b.status === 'confirmed') {
+          if (b.status === BookingStatus.confirmed) {
             await lock();
             const fit = await findFit(ctx.tx, ctx.access, {
               tenantId: b.tenantId,
@@ -244,22 +279,22 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
               excludeBookingId: b.id,
               force: false,
             });
-            if (!fit.ok) throw conflict('capacity_full');
+            if (!fit.ok) throw conflict(ConflictReason.capacity_full);
           }
         }
       }
-      if ((await setting(ctx, 'avis.unique_references', b)) === true) await lock();
+      if ((await setting(ctx, Setting.avis.unique_references, b)) === true) await lock();
       await checkAvis(ctx.tx, ctx.access, b, cmd.avis);
       const before = await readAvis(ctx.tx, b.id);
       const fields = before ? changedFields(before, cmd.avis) : Object.keys(cmd.avis);
       await writeAvis(ctx.tx, b, cmd.avis, { updatedBy: actorUserId(ctx.actor), now: ctx.now });
       return {
         patch: { loadUnits: units, endsAt: window.endsAt, blocksUntil: window.blocksUntil },
-        event: { type: 'avis_updated', fields, durationChanged },
+        event: { type: BookingEventType.avis_updated, fields, durationChanged },
         after: async () => {
-          if (ctx.actor.party === 'staff' && b.status === 'confirmed') {
-            await emailContacts(ctx, { ...b, ...window }, 'booking.changed', {
-              change: 'avis',
+          if (ctx.actor.party === BookingParty.staff && b.status === BookingStatus.confirmed) {
+            await emailContacts(ctx, { ...b, ...window }, EmailTemplate.booking_changed, {
+              change: BookingChange.avis,
               previous: null,
             });
           }
@@ -269,17 +304,17 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
   },
 
   cancel: {
-    done: (_ctx, b) => b.status === 'cancelled',
+    done: (_ctx, b) => b.status === BookingStatus.cancelled,
     async apply(ctx, b, cmd) {
-      const cutoff = await setting(ctx, 'booking.cancel_cutoff_minutes', b);
+      const cutoff = await setting(ctx, Setting.booking.cancel_cutoff_minutes, b);
       const late = isPastCutoff(ctx.now, b.startsAt, cutoff);
       return {
         patch: { cancelledAt: ctx.now, cancelReason: cmd.reason, cancelledLate: late },
-        event: { type: 'cancelled', reason: cmd.reason, late },
+        event: { type: BookingEventType.cancelled, reason: cmd.reason, late },
         after: async () => {
           await revokeDriverLink(ctx.tx, b.id, ctx.now);
-          if (ctx.actor.party === 'staff') {
-            await emailContacts(ctx, b, 'booking.cancelled', { reason: cmd.reason });
+          if (ctx.actor.party === BookingParty.staff) {
+            await emailContacts(ctx, b, EmailTemplate.booking_cancelled, { reason: cmd.reason });
           }
         },
       };
@@ -291,10 +326,13 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
     async apply(ctx, b) {
       return {
         patch: {},
-        event: { type: 'driver_link_regenerated' },
+        event: { type: BookingEventType.driver_link_regenerated },
         after: async () => {
           await revokeDriverLink(ctx.tx, b.id, ctx.now);
-          await issueDriverLink(ctx.tx, b, { channel: 'link', createdBy: actorUserId(ctx.actor) });
+          await issueDriverLink(ctx.tx, b, {
+            channel: DriverChannel.link,
+            createdBy: actorUserId(ctx.actor),
+          });
         },
       };
     },
@@ -304,16 +342,16 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
     done: () => false,
     async apply(ctx, b, cmd) {
       const link = await activeDriverLink(ctx.tx, b.id);
-      if (!link) throw new ApiError('not_found', 'The booking has no active driver link');
+      if (!link) throw new ApiError(ErrorCode.not_found, 'The booking has no active driver link');
       return {
         patch: {},
-        event: { type: 'driver_link_sent', locale: cmd.locale },
+        event: { type: BookingEventType.driver_link_sent, locale: cmd.locale },
         after: async () => {
           const facts = await emailFacts(ctx, b);
           await enqueueEmail(
             ctx.tx,
             {
-              template: 'driver.link',
+              template: EmailTemplate.driver_link,
               to: cmd.email,
               locale: cmd.locale,
               tenantId: b.tenantId,
@@ -335,41 +373,45 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
   },
 
   mark_no_show: {
-    done: (_ctx, b) => b.status === 'no_show',
+    done: (_ctx, b) => b.status === BookingStatus.no_show,
     async apply(ctx, b) {
       const entitlements = ctx.access.entitlements;
       if (!entitlements?.modules.yard) {
         const key = entitlements
-          ? blockingFeature(catalog, entitlements, 'yard')
+          ? blockingFeature(catalog, entitlements, Module.yard)
           : 'yard.checkin_qr';
-        throw new ApiError('entitlement_required', 'Module yard is off', { key });
+        throw new ApiError(ErrorCode.entitlement_required, 'Module yard is off', { key });
       }
-      const dueAt = noShowDueAt(b.startsAt, await setting(ctx, 'yard.no_show_after_minutes', b));
-      if (ctx.now < dueAt) throw conflict('not_due', { dueAt: dueAt.toISOString() });
+      const dueAt = noShowDueAt(
+        b.startsAt,
+        await setting(ctx, Setting.yard.no_show_after_minutes, b),
+      );
+      if (ctx.now < dueAt) throw conflict(ConflictReason.not_due, { dueAt: dueAt.toISOString() });
       return {
         patch: { noShowAt: dueAt },
-        event: { type: 'no_show', dueAt: dueAt.toISOString() },
-        after: () => emailContacts(ctx, b, 'booking.no-show', { dueAt: dueAt.toISOString() }),
+        event: { type: BookingEventType.no_show, dueAt: dueAt.toISOString() },
+        after: () =>
+          emailContacts(ctx, b, EmailTemplate.booking_no_show, { dueAt: dueAt.toISOString() }),
       };
     },
   },
 
   check_in: {
     async done(ctx, b, cmd) {
-      if (b.status !== 'checked_in') return false;
+      if (b.status !== BookingStatus.checked_in) return false;
       if (cmd.plateSeen === null) return true;
       return (await readAvis(ctx.tx, b.id))?.plateSeen === cmd.plateSeen;
     },
     async apply(ctx, b, cmd) {
-      const fromNoShow = b.status === 'no_show';
+      const fromNoShow = b.status === BookingStatus.no_show;
       if (fromNoShow && !(b.noShowAt && noShowCheckInOpen(ctx.now, b.noShowAt, zoneOf(b)))) {
-        throw conflict('invalid_transition', { status: b.status });
+        throw conflict(ConflictReason.invalid_transition, { status: b.status });
       }
       const safety = await bookingSafety(ctx.tx, ctx.access, b, ctx.now);
-      if (safety.enforced && safety.status === 'missing') {
-        throw conflict('safety_missing', {
+      if (safety.enforced && safety.status === SafetyStatus.missing) {
+        throw conflict(ConflictReason.safety_missing, {
           instructionIds: safety.instructions
-            .filter((i) => i.status === 'missing')
+            .filter((i) => i.status === InstructionSafety.missing)
             .map((i) => i.instructionId),
         });
       }
@@ -383,23 +425,23 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
           ? ('late' as const)
           : punctualityOf(
               exact,
-              await setting(ctx, 'yard.early_tolerance_minutes', b),
-              await setting(ctx, 'yard.grace_minutes', b),
+              await setting(ctx, Setting.yard.early_tolerance_minutes, b),
+              await setting(ctx, Setting.yard.grace_minutes, b),
             );
       }
       return {
         patch: { checkedInAt: ctx.now, punctuality, punctualityMinutes },
         event: {
-          type: 'checked_in',
+          type: BookingEventType.checked_in,
           punctuality,
           punctualityMinutes,
           plateRecorded: cmd.plateSeen !== null,
           safety:
-            safety.status === 'valid'
-              ? 'valid'
-              : safety.status === 'missing'
-                ? 'missing_warned'
-                : 'not_required',
+            safety.status === SafetyStatus.valid
+              ? CheckInSafety.valid
+              : safety.status === SafetyStatus.missing
+                ? CheckInSafety.missing_warned
+                : CheckInSafety.not_required,
           fromNoShow,
         },
         after: async () => {
@@ -410,72 +452,76 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
   },
 
   turn_away: {
-    done: (_ctx, b, cmd) => b.status === 'turned_away' && b.turnAwayReason === cmd.reason,
+    done: (_ctx, b, cmd) =>
+      b.status === BookingStatus.turned_away && b.turnAwayReason === cmd.reason,
     async apply(ctx, b, cmd) {
       return {
         patch: { turnedAwayAt: ctx.now, turnAwayReason: cmd.reason },
-        event: { type: 'turned_away', reason: cmd.reason, fromStatus: b.status },
+        event: { type: BookingEventType.turned_away, reason: cmd.reason, fromStatus: b.status },
         after: () => expireLinkAfterVisit(ctx, b),
       };
     },
   },
 
   call: {
-    done: (_ctx, b, cmd) => b.status === 'called' && b.dockId === cmd.dockId,
+    done: (_ctx, b, cmd) => b.status === BookingStatus.called && b.dockId === cmd.dockId,
     async apply(ctx, b, cmd) {
       const dockId = await usableDock(ctx, b, cmd.dockId as DockId);
       const outside = await outsideResource(ctx, b, dockId);
-      const reassign = b.status === 'called' && b.dockId !== null;
+      const reassign = b.status === BookingStatus.called && b.dockId !== null;
       return {
         patch: { dockId, calledAt: reassign ? b.calledAt : ctx.now },
         event:
           reassign && b.dockId
             ? {
-                type: 'reassigned',
+                type: BookingEventType.reassigned,
                 fromDockId: b.dockId,
                 toDockId: dockId,
                 outsideResource: outside,
               }
-            : { type: 'called', dockId, outsideResource: outside },
+            : { type: BookingEventType.called, dockId, outsideResource: outside },
       };
     },
   },
 
   uncall: {
-    done: (_ctx, b) => b.status === 'checked_in' && b.dockId === null,
+    done: (_ctx, b) => b.status === BookingStatus.checked_in && b.dockId === null,
     async apply(_ctx, b) {
       if (!b.dockId) throw new Error(`called booking ${b.id} without a dock`);
       return {
         patch: { dockId: null, calledAt: null },
-        event: { type: 'uncalled', dockId: b.dockId },
+        event: { type: BookingEventType.uncalled, dockId: b.dockId },
       };
     },
   },
 
   dock: {
     done: (_ctx, b, cmd) =>
-      b.status === 'at_dock' && (cmd.dockId === undefined || cmd.dockId === b.dockId),
+      b.status === BookingStatus.at_dock && (cmd.dockId === undefined || cmd.dockId === b.dockId),
     async apply(ctx, b, cmd) {
       const dockId = await dockFor(ctx, b, cmd.dockId);
-      return { patch: { dockId, atDockAt: ctx.now }, event: { type: 'at_dock', dockId } };
+      return {
+        patch: { dockId, atDockAt: ctx.now },
+        event: { type: BookingEventType.at_dock, dockId },
+      };
     },
   },
 
   start_loading: {
     done: (_ctx, b, cmd) =>
-      b.status === 'loading' && (cmd.dockId === undefined || cmd.dockId === b.dockId),
+      b.status === BookingStatus.loading && (cmd.dockId === undefined || cmd.dockId === b.dockId),
     async apply(ctx, b, cmd) {
       const dockId = await dockFor(ctx, b, cmd.dockId);
       return {
         patch: { dockId, loadingAt: ctx.now },
-        event: { type: 'loading_started', dockId },
+        event: { type: BookingEventType.loading_started, dockId },
       };
     },
   },
 
   complete: {
     done: (_ctx, b, cmd) =>
-      b.status === 'done' &&
+      b.status === BookingStatus.done &&
       b.actualLoadUnits === cmd.actualLoadUnits &&
       b.discrepancyNote === cmd.discrepancyNote,
     async apply(ctx, b, cmd) {
@@ -487,7 +533,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
           discrepancyNote: cmd.discrepancyNote,
         },
         event: {
-          type: 'done',
+          type: BookingEventType.done,
           dockId: b.dockId,
           actualLoadUnits: cmd.actualLoadUnits,
           discrepancy: cmd.actualLoadUnits !== b.loadUnits || cmd.discrepancyNote !== null,
@@ -497,14 +543,14 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
   },
 
   depart: {
-    done: (_ctx, b) => b.status === 'departed',
+    done: (_ctx, b) => b.status === BookingStatus.departed,
     async apply(ctx, b, cmd) {
-      if (b.status !== 'done' && cmd.reason === null) {
+      if (b.status !== BookingStatus.done && cmd.reason === null) {
         throw invalid(['reason'], 'Leaving before the load is done needs a reason');
       }
       return {
         patch: { departedAt: ctx.now, departureReason: cmd.reason },
-        event: { type: 'departed', fromStatus: b.status, reason: cmd.reason },
+        event: { type: BookingEventType.departed, fromStatus: b.status, reason: cmd.reason },
         after: () => expireLinkAfterVisit(ctx, b),
       };
     },
@@ -544,19 +590,19 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
             eq(safetyAcknowledgement.tenantId, b.tenantId),
           ),
         );
-      if (!ack) throw new ApiError('not_found', 'No such acknowledgement');
+      if (!ack) throw new ApiError(ErrorCode.not_found, 'No such acknowledgement');
       const instruction = (
         await applicableInstructions(ctx.tx, { tenantId: b.tenantId, siteId: b.siteId })
       ).find((i) => i.instructionId === ack.instructionId);
-      const status = instruction
+      const status: AckLinkStatus = instruction
         ? acknowledgementStatus(ack, {
             now: ctx.now,
             bookingId: b.id,
             materialFloor: instruction.materialFloor,
           })
-        : 'not_applicable';
-      if (status !== 'valid' || ack.restrictedAt !== null) {
-        throw conflict('acknowledgement_invalid', { status });
+        : AckLinkStatus.not_applicable;
+      if (status !== AckLinkStatus.valid || ack.restrictedAt !== null) {
+        throw conflict(ConflictReason.acknowledgement_invalid, { status });
       }
       const link = {
         acknowledgementId: ack.id,
@@ -580,7 +626,7 @@ const HANDLERS: { [K in CommandName]: Handler<K> } = {
       return {
         patch: {},
         event: {
-          type: 'safety_linked',
+          type: BookingEventType.safety_linked,
           instructionId: ack.instructionId,
           acknowledgementId: ack.id,
           via: cmd.via,
@@ -594,7 +640,7 @@ function parseCommand(input: CommandInput): BookingCommand {
   const { type, ...rest } = input;
   const parsed = COMMAND_INPUTS[type].safeParse(rest);
   if (!parsed.success) {
-    throw new ApiError('validation_failed', 'Invalid command', {
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid command', {
       issues: parsed.error.issues.map(({ path, code, message }) => ({
         path: path.map((p) => (typeof p === 'symbol' ? String(p) : p)),
         code,
@@ -606,7 +652,7 @@ function parseCommand(input: CommandInput): BookingCommand {
 }
 
 async function carrierGuards(ctx: BookingContext, b: BookingRow, actor: CommandActor) {
-  if (ctx.actor.party !== 'carrier') return;
+  if (ctx.actor.party !== BookingParty.carrier) return;
   if (actor.activeLink) {
     const [link] = await ctx.tx
       .select({ status: tenantCarrierLink.status })
@@ -617,15 +663,15 @@ async function carrierGuards(ctx: BookingContext, b: BookingRow, actor: CommandA
           eq(tenantCarrierLink.carrierId, ctx.actor.carrierId as CarrierId),
         ),
       );
-    if (link?.status !== 'active') {
-      throw new ApiError('forbidden', 'The carrier link is deactivated', {
-        reason: 'link_inactive',
+    if (link?.status !== CarrierLinkStatus.active) {
+      throw new ApiError(ErrorCode.forbidden, 'The carrier link is deactivated', {
+        reason: ForbiddenReason.link_inactive,
       });
     }
   }
   if (actor.beforeCutoff) {
-    const cutoff = await setting(ctx, 'booking.cancel_cutoff_minutes', b);
-    if (isPastCutoff(ctx.now, b.startsAt, cutoff)) throw conflict('cutoff_passed');
+    const cutoff = await setting(ctx, Setting.booking.cancel_cutoff_minutes, b);
+    if (isPastCutoff(ctx.now, b.startsAt, cutoff)) throw conflict(ConflictReason.cutoff_passed);
   }
 }
 
@@ -645,16 +691,16 @@ export async function transitionBooking(
     .from(booking)
     .where(and(eq(booking.id, bookingId as BookingRow['id']), eq(booking.tenantId, ctx.tenantId)))
     .for('update');
-  if (!b) throw new ApiError('not_found');
+  if (!b) throw new ApiError(ErrorCode.not_found);
 
   const def: CommandDef = COMMANDS[cmd.type];
   const actor = def.actors[ctx.actor.party];
-  if (!actor) throw new ApiError('forbidden', `${ctx.actor.party} cannot ${cmd.type}`);
+  if (!actor) throw new ApiError(ErrorCode.forbidden, `${ctx.actor.party} cannot ${cmd.type}`);
   if (actor.permission && !ctx.access.permissions.has(actor.permission)) {
-    throw new ApiError('forbidden', `Missing ${actor.permission}`);
+    throw new ApiError(ErrorCode.forbidden, `Missing ${actor.permission}`);
   }
   if (def.entitlement && !ctx.access.entitlements?.features[def.entitlement]) {
-    throw new ApiError('entitlement_required', `${def.entitlement} is off`, {
+    throw new ApiError(ErrorCode.entitlement_required, `${def.entitlement} is off`, {
       key: def.entitlement,
     });
   }
@@ -666,7 +712,7 @@ export async function transitionBooking(
     return { booking: b, changed: false };
   }
   if (!reachable) {
-    throw conflict('invalid_transition', { status: b.status });
+    throw conflict(ConflictReason.invalid_transition, { status: b.status });
   }
   await carrierGuards(ctx, b, actor);
 
@@ -683,7 +729,9 @@ export async function transitionBooking(
     // A savepoint, so a second truck on a dock answers 409 and the handler can still read.
     const [row] = await ctx.tx
       .transaction(write)
-      .catch((e: unknown) => conflictOnUnique(e, 'booking_dock_occupied', 'dock_occupied'));
+      .catch((e: unknown) =>
+        conflictOnUnique(e, 'booking_dock_occupied', ConflictReason.dock_occupied),
+      );
     if (!row) throw new Error(`booking ${b.id} vanished under its row lock`);
     updated = row;
   }

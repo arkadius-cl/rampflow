@@ -1,3 +1,4 @@
+import { ErrorCode, ForbiddenReason } from '@rampflow/shared/values';
 import type { MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { ApiError } from './errors.ts';
@@ -9,7 +10,9 @@ export function requireSameOrigin(origins: readonly string[]): MiddlewareHandler
   const allowed = new Set(origins.map((o) => new URL(o).origin));
   return createMiddleware(async (c, next) => {
     if (MUTATING.has(c.req.method) && !allowed.has(c.req.header('Origin') ?? '')) {
-      throw new ApiError('forbidden', 'Cross-origin request refused', { reason: 'origin' });
+      throw new ApiError(ErrorCode.forbidden, 'Cross-origin request refused', {
+        reason: ForbiddenReason.origin,
+      });
     }
     await next();
   });

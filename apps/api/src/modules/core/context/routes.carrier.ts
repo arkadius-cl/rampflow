@@ -4,6 +4,7 @@ import {
   type CarrierContextTenant,
   logoPath,
 } from '@rampflow/shared/modules/core/api.context';
+import { Feature, ScopeParty } from '@rampflow/shared/values';
 import { asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { TenantId } from '../../../db/ids.ts';
@@ -27,7 +28,8 @@ export const carrier = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope, access, db, clock } = c.var;
-    if (scope.party !== 'carrier' || !access.role) throw new Error('context runs under a carrier');
+    if (scope.party !== ScopeParty.carrier || !access.role)
+      throw new Error('context runs under a carrier');
     const [named] = await db
       .select({ id: org.id, name: org.name })
       .from(org)
@@ -52,7 +54,7 @@ export const carrier = new Hono<AppEnv>().get(
       // the kernel does for the carrier-at-tenant party.
       const atTenant = await loadAccess(
         db,
-        { ...scope, party: 'carrier_at_tenant', tenantId: link.id as TenantId },
+        { ...scope, party: ScopeParty.carrier_at_tenant, tenantId: link.id as TenantId },
         clock,
       );
       const on = atTenant.entitlements;
@@ -61,9 +63,11 @@ export const carrier = new Hono<AppEnv>().get(
         id: link.id,
         name: link.name,
         linkStatus: link.status,
-        carrierPortal: Boolean(on?.modules.booking && on.features['booking.carrier_portal']),
+        carrierPortal: Boolean(on?.modules.booking && on.features[Feature.booking.carrier_portal]),
         logoUrl:
-          logo && on?.modules.brand && on.features['brand.logo'] ? logoPath(link.id, logo) : null,
+          logo && on?.modules.brand && on.features[Feature.brand.logo]
+            ? logoPath(link.id, logo)
+            : null,
       });
     }
 

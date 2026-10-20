@@ -9,12 +9,13 @@ import { readdirSync, rmSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { CliOptionType } from '@rampflow/shared/values';
 
 const { values } = parseArgs({
-  options: { name: { type: 'string' }, base: { type: 'string' } },
+  options: { name: { type: CliOptionType.string }, base: { type: CliOptionType.string } },
 });
-// A unit id (u4) or an OpenSpec change name (group-entitlements-by-module).
-if (!values.name || !/^(u\d+[a-z0-9_]*|[a-z][a-z0-9]*(-[a-z0-9]+)+)$/.test(values.name)) {
+// A unit id (u4) or an OpenSpec change name (group-entitlements-by-module, 00-central-value-sets).
+if (!values.name || !/^(u\d+[a-z0-9_]*|[a-z0-9]+(-[a-z0-9]+)+)$/.test(values.name)) {
   console.error(
     'usage: pnpm db:regen --name <unit id or change name, for example u4> [--base main]',
   );

@@ -1,10 +1,12 @@
 import {
   CreateLoadType,
   CreateResource,
-  type Direction,
   PutHours,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { Direction, DurationKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { CreateDock, CreateSite } from '@rampflow/shared/modules/core/api.sites';
+import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { OrgKind } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Tx } from '../../src/db/scope.ts';
@@ -59,8 +61,12 @@ const DEMO_SITES: readonly DemoSite[] = [
       { name: 'Halle 2', docks: ['T06', 'T07', 'T08'] },
     ],
     pools: [
-      { name: 'Wareneingang', directions: ['inbound'], docks: ['T01', 'T02', 'T03', 'T04'] },
-      { name: 'Versand', directions: ['outbound'], docks: ['T06', 'T07'] },
+      {
+        name: 'Wareneingang',
+        directions: [Direction.inbound],
+        docks: ['T01', 'T02', 'T03', 'T04'],
+      },
+      { name: 'Versand', directions: [Direction.outbound], docks: ['T06', 'T07'] },
     ],
     singles: ['T05', 'T08'],
     hours: [...weekdays('06:00', '22:00'), [6, '06:00', '14:00']],
@@ -77,7 +83,9 @@ const DEMO_SITES: readonly DemoSite[] = [
       defaultLocale: 'en',
     }),
     halls: [{ name: 'Hall A', docks: ['R1', 'R2'] }],
-    pools: [{ name: 'Ramps', directions: ['inbound', 'outbound'], docks: ['R1', 'R2'] }],
+    pools: [
+      { name: 'Ramps', directions: [Direction.inbound, Direction.outbound], docks: ['R1', 'R2'] },
+    ],
     singles: [],
     hours: weekdays('07:00', '19:00'),
   },
@@ -98,8 +106,8 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
       const input = CreateDock.parse({
         hallId: hall.id,
         code,
-        doorType: 'dock_leveler',
-        temperatureZone: 'ambient',
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
         sort: i,
       });
       dockIds.set(code, (await createDock(tx, req, siteId, input)).id);
@@ -108,7 +116,7 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   const ids = (codes: string[]) => codes.map((c) => dockIds.get(c) as string);
   const resources: { id: string; directions: Direction[] }[] = [];
   for (const [sort, p] of demo.pools.entries()) {
-    const input = { siteId, kind: 'pool', name: p.name, directions: p.directions, sort };
+    const input = { siteId, kind: ResourceKind.pool, name: p.name, directions: p.directions, sort };
     resources.push(
       await createResource(tx, req, CreateResource.parse({ ...input, dockIds: ids(p.docks) })),
     );
@@ -116,7 +124,7 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   for (const code of demo.singles) {
     const input = {
       siteId,
-      kind: 'single',
+      kind: ResourceKind.single,
       name: code,
       directions: ['inbound', 'outbound'],
       sort: resources.length,
@@ -137,17 +145,17 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
     CreateLoadType.parse({
       siteId,
       name: { de: 'Palettiert (Versand)', en: 'Palletised (outbound)' },
-      direction: 'outbound',
-      duration: { kind: 'fixed', minutes: 60 },
+      direction: Direction.outbound,
+      duration: { kind: DurationKind.fixed, minutes: 60 },
       bufferMinutes: 10,
-      resourceIds: serving('outbound'),
+      resourceIds: serving(Direction.outbound),
     }),
   );
   return true;
 }
 
 export async function seed(ctx: SeedContext): Promise<void> {
-  const tenantId = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
+  const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
   if (!tenantId) throw new Error(`${ACME} is missing; the core seed runs first`);
   const tx = ctx.db as unknown as Tx;
   const entitlements = await loadEntitlements(tx, tenantId, new Date());

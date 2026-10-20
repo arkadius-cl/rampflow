@@ -1,15 +1,7 @@
 import { createHmac } from 'node:crypto';
+import type { TokenPurpose } from '@rampflow/shared/values';
 import { hashToken, type TokenHash } from '../db/ids.ts';
 import { env } from './env.ts';
-
-/** Every kind of emailed or linked token. The purpose separates the HMAC domains. */
-export type TokenPurpose =
-  | 'magic_link'
-  | 'password_reset'
-  | 'invitation'
-  | 'carrier_invitation'
-  | 'registration'
-  | 'driver';
 
 /**
  * `base64url(HMAC-SHA256(TOKEN_SECRET, "<purpose>:<row id>"))`, 256 bits (ADR-0003, ADR-0008).

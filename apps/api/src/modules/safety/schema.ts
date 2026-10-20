@@ -1,8 +1,7 @@
-import {
-  TRANSLATION_STATES,
-  VERSION_STATUSES,
-} from '@rampflow/shared/modules/safety/api.authoring';
-import { ACK_CHANNELS } from '@rampflow/shared/modules/safety/api.register';
+import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { TranslationState, VersionStatus } from '@rampflow/shared/modules/safety/values';
+import { PolicyCommand, PolicyReader, ScopeParty, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -56,7 +55,7 @@ export const safetyInstruction = pgTable(
   (t) => [
     unique('safety_instruction_id_tenant_key').on(t.id, t.tenantId),
     index('safety_instruction_tenant_id_idx').on(t.tenantId),
-    ...tenantPolicies(t, { site: null, readers: ['driver'] }),
+    ...tenantPolicies(t, { site: null, readers: [PolicyReader.driver] }),
   ],
 );
 
@@ -82,7 +81,7 @@ export const safetyInstructionSite = pgTable(
     siteForeignKey(t),
     index('safety_instruction_site_site_id_idx').on(t.siteId),
     index('safety_instruction_site_tenant_id_idx').on(t.tenantId),
-    ...tenantPolicies(t, { site: null, readers: ['driver'] }),
+    ...tenantPolicies(t, { site: null, readers: [PolicyReader.driver] }),
   ],
 );
 
@@ -93,7 +92,7 @@ export const safetyVersion = pgTable(
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     instructionId: uuid('instruction_id').$type<InstructionId>().notNull(),
     version: integer('version').notNull(),
-    status: text('status', { enum: VERSION_STATUSES }).notNull(),
+    status: text('status', { enum: values(VersionStatus) }).notNull(),
     materialChange: boolean('material_change').notNull().default(false),
     publishedAt: instant('published_at'),
     publishedBy: uuid('published_by')
@@ -110,10 +109,14 @@ export const safetyVersion = pgTable(
       .on(t.instructionId)
       .where(sql`${t.status} = 'published'`),
     index('safety_version_tenant_id_idx').on(t.tenantId),
-    check('safety_version_status_check', oneOf(t.status, VERSION_STATUSES)),
+    check('safety_version_status_check', oneOf(t.status, values(VersionStatus))),
     ...tenantPolicies(t, { site: null, readers: [] }),
     // Retired versions too, so a driver session can judge an acknowledgement of an older version.
-    allow('driver', 'select', and(tenantIs(t.tenantId), sql`${t.status} <> 'draft'`)),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), sql`${t.status} <> 'draft'`),
+    ),
   ],
 );
 
@@ -128,7 +131,7 @@ export const safetyContent = pgTable(
     blocks: jsonb('blocks').notNull(),
     questions: jsonb('questions').notNull().default([]),
     statement: text('statement').notNull(),
-    translation: text('translation', { enum: TRANSLATION_STATES }).notNull(),
+    translation: text('translation', { enum: values(TranslationState) }).notNull(),
     contentHash: bytea('content_hash').notNull(),
     createdAt: createdAt(),
   },
@@ -139,11 +142,11 @@ export const safetyContent = pgTable(
       foreignColumns: [safetyVersion.id, safetyVersion.tenantId],
     }).onDelete('cascade'),
     index('safety_content_tenant_id_idx').on(t.tenantId),
-    check('safety_content_translation_check', oneOf(t.translation, TRANSLATION_STATES)),
+    check('safety_content_translation_check', oneOf(t.translation, values(TranslationState))),
     ...tenantPolicies(t, { site: null, readers: [] }),
     allow(
-      'driver',
-      'select',
+      ScopeParty.driver,
+      PolicyCommand.select,
       and(
         tenantIs(t.tenantId),
         sql`exists (select 1 from safety_version v where v.id = ${t.versionId} and v.status = 'published')`,
@@ -167,7 +170,7 @@ export const safetyAcknowledgement = pgTable(
     carrierId: uuid('carrier_id').$type<CarrierId>(),
     driverName: text('driver_name').notNull(),
     statementShown: text('statement_shown').notNull(),
-    channel: text('channel', { enum: ACK_CHANNELS }).notNull(),
+    channel: text('channel', { enum: values(DriverChannel) }).notNull(),
     score: integer('score'),
     attempts: integer('attempts').notNull().default(1),
     completedAt: instant('completed_at').notNull(),
@@ -187,14 +190,20 @@ export const safetyAcknowledgement = pgTable(
     index('safety_acknowledgement_tenant_driver_idx').on(t.tenantId, sql`lower(${t.driverName})`),
     index('safety_acknowledgement_booking_id_idx').on(t.bookingId),
     index('safety_acknowledgement_carrier_id_idx').on(t.carrierId),
-    check('safety_acknowledgement_channel_check', oneOf(t.channel, ACK_CHANNELS)),
+    check('safety_acknowledgement_channel_check', oneOf(t.channel, values(DriverChannel))),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('driver', 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
-    allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.insert,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
   ],
 );
-
-export const LINK_VIA = ['completed', 'pass', 'gate_lookup'] as const;
 
 export const bookingAcknowledgement = pgTable(
   'booking_acknowledgement',
@@ -204,8 +213,8 @@ export const bookingAcknowledgement = pgTable(
     acknowledgementId: uuid('acknowledgement_id').$type<AcknowledgementId>().notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
-    via: text('via', { enum: LINK_VIA }).notNull(),
-    linkedByParty: text('linked_by_party').notNull(),
+    via: text('via', { enum: values(LinkVia) }).notNull(),
+    linkedByParty: text('linked_by_party', { enum: values(ActorParty) }).notNull(),
     linkedByUserId: uuid('linked_by_user_id').$type<UserId>(),
     createdAt: createdAt(),
   },
@@ -222,12 +231,28 @@ export const bookingAcknowledgement = pgTable(
     index('booking_acknowledgement_tenant_id_idx').on(t.tenantId),
     index('booking_acknowledgement_site_id_idx').on(t.siteId),
     index('booking_acknowledgement_acknowledgement_id_idx').on(t.acknowledgementId),
-    check('booking_acknowledgement_via_check', oneOf(t.via, LINK_VIA)),
-    allow('tenant', 'all', and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
-    allow('driver', 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
-    allow('driver', 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    check('booking_acknowledgement_via_check', oneOf(t.via, values(LinkVia))),
+    check(
+      'booking_acknowledgement_linked_by_party_check',
+      oneOf(t.linkedByParty, values(ActorParty)),
+    ),
+    allow(ScopeParty.tenant, PolicyCommand.all, and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.insert,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
     // A repeated briefing in the same visit relinks the newer acknowledgement.
-    allow('driver', 'update', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.update,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
   ],
 );
 
@@ -255,7 +280,7 @@ export const safetyAttempt = pgTable(
     }).onDelete('cascade'),
     index('safety_attempt_tenant_id_idx').on(t.tenantId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('driver', 'all', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(ScopeParty.driver, PolicyCommand.all, and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
   ],
 );
 
@@ -279,6 +304,6 @@ export const safetyPass = pgTable(
     index('safety_pass_tenant_id_idx').on(t.tenantId),
     index('safety_pass_acknowledgement_id_idx').on(t.acknowledgementId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('driver', 'insert', tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.insert, tenantIs(t.tenantId)),
   ],
 );

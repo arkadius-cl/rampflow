@@ -1,4 +1,8 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { DriverChannel, DriverScreen } from '@rampflow/shared/modules/driver/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import { DriverBadgeSize } from '@rampflow/shared/values';
 import {
   BellRingIcon,
   CircleCheckIcon,
@@ -18,7 +22,6 @@ import { SiteTime, SiteTimeRange } from '@/components/site-time';
 import { BookingStatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/lib/i18n';
-import type { HomeScreen } from '@/lib/session';
 import { dateAt, dayAt, siteTimeLabel } from '@/lib/time';
 
 // The home screens of the driver flow (UX concept, "Driver PWA"): booking, waiting, called,
@@ -26,17 +29,17 @@ import { dateAt, dayAt, siteTimeLabel } from '@/lib/time';
 
 type View = DriverBookingView;
 
-export function Home({ screen, view }: { screen: HomeScreen; view: View }) {
+export function Home({ screen, view }: { screen: DriverScreen; view: View }) {
   switch (screen) {
-    case 'booking':
+    case DriverScreen.booking:
       return <BookingScreen view={view} />;
-    case 'waiting':
+    case DriverScreen.waiting:
       return <WaitingScreen view={view} />;
-    case 'called':
+    case DriverScreen.called:
       return <CalledScreen view={view} />;
-    case 'done':
+    case DriverScreen.done:
       return <DoneScreen view={view} />;
-    case 'closed':
+    case DriverScreen.closed:
       return <ClosedScreen view={view} />;
   }
 }
@@ -106,8 +109,8 @@ function SafetyCard({ view }: { view: View }) {
   const { t } = useTranslation();
   const locale = useLocale();
   const { safety, site } = view;
-  if (safety.status === 'not_required') return null;
-  if (safety.status === 'valid') {
+  if (safety.status === SafetyStatus.not_required) return null;
+  if (safety.status === SafetyStatus.valid) {
     return (
       <div
         data-testid="safety-valid"
@@ -135,7 +138,7 @@ function SafetyCard({ view }: { view: View }) {
 
 function GateDeviceNote({ view }: { view: View }) {
   const { t } = useTranslation();
-  if (view.channel !== 'staff') return null;
+  if (view.channel !== DriverChannel.staff) return null;
   return (
     <p className="flex items-start gap-2 text-sm text-muted-foreground">
       <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -196,7 +199,7 @@ function WaitingScreen({ view }: { view: View }) {
         </div>
         <h1 className="text-3xl font-semibold">{t(($) => $.app.waiting.title)}</h1>
         <p className="text-lg text-muted-foreground">{t(($) => $.app.waiting.body)}</p>
-        <BookingStatusBadge status={booking.status} size="xl" />
+        <BookingStatusBadge status={booking.status} size={DriverBadgeSize.xl} />
         {booking.checkedInAt ? (
           <dl className="mt-2 grid w-full grid-cols-2 gap-3 text-left text-sm">
             <div className="rounded-lg bg-muted p-3">
@@ -286,20 +289,20 @@ function ClosedScreen({ view }: { view: View }) {
   const { t } = useTranslation();
   const status = view.booking.status;
   const text =
-    status === 'cancelled'
+    status === BookingStatus.cancelled
       ? t(($) => $.app.closed.cancelled)
-      : status === 'no_show'
+      : status === BookingStatus.no_show
         ? t(($) => $.app.closed.no_show)
-        : status === 'turned_away'
+        : status === BookingStatus.turned_away
           ? t(($) => $.app.closed.turned_away)
           : t(($) => $.app.closed.departed);
   return (
     <>
       <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border bg-card p-6 text-center">
-        <BookingStatusBadge status={status} size="xl" />
+        <BookingStatusBadge status={status} size={DriverBadgeSize.xl} />
         <h1 className="text-xl font-semibold">{text}</h1>
       </section>
-      {status === 'departed' ? <LinkExpiry view={view} /> : <CallSite view={view} />}
+      {status === BookingStatus.departed ? <LinkExpiry view={view} /> : <CallSite view={view} />}
     </>
   );
 }

@@ -1,4 +1,5 @@
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
+import { Permission, SettingScope } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +14,7 @@ import { type SettingsActions, SettingsSections } from '@/modules/core/settings-
 // PL-03: every setting with a platform level. A tenant or site override keeps winning.
 
 export const Route = createFileRoute('/platform/settings/')({
-  beforeLoad: guard({ permission: 'core.manage_platform_settings' }),
+  beforeLoad: guard({ permission: Permission.core.manage_platform_settings }),
   component: PlatformSettingsPage,
 });
 
@@ -43,7 +44,11 @@ function PlatformSettingsPage() {
         description={t(($) => $['settings-ui'].platform_description)}
       />
       {settings.data ? (
-        <SettingsSections items={settings.data.items} scope="platform" actions={actions} />
+        <SettingsSections
+          items={settings.data.items}
+          scope={SettingScope.platform}
+          actions={actions}
+        />
       ) : (
         <Skeleton className="h-64 max-w-5xl" />
       )}

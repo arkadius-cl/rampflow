@@ -1,28 +1,18 @@
 import type * as z from 'zod';
-
-export const ROLES = [
-  'platform_admin',
-  'tenant_admin',
-  'dispatcher',
-  'gate_operator',
-  'dock_operator',
-  'carrier_admin',
-  'carrier_user',
-] as const;
-export type Role = (typeof ROLES)[number];
-
-/** The kind of org a membership belongs to. Drivers are not an org party; they hold a booking token. */
-export type OrgParty = 'platform' | 'tenant' | 'carrier';
+import type { EntitlementKind } from '../values/entitlements.ts';
+import type { LocaleSet } from '../values/locales.ts';
+import { OrgKind, Role } from '../values/roles.ts';
+import type { SettingScope } from '../values/settings.ts';
 
 export const ROLE_PARTY = {
-  platform_admin: 'platform',
-  tenant_admin: 'tenant',
-  dispatcher: 'tenant',
-  gate_operator: 'tenant',
-  dock_operator: 'tenant',
-  carrier_admin: 'carrier',
-  carrier_user: 'carrier',
-} as const satisfies Record<Role, OrgParty>;
+  platform_admin: OrgKind.platform,
+  tenant_admin: OrgKind.tenant,
+  dispatcher: OrgKind.tenant,
+  gate_operator: OrgKind.tenant,
+  dock_operator: OrgKind.tenant,
+  carrier_admin: OrgKind.carrier,
+  carrier_user: OrgKind.carrier,
+} as const satisfies Record<Role, OrgKind>;
 
 /**
  * A role holds every permission granted to the roles it includes, transitively.
@@ -30,23 +20,23 @@ export const ROLE_PARTY = {
  */
 export const ROLE_INCLUDES = {
   platform_admin: [],
-  tenant_admin: ['dispatcher'],
-  dispatcher: ['gate_operator', 'dock_operator'],
+  tenant_admin: [Role.dispatcher],
+  dispatcher: [Role.gate_operator, Role.dock_operator],
   gate_operator: [],
   dock_operator: [],
-  carrier_admin: ['carrier_user'],
+  carrier_admin: [Role.carrier_user],
   carrier_user: [],
 } as const satisfies Record<Role, readonly Role[]>;
 
-/** Most specific first. Resolution walks this order and falls back to the code default. */
-export const SETTING_SCOPES = ['site', 'tenant', 'platform'] as const;
-export type SettingScope = (typeof SETTING_SCOPES)[number];
-
-/** `staff` modules ship de, en and pl catalogs. `driver` ships the 12 driver languages. */
-export type LocaleSet = 'staff' | 'driver';
-
-export type FeatureDef = { readonly kind: 'feature'; readonly reserved?: true };
-export type LimitDef = { readonly kind: 'limit'; readonly soft?: true; readonly reserved?: true };
+export type FeatureDef = {
+  readonly kind: typeof EntitlementKind.feature;
+  readonly reserved?: true;
+};
+export type LimitDef = {
+  readonly kind: typeof EntitlementKind.limit;
+  readonly soft?: true;
+  readonly reserved?: true;
+};
 export type EntitlementDef = FeatureDef | LimitDef;
 /** A numeric entitlement value. `null` means unlimited. */
 export type Limit = number | null;
@@ -67,7 +57,7 @@ export interface SettingDef<Z extends z.ZodType = z.ZodType, F extends string = 
 export type NavItem<P extends string = string, F extends string = string> =
   | {
       readonly id: string;
-      readonly area: 'tenant';
+      readonly area: typeof OrgKind.tenant;
       readonly to: string;
       readonly icon: string;
       readonly permission: P;
@@ -75,7 +65,7 @@ export type NavItem<P extends string = string, F extends string = string> =
     }
   | {
       readonly id: string;
-      readonly area: 'carrier' | 'platform';
+      readonly area: typeof OrgKind.carrier | typeof OrgKind.platform;
       readonly to: string;
       readonly icon: string;
       readonly permission: P;
@@ -87,7 +77,7 @@ export type SettingDefs = { readonly [key: string]: SettingDef };
 
 /** Non-reserved feature keys of one module's entitlement record. */
 export type ImplementedFeatureIn<E> = {
-  [K in keyof E]: E[K] extends { kind: 'feature' }
+  [K in keyof E]: E[K] extends { kind: typeof EntitlementKind.feature }
     ? E[K] extends { reserved: true }
       ? never
       : K

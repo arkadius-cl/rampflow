@@ -1,7 +1,7 @@
-import type { DriverLocale } from '@rampflow/shared';
+import { DriverLocale } from '@rampflow/shared/values';
 import { Button, Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 import { addressLines, type EmailSite, formatSlot } from '../../booking/lifecycle/email-parts.tsx';
 import { type DriverAccessId, driverLinkUrl } from '../access.ts';
 
@@ -25,7 +25,7 @@ declare module '../../../kernel/outbox.ts' {
 export const category = 'booking';
 
 /** CR-06: the driver link, in the language the sender chose for the driver. */
-export const render: EmailTemplate<DriverLinkPayload>['render'] = (p, t) => ({
+export const render: EmailTemplateModule<DriverLinkPayload>['render'] = (p, t) => ({
   subject: t('link-email.subject', { code: p.code, site: p.site.name }),
   body: (
     <EmailLayout
@@ -51,7 +51,7 @@ export const render: EmailTemplate<DriverLinkPayload>['render'] = (p, t) => ({
 });
 
 export const example: DriverLinkPayload = {
-  locale: 'pl',
+  locale: DriverLocale.pl,
   driverAccessId: '00000000-0000-0000-0000-000000000000',
   code: 'K7M2Q9XA',
   site: {

@@ -1,3 +1,6 @@
+import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
+import { BriefingState } from '@rampflow/shared/modules/safety/values';
+import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   LogInIcon,
@@ -42,7 +45,9 @@ const ON_SITE = new Set(['checked_in', 'called', 'at_dock', 'loading', 'done']);
 function GateScreen() {
   const { checkin } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const expected = bookings.filter((b) => b.status === 'confirmed' || b.status === 'no_show');
+  const expected = bookings.filter(
+    (b) => b.status === BookingStatus.confirmed || b.status === BookingStatus.no_show,
+  );
   const onSite = bookings.filter((b) => ON_SITE.has(b.status));
   const dialogBooking = bookings.find((b) => b.id === checkin);
   if (!site) return null;
@@ -111,13 +116,13 @@ function GateScreen() {
 }
 
 function ExpectedRow({ booking: b }: { booking: Booking }) {
-  const late = b.status === 'confirmed' && b.start < NOW;
-  const blocked = b.safety !== 'valid';
+  const late = b.status === BookingStatus.confirmed && b.start < NOW;
+  const blocked = b.safety !== BriefingState.valid;
   return (
     <li
       className={cn(
         'grid grid-cols-[7rem_minmax(0,1fr)_11rem_12rem_auto] items-center gap-4 rounded-lg border bg-background px-4 py-3',
-        b.status === 'no_show' && 'opacity-70',
+        b.status === BookingStatus.no_show && 'opacity-70',
       )}
     >
       <div>
@@ -128,7 +133,12 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
           className="text-lg font-semibold"
         />
         {late ? (
-          <PunctualityBadge punctuality="late" minutes={12} size="sm" className="mt-1" />
+          <PunctualityBadge
+            punctuality={Punctuality.late}
+            minutes={12}
+            size={BadgeSize.sm}
+            className="mt-1"
+          />
         ) : null}
       </div>
       <div className="min-w-0">
@@ -138,8 +148,8 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
           {b.loadType} · <span className="font-mono">{b.code}</span>
         </div>
       </div>
-      <SafetyBadge status={b.safety} size="lg" />
-      <BookingStatusBadge status={b.status} size="lg" />
+      <SafetyBadge status={b.safety} size={BadgeSize.lg} />
+      <BookingStatusBadge status={b.status} size={BadgeSize.lg} />
       <div className="flex gap-2">
         <Button
           size="lg"
@@ -156,7 +166,7 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
 }
 
 function CheckInDialog({ booking: b }: { booking: Booking }) {
-  const blocked = b.safety !== 'valid';
+  const blocked = b.safety !== BriefingState.valid;
   return (
     <DialogContent className="sm:max-w-2xl" data-density="touch">
       <DialogHeader>
@@ -180,7 +190,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
           <div className="text-sm font-medium">Arrival</div>
           <div className="mt-2 flex items-center gap-2">
             <SiteTime time={NOW} zone={site?.zoneLabel ?? ''} className="text-lg font-semibold" />
-            <PunctualityBadge punctuality="early" minutes={12} size="lg" />
+            <PunctualityBadge punctuality={Punctuality.early} minutes={12} size={BadgeSize.lg} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">Within 30 min early tolerance.</p>
         </div>
@@ -199,7 +209,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
           <h3 id="safety-heading" className="font-semibold">
             Safety briefing
           </h3>
-          <SafetyBadge status={b.safety} size="lg" />
+          <SafetyBadge status={b.safety} size={BadgeSize.lg} />
         </div>
         {blocked ? (
           <>

@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PublicLinkInfo, PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
+import { ErrorCode, Feature, ScopeParty, Setting } from '@rampflow/shared/values';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import { type Scope, type Tx, withScope } from '../../../db/scope.ts';
@@ -27,7 +28,7 @@ async function requireTenantSite(tx: Tx, tenantId: TenantId, siteId: SiteId) {
     .select({ id: site.id, name: site.name })
     .from(site)
     .where(and(eq(site.id, siteId), eq(site.tenantId, tenantId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -54,8 +55,8 @@ async function linkView(
     siteId: s.id,
     siteName: s.name,
     slug,
-    enabled: (await access.setting('booking.public_link_enabled', s.id)).value,
-    mode: (await access.setting('booking.public_registration_mode', s.id)).value,
+    enabled: (await access.setting(Setting.booking.public_link_enabled, s.id)).value,
+    mode: (await access.setting(Setting.booking.public_registration_mode, s.id)).value,
   };
 }
 
@@ -130,17 +131,20 @@ export interface PublicLinkTarget {
 
 /** The tenant and site of an unrevoked slug, or 404. Runs before any tenant is known. */
 export async function resolveSlug(slug: string): Promise<PublicLinkTarget> {
-  const [link] = await withScope({ party: 'anonymous' }, (tx) =>
+  const [link] = await withScope({ party: ScopeParty.anonymous }, (tx) =>
     tx
       .select({ tenantId: publicLink.tenantId, siteId: publicLink.siteId })
       .from(publicLink)
       .where(and(eq(publicLink.slug, slug), isNull(publicLink.revokedAt))),
   );
-  if (!link) throw new ApiError('not_found');
+  if (!link) throw new ApiError(ErrorCode.not_found);
   return link;
 }
 
-export const publicScope = (link: PublicLinkTarget): Scope => ({ party: 'public', ...link });
+export const publicScope = (link: PublicLinkTarget): Scope => ({
+  party: ScopeParty.public,
+  ...link,
+});
 
 /**
  * 404 unless the link a registration came through still takes registrations: its slug is not
@@ -164,7 +168,7 @@ export async function assertLinkOpen(
           isNull(publicLink.revokedAt),
         ),
       );
-    if (!row) throw new ApiError('not_found');
+    if (!row) throw new ApiError(ErrorCode.not_found);
   }
   await openPublicLink(tx, link, clock);
 }
@@ -181,15 +185,15 @@ export async function openPublicLink(
 ): Promise<{ info: PublicLinkInfo; access: Access }> {
   const access = await loadAccess(tx, publicScope(link), clock);
   const enabled =
-    access.entitlements?.features['booking.public_link'] === true &&
-    (await access.setting('booking.public_link_enabled', link.siteId)).value;
+    access.entitlements?.features[Feature.booking.public_link] === true &&
+    (await access.setting(Setting.booking.public_link_enabled, link.siteId)).value;
   const [found] = await tx
     .select({ name: site.name, city: site.city, country: site.country, active: site.active })
     .from(site)
     .where(and(eq(site.id, link.siteId), eq(site.tenantId, link.tenantId)));
   const [tenant] = await tx.select({ name: org.name }).from(org).where(eq(org.id, link.tenantId));
   if (!enabled || !found?.active || !tenant || !access.entitlements) {
-    throw new ApiError('not_found');
+    throw new ApiError(ErrorCode.not_found);
   }
   return {
     access,

@@ -1,5 +1,5 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES } from '@rampflow/shared';
+import { StaffLocale, TokenPurpose, values } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { describe, expect, it } from 'vitest';
 import { env } from '../../../kernel/env.ts';
@@ -13,11 +13,12 @@ const TEMPLATES: { id: string; link: (example: Record<string, string>) => string
   {
     id: 'booking.carrier-invitation',
     link: (e) =>
-      `/carrier-invite#${deriveToken('carrier_invitation', e.carrierInvitationId as string)}`,
+      `/carrier-invite#${deriveToken(TokenPurpose.carrier_invitation, e.carrierInvitationId as string)}`,
   },
   {
     id: 'booking.registration-verify',
-    link: (e) => `/carrier-registration#${deriveToken('registration', e.registrationId as string)}`,
+    link: (e) =>
+      `/carrier-registration#${deriveToken(TokenPurpose.registration, e.registrationId as string)}`,
   },
   { id: 'booking.registration-approved', link: (e) => `/c/${e.carrierId}/book` },
   { id: 'booking.registration-rejected', link: () => null },
@@ -25,7 +26,7 @@ const TEMPLATES: { id: string; link: (example: Record<string, string>) => string
 
 describe('carrier network emails', () => {
   for (const tpl of TEMPLATES) {
-    for (const locale of STAFF_LOCALES) {
+    for (const locale of values(StaffLocale)) {
       it(`${tpl.id} renders in ${locale}`, async () => {
         const template = await loadTemplateFile(tpl.id);
         expect(template.category).toBe('account');

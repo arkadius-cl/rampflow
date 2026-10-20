@@ -1,10 +1,10 @@
-import type { StaffLocale } from '@rampflow/shared';
 import {
   type LocalDateTime,
   localDateTimeToInstant,
   siteTimeParts,
   type TimeZone,
 } from '@rampflow/shared/time';
+import type { StaffLocale } from '@rampflow/shared/values';
 
 // Display of the local wall-clock values the capacity screens edit (ADR-0012): weekly hours and
 // closures are site-local, so they show with the site zone's short names, never converted.
@@ -30,7 +30,7 @@ export const zoneAt = (value: string, zone: string, locale: StaffLocale) =>
 export function weekdayName(
   weekday: number,
   locale: StaffLocale,
-  style: 'short' | 'long' = 'long',
+  style: Intl.DateTimeFormatOptions['weekday'] = 'long',
 ) {
   // 2024-01-01 is a Monday.
   return new Intl.DateTimeFormat(locale, { weekday: style, timeZone: 'UTC' }).format(

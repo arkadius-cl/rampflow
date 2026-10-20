@@ -5,6 +5,7 @@ import {
   isAcknowledgementValid,
   materialFloor,
 } from './validity.ts';
+import { VersionStatus } from './values.ts';
 
 const now = new Date('2026-10-25T06:30:00Z');
 const later = new Date('2027-10-25T06:30:00Z');
@@ -14,10 +15,10 @@ describe('materialFloor', () => {
     expect(materialFloor([])).toBe(0);
     expect(
       materialFloor([
-        { version: 1, status: 'retired', materialChange: false },
-        { version: 2, status: 'retired', materialChange: true },
-        { version: 3, status: 'published', materialChange: false },
-        { version: 4, status: 'draft', materialChange: true },
+        { version: 1, status: VersionStatus.retired, materialChange: false },
+        { version: 2, status: VersionStatus.retired, materialChange: true },
+        { version: 3, status: VersionStatus.published, materialChange: false },
+        { version: 4, status: VersionStatus.draft, materialChange: true },
       ]),
     ).toBe(2);
   });

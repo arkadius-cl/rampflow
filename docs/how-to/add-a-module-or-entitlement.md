@@ -97,7 +97,7 @@ Do the steps of the previous section for each of the module's keys, plus these.
    pnpm db:migrate
    ```
 
-   The name must start with `u` and a number. One branch holds one migration. Run `pnpm db:regen --name <same name>` after a rebase onto `main`, then `pnpm db:reset`.
+   The name is a unit id (`u13`) or the OpenSpec change name (`00-central-value-sets`). One branch holds one migration. Run `pnpm db:regen --name <same name>` after a rebase onto `main`, then `pnpm db:reset`.
 
 5. **RLS rules.** In `apps/api/src/db/rls.test.ts`, import the schema module into `TABLES` and add one `ORACLE` entry per table: the rule that says which party reads which row. Add rows for the new tables to `seedModel` in `apps/api/test/model.ts`, because the test fails for a table without rows.
 
@@ -105,7 +105,7 @@ Do the steps of the previous section for each of the module's keys, plus these.
    pnpm --filter @rampflow/api test rls
    ```
 
-6. **Routes.** Write one router per party in `apps/api/src/modules/<id>/<area>/routes.<party>.ts` and mount it in `apps/api/src/modules/index.ts`. Wrap a router of a module that can be off in `withModule('<id>', router)`, at a prefix other than the root. Routers of `core`, `booking` and `privacy` need no wrapper.
+6. **Routes.** Write one router per party in `apps/api/src/modules/<id>/<area>/routes.<party>.ts` and mount it in `apps/api/src/modules/index.ts`. Wrap a router of a module that can be off in `withModule(Module.<id>, router)`, at a prefix other than the root. Guard routes with `requirePermission(Permission.<id>.<name>)` and `requireEntitlement(Feature.<id>.<name>)`: every key of the manifest appears in these trees from `@rampflow/shared/values` as soon as the manifest declares it ([ADR-0019](../decisions/ADR-0019-central-value-sets.md)). Closed sets of values the module needs (statuses, kinds, tabs) go into `packages/shared/src/modules/<id>/values.ts`; `pnpm values:check` and `pnpm lint` reject them as string literals. Routers of `core`, `booking` and `privacy` need no wrapper.
 
 7. **Route cases.** Next to each router, export `cases` from `route-cases.ts` with `defineRouteCases`, one case per route. Routes under `/api/me`, `/api/auth` and `/api/public` export `accountCases` with `defineAccountCases` instead. `route-coverage.test.ts` fails for a route without a case.
 
@@ -115,7 +115,7 @@ Do the steps of the previous section for each of the module's keys, plus these.
 
 8. **Emails and jobs.** An email template is `apps/api/src/modules/<id>/emails/<name>.tsx` and exports `category` (`account` or `booking`), `render` and `example`. A job is `apps/api/src/modules/<id>/jobs/<name>.ts` and exports `job`. The outbox and the job runner find both by file name ([ADR-0010](../decisions/ADR-0010-email-outbox-job-runner.md)).
 
-9. **Screens.** Add routes under `apps/web/src/routes/<area>/` with `guard({ permission, entitlement? })`, and components under `apps/web/src/modules/<id>/`. The Vite dev server regenerates `apps/web/src/routeTree.gen.ts`. Without it running:
+9. **Screens.** Add routes under `apps/web/src/routes/<area>/` with `guard({ permission: Permission.<id>.<name>, entitlement?: Feature.<id>.<name> })`, and components under `apps/web/src/modules/<id>/`. The Vite dev server regenerates `apps/web/src/routeTree.gen.ts`. Without it running:
 
    ```sh
    pnpm --filter @rampflow/web routes:gen

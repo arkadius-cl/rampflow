@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, type Locator, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { apiAs, bookingsOf } from '../support/u5.ts';
 import { at, avis, ownBooking, planSite, staffBooking, WORLD_DAY, walkIn } from '../support/u6b.ts';
@@ -97,7 +98,7 @@ test.describe('BK-01 Plan board', () => {
     const made = await apiAs<{ code: string }>(
       other.request,
       w.A.users.dispatcher,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/bookings`,
       {
         clientRequestId: randomUUID(),
@@ -128,7 +129,7 @@ test.describe('BK-01 Plan board', () => {
       await apiAs(
         request,
         w.A.users.dispatcher,
-        'POST',
+        HttpMethod.POST,
         `/t/${w.A.tenantId}/bookings/${b.id}/cancel`,
         {},
       );
@@ -177,13 +178,16 @@ test.describe('BK-01 Plan board', () => {
     const w = await seedWorld(request);
     const site = await planSite(w, w.A, ['00:00', '24:00']);
     await signInAs(context, w.A.users.dispatcher);
+    // The page and the assertion read one frozen instant, so a full hour cannot pass in between.
+    const at = new Date();
+    await context.clock.setFixedTime(at);
     await page.goto(`/t/${w.A.tenantId}/plan?site=${site.siteId}`);
     const now = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Europe/Berlin',
       hour: '2-digit',
       minute: '2-digit',
       hourCycle: 'h23',
-    }).format(new Date());
+    }).format(at);
     await expect(page.getByTestId('now-line')).toContainText(/\d{2}:\d{2}\s*CES?T/);
     await expect(page.getByTestId('now-line')).toContainText(now.slice(0, 2));
     await expect(page.getByRole('button', { name: 'Today' })).toBeDisabled();

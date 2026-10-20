@@ -1,6 +1,7 @@
 import type { ServerResponse } from 'node:http';
 import { isIP } from 'node:net';
 import path from 'node:path';
+import { ImageContentType } from '@rampflow/shared/values';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { type Connect, defineConfig, type Plugin } from 'vite';
@@ -25,8 +26,9 @@ const slashRedirect: Plugin = {
     server.middlewares.use(redirectBare);
   },
 };
+const BARE = '/d';
 function redirectBare(req: Connect.IncomingMessage, res: ServerResponse, next: () => void) {
-  if (req.url !== '/d' && !req.url?.startsWith('/d?')) return next();
+  if (req.url !== BARE && !req.url?.startsWith(`${BARE}?`)) return next();
   res.writeHead(302, { Location: `/d/${req.url.slice(2)}` });
   res.end();
 }
@@ -48,7 +50,7 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#171717',
-        icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        icons: [{ src: 'icon.svg', sizes: 'any', type: ImageContentType.svg, purpose: 'any' }],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
@@ -57,7 +59,9 @@ export default defineConfig({
         runtimeCaching: [
           {
             // DR-03 offline: the last booking state of this phone's cookie.
+            // Workbox copies this function's source into sw.js, so it cannot use imports.
             urlPattern: ({ url, request }) =>
+              // biome-ignore lint/plugin: serialized into the service worker, where HttpMethod does not exist
               request.method === 'GET' && url.pathname === '/api/driver/booking',
             handler: 'NetworkFirst',
             options: {

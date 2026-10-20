@@ -1,3 +1,11 @@
+import { LogoContentType } from '@rampflow/shared/modules/brand/values';
+import {
+  AccountCredential,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import {
   defineAccountCases,
   defineRouteCases,
@@ -10,10 +18,10 @@ const P = '/api/t/:orgId/brand/logo';
 
 // The module gate (`brand.logo` off) is checked by the harness through the module's enabledBy.
 const base = {
-  as: 'tenant_admin',
-  permission: 'brand.manage',
+  as: RouteCaseActor.tenant_admin,
+  permission: Permission.brand.manage,
   entitlement: null,
-  foreign: 'empty',
+  foreign: ForeignOutcome.empty,
   siteScoped: false,
 } as const satisfies Partial<RouteCase>;
 
@@ -22,7 +30,7 @@ const org = (w: World) => ({ orgId: w.A.tenantId });
 export const cases = defineRouteCases([
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: P,
     params: org,
     setup: async (w, db) => {
@@ -31,19 +39,19 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'PUT',
+    method: HttpMethod.PUT,
     path: P,
     params: org,
-    raw: () => ({ type: 'image/png', bytes: PNG_1PX }),
+    raw: () => ({ type: LogoContentType.png, bytes: PNG_1PX }),
   },
-  { ...base, method: 'DELETE', path: P, params: org },
+  { ...base, method: HttpMethod.DELETE, path: P, params: org },
 ]);
 
 export const accountCases = defineAccountCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/public/logos/:tenantId/:sha',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (w, db) => {
       const { sha } = await logoFor(db, w.A.tenantId, w.A.users.tenant_admin.id);
       return { actor: null, params: { tenantId: w.A.tenantId, sha } };

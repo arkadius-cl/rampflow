@@ -1,12 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect } from '@playwright/test';
 import pg from 'pg';
+import { LoadUnitType, ReferenceType } from '../../packages/shared/src/modules/avis/values.ts';
+import { DurationKind } from '../../packages/shared/src/modules/booking/values.ts';
 import {
   firstInstantFrom,
   type LocalDate,
   type LocalTime,
   type TimeZone,
 } from '../../packages/shared/src/time/index.ts';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { World, WorldSide } from './auth.ts';
 import { apiAs, bookingsOf } from './u5.ts';
 
@@ -127,7 +130,7 @@ export async function siteSetting(
 export async function tieredLoadType(loadTypeId: string): Promise<void> {
   await db().query('update load_type set duration = $1 where id = $2', [
     JSON.stringify({
-      kind: 'tiers',
+      kind: DurationKind.tiers,
       tiers: [
         { upTo: 10, minutes: 30 },
         { upTo: null, minutes: 120 },
@@ -139,10 +142,13 @@ export async function tieredLoadType(loadTypeId: string): Promise<void> {
 
 export const avis = (o: { units?: number; reference?: string; plate?: string } = {}) => ({
   references: [
-    { type: 'purchase_order', value: o.reference ?? `PO-${randomBytes(3).toString('hex')}` },
+    {
+      type: ReferenceType.purchase_order,
+      value: o.reference ?? `PO-${randomBytes(3).toString('hex')}`,
+    },
   ],
   counterpartyName: 'Lieferant GmbH',
-  loadUnits: [{ type: 'eur_pallet', quantity: o.units ?? 4 }],
+  loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: o.units ?? 4 }],
   ...(o.plate ? { vehicle: { plate: o.plate } } : {}),
 });
 
@@ -168,7 +174,7 @@ export function staffBooking(
   return apiAs<CreatedBooking>(
     request,
     side.users.dispatcher,
-    'POST',
+    HttpMethod.POST,
     `/t/${side.tenantId}/bookings`,
     {
       clientRequestId: randomUUID(),

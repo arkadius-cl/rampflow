@@ -1,12 +1,12 @@
-import type { Role, StaffLocale } from '@rampflow/shared';
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import { Module, OrgKind, Role, SeedOrg, StaffLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
 import { hashPassword, verifyPassword } from '../../src/modules/core/auth/password.ts';
 import {
   appUser,
   membership,
-  type OrgKind,
   org,
   tenantCarrierLink,
   tenantSubscription,
@@ -21,13 +21,15 @@ import { findOrg, type SeedContext } from './context.ts';
 export const DEMO_PASSWORD = 'rampflow-demo';
 export const ACME = 'Acme Logistics';
 export const TRANS_POL = 'Trans-Pol Sp. z o.o.';
-export const ADMIN_UI_PREFS: UiPrefs = { 'platform.packages.openModules': ['booking', 'yard'] };
+export const ADMIN_UI_PREFS: UiPrefs = {
+  'platform.packages.openModules': [Module.booking, Module.yard],
+};
 
 interface DemoUser {
   email: string;
   name: string;
   locale: StaffLocale;
-  org: 'platform' | 'acme' | 'transpol';
+  org: SeedOrg;
   role: Role;
 }
 
@@ -35,38 +37,44 @@ export const DEMO_USERS: readonly DemoUser[] = [
   {
     email: 'admin@rampflow.local',
     name: 'Sam Ops',
-    locale: 'en',
-    org: 'platform',
-    role: 'platform_admin',
+    locale: StaffLocale.en,
+    org: SeedOrg.platform,
+    role: Role.platform_admin,
   },
-  { email: 'admin@acme.local', name: 'Anna Lenz', locale: 'de', org: 'acme', role: 'tenant_admin' },
+  {
+    email: 'admin@acme.local',
+    name: 'Anna Lenz',
+    locale: StaffLocale.de,
+    org: SeedOrg.acme,
+    role: Role.tenant_admin,
+  },
   {
     email: 'dispatch@acme.local',
     name: 'Daniel Brandt',
-    locale: 'de',
-    org: 'acme',
-    role: 'dispatcher',
+    locale: StaffLocale.de,
+    org: SeedOrg.acme,
+    role: Role.dispatcher,
   },
   {
     email: 'gate@acme.local',
     name: 'Gerd Weber',
-    locale: 'de',
-    org: 'acme',
-    role: 'gate_operator',
+    locale: StaffLocale.de,
+    org: SeedOrg.acme,
+    role: Role.gate_operator,
   },
   {
     email: 'dock@acme.local',
     name: 'Dana Krüger',
-    locale: 'de',
-    org: 'acme',
-    role: 'dock_operator',
+    locale: StaffLocale.de,
+    org: SeedOrg.acme,
+    role: Role.dock_operator,
   },
   {
     email: 'admin@trans-pol.local',
     name: 'Piotr Nowak',
-    locale: 'pl',
-    org: 'transpol',
-    role: 'carrier_admin',
+    locale: StaffLocale.pl,
+    org: SeedOrg.transpol,
+    role: Role.carrier_admin,
   },
 ];
 
@@ -78,7 +86,8 @@ async function ensureOrg(
   name: string,
   country: string | null,
 ): Promise<AnyOrgId> {
-  const found = kind === 'platform' ? await platformOrg(ctx) : await findOrg(ctx.db, kind, name);
+  const found =
+    kind === OrgKind.platform ? await platformOrg(ctx) : await findOrg(ctx.db, kind, name);
   if (found) return found;
   const [row] = await ctx.db.insert(org).values({ kind, name, country }).returning({ id: org.id });
   ctx.log(`created ${kind} ${name}`);
@@ -123,9 +132,9 @@ async function ensureUser(ctx: SeedContext, u: DemoUser): Promise<UserId> {
 
 export async function seed(ctx: SeedContext): Promise<void> {
   const orgs = {
-    platform: await ensureOrg(ctx, 'platform', 'rampflow', null),
-    acme: await ensureOrg(ctx, 'tenant', ACME, 'DE'),
-    transpol: await ensureOrg(ctx, 'carrier', TRANS_POL, 'PL'),
+    platform: await ensureOrg(ctx, OrgKind.platform, 'rampflow', null),
+    acme: await ensureOrg(ctx, OrgKind.tenant, ACME, 'DE'),
+    transpol: await ensureOrg(ctx, OrgKind.carrier, TRANS_POL, 'PL'),
   };
   const users = new Map<string, UserId>();
   for (const u of DEMO_USERS) {
@@ -151,12 +160,12 @@ export async function seed(ctx: SeedContext): Promise<void> {
     .values({
       tenantId: orgs.acme as TenantId,
       carrierId: orgs.transpol as CarrierId,
-      status: 'active',
-      source: 'invitation',
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.invitation,
     })
     .onConflictDoUpdate({
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
-      set: { status: 'active', deactivatedAt: null },
+      set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
   ctx.log(`${DEMO_USERS.length} accounts ready`);
 }

@@ -19,6 +19,7 @@ import {
   localDayRange,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { ErrorCode, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import { and, asc, eq, gt, gte, isNull, lt, or, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
 import * as z from 'zod';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
@@ -53,7 +54,7 @@ async function reportSite(ctx: ReportContext, f: ReportFilter): Promise<ReportSi
     .select({ id: site.id, name: site.name, timeZone: site.timeZone })
     .from(site)
     .where(and(eq(site.id, f.siteId as SiteId), eq(site.tenantId, ctx.tenantId)));
-  if (!row) throw new ApiError('not_found', 'No such site');
+  if (!row) throw new ApiError(ErrorCode.not_found, 'No such site');
   if (f.resourceId) {
     const [resource] = await ctx.tx
       .select({ id: bookableResource.id })
@@ -65,7 +66,7 @@ async function reportSite(ctx: ReportContext, f: ReportFilter): Promise<ReportSi
           eq(bookableResource.tenantId, ctx.tenantId),
         ),
       );
-    if (!resource) throw new ApiError('not_found', 'No such resource at this site');
+    if (!resource) throw new ApiError(ErrorCode.not_found, 'No such resource at this site');
   }
   return row;
 }
@@ -144,7 +145,7 @@ async function siteOpenMinutes(
       });
     }
   }
-  const closeOnHolidays = (await ctx.access.setting('booking.close_on_public_holidays', s.id))
+  const closeOnHolidays = (await ctx.access.setting(Setting.booking.close_on_public_holidays, s.id))
     .value;
   const closures = await ctx.tx
     .select()
@@ -192,7 +193,8 @@ async function activeDocks(ctx: ReportContext, s: ReportSite, f: ReportFilter): 
 export async function kpiReport(ctx: ReportContext, f: ReportFilter): Promise<KpiReport> {
   const s = await reportSite(ctx, f);
   const range = periodRange(f.from, f.to, s.timeZone as TimeZone);
-  const standgeldMinutes = (await ctx.access.setting('yard.standgeld_flag_minutes', s.id)).value;
+  const standgeldMinutes = (await ctx.access.setting(Setting.yard.standgeld_flag_minutes, s.id))
+    .value;
 
   const due = sql`${booking.startsAt} <= ${ctx.now} and not ${booking.walkIn} and not (${booking.status} = 'cancelled' and not ${booking.cancelledLate})`;
   const arrived = sql`${booking.checkedInAt} is not null and not ${booking.walkIn}`;
@@ -253,8 +255,8 @@ function decodeCursor(cursor: string) {
   try {
     return Cursor.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')));
   } catch {
-    throw new ApiError('validation_failed', 'Invalid cursor', {
-      issues: [{ path: ['cursor'], code: 'custom', message: 'Invalid cursor' }],
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid cursor', {
+      issues: [{ path: ['cursor'], code: ZodIssueCode.custom, message: 'Invalid cursor' }],
     });
   }
 }

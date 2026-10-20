@@ -1,5 +1,8 @@
+import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
 import { MAX_PERIOD_DAYS, ReportFilter, type VisitItem } from '@rampflow/shared/modules/report/api';
+import { KpiUnit, ReportExport } from '@rampflow/shared/modules/report/values';
 import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { BadgeSize, EmailCategory, Feature, Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
@@ -51,7 +54,7 @@ const Search = z.object({
 type Search = z.infer<typeof Search>;
 
 export const Route = createFileRoute('/t/$orgId/reports/')({
-  beforeLoad: guard({ permission: 'report.view' }),
+  beforeLoad: guard({ permission: Permission.report.view }),
   validateSearch: Search,
   component: ReportsPage,
 });
@@ -176,10 +179,10 @@ function ExportButtons({ orgId, filter }: { orgId: string; filter: ReportFilter 
   const { t } = useTranslation('report');
   const { has } = useAccess();
   const valid = ReportFilter.safeParse(filter).success;
-  const kpis = useMutation({ mutationFn: () => downloadCsv(orgId, 'kpis', filter) });
-  const visits = useMutation({ mutationFn: () => downloadCsv(orgId, 'visits', filter) });
+  const kpis = useMutation({ mutationFn: () => downloadCsv(orgId, ReportExport.kpis, filter) });
+  const visits = useMutation({ mutationFn: () => downloadCsv(orgId, ReportExport.visits, filter) });
   // Without report.export the buttons are absent: an operator cannot change the package.
-  if (!has('report.export')) return null;
+  if (!has(Feature.report.export)) return null;
   return (
     <>
       <Button
@@ -387,11 +390,11 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
       <TableCell>{v.carrierName}</TableCell>
       <TableCell>{v.resourceName}</TableCell>
       <TableCell>
-        {v.status === 'requested' ? null : (
+        {v.status === BookingStatus.requested ? null : (
           <BookingStatusBadge
             status={v.status}
-            size="sm"
-            label={t(($) => $.lifecycle.status[v.status], { ns: 'booking' })}
+            size={BadgeSize.sm}
+            label={t(($) => $.lifecycle.status[v.status], { ns: EmailCategory.booking })}
           />
         )}
       </TableCell>
@@ -399,9 +402,9 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         {v.punctuality ? (
           <StatusBadge
             meta={PUNCTUALITY[v.punctuality]}
-            size="sm"
-            label={t(($) => $.lifecycle.punctuality[v.punctuality ?? 'on_time'], {
-              ns: 'booking',
+            size={BadgeSize.sm}
+            label={t(($) => $.lifecycle.punctuality[v.punctuality ?? Punctuality.on_time], {
+              ns: EmailCategory.booking,
             })}
           />
         ) : null}
@@ -410,12 +413,14 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
       <TableCell className="whitespace-nowrap">{at(v.atDockAt)}</TableCell>
       <TableCell className="whitespace-nowrap">{at(v.doneAt)}</TableCell>
       <TableCell className="whitespace-nowrap">{at(v.departedAt)}</TableCell>
-      <TableCell className="text-right tabular-nums">{format(v.waitMinutes, 'minutes')}</TableCell>
       <TableCell className="text-right tabular-nums">
-        {format(v.dockDwellMinutes, 'minutes')}
+        {format(v.waitMinutes, KpiUnit.minutes)}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        {format(v.dockDwellMinutes, KpiUnit.minutes)}
       </TableCell>
       <TableCell className="pr-4 text-right tabular-nums">
-        {format(v.turnaroundMinutes, 'minutes')}
+        {format(v.turnaroundMinutes, KpiUnit.minutes)}
       </TableCell>
     </TableRow>
   );

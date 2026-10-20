@@ -11,8 +11,16 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DRIVER_LOCALES, SOURCE_LOCALE, STAFF_LOCALES } from '../packages/shared/src/locales.ts';
+import { SOURCE_LOCALE } from '../packages/shared/src/locales.ts';
 import { catalog } from '../packages/shared/src/registry.ts';
+import { isValueOf, values } from '../packages/shared/src/values/define.ts';
+import {
+  DerivedPart,
+  DriverLocale,
+  LabelPart,
+  LocaleSet,
+  StaffLocale,
+} from '../packages/shared/src/values/locales.ts';
 
 type Tree = { [key: string]: string | Tree };
 
@@ -26,7 +34,7 @@ const humanize = (path: string) => {
   const last =
     path
       .split('.')
-      .filter((p) => p !== 'label' && p !== 'description')
+      .filter((p) => !isValueOf(LabelPart, p))
       .at(-1) ?? path;
   const words = last.replaceAll('_', ' ');
   return `${words.charAt(0).toUpperCase()}${words.slice(1)}${path.endsWith('.description') ? '.' : ''}`;
@@ -61,7 +69,7 @@ const read = (path: string): Map<string, string> =>
 
 const stale: string[] = [];
 for (const m of catalog) {
-  const parts: Record<string, string[]> = {
+  const parts: Record<DerivedPart, string[]> = {
     module: ['name'],
     nav: m.nav.map((n) => n.id),
     entitlements: Object.entries(m.entitlements)
@@ -72,12 +80,14 @@ for (const m of catalog) {
       `${strip(m.id, key)}.description`,
     ]),
   };
-  const locales = m.locales === 'driver' ? DRIVER_LOCALES : STAFF_LOCALES;
-  for (const [part, keys] of Object.entries(parts)) {
+  const locales = m.locales === LocaleSet.driver ? values(DriverLocale) : values(StaffLocale);
+  for (const part of values(DerivedPart)) {
+    const keys = parts[part];
     if (keys.length === 0) continue;
     const en = read(join(LOCALES_DIR, SOURCE_LOCALE, m.id, `${part}.json`));
     // A module's name has no key of its own to humanize: its placeholder is the module id.
-    const placeholder = (key: string) => (part === 'module' ? humanize(m.id) : humanize(key));
+    const placeholder = (key: string) =>
+      part === DerivedPart.module ? humanize(m.id) : humanize(key);
     const source = new Map(keys.map((key) => [key, en.get(key) ?? placeholder(key)]));
     for (const locale of locales) {
       const path = join(LOCALES_DIR, locale, m.id, `${part}.json`);

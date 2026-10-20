@@ -3,9 +3,17 @@ import {
   type StaffInvitationView,
   type StaffList,
   type StaffMemberView,
-  type TenantRole,
   UpdateStaff,
 } from '@rampflow/shared/modules/core/api.staff';
+import {
+  Limit,
+  OrgKind,
+  Permission,
+  Setting,
+  StoryId,
+  type TenantRole,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import * as z from 'zod';
@@ -30,12 +38,12 @@ const MembershipParam = z.object({ membershipId: idSchema<'membership'>() });
 
 /** Mounted at `/api/t/:orgId/staff` by modules/index.ts (TN-01). */
 export const tenant = new Hono<AppEnv>()
-  .use(requirePermission('core.manage_staff'))
+  .use(requirePermission(Permission.core.manage_staff))
   .get(
     '/',
     op({
       id: 'core.staff.listStaff',
-      stories: ['TN-01'],
+      stories: [StoryId.TN_01],
       description:
         '`{ members: [{ membershipId, userId, name, email, role, siteIds, self }], invitations: [{ id, email, role, siteIds, expiresAt, expired }] }`',
       responses: { 200: type<StaffList>() },
@@ -50,29 +58,33 @@ export const tenant = new Hono<AppEnv>()
     '/invitations',
     op({
       id: 'core.staff.createInvitation',
-      stories: ['TN-01'],
+      stories: [StoryId.TN_01],
       description:
         'The limit `core.max_internal_users` counts members plus pending invitations. `{ email, role, siteIds? }` → 201 invitation. `siteIds` only for gate and dock operators (422 on `["siteIds"]` otherwise, on `["siteIds", i]` for another tenant\'s site). A pending invitation to the same email is replaced and does not count twice; a member\'s email answers 409 `conflict` `already_member`',
-      limits: ['core.max_internal_users'],
+      limits: [Limit.core.max_internal_users],
       responses: { 201: type<StaffInvitationView>() },
     }),
-    validate('json', InviteStaff),
+    validate(ValidationTarget.json, InviteStaff),
     async (c) => {
       const req = tenantRequest(c);
       const tx = c.var.db;
       const now = c.var.clock.now();
       const input = c.req.valid('json');
       const siteIds = await requireTenantSites(tx, req.tenantId, input.siteIds);
-      await withinLimit(tx, req.tenantId, req.entitlements, 'core.max_internal_users', (inner) =>
-        countInternalUsers(inner, req.tenantId, now, input.email),
+      await withinLimit(
+        tx,
+        req.tenantId,
+        req.entitlements,
+        Limit.core.max_internal_users,
+        (inner) => countInternalUsers(inner, req.tenantId, now, input.email),
       );
       const [named] = await tx.select({ name: org.name }).from(org).where(eq(org.id, req.tenantId));
-      const locale = await c.var.access.setting('i18n.default_locale', null);
+      const locale = await c.var.access.setting(Setting.i18n.default_locale, null);
       const row = await issueInvitation(
         tx,
         {
           orgId: req.tenantId,
-          orgKind: 'tenant',
+          orgKind: OrgKind.tenant,
           orgName: named?.name ?? '',
           email: input.email,
           role: input.role,
@@ -89,11 +101,11 @@ export const tenant = new Hono<AppEnv>()
     '/invitations/:invitationId',
     op({
       id: 'core.staff.deleteInvitation',
-      stories: ['TN-01'],
+      stories: [StoryId.TN_01],
       description: '204, the link stops working',
       responses: { 204: noBody },
     }),
-    validate('param', InvitationParam),
+    validate(ValidationTarget.param, InvitationParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { invitationId } = c.req.valid('param');
@@ -105,18 +117,18 @@ export const tenant = new Hono<AppEnv>()
     '/:membershipId',
     op({
       id: 'core.staff.updateMember',
-      stories: ['TN-01'],
+      stories: [StoryId.TN_01],
       description:
         '`{ role?, siteIds? }` → the member; a role without a site list drops its `membership_site` rows',
       responses: { 200: type<StaffMemberView>() },
     }),
-    validate('param', MembershipParam),
-    validate('json', UpdateStaff),
+    validate(ValidationTarget.param, MembershipParam),
+    validate(ValidationTarget.json, UpdateStaff),
     async (c) => {
       const { tenantId, userId } = tenantRequest(c);
       const view = await updateMember<TenantRole>(
         c.var.db,
-        { orgId: tenantId, orgKind: 'tenant' },
+        { orgId: tenantId, orgKind: OrgKind.tenant },
         c.req.valid('param').membershipId,
         c.req.valid('json'),
         userId,
@@ -128,11 +140,11 @@ export const tenant = new Hono<AppEnv>()
     '/:membershipId',
     op({
       id: 'core.staff.deleteMember',
-      stories: ['TN-01'],
+      stories: [StoryId.TN_01],
       description: "access ends on the member's next request",
       responses: { 204: noBody },
     }),
-    validate('param', MembershipParam),
+    validate(ValidationTarget.param, MembershipParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const org_ = { orgId: tenantId, orgKind: 'tenant' as const };

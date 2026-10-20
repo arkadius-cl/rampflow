@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { CookieName } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible } from '../support/auth.ts';
 import {
   attemptsOf,
@@ -82,9 +83,9 @@ test.describe('SF-04 Complete the briefing', () => {
     await answer(page, briefing, true);
     await confirmAs(page, 'Dana Driver');
     await expect(page.getByTestId('safety-valid')).toBeVisible();
-    expect((await page.context().cookies()).find((c) => c.name === 'rf_device')?.httpOnly).toBe(
-      true,
-    );
+    expect(
+      (await page.context().cookies()).find((c) => c.name === CookieName.rf_device)?.httpOnly,
+    ).toBe(true);
 
     const before = await writeCounts(w.A.tenantId);
     await page.goto(linkOf(w.A.bookings.otherSite.driverToken));
@@ -115,7 +116,9 @@ test.describe('SF-04 Complete the briefing', () => {
     await answer(page, briefing, true);
     await confirmAs(page, 'Gina Gatehouse');
     await expect(page.getByTestId('safety-valid')).toBeVisible();
-    expect((await page.context().cookies()).some((c) => c.name === 'rf_device')).toBe(false);
+    expect((await page.context().cookies()).some((c) => c.name === CookieName.rf_device)).toBe(
+      false,
+    );
     expect((await writeCounts(w.A.tenantId)).safetyPass).toBe(0);
   });
 });

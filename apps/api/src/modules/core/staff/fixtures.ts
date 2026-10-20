@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { TokenPurpose } from '@rampflow/shared/values';
 import { and, desc, eq } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import type { MembershipId, UserId } from '../../../db/ids.ts';
@@ -45,5 +46,5 @@ export async function sentInvitation(db: OwnerDb, email: string) {
     .from(outboxMessage)
     .where(and(eq(outboxMessage.toEmail, email), eq(outboxMessage.template, 'core.invitation')));
   const mail = mails.find((m) => (m.payload as { invitationId?: string }).invitationId === row.id);
-  return { row, mail, token: deriveToken('invitation', row.id) };
+  return { row, mail, token: deriveToken(TokenPurpose.invitation, row.id) };
 }

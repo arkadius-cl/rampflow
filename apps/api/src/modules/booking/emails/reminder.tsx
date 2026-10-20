@@ -1,6 +1,6 @@
 import { Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 import { type BookingEmailPayload, BookingFacts, CodeQr } from '../lifecycle/email-parts.tsx';
 import { example as confirmed } from './confirmed.tsx';
 
@@ -13,7 +13,7 @@ declare module '../../../kernel/outbox.ts' {
 export const category = 'booking';
 
 /** BK-07: `notify.reminder_hours_before` the start, to the booking contact. */
-export const render: EmailTemplate<BookingEmailPayload>['render'] = (p, t) => ({
+export const render: EmailTemplateModule<BookingEmailPayload>['render'] = (p, t) => ({
   subject: t('notify:email.reminder.subject', { code: p.code, site: p.site.name }),
   body: (
     <EmailLayout

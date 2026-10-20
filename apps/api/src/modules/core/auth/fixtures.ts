@@ -1,10 +1,11 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { StaffLocale } from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { hashToken, type Id, type UserId } from '../../../db/ids.ts';
 import { deriveToken } from '../../../kernel/tokens.ts';
 import { appUser, authToken } from '../schema.ts';
 import { hashPassword } from './password.ts';
-import type { AuthTokenKind } from './tokens.ts';
 
 // Test fixtures for accounts and emailed auth tokens, written as the owner.
 
@@ -28,7 +29,7 @@ export async function account(
     id,
     email,
     name: 'Ada Account',
-    locale: 'en',
+    locale: StaffLocale.en,
     passwordHash: await fixtureHash,
     emailVerifiedAt: o.verified === false ? null : new Date(),
     disabledAt: o.disabled ? new Date() : null,

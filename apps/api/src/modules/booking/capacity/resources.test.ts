@@ -1,4 +1,13 @@
+import {
+  ClosureKind,
+  ClosureSource,
+  Direction,
+  DockBookingKind,
+  DurationKind,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
+import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
 import { eq, inArray } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -41,7 +50,7 @@ describe('MD-03 bookable resources', () => {
     const first = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
         siteId: s.id,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: 'Tor 1',
         directions: ['inbound'],
         dockIds: [s.dockIds[0]],
@@ -51,7 +60,7 @@ describe('MD-03 bookable resources', () => {
     const second = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
         siteId: s.id,
-        kind: 'pool',
+        kind: ResourceKind.pool,
         name: 'Pool',
         directions: ['outbound'],
         dockIds: [...s.dockIds],
@@ -59,8 +68,8 @@ describe('MD-03 bookable resources', () => {
     });
     expect(second.status).toBe(409);
     expect(await error(second)).toMatchObject({
-      code: 'conflict',
-      details: { reason: 'dock_in_resource', dockIds: [s.dockIds[0]] },
+      code: ErrorCode.conflict,
+      details: { reason: ConflictReason.dock_in_resource, dockIds: [s.dockIds[0]] },
     });
     const put = await admin(w.A).put(`${capacity(w.A)}/resources/${s.resourceId}/docks`, {
       body: { dockIds: [s.dockIds[0]] },
@@ -73,7 +82,7 @@ describe('MD-03 bookable resources', () => {
     const two = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
         siteId: s.id,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: 'Tor',
         directions: ['inbound'],
         dockIds: [...s.dockIds],
@@ -83,7 +92,7 @@ describe('MD-03 bookable resources', () => {
     const foreignDock = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
         siteId: s.id,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: 'Tor',
         directions: ['inbound'],
         dockIds: [w.A.sites[0].dockIds[1]],
@@ -102,7 +111,7 @@ describe('MD-03 bookable resources', () => {
     const res = await admin(side).post(`${capacity(side)}/resources`, {
       body: {
         siteId: side.sites[0].id,
-        kind: 'pool',
+        kind: ResourceKind.pool,
         name: 'Neu',
         directions: ['inbound'],
         dockIds: [side.sites[0].dockIds[0]],
@@ -110,7 +119,7 @@ describe('MD-03 bookable resources', () => {
     });
     expect(res.status).toBe(403);
     expect(await error(res)).toMatchObject({
-      code: 'entitlement_required',
+      code: ErrorCode.entitlement_required,
       details: { key: 'booking.pools' },
     });
     const patch = await admin(side).patch(`${capacity(side)}/resources/${s.resourceId}`, {
@@ -120,7 +129,7 @@ describe('MD-03 bookable resources', () => {
     const single = await admin(side).post(`${capacity(side)}/resources`, {
       body: {
         siteId: side.sites[0].id,
-        kind: 'single',
+        kind: ResourceKind.single,
         name: 'Tor',
         directions: ['inbound'],
         dockIds: [side.sites[0].dockIds[0]],
@@ -184,7 +193,7 @@ describe('MD-03 bookable resources', () => {
     const closure = await admin(w.A).post(`${capacity(w.A)}/closures`, {
       body: {
         siteId: s.siteId,
-        kind: 'blocked',
+        kind: ClosureKind.blocked,
         startsLocal: '2026-11-02T12:00',
         endsLocal: '2026-11-02T13:00',
       },
@@ -211,7 +220,7 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
     const s = await capacitySite(w.A.tenantId, { docks: 2, hours: [[1, '06:00', '08:00']] });
     const [d1, d2] = s.dockIds as [DockId, DockId];
 
-    const toSingle = await book(d1, { as: 'single', directions: ['outbound'] });
+    const toSingle = await book(d1, { as: DockBookingKind.single, directions: ['outbound'] });
     expect(toSingle.status).toBe(200);
     const single = (await resourceOf(toSingle))?.id as string;
     expect(await holders(s.siteId)).toEqual({
@@ -219,18 +228,20 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
       [single]: { active: true, dockIds: [d1] },
     });
 
-    expect((await book(d1, { as: 'pool', resourceId: s.resourceId })).status).toBe(200);
+    expect((await book(d1, { as: DockBookingKind.pool, resourceId: s.resourceId })).status).toBe(
+      200,
+    );
     expect(await holders(s.siteId)).toEqual({
       [s.resourceId]: { active: true, dockIds: [d1, d2].sort() },
       [single]: { active: false, dockIds: [] },
     });
 
-    const again = (await (await book(d1, { as: 'single' })).json()) as {
+    const again = (await (await book(d1, { as: DockBookingKind.single })).json()) as {
       resource: { id: string; directions: string[] };
     };
     expect(again.resource).toMatchObject({ id: single, directions: ['outbound'] });
 
-    const none = await book(d1, { as: 'none' });
+    const none = await book(d1, { as: DockBookingKind.none });
     expect(await resourceOf(none)).toBeNull();
     expect(await holders(s.siteId)).toEqual({
       [s.resourceId]: { active: true, dockIds: [d2] },
@@ -241,11 +252,11 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
   it('keeps both docks when two admins move docks into the same pool at once', async () => {
     const s = await capacitySite(w.A.tenantId, { docks: 3, hours: [] });
     const [d1, d2, d3] = s.dockIds as [DockId, DockId, DockId];
-    await book(d2, { as: 'none' });
-    await book(d3, { as: 'none' });
+    await book(d2, { as: DockBookingKind.none });
+    await book(d3, { as: DockBookingKind.none });
     const both = await Promise.all([
-      book(d2, { as: 'pool', resourceId: s.resourceId }),
-      book(d3, { as: 'pool', resourceId: s.resourceId }),
+      book(d2, { as: DockBookingKind.pool, resourceId: s.resourceId }),
+      book(d3, { as: DockBookingKind.pool, resourceId: s.resourceId }),
     ]);
     expect(both.map((r) => r.status)).toEqual([200, 200]);
     expect((await holders(s.siteId))[s.resourceId]?.dockIds).toEqual([d1, d2, d3].sort());
@@ -255,9 +266,11 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
     const s = await capacitySite(w.A.tenantId, { docks: 2, hours: [] });
     const other = await capacitySite(w.A.tenantId, { docks: 2, hours: [] });
     const [d1, d2] = s.dockIds as [DockId, DockId];
-    const single = await resourceOf(await book(d2, { as: 'single', directions: ['inbound'] }));
+    const single = await resourceOf(
+      await book(d2, { as: DockBookingKind.single, directions: ['inbound'] }),
+    );
     for (const resourceId of [other.resourceId, single?.id]) {
-      const res = await book(d1, { as: 'pool', resourceId });
+      const res = await book(d1, { as: DockBookingKind.pool, resourceId });
       expect(res.status).toBe(422);
       expect((await error(res)).details?.issues).toEqual([
         expect.objectContaining({ path: ['resourceId'] }),
@@ -308,7 +321,7 @@ describe('MD-04 hours and closures', () => {
     const created = await admin(w.B).post(`${capacity(w.B)}/closures`, {
       body: {
         siteId: s.id,
-        kind: 'closed',
+        kind: ClosureKind.closed,
         startsLocal: '2026-12-24T00:00',
         endsLocal: '2026-12-25T00:00',
         reason: 'Heiligabend',
@@ -334,7 +347,10 @@ describe('MD-04 hours and closures', () => {
     const [christmas] = (
       (await list.json()) as { items: { id: string; holidayName: string; source: string }[] }
     ).items;
-    expect(christmas).toMatchObject({ source: 'holiday', holidayName: '1. Weihnachtstag' });
+    expect(christmas).toMatchObject({
+      source: ClosureSource.holiday,
+      holidayName: '1. Weihnachtstag',
+    });
 
     expect((await admin(w.B).post(`${capacity(w.B)}/closures/${manual.id}/reopen`)).status).toBe(
       409,
@@ -356,13 +372,13 @@ describe('MD-05 load types', () => {
   const body = (siteId: string, duration: unknown, resourceIds: string[] = []) => ({
     siteId,
     name: { de: 'Kühlware', en: 'Chilled' },
-    direction: 'inbound',
+    direction: Direction.inbound,
     duration,
     bufferMinutes: 15,
     resourceIds,
   });
   const tiers = {
-    kind: 'tiers',
+    kind: DurationKind.tiers,
     tiers: [
       { upTo: 10, minutes: 30 },
       { upTo: null, minutes: 45 },
@@ -396,11 +412,11 @@ describe('MD-05 load types', () => {
     });
     expect(denied.status).toBe(403);
     expect(await error(denied)).toMatchObject({
-      code: 'entitlement_required',
+      code: ErrorCode.entitlement_required,
       details: { key: 'booking.duration_rules' },
     });
     const fixed = await admin(side).post(`${capacity(side)}/load-types`, {
-      body: body(s.siteId, { kind: 'fixed', minutes: 20 }),
+      body: body(s.siteId, { kind: DurationKind.fixed, minutes: 20 }),
     });
     expect(fixed.status).toBe(201);
   });
@@ -408,11 +424,14 @@ describe('MD-05 load types', () => {
   it('rejects durations over 720 minutes, buffers over 240, and resources of another site', async () => {
     const s = w.B.sites[0];
     const post = (b: unknown) => admin(w.B).post(`${capacity(w.B)}/load-types`, { body: b });
-    expect((await post(body(s.id, { kind: 'fixed', minutes: 725 }))).status).toBe(422);
+    expect((await post(body(s.id, { kind: DurationKind.fixed, minutes: 725 }))).status).toBe(422);
     expect(
-      (await post({ ...body(s.id, { kind: 'fixed', minutes: 60 }), bufferMinutes: 245 })).status,
+      (await post({ ...body(s.id, { kind: DurationKind.fixed, minutes: 60 }), bufferMinutes: 245 }))
+        .status,
     ).toBe(422);
-    const other = await post(body(s.id, { kind: 'fixed', minutes: 60 }, [w.B.sites[1].resourceId]));
+    const other = await post(
+      body(s.id, { kind: DurationKind.fixed, minutes: 60 }, [w.B.sites[1].resourceId]),
+    );
     expect(other.status).toBe(422);
     expect((await error(other)).details?.issues).toEqual([
       expect.objectContaining({ path: ['resourceIds', 0] }),

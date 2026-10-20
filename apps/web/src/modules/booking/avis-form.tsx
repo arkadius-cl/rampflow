@@ -1,22 +1,28 @@
+import type { SettingKey, SettingValue } from '@rampflow/shared';
 import {
-  DRIVER_LOCALES,
-  type DriverLocale,
-  type SettingKey,
-  type SettingValue,
-} from '@rampflow/shared';
-import {
-  ADR_CLASSES,
   type Avis,
   AvisInput,
   type AvisRules,
   type AvisView,
-  LOAD_UNIT_TYPES,
-  type LoadUnitType,
-  PACKING_GROUPS,
-  VEHICLE_TYPES,
-  type VehicleType,
 } from '@rampflow/shared/modules/avis/avis';
-import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
+import {
+  AdrClass,
+  LoadUnitType,
+  PackingGroup,
+  ReferenceType,
+  VehicleType,
+} from '@rampflow/shared/modules/avis/values';
+import type { PutAvis } from '@rampflow/shared/modules/booking/api.staff';
+import { Direction } from '@rampflow/shared/modules/booking/values';
+import {
+  DisplayNamesType,
+  DriverLocale,
+  ErrorCode,
+  Setting,
+  values,
+  YesNo,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
 import {
@@ -54,17 +60,13 @@ import { cn } from '@/lib/utils';
 // holds what inputs hold (strings); `toAvisInput` turns it into the API's AvisInput, and the
 // resolver validates with the shared zod schema, so form paths equal API paths below `avis`.
 
-type ReferenceType = (typeof REFERENCE_TYPES)[number];
-type AdrClass = (typeof ADR_CLASSES)[number];
-type PackingGroup = (typeof PACKING_GROUPS)[number];
-
 export interface AvisFormValues {
   references: { type: ReferenceType; value: string }[];
   counterpartyName: string;
   loadUnits: { type: LoadUnitType; quantity: string; label: string; stackable?: boolean }[];
   palletPositions: string;
   grossWeightKg: string;
-  palletExchange: '' | 'yes' | 'no';
+  palletExchange: YesNo | '';
   vehicle: { type: VehicleType | ''; plate: string; plateCountry: string; trailerPlate: string };
   driver: { name: string; phone: string; locale: DriverLocale | '' };
   dangerousGoods: {
@@ -97,9 +99,9 @@ const emptyDangerousGoodsItem = (): AvisFormValues['dangerousGoods']['items'][nu
 
 export function emptyAvis(): AvisFormValues {
   return {
-    references: [{ type: 'purchase_order', value: '' }],
+    references: [{ type: ReferenceType.purchase_order, value: '' }],
     counterpartyName: '',
-    loadUnits: [{ type: 'eur_pallet', quantity: '', label: '' }],
+    loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: '', label: '' }],
     palletPositions: '',
     grossWeightKg: '',
     palletExchange: '',
@@ -125,7 +127,7 @@ export function avisFormValues(avis: AvisView | null): AvisFormValues {
     })),
     palletPositions: text(avis.palletPositions),
     grossWeightKg: text(avis.grossWeightKg),
-    palletExchange: avis.palletExchange === null ? '' : avis.palletExchange ? 'yes' : 'no',
+    palletExchange: avis.palletExchange === null ? '' : avis.palletExchange ? YesNo.yes : YesNo.no,
     vehicle: {
       type: avis.vehicle.type ?? '',
       plate: text(avis.vehicle.plate),
@@ -166,7 +168,7 @@ export function toAvisInput(v: AvisFormValues): AvisInput {
     })),
     palletPositions: numberOrNull(v.palletPositions),
     grossWeightKg: numberOrNull(v.grossWeightKg),
-    palletExchange: v.palletExchange === '' ? null : v.palletExchange === 'yes',
+    palletExchange: v.palletExchange === '' ? null : v.palletExchange === YesNo.yes,
     vehicle: {
       type: v.vehicle.type === '' ? null : v.vehicle.type,
       plate: orNull(v.vehicle.plate),
@@ -239,6 +241,9 @@ export const avisResolver: Resolver<AvisFormValues, unknown, Avis> = async (valu
   return { values: {}, errors: nest(flat) };
 };
 
+/** Where the avis sits in a request body, and so in the paths of its 422 issues. */
+const AVIS_KEY = 'avis' satisfies keyof PutAvis;
+
 /**
  * Puts the 422 issues under `avis` of an API answer on the avis form's fields (AV-01). Returns
  * whether there were any.
@@ -247,8 +252,8 @@ export function applyAvisIssues(
   error: unknown,
   form: UseFormReturn<AvisFormValues, unknown, Avis>,
 ) {
-  if (!(error instanceof ApiFailure) || error.code !== 'validation_failed') return false;
-  const avisIssues = error.issues.filter((i) => i.path[0] === 'avis');
+  if (!(error instanceof ApiFailure) || error.code !== ErrorCode.validation_failed) return false;
+  const avisIssues = error.issues.filter((i) => i.path[0] === AVIS_KEY);
   for (const issue of avisIssues) {
     form.setError(avisErrorPath(issue.path.slice(1)) as FieldPath<AvisFormValues>, {
       type: issue.code,
@@ -258,39 +263,55 @@ export function applyAvisIssues(
   return avisIssues.length > 0;
 }
 
+/** Fields whose too-small number means "must be positive". */
+const POSITIVE_FIELDS = new Set(['quantity', 'grossWeightKg']);
+/** A choice, whose invalid type means no answer rather than a wrong number. */
+const CHOICE_FIELDS = new Set(['adrClass']);
+
+type IssueType = string | number | undefined;
+
 /** The message of a field error in the UI language, by issue code and field. */
 export function useAvisMessage() {
   const { t } = useTranslation('booking');
   const { t: tAvis } = useTranslation('avis');
+  const plate = (type: IssueType) =>
+    type === ZodIssueCode.invalid_format ? t(($) => $.plan.validation.plate) : undefined;
+  // A field's own message, which wins over the messages every field shares.
+  const own = new Map<string, (type: IssueType) => string | undefined>([
+    ['plate', plate],
+    ['trailerPlate', plate],
+    [
+      'phone',
+      (type) =>
+        type === ZodIssueCode.invalid_format ? tAvis(($) => $.avis.hint.phone) : undefined,
+    ],
+    [
+      'unNumber',
+      (type) =>
+        type === ZodIssueCode.invalid_format ? tAvis(($) => $.avis.hint.unNumber) : undefined,
+    ],
+    ['plateCountry', () => t(($) => $.plan.validation.country)],
+    ['label', () => tAvis(($) => $.avis.hint.otherLabel)],
+    [
+      'maxC',
+      (type) =>
+        type === ZodIssueCode.custom ? t(($) => $.plan.validation.temperature_order) : undefined,
+    ],
+    [
+      'references',
+      (type) =>
+        type === ZodIssueCode.custom ? t(($) => $.plan.validation.reference_type) : undefined,
+    ],
+  ]);
   return (error: { type?: string | number } | undefined, field: string): string | undefined => {
     if (!error) return undefined;
-    switch (field) {
-      case 'plate':
-      case 'trailerPlate':
-        if (error.type === 'invalid_format') return t(($) => $.plan.validation.plate);
-        break;
-      case 'phone':
-        if (error.type === 'invalid_format') return tAvis(($) => $.avis.hint.phone);
-        break;
-      case 'unNumber':
-        if (error.type === 'invalid_format') return tAvis(($) => $.avis.hint.unNumber);
-        break;
-      case 'plateCountry':
-        return t(($) => $.plan.validation.country);
-      case 'label':
-        return tAvis(($) => $.avis.hint.otherLabel);
-      case 'maxC':
-        if (error.type === 'custom') return t(($) => $.plan.validation.temperature_order);
-        break;
-      case 'references':
-        if (error.type === 'custom') return t(($) => $.plan.validation.reference_type);
-        break;
-    }
-    if (error.type === 'custom') return t(($) => $.plan.validation.required_here);
-    if (error.type === 'too_big') return t(($) => $.plan.validation.too_big);
-    if (error.type === 'too_small' && (field === 'quantity' || field === 'grossWeightKg'))
+    const specific = own.get(field)?.(error.type);
+    if (specific) return specific;
+    if (error.type === ZodIssueCode.custom) return t(($) => $.plan.validation.required_here);
+    if (error.type === ZodIssueCode.too_big) return t(($) => $.plan.validation.too_big);
+    if (error.type === ZodIssueCode.too_small && POSITIVE_FIELDS.has(field))
       return t(($) => $.plan.validation.positive);
-    if (error.type === 'invalid_type' && field !== 'adrClass')
+    if (error.type === ZodIssueCode.invalid_type && !CHOICE_FIELDS.has(field))
       return t(($) => $.plan.validation.number);
     return t(($) => $.plan.validation.required);
   };
@@ -303,7 +324,7 @@ export function AvisFields({
   disabled,
 }: {
   form: UseFormReturn<AvisFormValues, unknown, Avis>;
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
   /** Which fields the site requires on top of the schema (AV-01 settings). */
   rules: AvisRules;
   disabled?: boolean;
@@ -313,8 +334,8 @@ export function AvisFields({
   const message = useAvisMessage();
   const id = useId();
   const locale = useLocale();
-  const languageName = new Intl.DisplayNames([locale], { type: 'language' });
-  const regionName = new Intl.DisplayNames([locale], { type: 'region' });
+  const languageName = new Intl.DisplayNames([locale], { type: DisplayNamesType.language });
+  const regionName = new Intl.DisplayNames([locale], { type: DisplayNamesType.region });
   const control = form.control;
   const references = useFieldArray({ control, name: 'references' });
   const loadUnits = useFieldArray({ control, name: 'loadUnits' });
@@ -332,7 +353,7 @@ export function AvisFields({
     o: {
       description?: string;
       mono?: boolean;
-      inputMode?: 'decimal' | 'numeric' | 'tel';
+      inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
       className?: string;
     } = {},
   ) => (
@@ -388,7 +409,7 @@ export function AvisFields({
                     disabled={disabled}
                     aria-label={t(($) => $.plan.avis.reference_type, { n: i + 1 })}
                   >
-                    {REFERENCE_TYPES.map((type) => (
+                    {values(ReferenceType).map((type) => (
                       <NativeSelectOption key={type} value={type}>
                         {tAvis(($) => $.avis.referenceType[type])}
                       </NativeSelectOption>
@@ -432,7 +453,7 @@ export function AvisFields({
           size="sm"
           className="w-fit"
           disabled={disabled || references.fields.length >= 20}
-          onClick={() => references.append({ type: 'delivery_note', value: '' })}
+          onClick={() => references.append({ type: ReferenceType.delivery_note, value: '' })}
         >
           <PlusIcon />
           {t(($) => $.plan.avis.add_reference)}
@@ -441,7 +462,7 @@ export function AvisFields({
 
       {textField(
         'counterpartyName',
-        direction === 'inbound'
+        direction === Direction.inbound
           ? tAvis(($) => $.avis.field.counterpartyInbound)
           : tAvis(($) => $.avis.field.counterpartyOutbound),
       )}
@@ -464,7 +485,7 @@ export function AvisFields({
                     disabled={disabled}
                     aria-label={t(($) => $.plan.avis.unit_type, { n: i + 1 })}
                   >
-                    {LOAD_UNIT_TYPES.map((type) => (
+                    {values(LoadUnitType).map((type) => (
                       <NativeSelectOption key={type} value={type}>
                         {tAvis(($) => $.avis.loadUnitType[type])}
                       </NativeSelectOption>
@@ -489,7 +510,7 @@ export function AvisFields({
                   </Field>
                 )}
               />
-              {unitRows[i]?.type === 'other' ? (
+              {unitRows[i]?.type === LoadUnitType.other ? (
                 <Controller
                   name={`loadUnits.${i}.label`}
                   control={control}
@@ -530,7 +551,9 @@ export function AvisFields({
           size="sm"
           className="w-fit"
           disabled={disabled || loadUnits.fields.length >= 20}
-          onClick={() => loadUnits.append({ type: 'eur_pallet', quantity: '', label: '' })}
+          onClick={() =>
+            loadUnits.append({ type: LoadUnitType.eur_pallet, quantity: '', label: '' })
+          }
         >
           <PlusIcon />
           {t(($) => $.plan.avis.add_unit)}
@@ -594,7 +617,7 @@ export function AvisFields({
                   disabled={disabled}
                 >
                   <NativeSelectOption value="">{t(($) => $.plan.avis.unknown)}</NativeSelectOption>
-                  {VEHICLE_TYPES.map((type) => (
+                  {values(VehicleType).map((type) => (
                     <NativeSelectOption key={type} value={type}>
                       {tAvis(($) => $.avis.vehicleType[type])}
                     </NativeSelectOption>
@@ -660,7 +683,7 @@ export function AvisFields({
                   disabled={disabled}
                 >
                   <NativeSelectOption value="">{t(($) => $.plan.avis.unknown)}</NativeSelectOption>
-                  {DRIVER_LOCALES.map((code) => (
+                  {values(DriverLocale).map((code) => (
                     <NativeSelectOption key={code} value={code}>
                       {languageName.of(code) ?? code}
                     </NativeSelectOption>
@@ -720,7 +743,7 @@ export function AvisFields({
                         aria-invalid={fieldState.invalid}
                       >
                         <NativeSelectOption value="" />
-                        {ADR_CLASSES.map((c) => (
+                        {values(AdrClass).map((c) => (
                           <NativeSelectOption key={c} value={c}>
                             {c}
                           </NativeSelectOption>
@@ -745,7 +768,7 @@ export function AvisFields({
                         disabled={disabled}
                       >
                         <NativeSelectOption value="" />
-                        {PACKING_GROUPS.map((g) => (
+                        {values(PackingGroup).map((g) => (
                           <NativeSelectOption key={g} value={g}>
                             {g}
                           </NativeSelectOption>
@@ -849,9 +872,9 @@ export function useAvisRules(siteId: string): AvisRules {
     }
   };
   return {
-    requiredReferenceTypes: read('avis.required_reference_types', []),
-    requireGrossWeight: read('avis.require_gross_weight', false),
-    requireDriverPhone: read('avis.require_driver_phone', false),
-    requirePlate: read('booking.require_plate', false),
+    requiredReferenceTypes: read(Setting.avis.required_reference_types, []),
+    requireGrossWeight: read(Setting.avis.require_gross_weight, false),
+    requireDriverPhone: read(Setting.avis.require_driver_phone, false),
+    requirePlate: read(Setting.booking.require_plate, false),
   };
 }

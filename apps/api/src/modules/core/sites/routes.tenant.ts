@@ -10,6 +10,7 @@ import {
   UpdateHall,
   UpdateSite,
 } from '@rampflow/shared/modules/core/api.sites';
+import { Limit, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
@@ -46,7 +47,7 @@ export const tenant = new Hono<AppEnv>()
     '/',
     op({
       id: 'core.sites.listSites',
-      stories: ['MD-01'],
+      stories: [StoryId.MD_01],
       description:
         'a site-limited operator sees only its sites; `{ items, usage: { sites, docks } }` counts active sites and active and maintenance docks against `core.max_sites` and `core.max_docks`',
       responses: {},
@@ -65,13 +66,13 @@ export const tenant = new Hono<AppEnv>()
     '/',
     op({
       id: 'core.sites.createSite',
-      stories: ['MD-01', 'MD-05'],
+      stories: [StoryId.MD_01, StoryId.MD_05],
       description: 'seeds the three load types, imports holidays',
-      limits: ['core.max_sites'],
+      limits: [Limit.core.max_sites],
       responses: { 201: type<SiteView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('json', CreateSite),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.json, CreateSite),
     async (c) => {
       const row = await createSite(c.var.db, tenantRequest(c), c.var.clock, c.req.valid('json'));
       return c.json(siteView(row), 201);
@@ -81,11 +82,11 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId',
     op({
       id: 'core.sites.getSite',
-      stories: ['MD-01'],
+      stories: [StoryId.MD_01],
       description: 'One site of the tenant; 404 for a site of another tenant.',
       responses: { 200: type<SiteView>() },
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const row = await requireSite(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -96,14 +97,14 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId',
     op({
       id: 'core.sites.updateSite',
-      stories: ['MD-01'],
+      stories: [StoryId.MD_01],
       description: 'Checks `core.max_sites` when activating. Unknown zone answers 422',
-      limits: ['core.max_sites'],
+      limits: [Limit.core.max_sites],
       responses: { 200: type<SiteView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('param', SiteParam),
-    validate('json', UpdateSite),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, UpdateSite),
     async (c) => {
       const { siteId } = c.req.valid('param');
       const row = await updateSite(
@@ -120,11 +121,11 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/halls',
     op({
       id: 'core.sites.listHalls',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description: 'The halls of a site.',
       responses: {},
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const items = await listHalls(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -135,13 +136,13 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/halls',
     op({
       id: 'core.sites.createHall',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description: 'Adds a hall to a site.',
       responses: { 201: type<HallView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('param', SiteParam),
-    validate('json', CreateHall),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, CreateHall),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { siteId } = c.req.valid('param');
@@ -152,13 +153,13 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/halls/:hallId',
     op({
       id: 'core.sites.updateHall',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description: 'Renames or reorders a hall.',
       responses: { 200: type<HallView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('param', HallParam),
-    validate('json', UpdateHall),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.param, HallParam),
+    validate(ValidationTarget.json, UpdateHall),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { siteId, hallId } = c.req.valid('param');
@@ -170,11 +171,11 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/docks',
     op({
       id: 'core.sites.listDocks',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description: 'The docks of a site.',
       responses: {},
     }),
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const items = await listDocks(c.var.db, tenantId, c.req.valid('param').siteId);
@@ -185,15 +186,15 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/docks',
     op({
       id: 'core.sites.createDock',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description:
         '409 `conflict` with reason `duplicate_code`; a hall of another site answers 422',
-      limits: ['core.max_docks'],
+      limits: [Limit.core.max_docks],
       responses: { 201: type<DockView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('param', SiteParam),
-    validate('json', CreateDock),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.param, SiteParam),
+    validate(ValidationTarget.json, CreateDock),
     async (c) => {
       const { siteId } = c.req.valid('param');
       const dock = await createDock(c.var.db, tenantRequest(c), siteId, c.req.valid('json'));
@@ -204,14 +205,14 @@ export const tenant = new Hono<AppEnv>()
     '/:siteId/docks/:dockId',
     op({
       id: 'core.sites.updateDock',
-      stories: ['MD-02'],
+      stories: [StoryId.MD_02],
       description: 'Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`.',
-      limits: ['core.max_docks'],
+      limits: [Limit.core.max_docks],
       responses: { 200: type<DockView>() },
     }),
-    requirePermission('core.manage_sites'),
-    validate('param', DockParam),
-    validate('json', UpdateDock),
+    requirePermission(Permission.core.manage_sites),
+    validate(ValidationTarget.param, DockParam),
+    validate(ValidationTarget.json, UpdateDock),
     async (c) => {
       const { siteId, dockId } = c.req.valid('param');
       const dock = await updateDock(

@@ -1,3 +1,4 @@
+import { TokenExchangeStatus } from '@rampflow/shared/values';
 import { useEffect, useState } from 'react';
 
 // Emailed tokens travel only in the URL fragment (/invite#<token>, ADR-0003, ADR-0011): the
@@ -26,16 +27,16 @@ export function useFragmentToken(): string | null {
 const exchanges = new Map<string, Promise<unknown>>();
 
 export type Exchange<T> =
-  | { status: 'pending' }
-  | { status: 'done'; value: T }
-  | { status: 'failed'; error: unknown };
+  | { status: typeof TokenExchangeStatus.pending }
+  | { status: typeof TokenExchangeStatus.done; value: T }
+  | { status: typeof TokenExchangeStatus.failed; error: unknown };
 
 /**
  * Posts a single-use token exactly once per page load, however often the component mounts:
  * a second POST of a used token would answer 401 after the first one already succeeded.
  */
 export function useExchangeOnce<T>(key: string | null, exchange: () => Promise<T>): Exchange<T> {
-  const [state, setState] = useState<Exchange<T>>({ status: 'pending' });
+  const [state, setState] = useState<Exchange<T>>({ status: TokenExchangeStatus.pending });
   // biome-ignore lint/correctness/useExhaustiveDependencies: the exchange belongs to the key; a new closure for the same key must not post again
   useEffect(() => {
     if (!key) return;
@@ -46,8 +47,8 @@ export function useExchangeOnce<T>(key: string | null, exchange: () => Promise<T
     }
     let live = true;
     promise.then(
-      (value) => live && setState({ status: 'done', value }),
-      (error: unknown) => live && setState({ status: 'failed', error }),
+      (value) => live && setState({ status: TokenExchangeStatus.done, value }),
+      (error: unknown) => live && setState({ status: TokenExchangeStatus.failed, error }),
     );
     return () => {
       live = false;

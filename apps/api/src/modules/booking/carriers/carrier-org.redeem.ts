@@ -1,5 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { StaffLocale } from '@rampflow/shared';
+import type { CarrierRedeemActor } from '@rampflow/shared/modules/booking/values';
+import {
+  CarrierRole,
+  ErrorCode,
+  ForbiddenReason,
+  OrgKind,
+  Role,
+  ScopeParty,
+  type StaffLocale,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import type { CarrierId, MembershipId, TenantId, UserId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -18,7 +28,10 @@ import { linkCarrier } from './links.ts';
 
 /** The token holder proved access to `email`, so the answer names it for the sign-in form. */
 const signInRequired = (email: string) =>
-  new ApiError('unauthorized', 'Sign in to continue', { reason: 'sign_in_required', email });
+  new ApiError(ErrorCode.unauthorized, 'Sign in to continue', {
+    reason: UnauthorizedReason.sign_in_required,
+    email,
+  });
 
 export interface NewAccount {
   name: string;
@@ -79,35 +92,35 @@ export async function carrierOfUser(
   userId: UserId,
   company: { name: string; country: string | null },
 ): Promise<CarrierId> {
-  const memberships = await asScope(tx, { party: 'user', userId }, (inner) =>
+  const memberships = await asScope(tx, { party: ScopeParty.user, userId }, (inner) =>
     inner
       .select({ orgId: membership.orgId, role: membership.role })
       .from(membership)
       .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'carrier')))
       .orderBy(asc(membership.createdAt)),
   );
-  const administered = memberships.find((m) => m.role === 'carrier_admin');
+  const administered = memberships.find((m) => m.role === Role.carrier_admin);
   if (administered) return administered.orgId as CarrierId;
   if (memberships.length > 0) {
-    throw new ApiError('forbidden', 'Only a carrier admin can link the company', {
-      reason: 'carrier_admin_required',
+    throw new ApiError(ErrorCode.forbidden, 'Only a carrier admin can link the company', {
+      reason: ForbiddenReason.carrier_admin_required,
     });
   }
 
   const carrierId = randomUUID() as CarrierId;
   await tx
     .insert(org)
-    .values({ id: carrierId, kind: 'carrier', name: company.name, country: company.country });
+    .values({ id: carrierId, kind: OrgKind.carrier, name: company.name, country: company.country });
   await asScope(
     tx,
-    { party: 'carrier', carrierId, userId, role: 'carrier_admin' },
+    { party: ScopeParty.carrier, carrierId, userId, role: CarrierRole.carrier_admin },
     async (inner) => {
       await inner.insert(membership).values({
         id: randomUUID() as MembershipId,
         userId,
         orgId: carrierId,
         orgKind: 'carrier',
-        role: 'carrier_admin',
+        role: Role.carrier_admin,
       });
     },
   );
@@ -117,23 +130,30 @@ export async function carrierOfUser(
 /** Writes the link as the tenant, with a system actor named after the token kind. */
 export function linkAsTenant(
   tx: Tx,
-  job: 'carrier_invitation' | 'registration',
+  job: CarrierRedeemActor,
   o: Parameters<typeof linkCarrier>[1] & { tenantId: TenantId },
 ): Promise<void> {
   return asScope(
     tx,
-    { party: 'tenant', tenantId: o.tenantId, siteIds: 'all', actor: systemActor(job) },
+    { party: ScopeParty.tenant, tenantId: o.tenantId, siteIds: 'all', actor: systemActor(job) },
     (inner) => linkCarrier(inner, o),
   );
 }
 
-type RedeemJob = 'carrier_invitation' | 'registration';
-
-const asTenant = <T>(tx: Tx, job: RedeemJob, tenantId: TenantId, fn: (inner: Tx) => Promise<T>) =>
-  asScope(tx, { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) }, fn);
+const asTenant = <T>(
+  tx: Tx,
+  job: CarrierRedeemActor,
+  tenantId: TenantId,
+  fn: (inner: Tx) => Promise<T>,
+) =>
+  asScope(tx, { party: ScopeParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) }, fn);
 
 /** The tenant's name, read as the tenant: the token party sees no org. */
-export async function tenantName(tx: Tx, job: RedeemJob, tenantId: TenantId): Promise<string> {
+export async function tenantName(
+  tx: Tx,
+  job: CarrierRedeemActor,
+  tenantId: TenantId,
+): Promise<string> {
   const [row] = await asTenant(tx, job, tenantId, (inner) =>
     inner.select({ name: org.name }).from(org).where(eq(org.id, tenantId)),
   );
@@ -143,7 +163,7 @@ export async function tenantName(tx: Tx, job: RedeemJob, tenantId: TenantId): Pr
 /** The tenant's logo while `brand.logo` is on (TN-05), read as the tenant like its name. */
 export function tenantLogoUrl(
   tx: Tx,
-  job: RedeemJob,
+  job: CarrierRedeemActor,
   tenantId: TenantId,
   now: Date,
 ): Promise<string | null> {

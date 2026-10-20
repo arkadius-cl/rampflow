@@ -1,3 +1,7 @@
+export { LocaleSet } from './values/locales.ts';
+export { PackageId } from './values/packages.ts';
+export { OrgKind, Role } from './values/roles.ts';
+export { SettingScope } from './values/settings.ts';
 export const APP_NAME = 'rampflow';
 
 export { navFor, permissionsFor, rolesHeldBy, type VisibleNavItem } from './contract/access.ts';
@@ -13,16 +17,10 @@ export {
   type AnyModuleManifest,
   defineModule,
   type Limit,
-  type LocaleSet,
   type ModuleManifest,
   type NavItem,
-  type OrgParty,
   ROLE_INCLUDES,
   ROLE_PARTY,
-  ROLES,
-  type Role,
-  SETTING_SCOPES,
-  type SettingScope,
 } from './contract/module.ts';
 export type { Result } from './contract/result.ts';
 export {
@@ -37,6 +35,5 @@ export {
 } from './contract/settings.ts';
 export { validateCatalog } from './contract/validate.ts';
 export * from './locales.ts';
-export { REFERENCE_TYPES } from './modules/avis/manifest.ts';
-export { PACKAGE_IDS, type PackageId, packages } from './packages.ts';
+export { packages } from './packages.ts';
 export * from './registry.ts';

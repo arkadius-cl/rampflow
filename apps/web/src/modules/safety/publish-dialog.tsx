@@ -1,4 +1,5 @@
 import type { VersionDetail } from '@rampflow/shared/modules/safety/api.authoring';
+import { ConflictReason } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CircleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -54,13 +55,14 @@ export function PublishDialog({
       toast.success(t(($) => $.editor.publish.done, { version: published.version }));
     },
     onError: (e) => {
-      if (e instanceof ApiFailure && e.reason !== 'quiz_incomplete')
+      if (e instanceof ApiFailure && e.conflictReason !== ConflictReason.quiz_incomplete)
         toast.error(errorText(tCore, e));
     },
   });
   const failure = publish.error instanceof ApiFailure ? publish.error : null;
   const incomplete =
-    failure?.reason === 'quiz_incomplete' && Array.isArray(failure.details.locales)
+    failure?.conflictReason === ConflictReason.quiz_incomplete &&
+    Array.isArray(failure.details.locales)
       ? (failure.details.locales as string[])
       : null;
 

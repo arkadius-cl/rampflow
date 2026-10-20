@@ -1,6 +1,8 @@
 import * as z from 'zod';
 import { type LocalDate, localDateSchema } from '../../time/index.ts';
-import { BOOKING_STATUSES, PUNCTUALITY } from '../booking/lifecycle.ts';
+import { ZodIssueCode } from '../../values/validation.ts';
+import { BookingStatus, CreatedParty, Punctuality } from '../booking/values.ts';
+import { KpiKey, KpiUnit } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/reports (RP-01, RP-02). The KPI
 // definitions are binding in docs/reference/booking-lifecycle.md, "KPIs".
@@ -23,10 +25,14 @@ const filterShape = {
 
 function checkPeriod(f: { from: LocalDate; to: LocalDate }, ctx: z.RefinementCtx) {
   if (f.from > f.to) {
-    ctx.addIssue({ code: 'custom', message: 'The period ends before it starts', path: ['to'] });
+    ctx.addIssue({
+      code: ZodIssueCode.custom,
+      message: 'The period ends before it starts',
+      path: ['to'],
+    });
   } else if (periodDays(f.from, f.to) > MAX_PERIOD_DAYS) {
     ctx.addIssue({
-      code: 'custom',
+      code: ZodIssueCode.custom,
       message: `A report covers at most ${MAX_PERIOD_DAYS} days`,
       path: ['to'],
     });
@@ -47,28 +53,25 @@ export const VisitQuery = z
   .superRefine(checkPeriod);
 export type VisitQuery = z.infer<typeof VisitQuery>;
 
-export type KpiUnit = 'count' | 'percent' | 'minutes';
-
 /**
  * The KPI table of RP-01 in display order: the dashboard, the API and the CSV all walk it.
  * Rates are percentages and durations mean minutes, rounded to one decimal; `null` means an
  * empty denominator, shown as "–".
  */
 export const KPIS = [
-  { key: 'bookingsDue', unit: 'count' },
-  { key: 'noShowRate', unit: 'percent' },
-  { key: 'lateCancellationRate', unit: 'percent' },
-  { key: 'onTimeRate', unit: 'percent' },
-  { key: 'earlyRate', unit: 'percent' },
-  { key: 'lateRate', unit: 'percent' },
-  { key: 'waitMinutes', unit: 'minutes' },
-  { key: 'dockDwellMinutes', unit: 'minutes' },
-  { key: 'turnaroundMinutes', unit: 'minutes' },
-  { key: 'dockUtilisation', unit: 'percent' },
-  { key: 'portalAdoption', unit: 'percent' },
-  { key: 'standgeldVisits', unit: 'count' },
-] as const satisfies readonly { key: string; unit: KpiUnit }[];
-export type KpiKey = (typeof KPIS)[number]['key'];
+  { key: KpiKey.bookingsDue, unit: KpiUnit.count },
+  { key: KpiKey.noShowRate, unit: KpiUnit.percent },
+  { key: KpiKey.lateCancellationRate, unit: KpiUnit.percent },
+  { key: KpiKey.onTimeRate, unit: KpiUnit.percent },
+  { key: KpiKey.earlyRate, unit: KpiUnit.percent },
+  { key: KpiKey.lateRate, unit: KpiUnit.percent },
+  { key: KpiKey.waitMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.dockDwellMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.turnaroundMinutes, unit: KpiUnit.minutes },
+  { key: KpiKey.dockUtilisation, unit: KpiUnit.percent },
+  { key: KpiKey.portalAdoption, unit: KpiUnit.percent },
+  { key: KpiKey.standgeldVisits, unit: KpiUnit.count },
+] as const satisfies readonly { key: KpiKey; unit: KpiUnit }[];
 
 export type Kpis = { [K in KpiKey]: number | null };
 
@@ -96,16 +99,16 @@ export const mean = (sum: number, n: number) => (n === 0 ? null : round1(sum / n
 export const VisitItem = z.object({
   id: z.uuid(),
   code: z.string(),
-  status: z.enum(BOOKING_STATUSES),
+  status: z.enum(BookingStatus),
   carrierName: z.string(),
   resourceName: z.string(),
   dockCode: z.string().nullable(),
   direction: z.string(),
-  createdParty: z.enum(['carrier', 'staff']),
+  createdParty: z.enum(CreatedParty),
   walkIn: z.boolean(),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
-  punctuality: z.enum(PUNCTUALITY).nullable(),
+  punctuality: z.enum(Punctuality).nullable(),
   punctualityMinutes: z.int().nullable(),
   checkedInAt: z.iso.datetime().nullable(),
   calledAt: z.iso.datetime().nullable(),

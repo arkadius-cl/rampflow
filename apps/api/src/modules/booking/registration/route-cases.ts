@@ -1,3 +1,4 @@
+import { AccountCredential, HttpMethod } from '@rampflow/shared/values';
 import { defineAccountCases } from '../../../../test/route-cases.ts';
 import {
   carrierInvitationFor,
@@ -8,9 +9,9 @@ import {
 
 export const accountCases = defineAccountCases([
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/public/links/:slug',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (w, db) => {
       const slug = await openLinkFor(db, {
         tenantId: w.A.tenantId,
@@ -21,9 +22,9 @@ export const accountCases = defineAccountCases([
     },
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/links/:slug/registrations',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (w, db) => {
       const slug = await openLinkFor(db, {
         tenantId: w.A.tenantId,
@@ -43,9 +44,9 @@ export const accountCases = defineAccountCases([
     },
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/registrations/verify',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (w, db) => {
       const target = { tenantId: w.A.tenantId, siteId: w.A.sites[0].id };
       await openLinkFor(db, { ...target, by: w.A.users.tenant_admin.id });

@@ -1,6 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, openStation, seedVisit, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, seedVisit, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-01 Expected trucks', () => {
   test('the gate lists today with plate and safety, and a scanner code with Enter opens the check-in', async ({
@@ -83,7 +84,7 @@ test.describe('YD-01 Expected trucks', () => {
 
     const commands: string[] = [];
     page.on('request', (r) => {
-      if (r.method() === 'POST' && r.url().includes('/yard/')) commands.push(r.url());
+      if (r.method() === HttpMethod.POST && r.url().includes('/yard/')) commands.push(r.url());
     });
     await context.setOffline(true);
     await expect(page.getByRole('status').filter({ hasText: 'Offline' })).toBeVisible();

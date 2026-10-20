@@ -233,7 +233,7 @@ Request schemas and response shapes live in `packages/shared/src/modules/core/ap
 
 ## Safety authoring and register
 
-Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule('safety')`. Schemas in `packages/shared/src/modules/safety/api.authoring.ts` and `api.register.ts`.
+Unit U5. `safety/authoring/routes.tenant.ts` and `safety/register/routes.tenant.ts`, mounted at `/safety` with `withModule(Module.safety)`. Schemas in `packages/shared/src/modules/safety/api.authoring.ts` and `api.register.ts`.
 
 <!-- routes:safety-authoring-and-register:start -->
 
@@ -335,7 +335,7 @@ Bookings answer `PortalBookingView`: the summary (tenant, site, slot with `timeZ
 
 ## Yard
 
-Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule('yard')` (`yard.checkin_qr`). Request schemas and response shapes live in `packages/shared/src/modules/yard/api.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Lists and commands answer `YardTruck`: carrier, plate (seen at the gate, else announced), driver phone, load type, load units, resource, slot, safety status, punctuality, dock with code and hall, the visit timestamps, `since` (when the current status began) and `version`. Every route is site-scoped: an operator of another site gets 404.
+Unit U9, built. `yard/routes.tenant.ts`, mounted at `/yard` with `withModule(Module.yard)` (`yard.checkin_qr`). Request schemas and response shapes live in `packages/shared/src/modules/yard/api.ts`; commands run through `transitionBooking` ([Booking lifecycle](booking-lifecycle.md)). Lists and commands answer `YardTruck`: carrier, plate (seen at the gate, else announced), driver phone, load type, load units, resource, slot, safety status, punctuality, dock with code and hall, the visit timestamps, `since` (when the current status began) and `version`. Every route is site-scoped: an operator of another site gets 404.
 
 <!-- routes:yard:start -->
 
@@ -384,7 +384,7 @@ The exchange has an account case with credential `none`: the harness's `token` c
 
 ## Reports
 
-Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule('report')`.
+Unit U11. `report/kpi/routes.tenant.ts`, mounted at `/reports` with `withModule(Module.report)`.
 
 <!-- routes:reports:start -->
 

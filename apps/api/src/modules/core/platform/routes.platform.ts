@@ -13,6 +13,14 @@ import {
   type SettingsView,
 } from '@rampflow/shared/modules/core/api.settings';
 import type { InvitationView } from '@rampflow/shared/modules/core/api.staff';
+import {
+  Permission,
+  ScopeParty,
+  Setting,
+  SettingScope,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import * as z from 'zod';
@@ -38,20 +46,21 @@ const TenantParam = z.object({ tenantId: idSchema<'tenant'>() });
 const OverrideParam = TenantParam.extend({ key: z.string().min(1).max(100) });
 const KeyParam = z.object({ key: z.string().min(1).max(100) });
 
-const PLATFORM = { scope: 'platform' } as const;
+const PLATFORM = { scope: SettingScope.platform } as const;
 
 function platformUser(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== 'platform') throw new Error(`platform route under party ${scope.party}`);
+  if (scope.party !== ScopeParty.platform)
+    throw new Error(`platform route under party ${scope.party}`);
   return scope.userId;
 }
 
 /** The language of emails the platform sends: the platform default locale. */
 const platformLocale = async (c: Context<AppEnv>) =>
-  (await c.var.access.setting('i18n.default_locale', null)).value;
+  (await c.var.access.setting(Setting.i18n.default_locale, null)).value;
 
-const tenants = requirePermission('core.manage_tenants');
-const settings = requirePermission('core.manage_platform_settings');
+const tenants = requirePermission(Permission.core.manage_tenants);
+const settings = requirePermission(Permission.core.manage_platform_settings);
 
 /** Mounted at `/api/platform` by modules/index.ts (PL-01 to PL-04). */
 export const platform = new Hono<AppEnv>()
@@ -59,7 +68,7 @@ export const platform = new Hono<AppEnv>()
     '/tenants',
     op({
       id: 'core.platform.listTenants',
-      stories: ['PL-01', 'PL-04'],
+      stories: [StoryId.PL_01, StoryId.PL_04],
       description:
         '`{ items: [{ id, name, package, usage }] }`. `usage` holds one meter `{ used, limit, soft, over }` per limit: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
       responses: {},
@@ -71,13 +80,13 @@ export const platform = new Hono<AppEnv>()
     '/tenants',
     op({
       id: 'core.platform.createTenant',
-      stories: ['PL-01'],
+      stories: [StoryId.PL_01],
       description:
         '`{ name, package, adminEmail }` → 201 tenant detail. Creates org, subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`',
       responses: { 201: type<TenantDetail>() },
     }),
     tenants,
-    validate('json', CreateTenant),
+    validate(ValidationTarget.json, CreateTenant),
     async (c) => {
       const now = c.var.clock.now();
       const id = await createTenant(
@@ -92,13 +101,13 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId',
     op({
       id: 'core.platform.getTenant',
-      stories: ['PL-02'],
+      stories: [StoryId.PL_02],
       description:
         '`{ id, name, package, usage, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. Reserved keys are left out; 404 for an id that is not a tenant',
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
-    validate('param', TenantParam),
+    validate(ValidationTarget.param, TenantParam),
     async (c) => {
       const { tenantId } = c.req.valid('param');
       return c.json(await tenantDetail(c.var.db, tenantId as TenantId, c.var.clock.now()), 200);
@@ -108,13 +117,13 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId',
     op({
       id: 'core.platform.updateTenant',
-      stories: ['PL-02'],
+      stories: [StoryId.PL_02],
       description: '`{ name?, package? }` → tenant detail',
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
-    validate('param', TenantParam),
-    validate('json', UpdateTenant),
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, UpdateTenant),
     async (c) => {
       const tenantId = c.req.valid('param').tenantId as TenantId;
       const now = c.var.clock.now();
@@ -126,14 +135,14 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId/overrides/:key',
     op({
       id: 'core.platform.putOverride',
-      stories: ['PL-02'],
+      stories: [StoryId.PL_02],
       description:
         '`{ value, expiresAt?, note? }`, `value` a boolean, a non-negative integer or `null` (unlimited) → the override. 400 `bad_request` with `reason` `unknown_key` or `reserved_key`, then 422 on `["value"]` for a value of the wrong kind. Applies from the tenant\'s next request',
       responses: { 200: type<OverrideView>() },
     }),
     tenants,
-    validate('param', OverrideParam),
-    validate('json', PutOverride),
+    validate(ValidationTarget.param, OverrideParam),
+    validate(ValidationTarget.json, PutOverride),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       const view = await putOverride(
@@ -151,12 +160,12 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId/overrides/:key',
     op({
       id: 'core.platform.deleteOverride',
-      stories: ['PL-02'],
+      stories: [StoryId.PL_02],
       description: '204',
       responses: { 204: noBody },
     }),
     tenants,
-    validate('param', OverrideParam),
+    validate(ValidationTarget.param, OverrideParam),
     async (c) => {
       const { tenantId, key } = c.req.valid('param');
       await deleteOverride(c.var.db, tenantId as TenantId, key);
@@ -167,14 +176,14 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId/invitations',
     op({
       id: 'core.platform.createAdminInvitation',
-      stories: ['PL-01'],
+      stories: [StoryId.PL_01],
       description:
         '`{ email }` → 201 invitation; re-invites a tenant admin. A pending invitation to the same email is revoked and replaced',
       responses: { 201: type<InvitationView>() },
     }),
     tenants,
-    validate('param', TenantParam),
-    validate('json', InviteTenantAdmin),
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, InviteTenantAdmin),
     async (c) => {
       const now = c.var.clock.now();
       const row = await inviteTenantAdmin(
@@ -192,7 +201,7 @@ export const platform = new Hono<AppEnv>()
     '/packages',
     op({
       id: 'core.platform.listPackages',
-      stories: ['PL-02'],
+      stories: [StoryId.PL_02],
       description: '`{ items: [{ id, values: [{ key, module, kind, soft, value }] }] }`, read-only',
       responses: { 200: type<PackageList>() },
     }),
@@ -203,7 +212,7 @@ export const platform = new Hono<AppEnv>()
     '/settings',
     op({
       id: 'core.platform.listSettings',
-      stories: ['PL-03'],
+      stories: [StoryId.PL_03],
       description:
         "`{ scope: 'platform', siteId: null, items }`: every key with platform scope, shaped as in the tenant settings read",
       responses: { 200: type<SettingsView>() },
@@ -215,14 +224,14 @@ export const platform = new Hono<AppEnv>()
     '/settings/:key',
     op({
       id: 'core.platform.putSetting',
-      stories: ['PL-03'],
+      stories: [StoryId.PL_03],
       description:
         '`{ value }` → the field. 400 for an unknown key or one without platform scope; 422 with the zod path under `["value", ...]`. Tenant and site rows stay',
       responses: { 200: type<SettingEntry>() },
     }),
     settings,
-    validate('param', KeyParam),
-    validate('json', PutPlatformSetting),
+    validate(ValidationTarget.param, KeyParam),
+    validate(ValidationTarget.json, PutPlatformSetting),
     async (c) => {
       const entry = await writeSetting(
         c.var.db,
@@ -239,12 +248,12 @@ export const platform = new Hono<AppEnv>()
     '/settings/:key',
     op({
       id: 'core.platform.deleteSetting',
-      stories: ['PL-03'],
+      stories: [StoryId.PL_03],
       description: '204; back to the code default',
       responses: { 204: noBody },
     }),
     settings,
-    validate('param', KeyParam),
+    validate(ValidationTarget.param, KeyParam),
     async (c) => {
       await resetSetting(c.var.db, PLATFORM, c.req.valid('param').key);
       return c.body(null, 204);

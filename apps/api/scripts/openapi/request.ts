@@ -1,3 +1,4 @@
+import { JsonSchemaType, ParameterLocation } from '@rampflow/shared/values';
 import * as z from 'zod';
 import type { Endpoint } from './model.ts';
 import { sample } from './sampler.ts';
@@ -5,7 +6,7 @@ import type { JsonSchema } from './schema.ts';
 
 export interface Parameter {
   name: string;
-  in: 'path' | 'query';
+  in: ParameterLocation;
   required: boolean;
   schema: JsonSchema;
   description?: string;
@@ -43,14 +44,14 @@ export const openApiPath = (path: string) => path.replace(/:(\w+)/g, '{$1}');
 const pathParams = (path: string) => [...path.matchAll(/:(\w+)/g)].map((m) => m[1] as string);
 
 /** A UUID unless the route validates the parameter (design D7). */
-const UNVALIDATED_PARAM: JsonSchema = { type: 'string', format: 'uuid' };
+const UNVALIDATED_PARAM: JsonSchema = { type: JsonSchemaType.string, format: 'uuid' };
 
 export function describeRequest(e: Endpoint): RequestDescription {
   const param = e.validators.param && inputSchema(e.validators.param);
   const query = e.validators.query && inputSchema(e.validators.query);
   const parameters: Parameter[] = pathParams(e.path).map((name) => ({
     name,
-    in: 'path',
+    in: ParameterLocation.path,
     required: true,
     schema: param?.properties?.[name] ?? UNVALIDATED_PARAM,
   }));
@@ -58,7 +59,7 @@ export function describeRequest(e: Endpoint): RequestDescription {
     const { description, ...rest } = schema;
     parameters.push({
       name,
-      in: 'query',
+      in: ParameterLocation.query,
       required: query?.required?.includes(name) ?? false,
       schema: rest,
       ...(typeof description === 'string' ? { description } : {}),

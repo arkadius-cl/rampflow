@@ -1,4 +1,22 @@
-import { PACKAGE_IDS, ROLE_PARTY, STAFF_LOCALES } from '@rampflow/shared';
+import { ROLE_PARTY } from '@rampflow/shared';
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  AuthTokenKind,
+  DockStatus,
+  DoorType,
+  RateLimitBucket,
+  TemperatureZone,
+} from '@rampflow/shared/modules/core/values';
+import {
+  ColumnMode,
+  OrgKind,
+  PackageId,
+  PolicyCommand,
+  PolicyReader,
+  ScopeParty,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -48,9 +66,6 @@ import {
   userIs,
 } from '../../db/rls.ts';
 
-export const ORG_KINDS = ['platform', 'tenant', 'carrier'] as const;
-export type OrgKind = (typeof ORG_KINDS)[number];
-
 const rolesOf = (kind: OrgKind) =>
   Object.entries(ROLE_PARTY)
     .filter(([, party]) => party === kind)
@@ -61,7 +76,7 @@ export const org = pgTable(
   'org',
   {
     id: uuid('id').$type<AnyOrgId>().primaryKey().default(sql`uuidv7()`),
-    kind: text('kind', { enum: ORG_KINDS }).notNull(),
+    kind: text('kind', { enum: values(OrgKind) }).notNull(),
     name: text('name').notNull(),
     country: char('country', { length: 2 }),
     createdAt: createdAt(),
@@ -69,34 +84,38 @@ export const org = pgTable(
   (t) => [
     unique('org_id_kind_key').on(t.id, t.kind),
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
-    check('org_kind_check', oneOf(t.kind, ORG_KINDS)),
+    check('org_kind_check', oneOf(t.kind, values(OrgKind))),
     check('org_name_length', sql`char_length(${t.name}) between 1 and 120`),
-    allow('platform', 'all', always),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
     allow(
-      'user',
-      'select',
+      ScopeParty.user,
+      PolicyCommand.select,
       sql`exists (select 1 from membership m where m.org_id = ${t.id} and m.user_id = (select app.user_id()))`,
     ),
     // A tenant reads its own org, the carriers linked to it (TN-03), and the carriers a
     // registration would link, so it decides on the company it actually gets (TN-04).
     allow(
-      'tenant',
-      'select',
+      ScopeParty.tenant,
+      PolicyCommand.select,
       sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id}) or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = ${t.id})`,
     ),
-    allow('carrier_at_tenant', 'select', sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`),
-    allow('driver', 'select', tenantIs(t.id)),
-    allow('public', 'select', tenantIs(t.id)),
+    allow(
+      ScopeParty.carrier_at_tenant,
+      PolicyCommand.select,
+      sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`,
+    ),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.id)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.id)),
     // A carrier reads its own org, linked tenants, and tenants it registered at (CR-02).
     allow(
-      'carrier',
-      'select',
+      ScopeParty.carrier,
+      PolicyCommand.select,
       sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
     ),
-    allow('system', 'select', always),
+    allow(ScopeParty.system, PolicyCommand.select, always),
     // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02).
-    allow('user', 'insert', sql`${t.kind} = 'carrier'`),
-    allow('token', 'insert', sql`${t.kind} = 'carrier'`),
+    allow(ScopeParty.user, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
+    allow(ScopeParty.token, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
   ],
 );
 
@@ -107,7 +126,7 @@ export const appUser = pgTable(
     id: primaryId<'user'>(),
     email: citext('email').notNull().unique(),
     name: text('name').notNull(),
-    locale: text('locale', { enum: STAFF_LOCALES }),
+    locale: text('locale', { enum: values(StaffLocale) }),
     passwordHash: text('password_hash'),
     emailVerifiedAt: instant('email_verified_at'),
     lastSeenAt: instant('last_seen_at'),
@@ -117,18 +136,18 @@ export const appUser = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check('app_user_locale_check', oneOf(t.locale, STAFF_LOCALES)),
+    check('app_user_locale_check', oneOf(t.locale, values(StaffLocale))),
     check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
-    allow('platform', 'all', always),
-    allow('user', 'select', userIs(t.id)),
-    allow('user', 'update', userIs(t.id)),
-    allow('token', 'select', userIs(t.id)),
-    allow('token', 'update', userIs(t.id)),
-    allow('token', 'insert', always),
-    allow('public', 'insert', always),
-    allow('tenant', 'select', sharesOrg(t.id)),
-    allow('carrier', 'select', sharesOrg(t.id)),
-    allow('carrier_at_tenant', 'select', sharesOrg(t.id)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.id)),
+    allow(ScopeParty.user, PolicyCommand.update, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.select, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.update, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.insert, always),
+    allow(ScopeParty.public, PolicyCommand.insert, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, sharesOrg(t.id)),
+    allow(ScopeParty.carrier, PolicyCommand.select, sharesOrg(t.id)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, sharesOrg(t.id)),
   ],
 );
 
@@ -150,13 +169,11 @@ export const session = pgTable(
   (t) => [index('session_user_id_idx').on(t.userId)],
 );
 
-export const AUTH_TOKEN_KINDS = ['magic_link', 'password_reset'] as const;
-
 export const authToken = pgTable(
   'auth_token',
   {
     id: primaryId<'auth_token'>(),
-    kind: text('kind', { enum: AUTH_TOKEN_KINDS }).notNull(),
+    kind: text('kind', { enum: values(AuthTokenKind) }).notNull(),
     userId: uuid('user_id')
       .$type<UserId>()
       .notNull()
@@ -168,38 +185,27 @@ export const authToken = pgTable(
   },
   (t) => [
     index('auth_token_user_id_idx').on(t.userId),
-    check('auth_token_kind_check', oneOf(t.kind, AUTH_TOKEN_KINDS)),
+    check('auth_token_kind_check', oneOf(t.kind, values(AuthTokenKind))),
   ],
 );
-
-export const RATE_LIMIT_BUCKETS = [
-  'login_failed',
-  'login_ip',
-  'magic_link_request',
-  'reset_request',
-  'driver_exchange',
-  'registration_request',
-  'registration_ip',
-] as const;
-export type RateLimitBucket = (typeof RATE_LIMIT_BUCKETS)[number];
 
 export const rateLimitEvent = pgTable(
   'rate_limit_event',
   {
-    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-    bucket: text('bucket', { enum: RATE_LIMIT_BUCKETS }).notNull(),
+    id: bigint('id', { mode: ColumnMode.number }).primaryKey().generatedAlwaysAsIdentity(),
+    bucket: text('bucket', { enum: values(RateLimitBucket) }).notNull(),
     keyHash: bytea('key_hash').notNull(),
     at: instant('at').notNull(),
   },
   (t) => [
     index('rate_limit_event_lookup_idx').on(t.bucket, t.keyHash, t.at),
-    check('rate_limit_event_bucket_check', oneOf(t.bucket, RATE_LIMIT_BUCKETS)),
+    check('rate_limit_event_bucket_check', oneOf(t.bucket, values(RateLimitBucket))),
   ],
 );
 
 const membershipRoleCheck = (orgKind: AnyPgColumn, role: AnyPgColumn) =>
   sql.join(
-    ORG_KINDS.map(
+    values(OrgKind).map(
       (kind) => sql`(${orgKind} = ${sql.raw(`'${kind}'`)} and ${oneOf(role, rolesOf(kind))})`,
     ),
     sql` or `,
@@ -214,7 +220,7 @@ export const membership = pgTable(
       .notNull()
       .references(() => appUser.id, { onDelete: 'cascade' }),
     orgId: uuid('org_id').$type<AnyOrgId>().notNull(),
-    orgKind: text('org_kind', { enum: ORG_KINDS }).notNull(),
+    orgKind: text('org_kind', { enum: values(OrgKind) }).notNull(),
     role: text('role').notNull(),
     createdBy: uuid('created_by')
       .$type<UserId>()
@@ -229,10 +235,10 @@ export const membership = pgTable(
     unique('membership_id_org_key').on(t.id, t.orgId),
     index('membership_org_id_idx').on(t.orgId),
     check('membership_role_check', membershipRoleCheck(t.orgKind, t.role)),
-    allow('user', 'select', userIs(t.userId)),
-    allow('platform', 'all', always),
-    allow('tenant', 'all', tenantIs(t.orgId)),
-    allow('carrier', 'all', carrierIs(t.orgId)),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.userId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.orgId)),
+    allow(ScopeParty.carrier, PolicyCommand.all, carrierIs(t.orgId)),
   ],
 );
 
@@ -244,7 +250,7 @@ export const tenantSubscription = pgTable(
       .$type<TenantId>()
       .primaryKey()
       .references(() => org.id, { onDelete: 'cascade' }),
-    package: text('package', { enum: PACKAGE_IDS }).notNull(),
+    package: text('package', { enum: values(PackageId) }).notNull(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
     updatedBy: uuid('updated_by')
       .$type<UserId>()
@@ -253,19 +259,19 @@ export const tenantSubscription = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check('tenant_subscription_package_check', oneOf(t.package, PACKAGE_IDS)),
+    check('tenant_subscription_package_check', oneOf(t.package, values(PackageId))),
     ...tenantEntitlementPolicies(t),
   ],
 );
 
 function tenantEntitlementPolicies(t: { tenantId: AnyPgColumn }) {
   return [
-    allow('platform', 'all', always),
-    allow('tenant', 'select', tenantIs(t.tenantId)),
-    allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow('driver', 'select', tenantIs(t.tenantId)),
-    allow('public', 'select', tenantIs(t.tenantId)),
-    allow('carrier', 'select', linkedTenant(t.tenantId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, linkedTenant(t.tenantId)),
   ];
 }
 
@@ -292,8 +298,8 @@ export const entitlementOverride = pgTable(
     check('entitlement_override_value_wrapped', isWrappedJson(t.value)),
     // The note is the platform's internal reason: carriers, drivers and the public never read
     // overrides; loadAccess resolves their tenant's entitlements as the tenant (kernel/access.ts).
-    allow('platform', 'all', always),
-    allow('tenant', 'select', tenantIs(t.tenantId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, tenantIs(t.tenantId)),
   ],
 );
 
@@ -313,7 +319,7 @@ export const site = pgTable(
     country: char('country', { length: 2 }).notNull(),
     subdivision: text('subdivision'),
     timeZone: text('time_zone').notNull(),
-    defaultLocale: text('default_locale', { enum: STAFF_LOCALES }).notNull(),
+    defaultLocale: text('default_locale', { enum: values(StaffLocale) }).notNull(),
     phone: text('phone'),
     active: boolean('active').notNull().default(true),
     createdAt: createdAt(),
@@ -321,10 +327,15 @@ export const site = pgTable(
   (t) => [
     unique('site_id_tenant_key').on(t.id, t.tenantId),
     index('site_tenant_id_idx').on(t.tenantId),
-    check('site_default_locale_check', oneOf(t.defaultLocale, STAFF_LOCALES)),
+    check('site_default_locale_check', oneOf(t.defaultLocale, values(StaffLocale))),
     ...tenantPolicies(t, {
       site: t.id,
-      readers: ['carrier', 'carrier_at_tenant', 'driver', 'public'],
+      readers: [
+        PolicyReader.carrier,
+        PolicyReader.carrier_at_tenant,
+        PolicyReader.driver,
+        PolicyReader.public,
+      ],
     }),
   ],
 );
@@ -356,7 +367,7 @@ export const membershipSite = pgTable(
     index('membership_site_site_id_idx').on(t.siteId),
     index('membership_site_user_id_idx').on(t.userId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('user', 'select', userIs(t.userId)),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.userId)),
   ],
 );
 
@@ -365,7 +376,7 @@ export const invitation = pgTable(
   {
     id: primaryId<'invitation'>(),
     orgId: uuid('org_id').$type<AnyOrgId>().notNull(),
-    orgKind: text('org_kind', { enum: ORG_KINDS }).notNull(),
+    orgKind: text('org_kind', { enum: values(OrgKind) }).notNull(),
     email: citext('email').notNull(),
     role: text('role').notNull(),
     siteIds: uuid('site_ids').$type<SiteId>().array().notNull().default(sql`'{}'::uuid[]`),
@@ -389,11 +400,11 @@ export const invitation = pgTable(
       .on(t.orgId, t.email)
       .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
     check('invitation_role_check', membershipRoleCheck(t.orgKind, t.role)),
-    allow('platform', 'all', always),
-    allow('tenant', 'all', tenantIs(t.orgId)),
-    allow('carrier', 'all', carrierIs(t.orgId)),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.orgId)),
+    allow(ScopeParty.carrier, PolicyCommand.all, carrierIs(t.orgId)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );
 
@@ -425,19 +436,19 @@ export const settingValue = pgTable(
     }).onDelete('cascade'),
     index('setting_value_site_id_idx').on(t.siteId),
     pgPolicy('any_select_platform_rows', {
-      for: 'select',
+      for: PolicyCommand.select,
       using: sql`(select app.party()) is not null and ${t.tenantId} is null`,
     }),
-    allow('platform', 'all', sql`${t.tenantId} is null`),
+    allow(ScopeParty.platform, PolicyCommand.all, sql`${t.tenantId} is null`),
     allow(
-      'tenant',
-      'all',
+      ScopeParty.tenant,
+      PolicyCommand.all,
       and(tenantIs(t.tenantId), sql`${t.siteId} is null or ${siteAllowed(t.siteId)}`),
     ),
-    allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow('driver', 'select', tenantIs(t.tenantId)),
-    allow('public', 'select', tenantIs(t.tenantId)),
-    allow('carrier', 'select', linkedTenant(t.tenantId)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, linkedTenant(t.tenantId)),
   ],
 );
 
@@ -456,13 +467,12 @@ export const hall = pgTable(
     unique('hall_id_site_key').on(t.id, t.siteId),
     index('hall_tenant_id_idx').on(t.tenantId),
     index('hall_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
-
-export const DOOR_TYPES = ['dock_leveler', 'ground_level', 'side_loading', 'yard_open'] as const;
-export const TEMPERATURE_ZONES = ['ambient', 'chilled', 'frozen'] as const;
-export const DOCK_STATUSES = ['active', 'maintenance', 'inactive'] as const;
 
 export const dock = pgTable(
   'dock',
@@ -472,10 +482,10 @@ export const dock = pgTable(
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     hallId: uuid('hall_id').notNull(),
     code: text('code').notNull(),
-    doorType: text('door_type', { enum: DOOR_TYPES }).notNull(),
-    temperatureZone: text('temperature_zone', { enum: TEMPERATURE_ZONES }).notNull(),
+    doorType: text('door_type', { enum: values(DoorType) }).notNull(),
+    temperatureZone: text('temperature_zone', { enum: values(TemperatureZone) }).notNull(),
     adrAllowed: boolean('adr_allowed').notNull().default(false),
-    status: text('status', { enum: DOCK_STATUSES }).notNull(),
+    status: text('status', { enum: values(DockStatus) }).notNull(),
     sort: integer('sort').notNull().default(0),
     createdAt: createdAt(),
   },
@@ -487,15 +497,15 @@ export const dock = pgTable(
     index('dock_tenant_id_idx').on(t.tenantId),
     index('dock_hall_id_idx').on(t.hallId),
     check('dock_code_length', sql`char_length(${t.code}) between 1 and 16`),
-    check('dock_door_type_check', oneOf(t.doorType, DOOR_TYPES)),
-    check('dock_temperature_zone_check', oneOf(t.temperatureZone, TEMPERATURE_ZONES)),
-    check('dock_status_check', oneOf(t.status, DOCK_STATUSES)),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    check('dock_door_type_check', oneOf(t.doorType, values(DoorType))),
+    check('dock_temperature_zone_check', oneOf(t.temperatureZone, values(TemperatureZone))),
+    check('dock_status_check', oneOf(t.status, values(DockStatus))),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
-
-export const LINK_STATUSES = ['active', 'deactivated'] as const;
-export const LINK_SOURCES = ['invitation', 'public_link'] as const;
 
 export const tenantCarrierLink = pgTable(
   'tenant_carrier_link',
@@ -508,19 +518,23 @@ export const tenantCarrierLink = pgTable(
       .$type<CarrierId>()
       .notNull()
       .references(() => org.id),
-    status: text('status', { enum: LINK_STATUSES }).notNull(),
-    source: text('source', { enum: LINK_SOURCES }).notNull(),
+    status: text('status', { enum: values(CarrierLinkStatus) }).notNull(),
+    source: text('source', { enum: values(CarrierLinkSource) }).notNull(),
     deactivatedAt: instant('deactivated_at'),
     createdAt: createdAt(),
   },
   (t) => [
     primaryKey({ columns: [t.tenantId, t.carrierId] }),
     index('tenant_carrier_link_carrier_id_idx').on(t.carrierId),
-    check('tenant_carrier_link_status_check', oneOf(t.status, LINK_STATUSES)),
-    check('tenant_carrier_link_source_check', oneOf(t.source, LINK_SOURCES)),
-    allow('tenant', 'all', tenantIs(t.tenantId)),
-    allow('carrier', 'select', carrierIs(t.carrierId)),
-    allow('carrier_at_tenant', 'select', and(tenantIs(t.tenantId), carrierIs(t.carrierId))),
+    check('tenant_carrier_link_status_check', oneOf(t.status, values(CarrierLinkStatus))),
+    check('tenant_carrier_link_source_check', oneOf(t.source, values(CarrierLinkSource))),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),
+    allow(
+      ScopeParty.carrier_at_tenant,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), carrierIs(t.carrierId)),
+    ),
   ],
 );
 
@@ -528,7 +542,7 @@ export const tenantCarrierLink = pgTable(
 export const jobRun = pgTable(
   'job_run',
   {
-    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    id: bigint('id', { mode: ColumnMode.number }).primaryKey().generatedAlwaysAsIdentity(),
     job: text('job').notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>(),
     startedAt: instant('started_at').notNull(),

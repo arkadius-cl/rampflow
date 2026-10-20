@@ -1,3 +1,14 @@
+import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import {
+  AccountCredential,
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+  RouteCaseGrant,
+} from '@rampflow/shared/values';
 import {
   defineAccountCases,
   defineRouteCases,
@@ -18,10 +29,10 @@ const of = (w: World) => {
 };
 
 const base = {
-  as: 'dispatcher',
-  permission: 'booking.manage_carriers',
+  as: RouteCaseActor.dispatcher,
+  permission: Permission.booking.manage_carriers,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
   setup: async (w, db) => {
     const invitation = await carrierInvitationFor(db, {
@@ -31,7 +42,7 @@ const base = {
     const registration = await registrationFor(db, {
       tenantId: w.A.tenantId,
       siteId: w.A.sites[0].id,
-      status: 'pending_approval',
+      status: RegistrationStatus.pending_approval,
       carrierId: w.A.rivalCarrierId,
     });
     fixtures.set(w, { invitationId: invitation.id, registrationId: registration.id });
@@ -41,94 +52,94 @@ const base = {
 const org = (w: World) => ({ orgId: w.A.tenantId });
 
 export const cases = defineRouteCases([
-  { ...base, method: 'GET', path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: ForeignOutcome.empty },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/invitations`,
-    entitlement: 'booking.carrier_portal',
+    entitlement: Feature.booking.carrier_portal,
     params: org,
     body: () => ({ companyName: 'Baltic Freight UAB', email: unique('case') }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
-    method: 'DELETE',
+    method: HttpMethod.DELETE,
     path: `${P}/invitations/:invitationId`,
     params: (w) => ({ ...org(w), invitationId: of(w).invitationId }),
     // Deleting answers 204 even when nothing matched; B's revoke must leave A's invitation alone.
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: `${P}/:carrierId`,
     params: (w) => ({ ...org(w), carrierId: w.A.carrierId }),
-    body: () => ({ status: 'deactivated' }),
+    body: () => ({ status: CarrierLinkStatus.deactivated }),
   },
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${P}/registrations`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: org,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/registrations/:registrationId/approve`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: (w) => ({ ...org(w), registrationId: of(w).registrationId }),
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/registrations/:registrationId/reject`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: (w) => ({ ...org(w), registrationId: of(w).registrationId }),
     body: () => ({ reason: 'No ADR approval' }),
   },
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${P}/public-links`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: org,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/public-links`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: org,
     body: (w) => ({ siteId: w.A.sites[0].id }),
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/public-links/:siteId/regenerate`,
-    entitlement: 'booking.public_link',
+    entitlement: Feature.booking.public_link,
     params: (w) => ({ ...org(w), siteId: w.A.sites[0].id }),
   },
   {
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/tenants',
-    as: 'carrier_user',
-    permission: 'member',
+    as: RouteCaseActor.carrier_user,
+    permission: RouteCaseGrant.member,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
     siteScoped: false,
   },
 ]);
 
 export const accountCases = defineAccountCases([
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/carrier-invitations/inspect',
-    credential: 'token',
+    credential: AccountCredential.token,
     singleUse: false,
     arrange: async (w, db) => {
       const inv = await carrierInvitationFor(db, {
@@ -138,14 +149,14 @@ export const accountCases = defineAccountCases([
       return {
         actor: null,
         body: { token: inv.token },
-        otherToken: await authTokenFor(db, 'magic_link', w.A.users.carrier_admin.id),
+        otherToken: await authTokenFor(db, AuthTokenKind.magic_link, w.A.users.carrier_admin.id),
       };
     },
   },
   {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/carrier-invitations/accept',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (w, db) => {
       const inv = await carrierInvitationFor(db, {
         tenantId: w.A.tenantId,

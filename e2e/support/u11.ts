@@ -1,5 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
+import {
+  BookingStatus,
+  CreatedParty,
+  Punctuality,
+} from '../../packages/shared/src/modules/booking/values.ts';
+import type { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import type { WorldSide } from './auth.ts';
 
 // Report fixtures (U11), written as the owner: the ten visits of the reference fixture in
@@ -20,10 +26,10 @@ const at = (hhmm: string) => new Date(`${REFERENCE_DAY}T${hhmm}:00+01:00`);
 
 interface Visit {
   start: string;
-  party: 'carrier' | 'staff';
-  status: string;
+  party: CreatedParty;
+  status: BookingStatus;
   walkIn?: boolean;
-  punctuality?: 'early' | 'on_time' | 'late';
+  punctuality?: Punctuality;
   checkedIn?: string;
   called?: string;
   atDock?: string;
@@ -38,9 +44,9 @@ interface Visit {
 const VISITS: Visit[] = [
   {
     start: '08:00',
-    party: 'carrier',
-    status: 'departed',
-    punctuality: 'on_time',
+    party: CreatedParty.carrier,
+    status: BookingStatus.departed,
+    punctuality: Punctuality.on_time,
     checkedIn: '07:50',
     atDock: '08:05',
     done: '08:50',
@@ -48,9 +54,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '09:00',
-    party: 'carrier',
-    status: 'departed',
-    punctuality: 'early',
+    party: CreatedParty.carrier,
+    status: BookingStatus.departed,
+    punctuality: Punctuality.early,
     checkedIn: '08:20',
     atDock: '09:10',
     done: '10:00',
@@ -58,9 +64,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '10:00',
-    party: 'staff',
-    status: 'departed',
-    punctuality: 'late',
+    party: CreatedParty.staff,
+    status: BookingStatus.departed,
+    punctuality: Punctuality.late,
     checkedIn: '10:30',
     called: '10:35',
     atDock: '10:40',
@@ -70,35 +76,35 @@ const VISITS: Visit[] = [
   },
   {
     start: '11:00',
-    party: 'carrier',
-    status: 'departed',
-    punctuality: 'late',
+    party: CreatedParty.carrier,
+    status: BookingStatus.departed,
+    punctuality: Punctuality.late,
     noShow: '12:00',
     checkedIn: '12:30',
     atDock: '12:40',
     done: '13:20',
     departed: '13:30',
   },
-  { start: '12:00', party: 'carrier', status: 'no_show', noShow: '13:00' },
+  { start: '12:00', party: CreatedParty.carrier, status: BookingStatus.no_show, noShow: '13:00' },
   {
     start: '13:00',
-    party: 'carrier',
-    status: 'cancelled',
+    party: CreatedParty.carrier,
+    status: BookingStatus.cancelled,
     cancelled: '12:00',
     cancelledLate: true,
   },
   {
     start: '14:00',
-    party: 'carrier',
-    status: 'cancelled',
+    party: CreatedParty.carrier,
+    status: BookingStatus.cancelled,
     cancelled: '08:00',
     cancelledLate: false,
   },
   {
     start: '15:00',
-    party: 'staff',
-    status: 'departed',
-    punctuality: 'on_time',
+    party: CreatedParty.staff,
+    status: BookingStatus.departed,
+    punctuality: Punctuality.on_time,
     checkedIn: '14:55',
     loading: '15:05',
     done: '15:45',
@@ -106,8 +112,8 @@ const VISITS: Visit[] = [
   },
   {
     start: '16:00',
-    party: 'staff',
-    status: 'departed',
+    party: CreatedParty.staff,
+    status: BookingStatus.departed,
     walkIn: true,
     checkedIn: '16:10',
     atDock: '16:20',
@@ -116,9 +122,9 @@ const VISITS: Visit[] = [
   },
   {
     start: '17:00',
-    party: 'carrier',
-    status: 'done',
-    punctuality: 'on_time',
+    party: CreatedParty.carrier,
+    status: BookingStatus.done,
+    punctuality: Punctuality.on_time,
     checkedIn: '16:50',
     atDock: '17:00',
     done: '17:30',
@@ -192,7 +198,7 @@ export async function seedReferenceVisits(side: WorldSide): Promise<string[]> {
 }
 
 /** Sets the UI and CSV language of a user. */
-export async function setLocale(userId: string, locale: 'de' | 'en' | 'pl'): Promise<void> {
+export async function setLocale(userId: string, locale: StaffLocale): Promise<void> {
   await db().query('update app_user set locale = $1 where id = $2', [locale, userId]);
 }
 

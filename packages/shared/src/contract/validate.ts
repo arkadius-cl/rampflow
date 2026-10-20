@@ -1,3 +1,5 @@
+import { EntitlementKind } from '../values/entitlements.ts';
+import { OrgKind } from '../values/roles.ts';
 import { type Catalog, findEntitlement } from './catalog.ts';
 import { isValidEntitlementValue } from './entitlements.ts';
 import { ROLE_PARTY } from './module.ts';
@@ -15,7 +17,8 @@ function checkFeatureRef(catalog: Catalog, where: string, key: string): string[]
   const found = findEntitlement(catalog, key);
   if (!found) return [`${where}: unknown entitlement ${key}`];
   if (found.def.reserved) return [`${where}: reserved entitlement ${key}`];
-  if (found.def.kind !== 'feature') return [`${where}: ${key} is a limit, not a feature`];
+  if (found.def.kind !== EntitlementKind.feature)
+    return [`${where}: ${key} is a limit, not a feature`];
   return [];
 }
 
@@ -70,7 +73,7 @@ export function validateCatalog(catalog: Catalog, packages: LoosePackages): stri
       } else if (!permission.roles.some((r) => ROLE_PARTY[r] === item.area)) {
         problems.push(`${where}: no ${item.area} role holds ${item.permission}`);
       }
-      if (item.area === 'tenant' && item.entitlement !== undefined) {
+      if (item.area === OrgKind.tenant && item.entitlement !== undefined) {
         problems.push(...checkFeatureRef(catalog, where, item.entitlement));
       }
     }

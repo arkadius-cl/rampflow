@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { hashPassword } from '../../apps/api/src/modules/core/auth/password.ts';
+import type { OrgKind } from '../../packages/shared/src/values/roles.ts';
 
 // Direct fixtures as the owner role (MIGRATION_DATABASE_URL), past RLS, for what no U2 screen
 // creates yet: passwords on seeded users, invitations (U3 creates them through its screens).
@@ -26,7 +27,7 @@ export async function setPassword(userId: string, password: string): Promise<voi
 export async function addMembership(
   userId: string,
   orgId: string,
-  orgKind: 'tenant' | 'carrier' | 'platform',
+  orgKind: OrgKind,
   role: string,
 ): Promise<void> {
   await db().query(

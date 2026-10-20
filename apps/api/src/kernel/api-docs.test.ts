@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { ErrorCode } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.ts';
 
@@ -12,7 +13,7 @@ describe('API docs', () => {
     for (const path of ['/api/docs', '/api/docs/init.js', '/api/openapi.json']) {
       const res = await app.request(path);
       expect(res.status, path).toBe(404);
-      expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+      expect(await res.json()).toMatchObject({ error: { code: ErrorCode.not_found } });
     }
   });
 
@@ -54,7 +55,7 @@ describe('API docs', () => {
       for (const path of ['/api/docs/swagger-initializer.js', '/api/docs/package.json']) {
         const res = await app.request(path);
         expect(res.status, path).toBe(404);
-        expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+        expect(await res.json()).toMatchObject({ error: { code: ErrorCode.not_found } });
       }
     });
 

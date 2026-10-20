@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
   apiCall,
@@ -13,6 +14,9 @@ interface LoadTypes {
   items: { id: string; name: { en: string } }[];
 }
 
+/** The English name of the seeded load type the story edits. */
+const PALLETISED = 'Palletised';
+
 test.describe('MD-05 Load types', () => {
   test('a new site lists the three seeded load types; 20 pallets take 60 minutes, 40 take 90', async ({
     page,
@@ -24,7 +28,7 @@ test.describe('MD-05 Load types', () => {
     await poolWorldDocks(context, w);
     const site = await apiCall<{ id: string }>(
       context,
-      'POST',
+      HttpMethod.POST,
       `/t/${w.A.tenantId}/sites`,
       newSiteBody('Garching'),
     );
@@ -39,15 +43,15 @@ test.describe('MD-05 Load types', () => {
 
     const { items } = await apiCall<LoadTypes>(
       context,
-      'GET',
+      HttpMethod.GET,
       `/t/${w.A.tenantId}/capacity/load-types?siteId=${site.id}`,
     );
-    const id = items.find((lt) => lt.name.en === 'Palletised')?.id;
+    const id = items.find((lt) => lt.name.en === PALLETISED)?.id;
     const minutes = async (units: number) =>
       (
         await apiCall<{ durationMinutes: number }>(
           context,
-          'GET',
+          HttpMethod.GET,
           `/t/${w.A.tenantId}/capacity/availability?siteId=${site.id}&date=${nextMonday()}&loadTypeId=${id}&loadUnits=${units}`,
         )
       ).durationMinutes;

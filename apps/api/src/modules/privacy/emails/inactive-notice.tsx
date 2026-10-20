@@ -1,8 +1,8 @@
-import type { StaffLocale } from '@rampflow/shared';
+import { StaffLocale } from '@rampflow/shared/values';
 import { Button, Text } from '@react-email/components';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
 import { env } from '../../../kernel/env.ts';
-import type { EmailTemplate } from '../../../kernel/outbox.ts';
+import type { EmailTemplateModule } from '../../../kernel/outbox.ts';
 
 export interface InactiveNoticePayload {
   locale: StaffLocale;
@@ -28,7 +28,7 @@ const button = {
 const DATE_TAG: Record<StaffLocale, string> = { de: 'de', en: 'en-GB', pl: 'pl' };
 
 /** PL-05: 30 days before an inactive carrier account is deleted (data model, "Retention"). */
-export const render: EmailTemplate<InactiveNoticePayload>['render'] = (p, t) => {
+export const render: EmailTemplateModule<InactiveNoticePayload>['render'] = (p, t) => {
   const date = new Intl.DateTimeFormat(DATE_TAG[p.locale], {
     dateStyle: 'long',
     timeZone: 'UTC',
@@ -51,4 +51,4 @@ export const render: EmailTemplate<InactiveNoticePayload>['render'] = (p, t) => 
   };
 };
 
-export const example: InactiveNoticePayload = { locale: 'de', deletesOn: '2026-12-01' };
+export const example: InactiveNoticePayload = { locale: StaffLocale.de, deletesOn: '2026-12-01' };

@@ -1,9 +1,11 @@
+import { ApiSection } from '@rampflow/shared/values';
+
 /**
  * The sections of docs/reference/api-routes.md and their router files, relative to apps/api/src.
  * Sections do not follow modules (`core/sites` is master data), so the map is written by hand.
  */
 export const SECTIONS = {
-  'Auth, me and invitations': [
+  [ApiSection.auth]: [
     'app.ts',
     'modules/core/auth/routes.anonymous.ts',
     'modules/core/me/routes.user.ts',
@@ -12,45 +14,45 @@ export const SECTIONS = {
     'modules/core/context/routes.carrier.ts',
     'modules/core/context/routes.platform.ts',
   ],
-  'Platform administration': ['modules/core/platform/routes.platform.ts'],
-  'Tenant administration': [
+  [ApiSection.platform]: ['modules/core/platform/routes.platform.ts'],
+  [ApiSection.tenant]: [
     'modules/core/staff/routes.tenant.ts',
     'modules/core/settings/routes.tenant.ts',
     'modules/core/carrier-users/routes.carrier.ts',
     'modules/brand/logo/routes.tenant.ts',
     'modules/brand/logo/routes.public.ts',
   ],
-  'Master data and capacity': [
+  [ApiSection.master_data]: [
     'modules/core/sites/routes.tenant.ts',
     'modules/booking/capacity/routes.tenant.ts',
   ],
-  'Safety authoring and register': [
+  [ApiSection.safety]: [
     'modules/safety/authoring/routes.tenant.ts',
     'modules/safety/register/routes.tenant.ts',
   ],
-  'Bookings (staff)': ['modules/booking/staff/routes.tenant.ts'],
-  'Carrier network': [
+  [ApiSection.bookings]: ['modules/booking/staff/routes.tenant.ts'],
+  [ApiSection.carriers]: [
     'modules/booking/carriers/routes.tenant.ts',
     'modules/booking/carriers/routes.carrier.ts',
     'modules/booking/carriers/routes.public.ts',
     'modules/booking/registration/routes.public.ts',
   ],
-  'Carrier booking portal': [
+  [ApiSection.portal]: [
     'modules/booking/portal/routes.carrier.ts',
     'modules/booking/portal/routes.carrier-at-tenant.ts',
   ],
-  Yard: ['modules/yard/routes.tenant.ts'],
-  Driver: [
+  [ApiSection.Yard]: ['modules/yard/routes.tenant.ts'],
+  [ApiSection.Driver]: [
     'modules/driver/session/routes.driver.ts',
     'modules/driver/session/routes.public.ts',
     'modules/driver/view/routes.driver.ts',
     'modules/safety/driver/routes.driver.ts',
   ],
-  Reports: ['modules/report/kpi/routes.tenant.ts'],
-  Privacy: ['modules/privacy/requests/routes.tenant.ts'],
-} as const satisfies Record<string, readonly string[]>;
+  [ApiSection.Reports]: ['modules/report/kpi/routes.tenant.ts'],
+  [ApiSection.Privacy]: ['modules/privacy/requests/routes.tenant.ts'],
+} as const satisfies Record<ApiSection, readonly string[]>;
 
-export type Section = keyof typeof SECTIONS;
+export type Section = ApiSection;
 
 const BY_FILE = new Map<string, Section>(
   Object.entries(SECTIONS).flatMap(([section, files]) =>

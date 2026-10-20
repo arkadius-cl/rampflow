@@ -1,4 +1,17 @@
 import { randomUUID } from 'node:crypto';
+import { BookingEventType, BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import {
+  CarrierRole,
+  EmailTemplate,
+  OrgKind,
+  Role,
+  ScopeParty,
+  SqlState,
+  StaffLocale,
+  SystemActorName,
+  TenantActorKind,
+} from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
@@ -11,7 +24,7 @@ import { hashToken, type OrgId, type TenantId } from './ids.ts';
 import { asScope, type Scope, withScope } from './scope.ts';
 
 /** Postgres 42501: a row-level security policy refused the row. */
-const RLS_DENIED = { cause: { code: '42501' } };
+const RLS_DENIED = { cause: { code: SqlState.insufficient_privilege } };
 
 // Write paths of the party matrix: the commands a party needs succeed, the ones it must not
 // have fail in the database even when the application forgets its own filter.
@@ -22,17 +35,17 @@ beforeAll(async () => {
 });
 
 const driver = (): Scope => ({
-  party: 'driver',
+  party: ScopeParty.driver,
   tenantId: w.A.tenantId,
   bookingId: w.A.bookings.own.id,
-  channel: 'link',
+  channel: DriverChannel.link,
 });
 const carrierAt = (rival = false): Scope => ({
-  party: 'carrier_at_tenant',
+  party: ScopeParty.carrier_at_tenant,
   carrierId: rival ? w.A.rivalCarrierId : w.A.carrierId,
   tenantId: w.A.tenantId,
   userId: rival ? w.A.users.rival_user.id : w.A.users.carrier_user.id,
-  role: 'carrier_user',
+  role: CarrierRole.carrier_user,
 });
 
 const statusOf = async (id: string) =>
@@ -54,7 +67,7 @@ describe('driver', () => {
         siteId: b.siteId,
         bookingId: b.id,
         carrierId: b.carrierId,
-        type: 'safety_linked',
+        type: BookingEventType.safety_linked,
         at: new Date(),
         actorParty: 'driver',
       });
@@ -70,7 +83,7 @@ describe('driver', () => {
     const b = w.A.bookings.own;
     await expect(
       withScope(driver(), (tx) =>
-        tx.update(booking).set({ status: 'cancelled' }).where(eq(booking.id, b.id)),
+        tx.update(booking).set({ status: BookingStatus.cancelled }).where(eq(booking.id, b.id)),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
     await expect(
@@ -79,7 +92,7 @@ describe('driver', () => {
           tenantId: w.A.tenantId,
           siteId: w.A.bookings.rival.siteId,
           bookingId: w.A.bookings.rival.id,
-          type: 'safety_linked',
+          type: BookingEventType.safety_linked,
           at: new Date(),
           actorParty: 'driver',
         }),
@@ -124,10 +137,10 @@ describe('carrier at a tenant', () => {
       return asScope(
         tx,
         {
-          party: 'tenant',
+          party: ScopeParty.tenant,
           tenantId: w.A.tenantId,
           siteIds: 'all',
-          actor: { kind: 'system', job: 'capacity' },
+          actor: { kind: TenantActorKind.system, job: SystemActorName.capacity },
         },
         (inner) =>
           inner
@@ -144,23 +157,28 @@ describe('carrier company creation', () => {
   it('lets a signed-in user create a carrier org and become its admin, but not a tenant', async () => {
     const userId = w.A.users.dispatcher.id;
     const carrierId = randomUUID() as OrgId;
-    await withScope({ party: 'user', userId }, async (tx) => {
-      await tx.insert(org).values({ id: carrierId, kind: 'carrier', name: 'New Spedition' });
+    await withScope({ party: ScopeParty.user, userId }, async (tx) => {
+      await tx.insert(org).values({ id: carrierId, kind: OrgKind.carrier, name: 'New Spedition' });
       await asScope(
         tx,
-        { party: 'carrier', carrierId: carrierId as never, userId, role: 'carrier_admin' },
+        {
+          party: ScopeParty.carrier,
+          carrierId: carrierId as never,
+          userId,
+          role: CarrierRole.carrier_admin,
+        },
         (inner) =>
           inner
             .insert(membership)
-            .values({ userId, orgId: carrierId, orgKind: 'carrier', role: 'carrier_admin' }),
+            .values({ userId, orgId: carrierId, orgKind: 'carrier', role: Role.carrier_admin }),
       );
     });
     expect(
       await ownerDb().select().from(membership).where(eq(membership.orgId, carrierId)),
     ).toHaveLength(1);
     await expect(
-      withScope({ party: 'user', userId }, (tx) =>
-        tx.insert(org).values({ kind: 'tenant', name: 'Sneaky' }),
+      withScope({ party: ScopeParty.user, userId }, (tx) =>
+        tx.insert(org).values({ kind: OrgKind.tenant, name: 'Sneaky' }),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
   });
@@ -169,14 +187,16 @@ describe('carrier company creation', () => {
 describe('outbox inserts', () => {
   const row = (tenantId: TenantId | null) => ({
     tenantId,
-    template: 'core.probe',
+    template: EmailTemplate.core_magic_link,
     toEmail: `${randomUUID()}@policies.test`,
-    locale: 'en',
+    locale: StaffLocale.en,
     payload: {},
   });
 
   it('accepts account emails from any party and tenant emails only for the own tenant', async () => {
-    await withScope({ party: 'anonymous' }, (tx) => tx.insert(outboxMessage).values(row(null)));
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
+      tx.insert(outboxMessage).values(row(null)),
+    );
     await withScope(driver(), (tx) => tx.insert(outboxMessage).values(row(w.A.tenantId)));
     await expect(
       withScope(driver(), (tx) => tx.insert(outboxMessage).values(row(w.B.tenantId))),
@@ -185,7 +205,7 @@ describe('outbox inserts', () => {
 
   it('reads nothing back outside the system scope', async () => {
     await expect(
-      withScope({ party: 'anonymous' }, (tx) =>
+      withScope({ party: ScopeParty.anonymous }, (tx) =>
         tx.insert(outboxMessage).values(row(null)).returning(),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
@@ -204,13 +224,13 @@ describe('scope switching', () => {
         orgId: w.A.tenantId,
         orgKind: 'tenant',
         email: `claim-${randomUUID()}@policies.test`,
-        role: 'dispatcher',
+        role: Role.dispatcher,
         tokenHash,
         expiresAt: new Date(Date.now() + 3600_000),
       });
     const userId = w.B.users.dispatcher.id;
     const claim = () =>
-      withScope({ party: 'token', tokenHash, userId: null }, async (tx) => {
+      withScope({ party: ScopeParty.token, tokenHash, userId: null }, async (tx) => {
         const claimed = await tx
           .update(invitation)
           .set({ acceptedAt: new Date(), acceptedUserId: userId })
@@ -220,15 +240,15 @@ describe('scope switching', () => {
         await asScope(
           tx,
           {
-            party: 'tenant',
+            party: ScopeParty.tenant,
             tenantId: w.A.tenantId,
             siteIds: 'all',
-            actor: { kind: 'system', job: 'invitation' },
+            actor: { kind: TenantActorKind.system, job: SystemActorName.invitation },
           },
           (inner) =>
             inner
               .insert(membership)
-              .values({ userId, orgId: w.A.tenantId, orgKind: 'tenant', role: 'dispatcher' }),
+              .values({ userId, orgId: w.A.tenantId, orgKind: 'tenant', role: Role.dispatcher }),
         );
         const { rows } = await tx.execute<{ party: string }>(sql`select app.party() as party`);
         return rows[0]?.party;
@@ -239,7 +259,9 @@ describe('scope switching', () => {
 
   it('refuses a second scoped transaction inside one', async () => {
     await expect(
-      withScope({ party: 'anonymous' }, () => withScope({ party: 'anonymous' }, async () => 1)),
+      withScope({ party: ScopeParty.anonymous }, () =>
+        withScope({ party: ScopeParty.anonymous }, async () => 1),
+      ),
     ).rejects.toThrow(/asScope/);
   });
 });

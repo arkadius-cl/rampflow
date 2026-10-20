@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { Role } from '@rampflow/shared';
 import type { InvitationView } from '@rampflow/shared/modules/core/api.staff';
+import {
+  ConflictReason,
+  EmailTemplate,
+  ErrorCode,
+  OrgKind,
+  TokenPurpose,
+} from '@rampflow/shared/values';
 import { and, eq, gt, isNull, ne } from 'drizzle-orm';
 import type { AnyOrgId, InvitationId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -8,7 +15,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { enqueueEmail } from '../../../kernel/outbox.ts';
 import { tokenHashFor } from '../../../kernel/tokens.ts';
 import { userDisplay } from '../../../kernel/users.ts';
-import { appUser, invitation, membership, type OrgKind } from '../schema.ts';
+import { appUser, invitation, membership } from '../schema.ts';
 
 // Creating invitations for every org kind (PL-01, TN-01, CR-04). Acceptance is U2's
 // `acceptInvitation` (core/invitations/accept.redeem.ts).
@@ -74,7 +81,9 @@ export async function issueInvitation(
   now: Date,
 ): Promise<InvitationRow> {
   if (await isMember(tx, input.orgId, input.email)) {
-    throw new ApiError('conflict', 'Already a member', { reason: 'already_member' });
+    throw new ApiError(ErrorCode.conflict, 'Already a member', {
+      reason: ConflictReason.already_member,
+    });
   }
   await tx
     .update(invitation)
@@ -90,7 +99,7 @@ export async function issueInvitation(
       email: input.email,
       role: input.role,
       siteIds: [...(input.siteIds ?? [])],
-      tokenHash: tokenHashFor('invitation', id),
+      tokenHash: tokenHashFor(TokenPurpose.invitation, id),
       invitedBy: input.invitedBy,
       expiresAt: new Date(now.getTime() + INVITATION_TTL_MS),
     })
@@ -103,7 +112,7 @@ export async function issueInvitation(
   await enqueueEmail(
     tx,
     {
-      template: 'core.invitation',
+      template: EmailTemplate.core_invitation,
       to: input.email,
       locale: input.locale,
       payload: {
@@ -114,7 +123,7 @@ export async function issueInvitation(
       },
       // The outbox accepts only the scope's own tenant; the platform enqueues tenant-less.
       tenantId:
-        input.orgKind === 'tenant' && !input.fromPlatform ? (input.orgId as TenantId) : null,
+        input.orgKind === OrgKind.tenant && !input.fromPlatform ? (input.orgId as TenantId) : null,
     },
     null,
   );

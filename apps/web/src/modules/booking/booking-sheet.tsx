@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type Avis, AvisInput } from '@rampflow/shared/modules/avis/avis';
 import type { BookingView, CreateStaffBooking } from '@rampflow/shared/modules/booking/api.staff';
+import { CarrierChoice, Direction } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
+import { ConflictReason, ErrorCode, Permission, ZodIssueCode } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -64,7 +66,7 @@ import { StartPicker, startOptions } from './start-picker';
 
 const SheetFields = z
   .object({
-    carrierKind: z.enum(['linked', 'other']),
+    carrierKind: z.enum(CarrierChoice),
     carrierId: z.string(),
     carrierName: z.string().trim().max(120),
     loadTypeId: z.string().min(1),
@@ -74,17 +76,32 @@ const SheetFields = z
     forceReason: z.string().trim().max(500),
   })
   .superRefine((v, ctx) => {
-    if (v.carrierKind === 'linked' && v.carrierId === '') {
-      ctx.addIssue({ code: 'custom', path: ['carrierId'], message: 'Choose a carrier' });
+    if (v.carrierKind === CarrierChoice.linked && v.carrierId === '') {
+      ctx.addIssue({ code: ZodIssueCode.custom, path: ['carrierId'], message: 'Choose a carrier' });
     }
-    if (v.carrierKind === 'other' && v.carrierName === '') {
-      ctx.addIssue({ code: 'custom', path: ['carrierName'], message: 'Name the carrier' });
+    if (v.carrierKind === CarrierChoice.other && v.carrierName === '') {
+      ctx.addIssue({
+        code: ZodIssueCode.custom,
+        path: ['carrierName'],
+        message: 'Name the carrier',
+      });
     }
   });
 type SheetInput = z.input<typeof SheetFields>;
 type SheetOutput = z.output<typeof SheetFields>;
 
-const FORCE_REASONS = new Set(['capacity_full', 'daily_cap_reached']);
+const FORCE_REASONS = new Set<ConflictReason | undefined>([
+  ConflictReason.capacity_full,
+  ConflictReason.daily_cap_reached,
+]);
+
+// The API's issue paths that name a field of the sheet.
+const ISSUE_FIELD: Partial<Record<string, keyof SheetInput>> = {
+  forceReason: 'forceReason',
+  startsAt: 'startsAt',
+  loadTypeId: 'loadTypeId',
+  carrier: 'carrierName',
+};
 
 export function BookingSheet({
   orgId,
@@ -144,7 +161,7 @@ function SheetForm({
   const { t } = useTranslation('booking');
   const id = useId();
   const access = useAccess();
-  const canForce = access.can('booking.force');
+  const canForce = access.can(Permission.booking.force);
   const queryClient = useQueryClient();
   const loadTypeName = useLoadTypeName();
   const siteTime = useSiteTime();
@@ -158,7 +175,7 @@ function SheetForm({
   const form = useForm<SheetInput, unknown, SheetOutput>({
     resolver: zodResolver(SheetFields),
     defaultValues: {
-      carrierKind: 'linked',
+      carrierKind: CarrierChoice.linked,
       carrierId: '',
       carrierName: '',
       loadTypeId: '',
@@ -181,7 +198,7 @@ function SheetForm({
   }, [firstLoadType, form]);
   const noLinkedCarriers = carriers.data?.length === 0;
   useEffect(() => {
-    if (noLinkedCarriers) form.setValue('carrierKind', 'other');
+    if (noLinkedCarriers) form.setValue('carrierKind', CarrierChoice.other);
   }, [noLinkedCarriers, form]);
 
   const [carrierKind, loadTypeId, day, resourceId, startsAt] = useWatch({
@@ -224,13 +241,10 @@ function SheetForm({
       applyAvisIssues(e, avisForm);
       if (!(e instanceof ApiFailure)) return;
       for (const issue of e.issues) {
-        const [first] = issue.path;
-        if (first === 'forceReason' || first === 'startsAt' || first === 'loadTypeId') {
-          form.setError(first, { type: issue.code });
-        }
-        if (first === 'carrier') form.setError('carrierName', { type: issue.code });
+        const field = ISSUE_FIELD[String(issue.path[0])];
+        if (field) form.setError(field, { type: issue.code });
       }
-      if (e.code === 'conflict' && FORCE_REASONS.has(e.reason ?? '')) {
+      if (e.code === ErrorCode.conflict && FORCE_REASONS.has(e.conflictReason)) {
         setForceNeeded(canForce);
         void queryClient.invalidateQueries({ queryKey: bookingKey(orgId) });
       }
@@ -244,7 +258,7 @@ function SheetForm({
     if (!fieldsOk || !avisOk) return;
     const v = SheetFields.parse(form.getValues());
     if (forcing && v.forceReason === '') {
-      form.setError('forceReason', { type: 'too_small' });
+      form.setError('forceReason', { type: ZodIssueCode.too_small });
       return;
     }
     create.mutate({
@@ -253,7 +267,8 @@ function SheetForm({
       loadTypeId: v.loadTypeId,
       startsAt: v.startsAt,
       ...(v.resourceId ? { resourceId: v.resourceId } : {}),
-      carrier: v.carrierKind === 'linked' ? { id: v.carrierId } : { name: v.carrierName },
+      carrier:
+        v.carrierKind === CarrierChoice.linked ? { id: v.carrierId } : { name: v.carrierName },
       avis: AvisInput.parse(toAvisInput(avisForm.getValues())),
       ...(forcing ? { force: true, forceReason: v.forceReason } : {}),
     });
@@ -262,13 +277,15 @@ function SheetForm({
   const resources = (board.data?.resources ?? []).filter(
     (r) => !loadType || loadType.resourceIds.includes(r.id),
   );
-  const fieldError = (name: keyof SheetInput) => {
-    const error = form.formState.errors[name];
-    if (!error) return undefined;
-    if (name === 'forceReason') return t(($) => $.plan.sheet.force_reason_required);
-    if (name === 'startsAt') return t(($) => $.plan.sheet.choose_time);
-    return t(($) => $.plan.validation.required);
+  // Fields with a message of their own; any other field is simply required.
+  const ownError: Partial<Record<keyof SheetInput, string>> = {
+    forceReason: t(($) => $.plan.sheet.force_reason_required),
+    startsAt: t(($) => $.plan.sheet.choose_time),
   };
+  const fieldError = (name: keyof SheetInput) =>
+    form.formState.errors[name]
+      ? (ownError[name] ?? t(($) => $.plan.validation.required))
+      : undefined;
 
   return (
     <form noValidate onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
@@ -304,7 +321,7 @@ function SheetForm({
                 </RadioGroup>
               )}
             />
-            {carrierKind === 'linked' ? (
+            {carrierKind === CarrierChoice.linked ? (
               <Controller
                 name="carrierId"
                 control={form.control}
@@ -502,7 +519,7 @@ function SheetForm({
             <FieldLegend>{t(($) => $.plan.sheet.avis)}</FieldLegend>
             <AvisFields
               form={avisForm}
-              direction={loadType?.direction ?? 'inbound'}
+              direction={loadType?.direction ?? Direction.inbound}
               rules={rules}
             />
           </FieldSet>

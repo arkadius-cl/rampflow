@@ -1,4 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import { ReferenceType } from '@rampflow/shared/modules/avis/values';
+import {
+  BookingEventType,
+  BookingStatus,
+  CreatedParty,
+  LinkVia,
+  OnSiteStatus,
+  Punctuality,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type {
   CandidatesView,
   DocksView,
@@ -8,6 +20,7 @@ import type {
   WalkInResult,
   YardTruck,
 } from '@rampflow/shared/modules/yard/api';
+import { ConflictReason, PackageId } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../test/db.ts';
@@ -59,7 +72,7 @@ describe('YD-01 expected trucks and search', () => {
     // A 23:30 slot of Sunday, marked no-show at 00:30 on Monday: it belongs to Monday's gate.
     const noShow = await seedBooking(w.A, {
       startsAt: new Date('2026-11-01T22:30:00Z'),
-      status: 'no_show',
+      status: BookingStatus.no_show,
       noShowAt: new Date('2026-11-01T23:30:00Z'),
     });
     ids = { early: early.id, later: later.id, otherDay: otherDay.id, noShow: noShow.id };
@@ -71,7 +84,7 @@ describe('YD-01 expected trucks and search', () => {
       tenantId: w.A.tenantId,
       siteId: w.A.sites[0].id,
       carrierId: w.A.carrierId,
-      type: 'delivery_note',
+      type: ReferenceType.delivery_note,
       value: 'ls-99812',
       valueNorm: 'LS-99812',
     });
@@ -97,8 +110,8 @@ describe('YD-01 expected trucks and search', () => {
       plate: 'HHAB123',
       loadUnits: 10,
       loadType: { name: { en: 'Pallets' } },
-      safety: { status: 'not_required' },
-      punctuality: 'early',
+      safety: { status: SafetyStatus.not_required },
+      punctuality: Punctuality.early,
       punctualityMinutes: -240,
     });
     expect(view.items.find((t) => t.id === ids.noShow)?.punctuality).toBe('late');
@@ -144,16 +157,20 @@ describe('YD-02 check in', () => {
     new Date(new Date(iso).getTime() + m * 60_000).toISOString();
 
   it.each([
-    [-31, 'early'],
-    [-30, 'on_time'],
-    [15, 'on_time'],
-    [16, 'late'],
+    [-31, Punctuality.early],
+    [-30, Punctuality.on_time],
+    [15, Punctuality.on_time],
+    [16, Punctuality.late],
   ] as const)('records punctuality at %i minutes as %s (tolerance 30, grace 15)', async (m, p) => {
     const b = await fresh();
     const truck = await json<YardTruck>(
       await checkIn(w.A, b.id, minutesAfter(MON_0900, m), 'hh ab 1'),
     );
-    expect(truck).toMatchObject({ status: 'checked_in', punctuality: p, punctualityMinutes: m });
+    expect(truck).toMatchObject({
+      status: BookingStatus.checked_in,
+      punctuality: p,
+      punctualityMinutes: m,
+    });
     expect(truck.plate).toBe('HHAB1');
   });
 
@@ -171,8 +188,10 @@ describe('YD-02 check in', () => {
     const url = `${yard(w.A)}/bookings/${b.id}/turn-away`;
     expect((await gate.post(url, { body: { reason: 'bad weather' } })).status).toBe(422);
     await json(await checkIn(w.A, b.id, MON_0900));
-    const truck = await json<YardTruck>(await gate.post(url, { body: { reason: 'wrong_load' } }));
-    expect(truck).toMatchObject({ status: 'turned_away' });
+    const truck = await json<YardTruck>(
+      await gate.post(url, { body: { reason: TurnAwayReason.wrong_load } }),
+    );
+    expect(truck).toMatchObject({ status: BookingStatus.turned_away });
     expect((await bookingRow(b.id)).turnAwayReason).toBe('wrong_load');
   });
 
@@ -181,17 +200,22 @@ describe('YD-02 check in', () => {
     const seed = () =>
       seedBooking(w.A, {
         startsAt: new Date('2026-10-24T21:30:00Z'),
-        status: 'no_show',
+        status: BookingStatus.no_show,
         noShowAt: new Date('2026-10-24T22:30:00Z'),
       });
     const sameDay = await seed();
     // Sunday 23:45 CET is 24 h 15 min after no_show_at, still that site-local day.
     const truck = await json<YardTruck>(await checkIn(w.A, sameDay.id, '2026-10-25T22:45:00.000Z'));
-    expect(truck).toMatchObject({ status: 'checked_in', punctuality: 'late' });
+    expect(truck).toMatchObject({
+      status: BookingStatus.checked_in,
+      punctuality: Punctuality.late,
+    });
     const nextDay = await seed();
     const res = await checkIn(w.A, nextDay.id, '2026-10-25T23:10:00.000Z');
     expect(res.status).toBe(409);
-    expect(await errorOf(res)).toMatchObject({ details: { reason: 'invalid_transition' } });
+    expect(await errorOf(res)).toMatchObject({
+      details: { reason: ConflictReason.invalid_transition },
+    });
   });
 });
 
@@ -200,7 +224,7 @@ describe('YD-02 safety at the gate', () => {
   let start: World;
   beforeAll(async () => {
     pro = await world();
-    start = await world({ packages: { A: 'start' } });
+    start = await world({ packages: { A: PackageId.start } });
     await seedBriefing(ownerDb(), pro.A);
     await seedBriefing(ownerDb(), start.A);
   });
@@ -210,7 +234,10 @@ describe('YD-02 safety at the gate', () => {
     const refused = await checkIn(pro.A, b.id, MON_0900);
     expect(refused.status).toBe(409);
     expect(await errorOf(refused)).toMatchObject({
-      details: { reason: 'safety_missing', instructionIds: [briefingOf(pro.A).instructionId] },
+      details: {
+        reason: ConflictReason.safety_missing,
+        instructionIds: [briefingOf(pro.A).instructionId],
+      },
     });
     const gate = at(MON_0900, pro.A.users.gate_operator);
     const base = `${yard(pro.A)}/bookings/${b.id}`;
@@ -223,10 +250,10 @@ describe('YD-02 safety at the gate', () => {
     const linked = await json<YardTruck>(
       await gate.post(`${base}/acknowledgements`, { body: { acknowledgementId: items[0]?.id } }),
     );
-    expect(linked.safety).toEqual({ status: 'valid', enforced: true });
+    expect(linked.safety).toEqual({ status: SafetyStatus.valid, enforced: true });
     expect((await eventsOf(b.id)).at(-1)).toMatchObject({
-      type: 'safety_linked',
-      data: { via: 'gate_lookup' },
+      type: BookingEventType.safety_linked,
+      data: { via: LinkVia.gate_lookup },
     });
     expect((await json<YardTruck>(await checkIn(pro.A, b.id, MON_0900))).status).toBe('checked_in');
   });
@@ -235,8 +262,8 @@ describe('YD-02 safety at the gate', () => {
     const b = await seedBooking(start.A, { startsAt: new Date(MON_0900) });
     const truck = await json<YardTruck>(await checkIn(start.A, b.id, MON_0900));
     expect(truck).toMatchObject({
-      status: 'checked_in',
-      safety: { status: 'missing', enforced: false },
+      status: BookingStatus.checked_in,
+      safety: { status: SafetyStatus.missing, enforced: false },
     });
     expect((await eventsOf(b.id)).at(-1)?.data).toMatchObject({ safety: 'missing_warned' });
   });
@@ -280,41 +307,51 @@ describe('YD-03 walk-in', () => {
   it('lets a gate operator check in an unbooked truck while closed and at a full slot', async () => {
     for (let i = 0; i < 2; i++) await seedBooking(w.A, { startsAt: new Date(MON_0900) });
     const result = await json<WalkInResult>(
-      await walkIn({ outcome: 'check_in', avis: avisInput() }, '2026-11-02T08:07:00.000Z'),
+      await walkIn(
+        { outcome: WalkInOutcome.check_in, avis: avisInput() },
+        '2026-11-02T08:07:00.000Z',
+      ),
       201,
     );
     expect(result.truck).toMatchObject({
-      status: 'checked_in',
+      status: BookingStatus.checked_in,
       walkIn: true,
       startsAt: MON_0900,
       plate: 'PO12345',
       punctuality: null,
     });
     const row = await bookingRow(result.truck.id as BookingId);
-    expect(row).toMatchObject({ walkIn: true, createdParty: 'staff' });
+    expect(row).toMatchObject({ walkIn: true, createdParty: CreatedParty.staff });
   });
 
   it('records an unbooked truck that is turned away', async () => {
     const result = await json<WalkInResult>(
-      await walkIn({ outcome: 'turn_away', reason: 'no_capacity' }),
+      await walkIn({ outcome: WalkInOutcome.turn_away, reason: TurnAwayReason.no_capacity }),
       201,
     );
-    expect(result.truck).toMatchObject({ status: 'turned_away', walkIn: true, plate: 'PO12345' });
-    const missing = await walkIn({ outcome: 'turn_away' });
+    expect(result.truck).toMatchObject({
+      status: BookingStatus.turned_away,
+      walkIn: true,
+      plate: 'PO12345',
+    });
+    const missing = await walkIn({ outcome: WalkInOutcome.turn_away });
     expect(missing.status).toBe(422);
-    const noAvis = await walkIn({ outcome: 'check_in' });
+    const noAvis = await walkIn({ outcome: WalkInOutcome.check_in });
     expect(noAvis.status).toBe(422);
   });
 
   it('under safety enforcement keeps a walk-in without a briefing confirmed with "Briefing missing"', async () => {
     await seedBriefing(ownerDb(), w.A);
     const result = await json<WalkInResult>(
-      await walkIn({ outcome: 'check_in', avis: avisInput() }),
+      await walkIn({ outcome: WalkInOutcome.check_in, avis: avisInput() }),
       201,
     );
     expect(result).toMatchObject({
       safety: 'missing',
-      truck: { status: 'confirmed', safety: { status: 'missing', enforced: true } },
+      truck: {
+        status: BookingStatus.confirmed,
+        safety: { status: SafetyStatus.missing, enforced: true },
+      },
     });
     const view = await json<ExpectedView>(
       await at(MON_0900, w.A.users.gate_operator).get(
@@ -332,8 +369,8 @@ describe('YD-03 walk-in', () => {
         loadTypeId: w.A.sites[0].loadTypeId,
         carrier: { name: 'X' },
         plateSeen: 'X1',
-        outcome: 'turn_away',
-        reason: 'other',
+        outcome: WalkInOutcome.turn_away,
+        reason: TurnAwayReason.other,
       },
     });
     expect(res.status).toBe(403);
@@ -361,30 +398,35 @@ describe('YD-04 on site and YD-05 check out', () => {
     expect(view.items.find((t) => t.id === b.id)?.standgeld).toBe(true);
   });
 
-  it.each(['checked_in', 'called', 'at_dock', 'loading'] as const)(
-    'departs from %s only with a reason and shortens the driver link',
-    async (status) => {
-      const holds = status !== 'checked_in';
-      const b = await seedBooking(w.A, {
-        startsAt: new Date(MON_0900),
-        status,
-        dockId: holds ? w.A.sites[0].dockIds[0] : null,
-      });
-      const gate = at('2026-11-02T10:00:00.000Z', w.A.users.gate_operator);
-      const url = `${yard(w.A)}/bookings/${b.id}/depart`;
-      expect((await gate.post(url, { body: {} })).status).toBe(422);
-      const truck = await json<YardTruck>(await gate.post(url, { body: { reason: 'Left early' } }));
-      expect(truck).toMatchObject({ status: 'departed', departedAt: '2026-11-02T10:00:00.000Z' });
-      const docks = await json<DocksView>(
-        await gate.get(`${yard(w.A)}/docks?siteId=${w.A.sites[0].id}`),
-      );
-      const dock0 = docks.halls[0]?.docks.find((d) => d.id === w.A.sites[0].dockIds[0]);
-      expect(dock0?.occupant).toBeNull();
-    },
-  );
+  it.each([
+    OnSiteStatus.checked_in,
+    OnSiteStatus.called,
+    OnSiteStatus.at_dock,
+    OnSiteStatus.loading,
+  ])('departs from %s only with a reason and shortens the driver link', async (status) => {
+    const holds = status !== OnSiteStatus.checked_in;
+    const b = await seedBooking(w.A, {
+      startsAt: new Date(MON_0900),
+      status,
+      dockId: holds ? w.A.sites[0].dockIds[0] : null,
+    });
+    const gate = at('2026-11-02T10:00:00.000Z', w.A.users.gate_operator);
+    const url = `${yard(w.A)}/bookings/${b.id}/depart`;
+    expect((await gate.post(url, { body: {} })).status).toBe(422);
+    const truck = await json<YardTruck>(await gate.post(url, { body: { reason: 'Left early' } }));
+    expect(truck).toMatchObject({
+      status: BookingStatus.departed,
+      departedAt: '2026-11-02T10:00:00.000Z',
+    });
+    const docks = await json<DocksView>(
+      await gate.get(`${yard(w.A)}/docks?siteId=${w.A.sites[0].id}`),
+    );
+    const dock0 = docks.halls[0]?.docks.find((d) => d.id === w.A.sites[0].dockIds[0]);
+    expect(dock0?.occupant).toBeNull();
+  });
 
   it('departs from done without a reason; the link expires driver_link_hours later', async () => {
-    const b = await seedBooking(w.A, { startsAt: new Date(MON_0900), status: 'done' });
+    const b = await seedBooking(w.A, { startsAt: new Date(MON_0900), status: BookingStatus.done });
     const truck = await json<YardTruck>(
       await at('2026-11-02T10:00:00.000Z', w.A.users.gate_operator).post(
         `${yard(w.A)}/bookings/${b.id}/depart`,

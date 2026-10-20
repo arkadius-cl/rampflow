@@ -1,7 +1,6 @@
-import {
-  LOGO_MAX_BYTES,
-  LOGO_CONTENT_TYPES as LOGO_TYPES,
-} from '@rampflow/shared/modules/brand/api';
+import { LOGO_MAX_BYTES } from '@rampflow/shared/modules/brand/api';
+import { LogoContentType } from '@rampflow/shared/modules/brand/values';
+import { PolicyReader, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { check, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { bytea, createdAt, instant, type TenantId, type UserId } from '../../db/ids.ts';
@@ -16,7 +15,7 @@ export const tenantLogo = pgTable(
       .$type<TenantId>()
       .primaryKey()
       .references(() => org.id, { onDelete: 'cascade' }),
-    contentType: text('content_type', { enum: LOGO_TYPES }).notNull(),
+    contentType: text('content_type', { enum: values(LogoContentType) }).notNull(),
     bytes: bytea('bytes').notNull(),
     byteSize: integer('byte_size').notNull(),
     sha256: bytea('sha256').notNull(),
@@ -30,12 +29,21 @@ export const tenantLogo = pgTable(
   (t) => [
     check(
       'tenant_logo_content_type_check',
-      sql`${t.contentType} in (${sql.raw(LOGO_TYPES.map((v) => `'${v}'`).join(', '))})`,
+      sql`${t.contentType} in (${sql.raw(
+        values(LogoContentType)
+          .map((v) => `'${v}'`)
+          .join(', '),
+      )})`,
     ),
     check('tenant_logo_size_check', sql`${t.byteSize} <= ${sql.raw(String(LOGO_MAX_BYTES))}`),
     ...tenantPolicies(t, {
       site: null,
-      readers: ['carrier', 'carrier_at_tenant', 'driver', 'public'],
+      readers: [
+        PolicyReader.carrier,
+        PolicyReader.carrier_at_tenant,
+        PolicyReader.driver,
+        PolicyReader.public,
+      ],
     }),
   ],
 );

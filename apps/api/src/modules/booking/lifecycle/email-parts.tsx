@@ -1,5 +1,5 @@
-import type { DriverLocale, StaffLocale } from '@rampflow/shared';
 import { formatSiteTime, type TimeZone } from '@rampflow/shared/time';
+import { type DriverLocale, StaffLocale } from '@rampflow/shared/values';
 import { Heading, Section, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { encode } from 'uqr';
@@ -61,7 +61,7 @@ const value = { fontSize: '15px', margin: '2px 0 0' };
 /** The booking facts every booking email repeats. */
 export function BookingFacts(props: { p: BookingEmailPayload; t: TFunction }) {
   const { p, t } = props;
-  const loadType = p.locale === 'de' ? p.loadTypeName.de : p.loadTypeName.en;
+  const loadType = p.locale === StaffLocale.de ? p.loadTypeName.de : p.loadTypeName.en;
   return (
     <Section>
       <Text style={label}>{t('booking.email.code')}</Text>

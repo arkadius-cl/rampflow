@@ -1,9 +1,11 @@
+import type { LoadTypeDuration } from '@rampflow/shared/modules/booking/api.capacity';
 import {
-  CLOSURE_KINDS,
-  DIRECTIONS,
-  type LoadTypeDuration,
-  RESOURCE_KINDS,
-} from '@rampflow/shared/modules/booking/api.capacity';
+  ClosureKind,
+  ClosureSource,
+  Direction,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { ColumnMode, PolicyReader, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -40,7 +42,7 @@ import { dock, siteForeignKey } from '../core/schema.ts';
 export type ResourceId = Id<'resource'>;
 export type LoadTypeId = Id<'load_type'>;
 
-export { CLOSURE_KINDS, DIRECTIONS, type LoadTypeDuration, RESOURCE_KINDS };
+export type { LoadTypeDuration };
 
 /** A single dock or a pool of docks that bookings are planned on (MD-03). */
 export const bookableResource = pgTable(
@@ -49,9 +51,11 @@ export const bookableResource = pgTable(
     id: primaryId<'resource'>(),
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
-    kind: text('kind', { enum: RESOURCE_KINDS }).notNull(),
+    kind: text('kind', { enum: values(ResourceKind) }).notNull(),
     name: text('name').notNull(),
-    directions: text('directions', { enum: DIRECTIONS }).array().notNull(),
+    directions: text('directions', { enum: values(Direction) })
+      .array()
+      .notNull(),
     capacityCap: integer('capacity_cap'),
     dailyCap: integer('daily_cap'),
     sort: integer('sort').notNull().default(0),
@@ -64,7 +68,7 @@ export const bookableResource = pgTable(
     unique('bookable_resource_id_site_key').on(t.id, t.siteId),
     index('bookable_resource_tenant_id_idx').on(t.tenantId),
     index('bookable_resource_site_id_idx').on(t.siteId),
-    check('bookable_resource_kind_check', oneOf(t.kind, RESOURCE_KINDS)),
+    check('bookable_resource_kind_check', oneOf(t.kind, values(ResourceKind))),
     check(
       'bookable_resource_directions_check',
       sql`cardinality(${t.directions}) >= 1 and ${t.directions} <@ array['inbound', 'outbound']::text[]`,
@@ -74,7 +78,10 @@ export const bookableResource = pgTable(
       sql`${t.capacityCap} is null or (${t.kind} = 'pool' and ${t.capacityCap} >= 1)`,
     ),
     check('bookable_resource_daily_cap_check', sql`${t.dailyCap} is null or ${t.dailyCap} >= 1`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -83,7 +90,7 @@ export const resourceDock = pgTable(
   {
     dockId: uuid('dock_id').$type<DockId>().primaryKey(),
     resourceId: uuid('resource_id').$type<ResourceId>().notNull(),
-    resourceKind: text('resource_kind', { enum: RESOURCE_KINDS }).notNull(),
+    resourceKind: text('resource_kind', { enum: values(ResourceKind) }).notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
   },
@@ -103,7 +110,7 @@ export const resourceDock = pgTable(
     index('resource_dock_resource_id_idx').on(t.resourceId),
     index('resource_dock_tenant_id_idx').on(t.tenantId),
     index('resource_dock_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
 
@@ -131,11 +138,9 @@ export const openingHours = pgTable(
     index('opening_hours_resource_id_idx').on(t.resourceId),
     check('opening_hours_weekday_check', sql`${t.weekday} between 1 and 7`),
     check('opening_hours_window_check', sql`${t.opens} < ${t.closes}`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
-
-export const CLOSURE_SOURCES = ['manual', 'holiday'] as const;
 
 export const closure = pgTable(
   'closure',
@@ -144,12 +149,12 @@ export const closure = pgTable(
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     resourceId: uuid('resource_id').$type<ResourceId>(),
-    kind: text('kind', { enum: CLOSURE_KINDS }).notNull(),
-    startsLocal: timestamp('starts_local', { mode: 'string' }).notNull(),
-    endsLocal: timestamp('ends_local', { mode: 'string' }).notNull(),
+    kind: text('kind', { enum: values(ClosureKind) }).notNull(),
+    startsLocal: timestamp('starts_local', { mode: ColumnMode.string }).notNull(),
+    endsLocal: timestamp('ends_local', { mode: ColumnMode.string }).notNull(),
     reason: text('reason'),
-    source: text('source', { enum: CLOSURE_SOURCES }).notNull(),
-    holidayDate: date('holiday_date', { mode: 'string' }),
+    source: text('source', { enum: values(ClosureSource) }).notNull(),
+    holidayDate: date('holiday_date', { mode: ColumnMode.string }),
     holidayName: text('holiday_name'),
     reopenedAt: instant('reopened_at'),
     createdBy: uuid('created_by').$type<UserId>(),
@@ -167,14 +172,14 @@ export const closure = pgTable(
     index('closure_site_starts_idx').on(t.siteId, t.startsLocal),
     index('closure_tenant_id_idx').on(t.tenantId),
     index('closure_resource_id_idx').on(t.resourceId),
-    check('closure_kind_check', oneOf(t.kind, CLOSURE_KINDS)),
-    check('closure_source_check', oneOf(t.source, CLOSURE_SOURCES)),
+    check('closure_kind_check', oneOf(t.kind, values(ClosureKind))),
+    check('closure_source_check', oneOf(t.source, values(ClosureSource))),
     check('closure_window_check', sql`${t.startsLocal} < ${t.endsLocal}`),
     check(
       'closure_holiday_date_check',
       sql`(${t.source} = 'holiday') = (${t.holidayDate} is not null)`,
     ),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
 
@@ -185,7 +190,7 @@ export const loadType = pgTable(
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     name: jsonb('name').$type<{ de: string; en: string }>().notNull(),
-    direction: text('direction', { enum: DIRECTIONS }).notNull(),
+    direction: text('direction', { enum: values(Direction) }).notNull(),
     duration: jsonb('duration').$type<LoadTypeDuration>().notNull(),
     bufferMinutes: integer('buffer_minutes').notNull().default(0),
     carrierBookable: boolean('carrier_bookable').notNull().default(true),
@@ -198,9 +203,12 @@ export const loadType = pgTable(
     unique('load_type_id_site_key').on(t.id, t.siteId),
     index('load_type_tenant_id_idx').on(t.tenantId),
     index('load_type_site_id_idx').on(t.siteId),
-    check('load_type_direction_check', oneOf(t.direction, DIRECTIONS)),
+    check('load_type_direction_check', oneOf(t.direction, values(Direction))),
     check('load_type_buffer_check', sql`${t.bufferMinutes} between 0 and 240`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -225,6 +233,6 @@ export const loadTypeResource = pgTable(
     index('load_type_resource_resource_id_idx').on(t.resourceId),
     index('load_type_resource_tenant_id_idx').on(t.tenantId),
     index('load_type_resource_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );

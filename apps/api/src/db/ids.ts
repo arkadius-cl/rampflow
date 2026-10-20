@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { ColumnMode } from '@rampflow/shared/values';
 import { type SQL, sql } from 'drizzle-orm';
 import { type AnyPgColumn, customType, timestamp, uuid } from 'drizzle-orm/pg-core';
 import * as z from 'zod';
@@ -47,13 +48,17 @@ export const primaryId = <E extends string>() =>
   uuid('id').$type<Id<E>>().primaryKey().default(sql`uuidv7()`);
 
 /** A UTC instant (ADR-0012). */
-export const instant = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
+export const instant = (name: string) =>
+  timestamp(name, { withTimezone: true, mode: ColumnMode.date });
 
 export const createdAt = () => instant('created_at').notNull().defaultNow();
 
-/** `column in ('a', 'b')` for text enumerations, which stay `text` plus a check (data model). */
+/**
+ * `column in ('a', 'b')` for text enumerations, which stay `text` plus a check (data model). Dots
+ * and dashes pass for ids such as `booking.no-show`; neither can end the quoted literal.
+ */
 export function oneOf(column: AnyPgColumn, values: readonly string[]): SQL {
-  for (const v of values) if (!/^[a-z0-9_]+$/.test(v)) throw new Error(`Bad enum value ${v}`);
+  for (const v of values) if (!/^[a-z0-9_.-]+$/.test(v)) throw new Error(`Bad enum value ${v}`);
   return sql`${column} in (${sql.raw(values.map((v) => `'${v}'`).join(', '))})`;
 }
 

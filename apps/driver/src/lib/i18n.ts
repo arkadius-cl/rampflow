@@ -1,6 +1,7 @@
 import { createBrowserI18n } from '@rampflow/i18n/browser';
 import status from '@rampflow/i18n/locales/status.json';
-import { DRIVER_LOCALES, type DriverLocale } from '@rampflow/shared/locales';
+import { TranslationState } from '@rampflow/shared/modules/safety/values';
+import { DriverLocale, isValueOf } from '@rampflow/shared/values';
 import type { i18n } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import type app from '../../../../packages/i18n/locales/en/driver/app.json';
@@ -18,10 +19,10 @@ declare module 'i18next' {
 }
 
 const STORAGE_KEY = 'rf_driver_locale';
-export const FALLBACK_LOCALE: DriverLocale = 'en';
+export const FALLBACK_LOCALE: DriverLocale = DriverLocale.en;
 
 export const isDriverLocale = (value: unknown): value is DriverLocale =>
-  typeof value === 'string' && (DRIVER_LOCALES as readonly string[]).includes(value);
+  typeof value === 'string' && isValueOf(DriverLocale, value);
 
 /** Endonyms, so a driver finds their language whatever the current one is. */
 export const LANGUAGE_NAMES: Record<DriverLocale, string> = {
@@ -41,7 +42,7 @@ export const LANGUAGE_NAMES: Record<DriverLocale, string> = {
 
 /** The DR-02 badge: the locale's catalogs are machine translations nobody reviewed yet. */
 export const isMachineTranslated = (locale: DriverLocale) =>
-  (status as Record<string, string>)[locale] === 'machine';
+  (status as Record<string, string>)[locale] === TranslationState.machine;
 
 export function preferredLocale(
   stored: string | null = localStorage.getItem(STORAGE_KEY),

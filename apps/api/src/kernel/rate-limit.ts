@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
 import { getConnInfo } from '@hono/node-server/conninfo';
+import type { RateLimitBucket } from '@rampflow/shared/modules/core/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { and, asc, count, eq, gt, sql } from 'drizzle-orm';
 import type { Context, MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { db, type Tx } from '../db/pool.ts';
-import { type RateLimitBucket, rateLimitEvent } from '../modules/core/schema.ts';
+import { rateLimitEvent } from '../modules/core/schema.ts';
 import type { AppEnv } from './env.ts';
 import { env } from './env.ts';
 import { ApiError } from './errors.ts';
@@ -94,7 +96,7 @@ export async function consumeRateLimit(
     return current;
   });
   if (state.limited) {
-    throw new ApiError('rate_limited', 'Too many requests', {
+    throw new ApiError(ErrorCode.rate_limited, 'Too many requests', {
       retryAfterSeconds: state.retryAfterSeconds,
     });
   }

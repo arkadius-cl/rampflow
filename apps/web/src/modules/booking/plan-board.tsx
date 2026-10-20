@@ -3,7 +3,8 @@ import type {
   BoardView,
   BookingSummary,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { FINAL_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { FinalBookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { BadgeSize, isValueOf } from '@rampflow/shared/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +19,7 @@ import { BookingStatusBadge } from './display';
 // model, so a DST day and server-side capacity per slot need no wall-clock arithmetic here.
 
 const MINUTE = 60_000;
-const isFinal = (b: BookingSummary) => (FINAL_STATUSES as readonly string[]).includes(b.status);
+const isFinal = (b: BookingSummary) => isValueOf(FinalBookingStatus, b.status);
 
 /** The rows the board shows: from the first open or booked slot to the last. */
 export function visibleWindow(board: BoardView): { first: number; last: number } | null {
@@ -108,7 +109,9 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
         className="grid min-w-max"
         style={{
           gridTemplateColumns: `4.5rem ${board.resources
-            .map((r) => (r.kind === 'pool' ? 'minmax(18rem, 2fr)' : 'minmax(11rem, 1fr)'))
+            .map((r) =>
+              r.kind === ResourceKind.pool ? 'minmax(18rem, 2fr)' : 'minmax(11rem, 1fr)',
+            )
             .join(' ')}`,
         }}
       >
@@ -175,7 +178,7 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
 
 function ResourceHeader({ resource }: { resource: BoardResource }) {
   const { t } = useTranslation('booking');
-  const Icon = resource.kind === 'pool' ? LayersIcon : SquareIcon;
+  const Icon = resource.kind === ResourceKind.pool ? LayersIcon : SquareIcon;
   const perSlot = Math.max(0, ...resource.slots.map((s) => s.capacity));
   return (
     <div className="sticky top-0 z-20 border-r border-b bg-background px-2 py-1.5 last:border-r-0">
@@ -184,7 +187,7 @@ function ResourceHeader({ resource }: { resource: BoardResource }) {
         <span className="truncate">{resource.name}</span>
       </div>
       <div className="text-[11px] text-muted-foreground">
-        {resource.kind === 'pool'
+        {resource.kind === ResourceKind.pool
           ? t(($) => $.plan.board.pool, { n: perSlot })
           : t(($) => $.plan.board.single)}
         {resource.dailyCap === null
@@ -221,7 +224,7 @@ function ResourceColumn({
   const { lane, count } = lanesOf(resource.bookings);
   const lanes = Math.max(count, ...slots.map((s) => s.capacity));
   // Pool cards leave a strip on the right, so the booked/capacity counters stay readable.
-  const counterStrip = resource.kind === 'pool' ? '2.75rem' : '0px';
+  const counterStrip = resource.kind === ResourceKind.pool ? '2.75rem' : '0px';
   return (
     <section
       className="relative border-r last:border-r-0"
@@ -245,7 +248,7 @@ function ResourceColumn({
             )}
             style={{ top: y(Date.parse(s.startsAt)), height: gridMinutes * scale }}
           >
-            {resource.kind === 'pool' && !closed ? (
+            {resource.kind === ResourceKind.pool && !closed ? (
               <span
                 className={cn(
                   'absolute right-1 bottom-0.5 rounded-sm px-1 text-[10px] tabular-nums',
@@ -309,7 +312,7 @@ function BookingCard({
 }) {
   const { t } = useTranslation('booking');
   const siteTime = useSiteTime();
-  const tone = booking.status === 'requested' ? 'planned' : BOOKING_STATUS[booking.status].tone;
+  const tone = BOOKING_STATUS[booking.status].tone;
   const compact = style.height < 60;
   const slot = `${siteTime(booking.startsAt, timeZone).time}–${siteTime(booking.endsAt, timeZone).time}`;
   return (
@@ -350,7 +353,7 @@ function BookingCard({
             {t(($) => $.plan.board.units, { n: booking.loadUnits })} ·{' '}
             <span className="font-mono">{booking.code}</span>
           </span>
-          <BookingStatusBadge status={booking.status} size="sm" className="mt-auto" />
+          <BookingStatusBadge status={booking.status} size={BadgeSize.sm} className="mt-auto" />
         </>
       )}
     </button>

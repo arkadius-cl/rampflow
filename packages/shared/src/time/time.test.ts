@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { DriverLocale } from '../values/locales.ts';
+import { WallTimeFold } from '../values/time.ts';
 import {
   addDays,
   formatSiteTime,
@@ -85,33 +87,39 @@ describe('durations across the fold', () => {
     const end = new Date((earlier as Date).getTime() + 60 * 60_000);
     expect(end).toEqual(later);
     expect(wallClock(end, BERLIN)).toEqual({ day: '2026-10-25', time: '02:30' });
-    expect(formatSiteTime(earlier as Date, BERLIN, 'en')).toBe('02:30 CEST');
-    expect(formatSiteTime(end, BERLIN, 'en')).toBe('02:30 CET');
+    expect(formatSiteTime(earlier as Date, BERLIN, DriverLocale.en)).toBe('02:30 CEST');
+    expect(formatSiteTime(end, BERLIN, DriverLocale.en)).toBe('02:30 CET');
   });
 });
 
 describe('a Bucharest site viewed from Berlin', () => {
   it('folds 03:00 to 04:00 Bucharest time, labels EEST and EET, hints Berlin an hour earlier', () => {
     const grid = slotGrid(d('2026-10-25'), BUCHAREST, 30);
-    expect(grid.filter((s) => s.fold === 'earlier').map((s) => s.wallTime)).toEqual([
+    expect(grid.filter((s) => s.fold === WallTimeFold.earlier).map((s) => s.wallTime)).toEqual([
       '03:00',
       '03:30',
     ]);
     const [earlier, later] = instantsAt(d('2026-10-25'), t('03:30'), BUCHAREST) as [Date, Date];
-    expect(formatSiteTime(earlier, BUCHAREST, 'en')).toBe('03:30 EEST');
-    expect(formatSiteTime(later, BUCHAREST, 'en')).toBe('03:30 EET');
-    expect(viewerTime(earlier, BUCHAREST, BERLIN, 'en')).toEqual({ time: '02:30', zone: 'CEST' });
-    expect(viewerTime(later, BUCHAREST, BERLIN, 'en')).toEqual({ time: '02:30', zone: 'CET' });
-    expect(viewerTime(later, BERLIN, 'Europe/Paris' as TimeZone, 'en')).toBeNull();
+    expect(formatSiteTime(earlier, BUCHAREST, DriverLocale.en)).toBe('03:30 EEST');
+    expect(formatSiteTime(later, BUCHAREST, DriverLocale.en)).toBe('03:30 EET');
+    expect(viewerTime(earlier, BUCHAREST, BERLIN, DriverLocale.en)).toEqual({
+      time: '02:30',
+      zone: 'CEST',
+    });
+    expect(viewerTime(later, BUCHAREST, BERLIN, DriverLocale.en)).toEqual({
+      time: '02:30',
+      zone: 'CET',
+    });
+    expect(viewerTime(later, BERLIN, 'Europe/Paris' as TimeZone, DriverLocale.en)).toBeNull();
   });
 });
 
 describe('labels per locale', () => {
   it('uses MEZ for de and CET for en and pl', () => {
     const winter = new Date('2027-01-11T07:30:00Z');
-    expect(formatSiteTime(winter, BERLIN, 'de')).toBe('08:30 MEZ');
-    expect(formatSiteTime(winter, BERLIN, 'en')).toBe('08:30 CET');
-    expect(formatSiteTime(winter, BERLIN, 'pl')).toBe('08:30 CET');
+    expect(formatSiteTime(winter, BERLIN, DriverLocale.de)).toBe('08:30 MEZ');
+    expect(formatSiteTime(winter, BERLIN, DriverLocale.en)).toBe('08:30 CET');
+    expect(formatSiteTime(winter, BERLIN, DriverLocale.pl)).toBe('08:30 CET');
   });
 });
 

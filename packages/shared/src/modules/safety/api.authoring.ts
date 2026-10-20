@@ -1,37 +1,17 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
-
-/** Bundled pictograms; each id has `src/assets/pictograms/<id>.svg`. */
-export const PICTOGRAM_IDS = [
-  'hi_vis_vest',
-  'safety_shoes',
-  'speed_limit_10',
-  'forklift_traffic',
-  'wheel_chock',
-  'no_smoking',
-  'no_phone',
-  'assembly_point',
-  'first_aid',
-] as const;
-export type PictogramId = (typeof PICTOGRAM_IDS)[number];
-
-export const VERSION_STATUSES = ['draft', 'published', 'retired'] as const;
-export type VersionStatus = (typeof VERSION_STATUSES)[number];
-
-/** `source` is the authored text, `machine` an unreviewed translation (SF-01, DR-02). */
-export const TRANSLATION_STATES = ['source', 'machine', 'reviewed'] as const;
-export type TranslationState = (typeof TRANSLATION_STATES)[number];
+import { DriverLocale } from '../../values/locales.ts';
+import { BlockKind, PictogramId, TranslationState, VersionStatus } from './values.ts';
 
 /** Briefing content exists in the driver languages. */
-export const SafetyLocale = z.enum(DRIVER_LOCALES);
+export const SafetyLocale = z.enum(DriverLocale);
 export type SafetyLocale = z.infer<typeof SafetyLocale>;
 
 /** With `safety.quiz`, every published locale has this many questions (SF-02). */
 export const QUIZ_QUESTIONS = { min: 3, max: 5 } as const;
 
 export const Block = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('text'), text: z.string().trim().min(1).max(2000) }),
-  z.object({ kind: z.literal('pictogram'), id: z.enum(PICTOGRAM_IDS) }),
+  z.object({ kind: z.literal(BlockKind.text), text: z.string().trim().min(1).max(2000) }),
+  z.object({ kind: z.literal(BlockKind.pictogram), id: z.enum(PictogramId) }),
 ]);
 export type Block = z.infer<typeof Block>;
 
@@ -61,7 +41,7 @@ export const ContentBody = z.object({
     .refine(uniqueIds, 'question ids must be unique')
     .default([]),
   statement: z.string().trim().min(1).max(1000),
-  translation: z.enum(TRANSLATION_STATES),
+  translation: z.enum(TranslationState),
 });
 export type ContentBody = z.infer<typeof ContentBody>;
 
@@ -114,7 +94,7 @@ export type Instruction = z.infer<typeof Instruction>;
 
 export const LocaleState = z.object({
   locale: SafetyLocale,
-  translation: z.enum(TRANSLATION_STATES),
+  translation: z.enum(TranslationState),
   questions: z.int(),
 });
 
@@ -122,7 +102,7 @@ export const VersionSummary = z.object({
   id: z.uuid(),
   instructionId: z.uuid(),
   version: z.int(),
-  status: z.enum(VERSION_STATUSES),
+  status: z.enum(VersionStatus),
   materialChange: z.boolean(),
   publishedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),

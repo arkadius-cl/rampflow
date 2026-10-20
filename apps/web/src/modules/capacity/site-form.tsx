@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { STAFF_LOCALES } from '@rampflow/shared';
 import { CreateSite, type SiteView } from '@rampflow/shared/modules/core/api.sites';
+import { StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -39,7 +39,7 @@ const EMPTY: SiteValues = {
   country: 'DE',
   subdivision: null,
   timeZone: 'Europe/Berlin',
-  defaultLocale: 'de',
+  defaultLocale: StaffLocale.de,
   phone: null,
 };
 
@@ -239,7 +239,7 @@ function SiteForm({ orgId, site, onDone }: { orgId: string; site?: SiteView; onD
                 {t(($) => $.sites.fields.default_locale)}
               </FieldLabel>
               <NativeSelect id="site-defaultLocale" className="w-full" {...field}>
-                {STAFF_LOCALES.map((locale) => (
+                {values(StaffLocale).map((locale) => (
                   <NativeSelectOption key={locale} value={locale}>
                     {t(($) => $.sites.locales[locale])}
                   </NativeSelectOption>

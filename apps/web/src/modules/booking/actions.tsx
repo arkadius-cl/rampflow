@@ -1,10 +1,15 @@
 import type { BookingView, RescheduleBooking } from '@rampflow/shared/modules/booking/api.staff';
+import { availableCommands } from '@rampflow/shared/modules/booking/lifecycle';
 import {
-  availableCommands,
+  BookingParty,
   type BookingStatus,
-  ON_SITE_STATUSES,
-} from '@rampflow/shared/modules/booking/lifecycle';
+  ChangeLock,
+  CommandName,
+  OnSiteStatus,
+  RescheduleProblem,
+} from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Feature, isValueOf, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,34 +55,32 @@ import { StartPicker, startOptions } from './start-picker';
 // BK-03: what staff may change on a booking, and the reschedule and cancel dialogs. The command
 // table of the shared lifecycle decides; the API decides again.
 
-export type ChangeLock = 'on_site' | 'closed' | 'no_permission';
-
 /** Whether staff may reschedule and cancel `status`, and why not. */
 export function useChangeAccess(status: BookingStatus) {
   const access = useAccess();
-  const commands = availableCommands(status, 'staff', access.can);
-  const lock: ChangeLock | null = !access.can('booking.staff_book')
-    ? 'no_permission'
-    : commands.includes('reschedule')
+  const commands = availableCommands(status, BookingParty.staff, access.can);
+  const lock: ChangeLock | null = !access.can(Permission.booking.staff_book)
+    ? ChangeLock.no_permission
+    : commands.includes(CommandName.reschedule)
       ? null
-      : (ON_SITE_STATUSES as readonly string[]).includes(status)
-        ? 'on_site'
-        : 'closed';
+      : isValueOf(OnSiteStatus, status)
+        ? ChangeLock.on_site
+        : ChangeLock.closed;
   return {
     lock,
-    canReschedule: commands.includes('reschedule'),
-    canCancel: commands.includes('cancel'),
-    canEditAvis: commands.includes('update_avis') && access.has('avis.basic'),
+    canReschedule: commands.includes(CommandName.reschedule),
+    canCancel: commands.includes(CommandName.cancel),
+    canEditAvis: commands.includes(CommandName.update_avis) && access.has(Feature.avis.basic),
   };
 }
 
 /** The one-line reason under the disabled buttons. */
 export function LockReason({ lock, status }: { lock: ChangeLock; status: BookingStatus }) {
   const { t } = useTranslation('booking');
-  if (lock === 'no_permission') return null;
+  if (lock === ChangeLock.no_permission) return null;
   return (
     <p className="text-xs text-muted-foreground">
-      {lock === 'on_site'
+      {lock === ChangeLock.on_site
         ? t(($) => $.plan.detail.locked_on_site)
         : t(($) => $.plan.detail.locked_closed, {
             status: t(($) => $.lifecycle.status[status]),
@@ -127,7 +130,7 @@ function RescheduleForm({
   const { t } = useTranslation('booking');
   const id = useId();
   const access = useAccess();
-  const canForce = access.can('booking.force');
+  const canForce = access.can(Permission.booking.force);
   const queryClient = useQueryClient();
   const bookedDay = siteDay(new Date(booking.startsAt), booking.timeZone as TimeZone);
   const [day, setDay] = useState<string>(bookedDay);
@@ -135,7 +138,7 @@ function RescheduleForm({
   const [startsAt, setStartsAt] = useState('');
   const [forceReason, setForceReason] = useState('');
   const [forceNeeded, setForceNeeded] = useState(false);
-  const [error, setError] = useState<'time' | 'reason' | null>(null);
+  const [error, setError] = useState<RescheduleProblem | null>(null);
   const date: LocalDate = localDateSchema.safeParse(day).data ?? bookedDay;
   const board = useQuery({ ...boardQuery(orgId, booking.siteId, date), refetchInterval: false });
   const offers = useQuery(
@@ -170,7 +173,11 @@ function RescheduleForm({
       onDone();
     },
     onError: (e) => {
-      if (e instanceof ApiFailure && e.code === 'conflict' && FORCE_REASONS.has(e.reason ?? '')) {
+      if (
+        e instanceof ApiFailure &&
+        e.code === ErrorCode.conflict &&
+        FORCE_REASONS.has(e.conflictReason ?? '')
+      ) {
         setForceNeeded(canForce);
       }
       void queryClient.invalidateQueries({ queryKey: bookingKey(orgId) });
@@ -228,7 +235,7 @@ function RescheduleForm({
             </NativeSelect>
           </Field>
         </div>
-        <Field data-invalid={error === 'time'}>
+        <Field data-invalid={error === RescheduleProblem.time}>
           <FieldTitle id={`${id}-time`}>{t(($) => $.plan.sheet.start_time)}</FieldTitle>
           {board.isPending ? (
             <Skeleton className="h-16 w-full" />
@@ -243,10 +250,12 @@ function RescheduleForm({
               canForce={canForce}
               timeZone={booking.timeZone}
               labelledBy={`${id}-time`}
-              invalid={error === 'time'}
+              invalid={error === RescheduleProblem.time}
             />
           )}
-          <FieldError>{error === 'time' ? t(($) => $.plan.sheet.choose_time) : null}</FieldError>
+          <FieldError>
+            {error === RescheduleProblem.time ? t(($) => $.plan.sheet.choose_time) : null}
+          </FieldError>
         </Field>
         {forcing ? (
           <Alert className="border-tone-onsite-border bg-tone-onsite-bg">
@@ -258,7 +267,7 @@ function RescheduleForm({
                   : t(($) => $.plan.sheet.force_denied)}
               </span>
               {canForce ? (
-                <Field data-invalid={error === 'reason'}>
+                <Field data-invalid={error === RescheduleProblem.reason}>
                   <FieldLabel htmlFor={`${id}-force-reason`}>
                     {t(($) => $.plan.sheet.force_reason)}
                   </FieldLabel>
@@ -267,11 +276,13 @@ function RescheduleForm({
                     rows={2}
                     className="bg-background"
                     value={forceReason}
-                    aria-invalid={error === 'reason'}
+                    aria-invalid={error === RescheduleProblem.reason}
                     onChange={(e) => setForceReason(e.target.value)}
                   />
                   <FieldError>
-                    {error === 'reason' ? t(($) => $.plan.sheet.force_reason_required) : null}
+                    {error === RescheduleProblem.reason
+                      ? t(($) => $.plan.sheet.force_reason_required)
+                      : null}
                   </FieldError>
                 </Field>
               ) : null}

@@ -1,3 +1,5 @@
+import { EntitlementState } from '@rampflow/shared/modules/core/values';
+import { OrgKind, PrototypeScreen } from '@rampflow/shared/values';
 import {
   Building2Icon,
   CalendarDaysIcon,
@@ -21,9 +23,9 @@ import {
 import type { Membership, NavGroup } from '@/components/shells/office-shell';
 
 export const memberships: Membership[] = [
-  { id: 'acme', name: 'Acme Logistics GmbH', kind: 'tenant', role: 'Tenant admin' },
-  { id: 'nordfrost', name: 'Nordfrost Lager AG', kind: 'tenant', role: 'Tenant admin' },
-  { id: 'transpol', name: 'Trans-Pol Sp. z o.o.', kind: 'carrier', role: 'Carrier admin' },
+  { id: 'acme', name: 'Acme Logistics GmbH', kind: OrgKind.tenant, role: 'Tenant admin' },
+  { id: 'nordfrost', name: 'Nordfrost Lager AG', kind: OrgKind.tenant, role: 'Tenant admin' },
+  { id: 'transpol', name: 'Trans-Pol Sp. z o.o.', kind: OrgKind.carrier, role: 'Carrier admin' },
 ];
 
 export const tenantMembership = memberships[0] as Membership;
@@ -32,7 +34,7 @@ export const carrierMembership = memberships[2] as Membership;
 export const platformMembership: Membership = {
   id: 'platform',
   name: 'rampflow',
-  kind: 'platform',
+  kind: OrgKind.platform,
   role: 'Platform admin',
 };
 
@@ -40,7 +42,7 @@ export const dispatcherUser = { name: 'Anna Lenz', initials: 'AL' };
 export const carrierUser = { name: 'Piotr Nowak', initials: 'PN' };
 export const platformUser = { name: 'Sam Ops', initials: 'SO' };
 
-export function tenantNav(active: string): NavGroup[] {
+export function tenantNav(active: PrototypeScreen): NavGroup[] {
   return [
     {
       label: 'Operations',
@@ -49,7 +51,7 @@ export function tenantNav(active: string): NavGroup[] {
           label: 'Plan board',
           icon: Columns3Icon,
           href: '/design/plan-board',
-          active: active === 'board',
+          active: active === PrototypeScreen.board,
         },
         { label: 'Bookings', icon: ListIcon, href: '#', badge: '14' },
         { label: 'Gate', icon: ScanLineIcon, href: '/design/gate' },
@@ -64,7 +66,7 @@ export function tenantNav(active: string): NavGroup[] {
           label: 'Sites and docks',
           icon: WarehouseIcon,
           href: '/design/master-data',
-          active: active === 'master-data',
+          active: active === PrototypeScreen.master_data,
         },
         { label: 'Hours and closures', icon: CalendarDaysIcon, href: '#' },
         { label: 'Load types', icon: PackageIcon, href: '#' },
@@ -75,13 +77,13 @@ export function tenantNav(active: string): NavGroup[] {
           label: 'Settings',
           icon: Settings2Icon,
           href: '/design/settings',
-          active: active === 'settings',
+          active: active === PrototypeScreen.settings,
         },
         {
           label: 'Carrier scorecard',
           icon: GaugeIcon,
           href: '#',
-          entitlement: 'upsell',
+          entitlement: EntitlementState.upsell,
           upsellHint: 'Carrier scorecards are not in the MVP packages yet',
         },
       ],
@@ -89,7 +91,7 @@ export function tenantNav(active: string): NavGroup[] {
   ];
 }
 
-export function carrierNav(active: string): NavGroup[] {
+export function carrierNav(active: PrototypeScreen): NavGroup[] {
   return [
     {
       items: [
@@ -97,13 +99,13 @@ export function carrierNav(active: string): NavGroup[] {
           label: 'Bookings',
           icon: ListIcon,
           href: '/design/carrier-bookings',
-          active: active === 'bookings',
+          active: active === PrototypeScreen.bookings,
         },
         {
           label: 'New booking',
           icon: CalendarDaysIcon,
           href: '/design/booking-wizard',
-          active: active === 'wizard',
+          active: active === PrototypeScreen.wizard,
         },
         { label: 'Warehouses', icon: Building2Icon, href: '#' },
         { label: 'Colleagues', icon: UsersIcon, href: '#' },
@@ -112,7 +114,7 @@ export function carrierNav(active: string): NavGroup[] {
   ];
 }
 
-export function platformNav(active: string): NavGroup[] {
+export function platformNav(active: PrototypeScreen): NavGroup[] {
   return [
     {
       items: [
@@ -120,13 +122,13 @@ export function platformNav(active: string): NavGroup[] {
           label: 'Tenants',
           icon: Building2Icon,
           href: '/design/platform-admin',
-          active: active === 'tenants',
+          active: active === PrototypeScreen.tenants,
         },
         { label: 'Packages', icon: CrownIcon, href: '#' },
         { label: 'Platform defaults', icon: Settings2Icon, href: '#' },
         { label: 'Usage', icon: LayersIcon, href: '#' },
         { label: 'Jobs', icon: ClipboardListIcon, href: '#' },
-        { label: 'API keys', icon: KeyRoundIcon, href: '#', entitlement: 'off' },
+        { label: 'API keys', icon: KeyRoundIcon, href: '#', entitlement: EntitlementState.off },
       ],
     },
   ];

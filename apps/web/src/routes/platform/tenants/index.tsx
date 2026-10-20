@@ -1,11 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PACKAGE_IDS } from '@rampflow/shared';
-import {
-  CreateTenant,
-  type TenantDetail,
-  USAGE_KEYS,
-  type UsageKey,
-} from '@rampflow/shared/modules/core/api.platform';
+import { CreateTenant, type TenantDetail } from '@rampflow/shared/modules/core/api.platform';
+import { UsageKey } from '@rampflow/shared/modules/core/values';
+import { PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
@@ -46,7 +42,7 @@ import { platformKeys, tenantsQuery } from '@/modules/core/queries';
 // PL-01, PL-04: tenants with usage against their limits, and "Create tenant".
 
 export const Route = createFileRoute('/platform/tenants/')({
-  beforeLoad: guard({ permission: 'core.manage_tenants' }),
+  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
   component: TenantsPage,
 });
 
@@ -84,7 +80,7 @@ function TenantsPage() {
               <TableRow>
                 <TableHead>{t(($) => $.platform.tenants.tenant)}</TableHead>
                 <TableHead>{t(($) => $.platform.tenants.package)}</TableHead>
-                {USAGE_KEYS.map((key) => (
+                {values(UsageKey).map((key) => (
                   <TableHead key={key}>{usageLabel(key)}</TableHead>
                 ))}
               </TableRow>
@@ -106,7 +102,7 @@ function TenantsPage() {
                       {t(($) => $.platform.packages[tenant.package])}
                     </Badge>
                   </TableCell>
-                  {USAGE_KEYS.map((key) => (
+                  {values(UsageKey).map((key) => (
                     <TableCell key={key}>
                       <Meter meter={tenant.usage[key]} label={usageLabel(key)} />
                     </TableCell>
@@ -140,7 +136,7 @@ function CreateTenantDialog({ open, onClose }: { open: boolean; onClose: () => v
   const queryClient = useQueryClient();
   const form = useForm<CreateTenant>({
     resolver: zodResolver(CreateTenant),
-    defaultValues: { name: '', package: 'start', adminEmail: '' },
+    defaultValues: { name: '', package: PackageId.start, adminEmail: '' },
   });
   const create = useMutation({
     mutationFn: (json: CreateTenant) => call<TenantDetail>(api.platform.tenants.$post({ json })),
@@ -181,7 +177,7 @@ function CreateTenantDialog({ open, onClose }: { open: boolean; onClose: () => v
                     {t(($) => $.platform.tenants.package)}
                   </FieldLabel>
                   <NativeSelect {...field} id="tenant-package" className="w-full">
-                    {PACKAGE_IDS.map((id) => (
+                    {values(PackageId).map((id) => (
                       <NativeSelectOption key={id} value={id}>
                         {t(($) => $.platform.packages[id])}
                       </NativeSelectOption>

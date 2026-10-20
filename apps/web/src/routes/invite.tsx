@@ -4,6 +4,13 @@ import {
   type InvitationInspectResponse,
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
+import { RefinementMessage, SignInMode } from '@rampflow/shared/modules/core/values';
+import {
+  ConflictReason,
+  ErrorCode,
+  TokenExchangeStatus,
+  UnauthorizedReason,
+} from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -33,7 +40,10 @@ export const Route = createFileRoute('/invite')({
 
 const NewAccount = z
   .object({ name: z.string().trim().min(1).max(120), password: Password, confirm: z.string() })
-  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: 'password_match' });
+  .refine((v) => v.password === v.confirm, {
+    path: ['confirm'],
+    message: RefinementMessage.password_match,
+  });
 type NewAccount = z.infer<typeof NewAccount>;
 
 const SignIn = z.object({ password: z.string().min(1) });
@@ -48,8 +58,10 @@ function InvitePage() {
     ),
   );
 
-  if (!token || inspect.status === 'failed') {
-    const expired = inspect.status === 'failed' && isFailure(inspect.error, 'unauthorized');
+  if (!token || inspect.status === TokenExchangeStatus.failed) {
+    const expired =
+      inspect.status === TokenExchangeStatus.failed &&
+      isFailure(inspect.error, ErrorCode.unauthorized);
     return (
       <AuthLayout title={t(($) => $.auth.invite.title)}>
         <div className="flex flex-col gap-4">
@@ -69,7 +81,7 @@ function InvitePage() {
       </AuthLayout>
     );
   }
-  if (inspect.status === 'pending') {
+  if (inspect.status === TokenExchangeStatus.pending) {
     return (
       <AuthLayout title={t(($) => $.auth.invite.title)}>
         <div role="status" className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -111,7 +123,8 @@ function Invitation({
       });
     },
     onError: (e) => {
-      if (isFailure(e, 'unauthorized') && e.reason === 'sign_in_required') setNeedsSignIn(true);
+      if (isFailure(e, ErrorCode.unauthorized) && e.reason === UnauthorizedReason.sign_in_required)
+        setNeedsSignIn(true);
     },
   });
 
@@ -128,14 +141,14 @@ function Invitation({
           <span className="truncate">{invitation.email}</span>
         </div>
         {failure &&
-        failure.reason !== 'sign_in_required' &&
-        failure.code !== 'validation_failed' ? (
+        failure.reason !== UnauthorizedReason.sign_in_required &&
+        failure.code !== ErrorCode.validation_failed ? (
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {failure.reason === 'already_member'
+              {failure.reason === ConflictReason.already_member
                 ? t(($) => $.auth.invite.already_member)
-                : failure.code === 'unauthorized'
+                : failure.code === ErrorCode.unauthorized
                   ? t(($) => $.auth.invite.invalid)
                   : errorText(t, failure)}
             </AlertTitle>
@@ -276,7 +289,7 @@ function SignInToAccept({ email, onSignedIn }: { email: string; onSignedIn: () =
           <Alert variant="destructive">
             <CircleAlertIcon />
             <AlertTitle>
-              {isFailure(login.error, 'rate_limited')
+              {isFailure(login.error, ErrorCode.rate_limited)
                 ? t(($) => $.errors.rate_limited)
                 : t(($) => $.auth.login.wrong)}
             </AlertTitle>
@@ -307,7 +320,7 @@ function SignInToAccept({ email, onSignedIn }: { email: string; onSignedIn: () =
         </Button>
         <Link
           to="/login"
-          search={{ mode: 'reset' }}
+          search={{ mode: SignInMode.reset }}
           target="_blank"
           className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
         >

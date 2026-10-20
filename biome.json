@@ -5,11 +5,13 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
+  "plugins": [{ "path": "./lint/value-literals.grit", "includes": ["**", "!**/*.gen.ts"] }],
   "files": {
     "includes": [
       "**",
       "!docs",
       "!.audit",
+      "!lint/fixtures",
       "!**/routeTree.gen.ts",
       "!apps/api/openapi.gen.json",
       "!apps/web/src/components/ui",

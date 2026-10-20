@@ -1,3 +1,12 @@
+import { TranslationState } from '@rampflow/shared/modules/safety/values';
+import {
+  DriverLocale,
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import { briefingOf, contentFixture, seedBriefing } from './fixtures.ts';
@@ -5,10 +14,10 @@ import { briefingOf, contentFixture, seedBriefing } from './fixtures.ts';
 const P = '/api/t/:orgId/safety';
 
 const base = {
-  as: 'tenant_admin',
-  permission: 'safety.manage_briefings',
+  as: RouteCaseActor.tenant_admin,
+  permission: Permission.safety.manage_briefings,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
   setup: async (w, o) => {
     await seedBriefing(o, w.A);
@@ -19,10 +28,16 @@ const base = {
 const org = (w: World) => ({ orgId: w.A.tenantId });
 
 export const cases = defineRouteCases([
-  { ...base, method: 'GET', path: `${P}/instructions`, params: org, foreign: 'empty' },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.GET,
+    path: `${P}/instructions`,
+    params: org,
+    foreign: ForeignOutcome.empty,
+  },
+  {
+    ...base,
+    method: HttpMethod.POST,
     path: `${P}/instructions`,
     params: org,
     // A's site makes the call foreign for B; for A it creates an instruction within the limit.
@@ -30,43 +45,43 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: `${P}/instructions/:instructionId`,
     params: (w) => ({ ...org(w), instructionId: briefingOf(w.A).instructionId }),
     body: () => ({ name: 'Renamed' }),
   },
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${P}/instructions/:instructionId/versions`,
     params: (w) => ({ ...org(w), instructionId: briefingOf(w.A).instructionId }),
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/instructions/:instructionId/versions`,
     params: (w) => ({ ...org(w), instructionId: briefingOf(w.A).instructionId }),
   },
   {
     ...base,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${P}/versions/:versionId`,
     params: (w) => ({ ...org(w), versionId: briefingOf(w.A).publishedId }),
   },
   {
     ...base,
-    method: 'PUT',
+    method: HttpMethod.PUT,
     path: `${P}/versions/:versionId/content/:locale`,
-    entitlement: 'safety.quiz',
-    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: 'pl' }),
-    body: () => contentFixture({ translation: 'machine' }),
+    entitlement: Feature.safety.quiz,
+    params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId, locale: DriverLocale.pl }),
+    body: () => contentFixture({ translation: TranslationState.machine }),
   },
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${P}/versions/:versionId/publish`,
     // The draft fixture has quiz questions, which only publish with safety.quiz on.
-    entitlement: 'safety.quiz',
+    entitlement: Feature.safety.quiz,
     params: (w) => ({ ...org(w), versionId: briefingOf(w.A).draftId }),
     body: () => ({ materialChange: false }),
   },

@@ -1,3 +1,4 @@
+import { ClosureKind, ClosureSource, HolidayType } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   type LocalDate,
@@ -5,6 +6,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { JobName } from '@rampflow/shared/values';
 import Holidays from 'date-holidays';
 import { and, eq, gte, isNull, notInArray } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
@@ -31,7 +33,7 @@ function calendar(country: string, subdivision: string | null): Holidays {
   const key = `${country}-${region ?? ''}`;
   let hd = calendars.get(key);
   if (!hd) {
-    hd = new Holidays(country, region ?? '', { types: ['public'] });
+    hd = new Holidays(country, region ?? '', { types: [HolidayType.public] });
     calendars.set(key, hd);
   }
   return hd;
@@ -48,7 +50,7 @@ export function publicHolidays(
   const out = new Map<LocalDate, string>();
   for (let year = Number(from.slice(0, 4)); year <= Number(to.slice(0, 4)); year++) {
     for (const h of hd.getHolidays(year, s.defaultLocale) || []) {
-      if (h.type !== 'public') continue;
+      if (h.type !== HolidayType.public) continue;
       const date = h.date.slice(0, 10) as LocalDate;
       if (date < from || date >= to) continue;
       const known = out.get(date);
@@ -86,10 +88,10 @@ export async function syncHolidays(tx: Tx, s: HolidaySite, now: Date): Promise<n
       dates.map((date) => ({
         tenantId: s.tenantId,
         siteId: s.id,
-        kind: 'closed' as const,
+        kind: ClosureKind.closed,
         startsLocal: `${date}T00:00` as LocalDateTime,
         endsLocal: `${addDays(date, 1)}T00:00` as LocalDateTime,
-        source: 'holiday' as const,
+        source: ClosureSource.holiday,
         holidayDate: date,
         holidayName: holidays.get(date) ?? null,
       })),
@@ -104,10 +106,10 @@ export async function syncHolidays(tx: Tx, s: HolidaySite, now: Date): Promise<n
 
 /** Daily: keeps the 400-day holiday window of every active site filled. */
 export const job: Job = {
-  name: 'booking.holiday_import',
+  name: JobName.booking_holiday_import,
   everySeconds: 24 * 3600,
   run: (ctx) =>
-    forEachTenant(ctx, 'booking.holiday_import', async (tx, tenantId) => {
+    forEachTenant(ctx, JobName.booking_holiday_import, async (tx, tenantId) => {
       const sites = await tx
         .select()
         .from(site)

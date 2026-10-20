@@ -1,6 +1,12 @@
 import { createServerI18n } from '@rampflow/i18n/server';
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import { RegisterFilter, RegisterSearchBody } from '@rampflow/shared/modules/safety/api.register';
+import {
+  Permission,
+  StaffLocale,
+  StoryId,
+  ValidationTarget,
+  values,
+} from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
 import { file, op } from '../../../kernel/describe.ts';
@@ -11,10 +17,10 @@ import { tenantActor } from '../authoring/actor.ts';
 import { exportRegister, registerFilterOptions, searchRegister } from './acknowledgements.ts';
 import { registerCsv } from './csv.ts';
 
-const view = requirePermission('safety.view_register');
+const view = requirePermission(Permission.safety.view_register);
 
 const isStaffLocale = (l: string | null | undefined): l is StaffLocale =>
-  (STAFF_LOCALES as readonly string[]).includes(l ?? '');
+  (values(StaffLocale) as readonly string[]).includes(l ?? '');
 
 /**
  * SF-03. Mounted at `/api/t/:orgId/safety` with `withModule('safety')`. Filters travel in POST
@@ -25,7 +31,7 @@ export const tenant = new Hono<AppEnv>()
     '/acknowledgements/filters',
     op({
       id: 'safety.register.getRegisterFilters',
-      stories: ['SF-03'],
+      stories: [StoryId.SF_03],
       description:
         '`{ instructions, carriers }`: every instruction (archived too) with its non-draft versions, newest first, and the carriers of the bookings that have acknowledgements; the choices of the register filters, because `safety.view_register` alone cannot list instructions',
       responses: {},
@@ -39,13 +45,13 @@ export const tenant = new Hono<AppEnv>()
     '/acknowledgements/search',
     op({
       id: 'safety.register.searchAcknowledgements',
-      stories: ['SF-03'],
+      stories: [StoryId.SF_03],
       description:
         '`{ siteId?, carrierId?, driverName?, instructionId?, versionId?, status?, limit?, cursor? }`; newest first, paginated; `status` is `valid`, `visit_only`, `expired` or `outdated` from `acknowledgementStatus`; restricted rows (TN-06) are left out',
       responses: {},
     }),
     view,
-    validate('json', RegisterSearchBody),
+    validate(ValidationTarget.json, RegisterSearchBody),
     async (c) => {
       const { limit, cursor, ...filter } = c.req.valid('json');
       const page = await searchRegister(c.var.db, {
@@ -62,13 +68,13 @@ export const tenant = new Hono<AppEnv>()
     '/acknowledgements.csv',
     op({
       id: 'safety.register.exportAcknowledgements',
-      stories: ['SF-03'],
+      stories: [StoryId.SF_03],
       description:
         'same filters without paging, up to 50,000 rows; CSV format of [Time and formats](#time-and-formats)',
       responses: { 200: file('text/csv') },
     }),
     view,
-    validate('json', RegisterFilter),
+    validate(ValidationTarget.json, RegisterFilter),
     async (c) => {
       const { tenantId, userId } = tenantActor(c);
       const now = c.var.clock.now();

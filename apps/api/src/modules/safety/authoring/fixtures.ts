@@ -1,4 +1,13 @@
+import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { ContentBody } from '@rampflow/shared/modules/safety/api.authoring';
+import {
+  BlockKind,
+  PictogramId,
+  TranslationState,
+  VersionStatus,
+} from '@rampflow/shared/modules/safety/values';
+import { DriverLocale } from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import {
@@ -25,12 +34,12 @@ export const QUIZ: ContentBody['questions'] = [1, 2, 3].map((n) => ({
 export const contentFixture = (overrides: Partial<ContentBody> = {}): ContentBody => ({
   title: 'Site rules',
   blocks: [
-    { kind: 'pictogram', id: 'hi_vis_vest' },
-    { kind: 'text', text: 'Wear a vest.' },
+    { kind: BlockKind.pictogram, id: PictogramId.hi_vis_vest },
+    { kind: BlockKind.text, text: 'Wear a vest.' },
   ],
   questions: QUIZ,
   statement: 'I will follow the rules.',
-  translation: 'source',
+  translation: TranslationState.source,
   ...overrides,
 });
 
@@ -65,17 +74,21 @@ export async function seedBriefing(o: OwnerDb, side: WorldSide): Promise<Briefin
   const versions = await o
     .insert(safetyVersion)
     .values([
-      { tenantId, instructionId, version: 1, status: 'published', publishedAt },
-      { tenantId, instructionId, version: 2, status: 'draft' },
+      { tenantId, instructionId, version: 1, status: VersionStatus.published, publishedAt },
+      { tenantId, instructionId, version: 2, status: VersionStatus.draft },
     ])
     .returning({ id: safetyVersion.id, version: safetyVersion.version });
   const publishedId = versions.find((v) => v.version === 1)?.id as VersionId;
   const draftId = versions.find((v) => v.version === 2)?.id as VersionId;
   const body = contentFixture();
   for (const versionId of [publishedId, draftId]) {
-    await o
-      .insert(safetyContent)
-      .values({ versionId, tenantId, locale: 'en', ...body, contentHash: contentHash(body) });
+    await o.insert(safetyContent).values({
+      versionId,
+      tenantId,
+      locale: DriverLocale.en,
+      ...body,
+      contentHash: contentHash(body),
+    });
   }
   const own = side.bookings.own;
   const completedAt = new Date(Date.UTC(2026, 10, 1, 7, 0));
@@ -85,13 +98,13 @@ export async function seedBriefing(o: OwnerDb, side: WorldSide): Promise<Briefin
       tenantId,
       instructionId,
       versionId: publishedId,
-      locale: 'en',
+      locale: DriverLocale.en,
       contentHash: contentHash(body),
       bookingId: own.id,
       carrierId: own.carrierId,
       driverName: `Driver ${own.code}`,
       statementShown: body.statement,
-      channel: 'link',
+      channel: DriverChannel.link,
       score: 100,
       attempts: 1,
       completedAt,
@@ -105,8 +118,8 @@ export async function seedBriefing(o: OwnerDb, side: WorldSide): Promise<Briefin
     acknowledgementId: ack.id,
     tenantId,
     siteId: own.siteId,
-    via: 'completed',
-    linkedByParty: 'driver',
+    via: LinkVia.completed,
+    linkedByParty: ActorParty.driver,
   });
   const fixture = { instructionId, publishedId, draftId, acknowledgementId: ack.id };
   fixtures.set(side, fixture);

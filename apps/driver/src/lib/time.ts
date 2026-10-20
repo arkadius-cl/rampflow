@@ -1,5 +1,5 @@
-import type { DriverLocale } from '@rampflow/shared/locales';
 import { formatSiteTime, siteTimeParts, type TimeZone } from '@rampflow/shared/time';
+import type { DriverLocale } from '@rampflow/shared/values';
 
 // Site time for the driver (ADR-0012): the wall clock of the site's zone, always with the zone
 // label, whatever zone the phone is in.

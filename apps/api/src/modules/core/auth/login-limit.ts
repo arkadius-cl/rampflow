@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { RateLimitBucket } from '@rampflow/shared/modules/core/values';
 import type { Tx } from '../../../db/scope.ts';
 import { lockAndCount, type RateLimitState } from '../../../kernel/rate-limit.ts';
 import { rateLimitEvent } from '../schema.ts';
@@ -27,8 +28,8 @@ export const loginKeys = (email: string, ip: string): LoginKeys => ({
  * the same order, then says whether either key is over its limit.
  */
 export async function lockLoginKeys(tx: Tx, keys: LoginKeys, now: Date): Promise<RateLimitState> {
-  const byAddress = await lockAndCount(tx, 'login_ip', keys.login_ip, now);
-  const byAccount = await lockAndCount(tx, 'login_failed', keys.login_failed, now);
+  const byAddress = await lockAndCount(tx, RateLimitBucket.login_ip, keys.login_ip, now);
+  const byAccount = await lockAndCount(tx, RateLimitBucket.login_failed, keys.login_failed, now);
   if (!byAddress.limited) return byAccount;
   if (!byAccount.limited) return byAddress;
   return {
@@ -39,7 +40,7 @@ export async function lockLoginKeys(tx: Tx, keys: LoginKeys, now: Date): Promise
 
 export async function recordLoginFailure(tx: Tx, keys: LoginKeys, now: Date): Promise<void> {
   await tx.insert(rateLimitEvent).values([
-    { bucket: 'login_ip', keyHash: keys.login_ip, at: now },
-    { bucket: 'login_failed', keyHash: keys.login_failed, at: now },
+    { bucket: RateLimitBucket.login_ip, keyHash: keys.login_ip, at: now },
+    { bucket: RateLimitBucket.login_failed, keyHash: keys.login_failed, at: now },
   ]);
 }

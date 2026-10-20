@@ -1,4 +1,6 @@
 import type { BookingView } from '@rampflow/shared/modules/booking/api.staff';
+import { BookingDialog, ChangeLock } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BanIcon, CalendarClockIcon, ExternalLinkIcon, PhoneIcon, XIcon } from 'lucide-react';
@@ -99,7 +101,7 @@ function PanelBody({
   const siteTime = useSiteTime();
   const loadTypeName = useLoadTypeName();
   const change = useChangeAccess(booking.status);
-  const [dialog, setDialog] = useState<'reschedule' | 'cancel' | null>(null);
+  const [dialog, setDialog] = useState<BookingDialog | null>(null);
   const zone = booking.timeZone;
   const flags = flagsOf({ ...booking, overCapacity });
 
@@ -111,7 +113,7 @@ function PanelBody({
           <h2 className="truncate text-lg font-semibold">{booking.carrierName}</h2>
           <div className="mt-1 flex flex-wrap gap-1">
             <BookingStatusBadge status={booking.status} />
-            {booking.safety.status === 'not_required' ? null : (
+            {booking.safety.status === SafetyStatus.not_required ? null : (
               <BookingSafetyBadge status={booking.safety.status} />
             )}
             {booking.punctuality ? (
@@ -192,7 +194,7 @@ function PanelBody({
           <ExternalLinkIcon />
           {t(($) => $.plan.actions.open)}
         </Link>
-        {change.lock === 'no_permission' ? null : (
+        {change.lock === ChangeLock.no_permission ? null : (
           <>
             <Button
               variant="outline"
@@ -221,13 +223,13 @@ function PanelBody({
       <RescheduleDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'reschedule'}
+        open={dialog === BookingDialog.reschedule}
         onOpenChange={(open) => setDialog(open ? 'reschedule' : null)}
       />
       <CancelDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'cancel'}
+        open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
     </>

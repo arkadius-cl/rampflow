@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { templateContent } from '../../apps/api/src/modules/safety/template/platform.ts';
+import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
+import { DeviceClass } from '../../packages/shared/src/values/ui.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { linkIn } from '../support/mailpit.ts';
@@ -17,8 +19,10 @@ import {
 
 const ZONE = 'Europe/Berlin';
 /** The en quiz of the platform template the admin publishes unchanged. */
-const QUIZ = templateContent('en', { quiz: true }).questions;
+const QUIZ = templateContent(DriverLocale.en, { quiz: true }).questions;
 const SITE = 'Lager Garching';
+/** The booking horizon the walk-through pins at the site, as the settings field shows it. */
+const HORIZON_DAYS = '30';
 
 type SettingRow = ReturnType<Page['getByTestId']>;
 
@@ -174,12 +178,12 @@ test.describe('Core loop', () => {
         // The row offers "Save" only for a changed value; an inherited 30 already pins it.
         const horizon = page.getByTestId('setting-booking.horizon_days').getByRole('spinbutton');
         await expect(horizon).not.toHaveValue('');
-        if ((await horizon.inputValue()) !== '30') {
+        if ((await horizon.inputValue()) !== HORIZON_DAYS) {
           await setSiteValue(page, 'booking.horizon_days', (r) =>
-            r.getByRole('spinbutton').fill('30'),
+            r.getByRole('spinbutton').fill(HORIZON_DAYS),
           );
         }
-        await expect(horizon).toHaveValue('30');
+        await expect(horizon).toHaveValue(HORIZON_DAYS);
         await setSiteValue(page, 'booking.slot_grid_minutes', async (r) => {
           await r.getByRole('combobox').selectOption('15');
         });
@@ -266,7 +270,7 @@ test.describe('Core loop', () => {
         await expectAccessible(page);
       });
 
-      const gate = await timeline.actor('tablet');
+      const gate = await timeline.actor(DeviceClass.tablet);
       const gateRow = () => gate.page.getByTestId('gate-row').filter({ hasText: code });
       await test.step('4. the gate finds the booking; check-in waits for the briefing', async () => {
         const page = gate.page;
@@ -287,7 +291,7 @@ test.describe('Core loop', () => {
         await dialog.getByRole('button', { name: 'Cancel' }).click();
       });
 
-      driver = await timeline.actor('phone');
+      driver = await timeline.actor(DeviceClass.phone);
       await test.step('5. the driver opens the link, fails the quiz once, passes and acknowledges', async () => {
         const page = driver.page;
         const mail = await emailMatching(email.driver, new RegExp(code));
@@ -322,7 +326,7 @@ test.describe('Core loop', () => {
           timeout: 20_000,
         });
 
-        const dock = await timeline.actor('tablet');
+        const dock = await timeline.actor(DeviceClass.tablet);
         await openEmailedLink(dock, email.dock, '/invite#');
         await acceptWithNewAccount(dock.page, 'Dirk Dock');
         await expect(dock.page).toHaveURL(new RegExp(`/t/${tenantId}`));

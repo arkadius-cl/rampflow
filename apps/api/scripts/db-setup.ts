@@ -6,6 +6,7 @@
 // Roles are cluster-wide, so every checkout converges the same role. Databases are per checkout
 // (scripts/checkout-env.mjs), so this never touches another checkout's database.
 import { fileURLToPath } from 'node:url';
+import { DatabaseUrlVar, EnsureDatabaseResult, SqlState } from '@rampflow/shared/values';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
@@ -16,7 +17,7 @@ const MIGRATIONS = fileURLToPath(new URL('../drizzle', import.meta.url));
 const quoteIdent = (name: string) => `"${name.replaceAll('"', '""')}"`;
 const quoteLiteral = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
-export function requireUrl(name: 'DATABASE_URL' | 'MIGRATION_DATABASE_URL'): URL {
+export function requireUrl(name: DatabaseUrlVar): URL {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is not set. Run through scripts/checkout-env.mjs.`);
   return new URL(value);
@@ -57,15 +58,17 @@ export async function ensureDatabase(
   admin: pg.Client,
   name: string,
   template?: string,
-): Promise<'created' | 'exists'> {
+): Promise<EnsureDatabaseResult> {
   const { rowCount } = await admin.query('select 1 from pg_database where datname = $1', [name]);
-  if (rowCount) return 'exists';
+  if (rowCount) return EnsureDatabaseResult.exists;
   try {
     const from = template ? ` TEMPLATE ${quoteIdent(template)}` : '';
     await admin.query(`CREATE DATABASE ${quoteIdent(name)}${from}`);
-    return 'created';
+    return EnsureDatabaseResult.created;
   } catch (e) {
-    if ((e as { code?: string }).code === '42P04') return 'exists';
+    if ((e as { code?: string }).code === SqlState.duplicate_database) {
+      return EnsureDatabaseResult.exists;
+    }
     throw e;
   }
 }
@@ -88,8 +91,8 @@ export async function migrateDatabase(ownerUrl: URL): Promise<void> {
 }
 
 async function main() {
-  const owner = requireUrl('MIGRATION_DATABASE_URL');
-  const app = requireUrl('DATABASE_URL');
+  const owner = requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL);
+  const app = requireUrl(DatabaseUrlVar.DATABASE_URL);
   const name = databaseOf(owner);
   if (databaseOf(app) !== name) {
     throw new Error('DATABASE_URL and MIGRATION_DATABASE_URL must name the same database');

@@ -1,15 +1,21 @@
+import { EnvFlag, NodeEnv } from '@rampflow/shared/values';
 import * as z from 'zod';
 import type { Scope, Tx } from '../db/scope.ts';
 import type { Access } from './access.ts';
 import type { Clock } from './clock.ts';
 
-const flag = z.enum(['0', '1']).transform((v) => v === '1');
+const flag = z.enum(EnvFlag).transform((v) => v === EnvFlag.on);
+
+const ROOT_PATH = '/';
 
 /** A bare http(s) origin such as `http://192.168.0.10:5173`, normalized without a trailing slash. */
 const origin = z
   .url({ protocol: /^https?$/ })
   .transform((u) => new URL(u))
-  .refine((u) => u.pathname === '/' && !u.search && !u.hash, 'Expected an origin without a path')
+  .refine(
+    (u) => u.pathname === ROOT_PATH && !u.search && !u.hash,
+    'Expected an origin without a path',
+  )
   .transform((u) => u.origin);
 
 /** Comma-separated origins, e.g. the LAN addresses of a dev machine (scripts/checkout-env.mjs). */
@@ -29,7 +35,7 @@ const EnvSchema = z
     // dev secret, the test routes and the API docs and send Secure cookies. Dev and tests set it
     // explicitly (.env.example through scripts/checkout-env.mjs, vitest.config.ts,
     // playwright.config.ts).
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
+    NODE_ENV: z.enum(NodeEnv).default(NodeEnv.production),
     API_PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
@@ -46,15 +52,15 @@ const EnvSchema = z
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('rampflow <no-reply@rampflow.local>'),
   })
-  .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === 'production'), {
+  .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === NodeEnv.production), {
     message: 'ENABLE_TEST_ROUTES=1 is not allowed with NODE_ENV=production',
     path: ['ENABLE_TEST_ROUTES'],
   })
-  .refine((e) => !(e.ENABLE_API_DOCS && e.NODE_ENV === 'production'), {
+  .refine((e) => !(e.ENABLE_API_DOCS && e.NODE_ENV === NodeEnv.production), {
     message: 'ENABLE_API_DOCS=1 is not allowed with NODE_ENV=production',
     path: ['ENABLE_API_DOCS'],
   })
-  .refine((e) => e.NODE_ENV !== 'production' || !e.TOKEN_SECRET.startsWith('dev-only'), {
+  .refine((e) => e.NODE_ENV !== NodeEnv.production || !e.TOKEN_SECRET.startsWith('dev-only'), {
     message: 'Set TOKEN_SECRET in production',
     path: ['TOKEN_SECRET'],
   });

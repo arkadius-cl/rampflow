@@ -1,3 +1,4 @@
+import { DatabaseHealth, HealthStatus, NodeEnv } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -38,10 +39,10 @@ const health = new Hono<AppEnv>().get(
   async (c) => {
     try {
       await db.execute(sql`select 1`);
-      return c.json({ status: 'ok', db: 'ok' } as const, 200);
+      return c.json({ status: HealthStatus.ok, db: DatabaseHealth.ok }, 200);
     } catch (err) {
       console.error(`health: database check failed ${describeForLog(err)}`);
-      return c.json({ status: 'degraded', db: 'error' } as const, 503);
+      return c.json({ status: HealthStatus.degraded, db: DatabaseHealth.error }, 503);
     }
   },
 );
@@ -68,7 +69,7 @@ function buildApi(options: AppOptions) {
 export function createApp(options: AppOptions = {}) {
   const api = buildApi(options);
   const app = new Hono<AppEnv>()
-    .use(securityHeaders({ hsts: options.production ?? env.NODE_ENV === 'production' }))
+    .use(securityHeaders({ hsts: options.production ?? env.NODE_ENV === NodeEnv.production }))
     .route('/api', api);
   if (options.static) app.route('/', staticFiles(options.static));
   return app.onError(onError).notFound(onNotFound);

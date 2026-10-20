@@ -1,3 +1,4 @@
+import { JsonSchemaType } from '@rampflow/shared/values';
 import ts from 'typescript-6';
 import { describe, expect, it } from 'vitest';
 import { ConversionError, Converter } from './converter.ts';
@@ -98,25 +99,28 @@ describe('Converter', () => {
     const { converter, convert } = load();
     expect(convert('Named')).toEqual({ $ref: '#/components/schemas/ResourceView' });
     expect(converter.components.ResourceView).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: {
-        id: { type: 'string' },
+        id: { type: JsonSchemaType.string },
         kind: { $ref: '#/components/schemas/Kind' },
-        name: { type: 'string' },
+        name: { type: JsonSchemaType.string },
         cap: { type: ['number', 'null'] },
-        active: { type: 'boolean' },
+        active: { type: JsonSchemaType.boolean },
         note: { type: ['string', 'null'] },
-        createdAt: { type: 'string', format: 'date-time' },
-        hours: { type: 'array', items: { $ref: '#/components/schemas/Hours' } },
+        createdAt: { type: JsonSchemaType.string, format: 'date-time' },
+        hours: { type: JsonSchemaType.array, items: { $ref: '#/components/schemas/Hours' } },
         pair: {
-          type: 'array',
-          prefixItems: [{ type: 'number' }, { type: 'string' }],
+          type: JsonSchemaType.array,
+          prefixItems: [{ type: JsonSchemaType.number }, { type: JsonSchemaType.string }],
           minItems: 2,
           maxItems: 2,
         },
-        tags: { type: 'object', additionalProperties: { type: 'number' } },
-        level: { type: 'number', enum: [1, 2, 3] },
-        flag: { type: 'boolean', const: true },
+        tags: {
+          type: JsonSchemaType.object,
+          additionalProperties: { type: JsonSchemaType.number },
+        },
+        level: { type: JsonSchemaType.number, enum: [1, 2, 3] },
+        flag: { type: JsonSchemaType.boolean, const: true },
       },
       required: [
         'id',
@@ -132,12 +136,15 @@ describe('Converter', () => {
         'flag',
       ],
     });
-    expect(converter.components.Kind).toEqual({ type: 'string', enum: ['pool', 'single'] });
+    expect(converter.components.Kind).toEqual({
+      type: JsonSchemaType.string,
+      enum: ['pool', 'single'],
+    });
     expect(converter.components.Hours).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: {
-        day: { type: 'string', format: 'date' },
-        opens: { type: 'string', pattern: '^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$' },
+        day: { type: JsonSchemaType.string, format: 'date' },
+        opens: { type: JsonSchemaType.string, pattern: '^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$' },
       },
       required: ['day', 'opens'],
     });
@@ -147,14 +154,14 @@ describe('Converter', () => {
     const { converter, convert } = load();
     expect(convert('Recursive')).toEqual({ $ref: '#/components/schemas/Node' });
     expect(converter.components.Node?.properties?.children).toEqual({
-      type: 'array',
+      type: JsonSchemaType.array,
       items: { $ref: '#/components/schemas/Node' },
     });
     expect(convert('Inline')).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: {
-        items: { type: 'array', items: { $ref: '#/components/schemas/ResourceView' } },
-        total: { type: 'number' },
+        items: { type: JsonSchemaType.array, items: { $ref: '#/components/schemas/ResourceView' } },
+        total: { type: JsonSchemaType.number },
       },
       required: ['items', 'total'],
     });
@@ -163,18 +170,21 @@ describe('Converter', () => {
       enum: ['pool', 'single', null],
     });
     expect(convert('Unknown')).toEqual({
-      type: 'object',
+      type: JsonSchemaType.object,
       properties: { value: {} },
       required: ['value'],
     });
     expect(convert('LocalOnly')).toEqual({
-      type: 'object',
-      properties: { id: { type: 'string' }, at: { type: 'string', format: 'date-time' } },
+      type: JsonSchemaType.object,
+      properties: {
+        id: { type: JsonSchemaType.string },
+        at: { type: JsonSchemaType.string, format: 'date-time' },
+      },
       required: ['id', 'at'],
     });
     expect(convert('OfGeneric')).toEqual({
-      type: 'object',
-      properties: { value: { type: 'string' } },
+      type: JsonSchemaType.object,
+      properties: { value: { type: JsonSchemaType.string } },
       required: ['value'],
     });
   });

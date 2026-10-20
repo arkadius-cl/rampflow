@@ -1,4 +1,5 @@
 import type { MagicLinkInspect } from '@rampflow/shared/modules/core/api.auth';
+import { SignInMode } from '@rampflow/shared/modules/core/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -85,7 +86,7 @@ function MagicLinkPage() {
           <AlertTitle>{t(($) => $.auth.link_invalid.title)}</AlertTitle>
           <AlertDescription>{t(($) => $.auth.link_invalid.magic)}</AlertDescription>
         </Alert>
-        <Link to="/login" search={{ mode: 'magic' }} className={buttonVariants()}>
+        <Link to="/login" search={{ mode: SignInMode.magic }} className={buttonVariants()}>
           {t(($) => $.auth.magic.request_submit)}
         </Link>
       </div>

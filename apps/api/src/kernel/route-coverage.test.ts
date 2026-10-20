@@ -1,3 +1,9 @@
+import {
+  ForeignOutcome,
+  HttpMethod,
+  RouteCaseActor,
+  RouteCaseGrant,
+} from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import {
@@ -41,23 +47,23 @@ describe('route coverage', () => {
     );
     const cases = defineRouteCases([
       {
-        method: 'GET',
+        method: HttpMethod.GET,
         path: '/api/t/:orgId/toys',
-        as: 'dispatcher',
-        permission: 'member',
+        as: RouteCaseActor.dispatcher,
+        permission: RouteCaseGrant.member,
         entitlement: null,
         params: (w) => ({ orgId: w.A.tenantId }),
-        foreign: 'not_found',
+        foreign: ForeignOutcome.not_found,
         siteScoped: false,
       },
       {
-        method: 'DELETE',
+        method: HttpMethod.DELETE,
         path: '/api/t/:orgId/toys/:toyId',
-        as: 'dispatcher',
-        permission: 'member',
+        as: RouteCaseActor.dispatcher,
+        permission: RouteCaseGrant.member,
         entitlement: null,
         params: (w) => ({ orgId: w.A.tenantId, toyId: w.A.sites[0].id }),
-        foreign: 'not_found',
+        foreign: ForeignOutcome.not_found,
         siteScoped: false,
       },
     ]);

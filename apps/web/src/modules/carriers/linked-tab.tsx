@@ -1,8 +1,8 @@
 import type {
   CarrierInvitationView,
-  CarrierLinkStatus,
   CarrierLinkView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { TruckIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -121,20 +121,20 @@ function LinkAction({ orgId, link }: { orgId: string; link: CarrierLinkView }) {
       ),
     onSuccess: async (updated) => {
       toast.success(
-        updated.status === 'active'
+        updated.status === CarrierLinkStatus.active
           ? t(($) => $.carriers.linked.activated, { name: updated.name })
           : t(($) => $.carriers.linked.deactivated, { name: updated.name }),
       );
       await queryClient.invalidateQueries({ queryKey: carrierKeys.all(orgId) });
     },
   });
-  if (link.status === 'deactivated') {
+  if (link.status === CarrierLinkStatus.deactivated) {
     return (
       <Button
         variant="outline"
         size="sm"
         disabled={change.isPending}
-        onClick={() => change.mutate('active')}
+        onClick={() => change.mutate(CarrierLinkStatus.active)}
       >
         {t(($) => $.carriers.linked.activate)}
       </Button>
@@ -156,7 +156,10 @@ function LinkAction({ orgId, link }: { orgId: string; link: CarrierLinkView }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t(($) => $.carriers.linked.cancel)}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={() => change.mutate('deactivated')}>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => change.mutate(CarrierLinkStatus.deactivated)}
+          >
             {t(($) => $.carriers.linked.deactivate)}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -1,4 +1,10 @@
 import type { RegistrationVerified } from '@rampflow/shared/modules/booking/api.carriers';
+import {
+  CarrierLinkSource,
+  RegistrationMode,
+  RegistrationStatus,
+} from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Setting, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, gt } from 'drizzle-orm';
 import { hashToken, type UserId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -34,7 +40,7 @@ export async function verifyRegistration(
 ): Promise<RegistrationVerified & { userId: UserId }> {
   const now = clock.now();
   const [reg] = await tx.select().from(carrierRegistration).where(pendingWhere(input.token, now));
-  if (!reg) throw new ApiError('unauthorized', 'Invalid or expired link');
+  if (!reg) throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired link');
   const link = { tenantId: reg.tenantId, siteId: reg.siteId };
   // A link switched off or regenerated after the form was sent takes no more carriers.
   try {
@@ -42,8 +48,8 @@ export async function verifyRegistration(
       assertLinkOpen(inner, link, reg.publicLinkSlug, clock),
     );
   } catch (e) {
-    if (e instanceof ApiError && e.code === 'not_found') {
-      throw new ApiError('unauthorized', 'Invalid or expired link');
+    if (e instanceof ApiError && e.code === ErrorCode.not_found) {
+      throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired link');
     }
     throw e;
   }
@@ -60,9 +66,9 @@ export async function verifyRegistration(
   });
   const mode = await asScope(tx, publicScope(link), async (inner) => {
     const access = await loadAccess(inner, publicScope(link), clock);
-    return (await access.setting('booking.public_registration_mode', reg.siteId)).value;
+    return (await access.setting(Setting.booking.public_registration_mode, reg.siteId)).value;
   });
-  const status = mode === 'auto_approve' ? 'approved' : 'pending_approval';
+  const status = mode === RegistrationMode.auto_approve ? 'approved' : 'pending_approval';
 
   const [claimed] = await tx
     .update(carrierRegistration)
@@ -71,17 +77,17 @@ export async function verifyRegistration(
       emailVerifiedAt: now,
       userId,
       carrierId,
-      decidedAt: status === 'approved' ? now : null,
+      decidedAt: status === RegistrationStatus.approved ? now : null,
     })
     .where(pendingWhere(input.token, now))
     .returning({ id: carrierRegistration.id });
-  if (!claimed) throw new ApiError('unauthorized', 'Invalid or expired link');
+  if (!claimed) throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired link');
 
-  if (status === 'approved') {
-    await linkAsTenant(tx, 'registration', {
+  if (status === RegistrationStatus.approved) {
+    await linkAsTenant(tx, TokenPurpose.registration, {
       tenantId: reg.tenantId,
       carrierId,
-      source: 'public_link',
+      source: CarrierLinkSource.public_link,
       reactivateDeactivatedBefore: null,
     });
   }

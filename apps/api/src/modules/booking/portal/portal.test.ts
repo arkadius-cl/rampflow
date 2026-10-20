@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type {
   PortalBookingPage,
   PortalBookingView,
@@ -6,7 +7,22 @@ import type {
   PortalRebook,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
-import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  BookingStatus,
+  CarrierLinkSource,
+  CarrierLinkStatus,
+  ClosureKind,
+  ClosureSource,
+  CreatedParty,
+  DurationKind,
+} from '@rampflow/shared/modules/booking/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  EmailTemplate,
+  ErrorCode,
+  ForbiddenReason,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -82,8 +98,10 @@ function book(
       loadTypeId: s.loadTypeId,
       startsAt,
       avis: avisInput({
-        references: [{ type: 'purchase_order', value: `PO-${randomUUID().slice(0, 6)}` }],
-        driver: { name: 'Jan Kowalski', phone: '+48 600 100 200', locale: 'pl' },
+        references: [
+          { type: ReferenceType.purchase_order, value: `PO-${randomUUID().slice(0, 6)}` },
+        ],
+        driver: { name: 'Jan Kowalski', phone: '+48 600 100 200', locale: DriverLocale.pl },
         vehicle: { plate: 'wgm-4521k' },
       }),
     },
@@ -105,8 +123,8 @@ describe('offered times (BK-04)', () => {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'closed',
-        source: 'manual',
+        kind: ClosureKind.closed,
+        source: ClosureSource.manual,
         startsLocal: `${MONDAY}T08:00`,
         endsLocal: `${MONDAY}T09:00`,
       });
@@ -173,7 +191,10 @@ describe('booking a slot (BK-04)', () => {
     expect(statuses).toEqual([201, 409]);
     const lost = first.status === 409 ? first : second;
     const error = await errorOf(lost);
-    expect(error.details).toMatchObject({ reason: 'capacity_full', offers: { date: MONDAY } });
+    expect(error.details).toMatchObject({
+      reason: ConflictReason.capacity_full,
+      offers: { date: MONDAY },
+    });
     const refreshed = error.details?.offers as PortalOffers;
     expect(refreshed).not.toHaveProperty('resources');
     expect(refreshed.starts.map((x) => x.wallTime)).not.toContain('09:00');
@@ -189,7 +210,7 @@ describe('booking a slot (BK-04)', () => {
     const s = await site();
     const b = await booked(s, mon('09:00'));
     expect(b).toMatchObject({
-      status: 'confirmed',
+      status: BookingStatus.confirmed,
       startsAt: mon('09:00'),
       timeZone: 'Europe/Berlin',
       site: { id: s.siteId, address: { line1: 'Am Hafen 1', postalCode: '20457' } },
@@ -215,13 +236,13 @@ describe('booking a slot (BK-04)', () => {
   it('answers 403 link_inactive on create after the tenant deactivated the link, while cancel still works', async () => {
     const s = await site();
     const b = await booked(s, mon('11:00'));
-    await setLink(w.A, w.A.carrierId, 'deactivated');
+    await setLink(w.A, w.A.carrierId, CarrierLinkStatus.deactivated);
     try {
       const create = await book(s, mon('12:00'));
       expect(create.status).toBe(403);
       expect(await errorOf(create)).toMatchObject({
-        code: 'forbidden',
-        details: { reason: 'link_inactive' },
+        code: ErrorCode.forbidden,
+        details: { reason: ForbiddenReason.link_inactive },
       });
       const cancel = await carrierAs(carrierUser()).post(`${at(w.A)}/bookings/${b.id}/cancel`, {
         body: {},
@@ -231,15 +252,15 @@ describe('booking a slot (BK-04)', () => {
       const read = await carrierAs(carrierUser()).get(`${mine()}/${b.id}`);
       expect(((await read.json()) as PortalBookingView).linkActive).toBe(false);
     } finally {
-      await setLink(w.A, w.A.carrierId, 'active');
+      await setLink(w.A, w.A.carrierId, CarrierLinkStatus.active);
     }
   });
 });
 
-async function setLink(side: WorldSide, carrierId: string, status: 'active' | 'deactivated') {
+async function setLink(side: WorldSide, carrierId: string, status: CarrierLinkStatus) {
   await ownerDb()
     .update(tenantCarrierLink)
-    .set({ status, deactivatedAt: status === 'active' ? null : new Date() })
+    .set({ status, deactivatedAt: status === CarrierLinkStatus.active ? null : new Date() })
     .where(
       and(
         eq(tenantCarrierLink.tenantId, side.tenantId),
@@ -260,7 +281,7 @@ describe('change and cancel (BK-05)', () => {
       body: { startsAt: taken.startsAt, version: b.version },
     });
     expect(full.status).toBe(409);
-    expect((await errorOf(full)).details).toMatchObject({ reason: 'capacity_full' });
+    expect((await errorOf(full)).details).toMatchObject({ reason: ConflictReason.capacity_full });
 
     const moved = await carrierAs(carrierUser()).patch(`${at(w.A)}/bookings/${b.id}`, {
       body: { startsAt: mon('11:00'), version: b.version },
@@ -294,13 +315,13 @@ describe('change and cancel (BK-05)', () => {
     });
     for (const res of [patch, cancel, avis]) {
       expect(res.status).toBe(409);
-      expect((await errorOf(res)).details).toMatchObject({ reason: 'cutoff_passed' });
+      expect((await errorOf(res)).details).toMatchObject({ reason: ConflictReason.cutoff_passed });
     }
     const [row] = await ownerDb()
       .select()
       .from(booking)
       .where(eq(booking.id, b.id as never));
-    expect(row).toMatchObject({ status: 'confirmed', version: b.version });
+    expect(row).toMatchObject({ status: BookingStatus.confirmed, version: b.version });
   });
 
   it('an avis edit whose new duration does not fit answers 409 and keeps the old avis (AV-02)', async () => {
@@ -311,12 +332,12 @@ describe('change and cancel (BK-05)', () => {
     ];
     await ownerDb()
       .update(loadType)
-      .set({ duration: { kind: 'tiers', tiers } })
+      .set({ duration: { kind: DurationKind.tiers, tiers } })
       .where(eq(loadType.id, s.loadTypeId));
     const b = await booked(s, mon('09:00'));
     const res = await carrierAs(carrierUser()).put(`${at(w.A)}/bookings/${b.id}/avis`, {
       body: {
-        avis: avisInput({ loadUnits: [{ type: 'eur_pallet', quantity: 33 }] }),
+        avis: avisInput({ loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 33 }] }),
         version: b.version,
       },
     });
@@ -336,8 +357,8 @@ describe('bookings across tenants (CR-05)', () => {
       .values({
         tenantId: w.B.tenantId,
         carrierId: w.A.carrierId,
-        status: 'active',
-        source: 'invitation',
+        status: CarrierLinkStatus.active,
+        source: CarrierLinkSource.invitation,
       })
       .onConflictDoNothing();
     const sA = await site();
@@ -353,7 +374,7 @@ describe('bookings across tenants (CR-05)', () => {
     expect(both).toEqual(expect.arrayContaining([atA.id, atB.id]));
     expect(await list({ from: MONDAY, to: MONDAY, tenantId: w.B.tenantId })).toEqual([atB.id]);
     expect(await list({ siteId: sA.siteId })).toEqual([atA.id]);
-    expect(await list({ siteId: sA.siteId, status: 'cancelled' })).toEqual([]);
+    expect(await list({ siteId: sA.siteId, status: BookingStatus.cancelled })).toEqual([]);
     expect(await list({ siteId: sA.siteId, from: '2026-11-03' })).toEqual([]);
     const page = (await (
       await carrierAs(carrierUser()).get(`${mine()}?from=${MONDAY}&to=${MONDAY}&limit=1`)
@@ -381,14 +402,15 @@ describe('upcoming and past tabs (CR-05)', () => {
     const sun = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() - 86_400_000);
     const tue = (hhmm: string) => new Date(new Date(mon(hhmm)).getTime() + 86_400_000);
     const seeded = async (startsAt: Date, status: BookingStatus) =>
-      (await seedBooking(w.A, { startsAt, status, site: s, createdParty: 'carrier' })).id;
-    const departedToday = await seeded(new Date(mon('07:00')), 'departed');
-    const doneToday = await seeded(new Date(mon('08:00')), 'done');
-    const laterToday = await seeded(new Date(mon('16:00')), 'confirmed');
-    const staleYesterday = await seeded(sun('10:00'), 'confirmed');
-    const stillOnSite = await seeded(sun('22:00'), 'checked_in');
-    const cancelledTomorrow = await seeded(tue('09:00'), 'cancelled');
-    const tomorrow = await seeded(tue('10:00'), 'requested');
+      (await seedBooking(w.A, { startsAt, status, site: s, createdParty: CreatedParty.carrier }))
+        .id;
+    const departedToday = await seeded(new Date(mon('07:00')), BookingStatus.departed);
+    const doneToday = await seeded(new Date(mon('08:00')), BookingStatus.done);
+    const laterToday = await seeded(new Date(mon('16:00')), BookingStatus.confirmed);
+    const staleYesterday = await seeded(sun('10:00'), BookingStatus.confirmed);
+    const stillOnSite = await seeded(sun('22:00'), BookingStatus.checked_in);
+    const cancelledTomorrow = await seeded(tue('09:00'), BookingStatus.cancelled);
+    const tomorrow = await seeded(tue('10:00'), BookingStatus.requested);
     const noon = new Date(mon('12:00'));
     const tab = async (when: string) => {
       const q = new URLSearchParams({ siteId: s.siteId, when });
@@ -415,7 +437,7 @@ describe('book again (BK-06)', () => {
       avis: {
         references: [],
         counterpartyName: 'Lieferant GmbH',
-        loadUnits: [{ type: 'eur_pallet', quantity: 10 }],
+        loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: 10 }],
         vehicle: { plate: 'WGM4521K' },
       },
     });
@@ -451,13 +473,13 @@ describe('the driver link (CR-06)', () => {
     const to = `driver-${randomUUID().slice(0, 8)}@example.test`;
     const sent = await carrierAs(carrierUser()).post(
       `${at(w.A)}/bookings/${b.id}/driver-link/email`,
-      { body: { email: to, locale: 'uk' } },
+      { body: { email: to, locale: DriverLocale.uk } },
     );
     expect(sent.status).toBe(202);
     const [mail] = await ownerDb()
       .select()
       .from(outboxMessage)
       .where(eq(outboxMessage.toEmail, to));
-    expect(mail).toMatchObject({ template: 'driver.link', locale: 'uk' });
+    expect(mail).toMatchObject({ template: EmailTemplate.driver_link, locale: DriverLocale.uk });
   });
 });

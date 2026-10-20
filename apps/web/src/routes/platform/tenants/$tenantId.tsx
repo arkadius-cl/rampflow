@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type EntitlementSource, PACKAGE_IDS, type PackageId } from '@rampflow/shared';
 import {
   InviteTenantAdmin,
   type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
+import { EntitlementSource, PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
@@ -47,7 +47,7 @@ import { platformKeys, tenantQuery } from '@/modules/core/queries';
 // pending admin invitations with a re-invite.
 
 export const Route = createFileRoute('/platform/tenants/$tenantId')({
-  beforeLoad: guard({ permission: 'core.manage_tenants' }),
+  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
   component: TenantPage,
 });
 
@@ -153,7 +153,7 @@ function TenantForm({ tenant }: { tenant: TenantDetail }) {
                   value={field.value}
                   onChange={(e) => field.onChange(e.target.value as PackageId)}
                 >
-                  {PACKAGE_IDS.map((id) => (
+                  {values(PackageId).map((id) => (
                     <NativeSelectOption key={id} value={id}>
                       {t(($) => $.platform.packages[id])}
                     </NativeSelectOption>
@@ -224,7 +224,7 @@ function EntitlementsCard({ tenant }: { tenant: TenantDetail }) {
                 {valueText(e.packageValue)}
               </TableCell>
               <TableCell className="pr-6">
-                <Badge variant={e.source === 'override' ? 'default' : 'outline'}>
+                <Badge variant={e.source === EntitlementSource.override ? 'default' : 'outline'}>
                   {sourceText(e.source)}
                 </Badge>
               </TableCell>

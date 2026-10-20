@@ -2,7 +2,15 @@ import * as z from 'zod';
 import { type LocalDate, localDateSchema, type TimeZone } from '../../time/index.ts';
 import { AvisInput, plateSchema } from '../avis/avis.ts';
 import { CarrierRef } from '../booking/api.staff.ts';
-import { type BookingStatus, type Punctuality, TURN_AWAY_REASONS } from '../booking/lifecycle.ts';
+import {
+  type BookingStatus,
+  type Punctuality,
+  type ResourceKind,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '../booking/values.ts';
+import type { DockStatus, TemperatureZone } from '../core/values.ts';
+import type { SafetyStatus } from '../safety/values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/yard (YD-01 to YD-08, BK-02 walk-in).
 // Commands run through transitionBooking; these routes only pick the command and the read model.
@@ -26,7 +34,7 @@ export type SearchBody = z.infer<typeof SearchBody>;
 export const CheckInBody = z.object({ plateSeen: plateSchema.nullable().default(null) });
 export type CheckInBody = z.input<typeof CheckInBody>;
 
-export const TurnAwayBody = z.object({ reason: z.enum(TURN_AWAY_REASONS) });
+export const TurnAwayBody = z.object({ reason: z.enum(TurnAwayReason) });
 export type TurnAwayBody = z.infer<typeof TurnAwayBody>;
 
 /** YD-05: the reason is required unless the truck is `done`; the lifecycle checks that. */
@@ -44,11 +52,11 @@ const walkInBase = z.object({
 
 /** YD-03: a checked-in walk-in needs the avis; a turned-away one only the plate and a reason. */
 export const WalkInBody = z.discriminatedUnion('outcome', [
-  walkInBase.extend({ outcome: z.literal('check_in'), avis: AvisInput }),
+  walkInBase.extend({ outcome: z.literal(WalkInOutcome.check_in), avis: AvisInput }),
   walkInBase.extend({
-    outcome: z.literal('turn_away'),
+    outcome: z.literal(WalkInOutcome.turn_away),
     avis: AvisInput.optional(),
-    reason: z.enum(TURN_AWAY_REASONS),
+    reason: z.enum(TurnAwayReason),
   }),
 ]);
 export type WalkInBody = z.input<typeof WalkInBody>;
@@ -78,12 +86,12 @@ export interface YardTruck {
   driverPhone: string | null;
   loadType: { id: string; name: { de: string; en: string } };
   loadUnits: number;
-  resource: { id: string; name: string; kind: 'pool' | 'single' };
+  resource: { id: string; name: string; kind: ResourceKind };
   startsAt: string;
   endsAt: string;
   timeZone: TimeZone;
   walkIn: boolean;
-  safety: { status: 'valid' | 'missing' | 'not_required'; enforced: boolean };
+  safety: { status: SafetyStatus; enforced: boolean };
   /** Stored at check-in; before it, what a check-in now would record (YD-01). */
   punctuality: Punctuality | null;
   punctualityMinutes: number | null;
@@ -133,8 +141,8 @@ export interface SearchView {
 export interface YardDock {
   id: string;
   code: string;
-  status: 'active' | 'maintenance' | 'inactive';
-  temperatureZone: 'ambient' | 'chilled' | 'frozen';
+  status: DockStatus;
+  temperatureZone: TemperatureZone;
   adrAllowed: boolean;
   /** The bookable resource the dock belongs to, if any. */
   resourceId: string | null;
@@ -159,7 +167,7 @@ export interface CallResult {
 export interface WalkInResult {
   truck: YardTruck;
   /** `missing`: enforcement kept the truck `confirmed` until a briefing is linked. */
-  safety: 'valid' | 'missing' | 'not_required' | null;
+  safety: SafetyStatus | null;
 }
 
 /** YD-02: a valid acknowledgement of the tenant that the gate can link to the booking. */

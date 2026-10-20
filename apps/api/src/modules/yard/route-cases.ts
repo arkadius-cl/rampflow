@@ -1,4 +1,17 @@
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  CommandName,
+  OnSiteStatus,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../test/route-cases.ts';
 import type { World, WorldSide } from '../../../test/world.ts';
@@ -25,7 +38,7 @@ const ownIn = (status: keyof typeof STEPS) => async (w: World) => {
       for (const type of STEPS[status]) {
         const dockId = side.sites[0].dockIds[0];
         const command: CommandInput =
-          type === 'check_in' ? { type, plateSeen: null } : { type, dockId };
+          type === CommandName.check_in ? { type, plateSeen: null } : { type, dockId };
         await transitionBooking(ctx, side.bookings.own.id, command);
       }
     });
@@ -38,58 +51,64 @@ const briefings = async (w: World, db: OwnerDb) => {
 };
 
 const gate = {
-  as: 'gate_operator',
-  permission: 'yard.gate',
+  as: RouteCaseActor.gate_operator,
+  permission: Permission.yard.gate,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 
 const call = {
-  as: 'dock_operator',
-  permission: 'yard.call',
-  entitlement: 'yard.call_to_dock',
-  foreign: 'not_found',
+  as: RouteCaseActor.dock_operator,
+  permission: Permission.yard.call,
+  entitlement: Feature.yard.call_to_dock,
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 
-const dock = { ...call, permission: 'yard.dock' } as const satisfies Partial<RouteCase>;
+const dock = { ...call, permission: Permission.yard.dock } as const satisfies Partial<RouteCase>;
 
 export const cases = defineRouteCases([
-  { ...gate, method: 'GET', path: '/api/t/:orgId/yard/expected', params: org, query: site },
   {
     ...gate,
-    method: 'POST',
+    method: HttpMethod.GET,
+    path: '/api/t/:orgId/yard/expected',
+    params: org,
+    query: site,
+  },
+  {
+    ...gate,
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/search',
     params: org,
     body: (w) => ({ siteId: w.A.sites[0].id, q: w.A.bookings.own.code }),
   },
-  { ...gate, method: 'GET', path: '/api/t/:orgId/yard/on-site', params: org, query: site },
+  { ...gate, method: HttpMethod.GET, path: '/api/t/:orgId/yard/on-site', params: org, query: site },
   {
     ...gate,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/check-in',
     params: own,
     body: () => ({ plateSeen: 'HH-AB 123' }),
   },
   {
     ...gate,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/turn-away',
     params: own,
-    body: () => ({ reason: 'documents_missing' }),
+    body: () => ({ reason: TurnAwayReason.documents_missing }),
   },
   {
     ...gate,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/depart',
     params: own,
     body: () => ({ reason: 'Driver left' }),
-    setup: ownIn('checked_in'),
+    setup: ownIn(OnSiteStatus.checked_in),
   },
   {
     ...gate,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/walk-ins',
     params: org,
     body: (w) => ({
@@ -98,7 +117,7 @@ export const cases = defineRouteCases([
       loadTypeId: w.A.sites[0].loadTypeId,
       carrier: { id: w.A.carrierId },
       plateSeen: 'HH-WI 42',
-      outcome: 'check_in',
+      outcome: WalkInOutcome.check_in,
       avis: avisInput(),
     }),
     setup: async (w, db) => {
@@ -108,8 +127,8 @@ export const cases = defineRouteCases([
   },
   {
     ...gate,
-    entitlement: 'safety.briefings',
-    method: 'POST',
+    entitlement: Feature.safety.briefings,
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/acknowledgement-candidates',
     params: own,
     body: () => ({ name: 'Driver' }),
@@ -117,8 +136,8 @@ export const cases = defineRouteCases([
   },
   {
     ...gate,
-    entitlement: 'safety.briefings',
-    method: 'POST',
+    entitlement: Feature.safety.briefings,
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/acknowledgements',
     params: own,
     body: (w) => ({ acknowledgementId: briefingOf(w.A).acknowledgementId }),
@@ -126,49 +145,49 @@ export const cases = defineRouteCases([
   },
   {
     ...gate,
-    entitlement: 'safety.briefings',
-    method: 'POST',
+    entitlement: Feature.safety.briefings,
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/briefing-session',
     params: own,
   },
-  { ...call, method: 'GET', path: '/api/t/:orgId/yard/docks', params: org, query: site },
+  { ...call, method: HttpMethod.GET, path: '/api/t/:orgId/yard/docks', params: org, query: site },
   {
     ...call,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/call',
     params: own,
     body: (w) => ({ dockId: w.A.sites[0].dockIds[1] }),
-    setup: ownIn('checked_in'),
+    setup: ownIn(OnSiteStatus.checked_in),
   },
   {
     ...call,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/uncall',
     params: own,
-    setup: ownIn('called'),
+    setup: ownIn(OnSiteStatus.called),
   },
   {
     ...dock,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/dock',
     params: own,
     body: () => ({}),
-    setup: ownIn('called'),
+    setup: ownIn(OnSiteStatus.called),
   },
   {
     ...dock,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/loading',
     params: own,
     body: () => ({}),
-    setup: ownIn('called'),
+    setup: ownIn(OnSiteStatus.called),
   },
   {
     ...dock,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/complete',
     params: own,
     body: () => ({ actualLoadUnits: 9, discrepancyNote: 'One pallet damaged' }),
-    setup: ownIn('loading'),
+    setup: ownIn(OnSiteStatus.loading),
   },
 ]);

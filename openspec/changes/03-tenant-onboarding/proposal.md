@@ -1,0 +1,53 @@
+# Proposal
+
+## Why
+
+After change 02 a company registers itself and its first admin lands in an empty tenant: no site, no dock, and nothing that says what to do next. A site created today has no opening hours, so it offers no slot at all, and a new dock is in no bookable resource until someone opens the pool editor. Carriers could be invited and bookings attempted against a tenant that cannot take a truck. This change guides the admin from the empty tenant to the first bookable dock, activates the tenant automatically at that moment, and makes the dock model safe enough that the system can build pools on its own.
+
+## What Changes
+
+- **Onboarding checklist** at `/t/$orgId/onboarding`: three steps (site with opening hours, hall, dock), each with its state and a link to the existing master data screen. The checklist has no forms of its own. While the tenant is in onboarding, the tenant home sends a member with `core.manage_sites` there, and every office screen shows a notice with a link to it.
+- **Automatic, one-way activation.** The transaction that creates a tenant's first dock sets `org.activated_at` (column added by 02). No later write clears it; there is no route that deletes a dock, and setting docks inactive changes nothing.
+- **Gating during onboarding.** Carrier invitations, public booking link creation and regeneration, staff bookings, walk-ins and carrier bookings answer the new error 409 `onboarding_incomplete`. Master data, hours, load types, settings and staff invitations work as before. The web disables these actions and explains why.
+- **Tenant status in the tenant context.** `GET /api/t/:orgId/context` returns `status` (`onboarding` or `active`), and the new `GET /api/t/:orgId/onboarding` returns the steps.
+- **Dock profile on pools.** `bookable_resource` gets `door_type`, `temperature_zone`, `adr_allowed` and a nullable `hall_id`. `resource_dock` carries the same three columns, with composite foreign keys to `dock` and `bookable_resource`. A pool can therefore only hold docks of one profile, and a dock's profile cannot change while it is in a resource with another one.
+- **Default pools.** Creating a dock puts it, in the same transaction, into the default pool of its hall and profile. If that pool does not exist yet, the system creates it and links it to the site's load types. With `booking.pools` off, the dock gets its own single resource instead. Pools are never split automatically; the admin still splits them by hand (MD-03).
+- **Every dock is bookable for at least one load type.** A dock always belongs to a resource that has at least one active load type. The service enforces this on every master data write and answers 409 `conflict` with reason `dock_without_load_type` when a write would break it. The dock dialog shows "Bookable for" read-only: the dock's resource and its load types.
+- **BREAKING (API): pool membership moves docks.** `PUT /capacity/docks/:dockId/booking` no longer accepts `{ as: 'none' }`, because a dock can no longer be "not bookable". `POST /capacity/resources` and `PUT /capacity/resources/:id/docks` move docks out of their current resource instead of answering 409 `dock_in_resource`. A dock removed from a pool goes back to its default pool. A dock whose profile differs from the pool's answers 409 `profile_mismatch`. Changing a pooled dock's door type, temperature zone or ADR flag moves it to the default pool of its new profile.
+- **BREAKING (API): a site needs opening hours.** `POST /api/t/:orgId/sites` requires `hours` (at least one weekly window, same rules as `PUT /capacity/hours`). The site form offers three templates: one shift Monday to Friday 06:00 to 14:00 (preselected), two shifts Monday to Friday 06:00 to 22:00, and custom with several windows per day.
+- **Docs:** ADR-0017 records homogeneous pools and the dock profile and amends ADR-0004. The `domain-standards.md` §2 claim that Opendock appointments have no dock id is corrected. `mvp-scope.md` gets ON-01 to ON-03 and amended MD-01 to MD-03.
+
+## Capabilities
+
+### New Capabilities
+
+- `tenant-onboarding`: the onboarding state of a tenant as tenant staff experience it: the checklist, the automatic one-way activation on the first dock, the actions blocked until then with their error and explanation, and the status in the tenant context.
+- `dock-pools`: how docks become bookable: the dock profile on pools, homogeneous pools, default pools per hall and profile, moving docks between resources, and the rule that every dock is bookable for at least one load type.
+- `site-opening-hours`: weekly opening hours as a required part of creating a site, with the templates the site form offers.
+
+### Modified Capabilities
+
+None. `api-description` keeps its requirements; the new guard appears in the generated description through the existing metadata rules, and the `tenant-onboarding` spec states what it shows.
+
+## Impact
+
+- **API code:** `apps/api/src/modules/core/sites/docks.ts` (`createDock` places the dock and activates the tenant; `updateDock` moves a dock whose profile or hall changes), `core/sites/sites.ts` (`createSite` writes hours), `core/sites/routes.tenant.ts`, a new `core/onboarding/` (`routes.tenant.ts`, `onboarding.ts`, `route-cases.ts`, `onboarding.test.ts`), `core/context/routes.tenant.ts` (`status`), `core/schema.ts` (`dock` unique key on the profile; tenant update policy on `org` for `activated_at`), `booking/schema.resources.ts`, `booking/capacity/resources.ts`, `booking/capacity/load-types.ts`, a new `booking/capacity/placement.ts` (default pool, single fallback, invariant check), `booking/capacity/hours.ts`, `kernel/access.ts` (`requireActiveTenant`, `Access.tenantStatus`), `kernel/errors.ts` (`onboarding_incomplete`), `kernel/describe.ts` and `apps/api/scripts/openapi/document.ts` and `tables.ts` (guard kind `active_tenant`), and the gated routers `booking/carriers/routes.tenant.ts`, `booking/staff/routes.tenant.ts`, `booking/portal/routes.carrier-at-tenant.ts`, `yard/routes.tenant.ts`.
+- **Shared:** `packages/shared/src/modules/core/values.ts` (value sets per ADR-0019: `OnboardingStep`, `HoursTemplate`, `PresetHoursTemplate`, `OnboardingCase`), `packages/shared/src/values/errors.ts` (`ErrorCode.onboarding_incomplete` and three `ConflictReason` members), `packages/shared/src/values/stories.ts` (`ON_01` to `ON_03`), `packages/shared/src/modules/core/api.sites.ts` (`CreateSite.hours`, `hoursTemplateRows`), `api.context.ts` (`status`), a new `api.onboarding.ts`, `booking/api.capacity.ts` (`ResourceView` profile, `hallId` and `loadTypeIds`; `DockBooking` without `none`), and the weekly hours schema moved to `packages/shared/src/time/weekly-hours.ts`.
+- **Web:** new `apps/web/src/routes/t/$orgId/onboarding/index.tsx` and `apps/web/src/modules/core/onboarding.tsx`; `routes/t/$orgId/index.tsx` (redirect while onboarding), `routes/t/$orgId/route.tsx` (notice), `routes/t/$orgId/sites/index.tsx` (`?new=1`), `modules/capacity/site-form.tsx` (hours templates), `modules/capacity/hours.tsx` (shared week editor), `modules/capacity/halls.tsx` ("Bookable for", profile move warning), `modules/capacity/booked-as.tsx`, `modules/capacity/resource-editor.tsx`, and the gated actions in `modules/carriers/invite-dialog.tsx`, `modules/carriers/links-tab.tsx`, `routes/t/$orgId/plan/index.tsx`, `routes/t/$orgId/gate/index.tsx`.
+- **i18n:** `core/errors.json` (`onboarding_incomplete`, the conflict reasons `profile_mismatch`, `dock_without_load_type` and `dock_needs_resource`), `core/sites.json` (hours templates, bookable for), a new part `core/onboarding.json`, and `booking/capacity.json`, in every staff locale (de, en, pl).
+- **Tests:** `onboarding.test.ts`, `placement.test.ts`, `resources.test.ts`, `sites.test.ts`, `load-types` cases in `availability.test.ts` or a new `load-types.test.ts`, `apps/api/test/world.ts` and `test/model.ts` (docks placed in their pool), `test/route-cases.ts` and `route-coverage.test.ts` (onboarding check), `rls.test.ts`; e2e `e2e/core/ON-01.spec.ts`, `ON-02.spec.ts`, `ON-03.spec.ts`, and updates to `e2e/core/MD-01.spec.ts`, `MD-02.spec.ts`, `e2e/booking/MD-03.spec.ts`.
+- **API description:** `pnpm api:docs` regenerates `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md`.
+- **Data model:** yes. `bookable_resource` gets `door_type`, `temperature_zone`, `adr_allowed` (not null) and `hall_id` (nullable, FK to `hall`), a unique key on `(id, door_type, temperature_zone, adr_allowed)`, and a partial unique index for one default pool per hall and profile. `resource_dock` gets the three profile columns and two composite foreign keys. `dock` gets a unique key on `(id, door_type, temperature_zone, adr_allowed)`. `org` gets a tenant `update` policy for activation. `org.activated_at` itself belongs to 02. One generated migration: `pnpm db:generate --name 03-tenant-onboarding`.
+- **Seed:** `apps/api/scripts/seed/sites.ts` builds Acme's pools from the default pools (rename and manual split) and adds the frozen dock T09 with its own default pool. `apps/api/scripts/seed/booking.ts` writes "Rampen 1–6" as the default pool of its hall. `seed/sites.ts` also gives 02's onboarding tenant "Nordhafen Kühllogistik GmbH" a site with hours and a hall but no dock, so its checklist shows mixed progress. 02's other two onboarding tenants stay empty. There is no new account.
+- **Docs:**
+  - `docs/decisions/ADR-0017-homogeneous-pools-dock-profile.md` (new)
+  - `docs/decisions/ADR-0004-booking-capacity-concurrency.md` (amended by ADR-0017: data, pools, "every dock in a resource")
+  - `docs/decisions/ADR-0011-frontend-routes-and-org-context.md` (route map row for `/t/$orgId/onboarding`, tenant home redirect, `?new=1` on the site list)
+  - `docs/reference/data-model.md` (`bookable_resource`, `resource_dock`, `dock`, `org` policy)
+  - `docs/reference/api-routes.md` (error `onboarding_incomplete`, new conflict reasons, onboarding route, changed master data routes)
+  - `docs/reference/module-contract.md` (`requireActiveTenant`, the route case field `onboarding`)
+  - `docs/explanation/mvp-scope.md` (core loop step 1, ON-01 to ON-03, MD-01 to MD-03 amended)
+  - `docs/explanation/research/domain-standards.md` (§2: Opendock appointments carry a `dockId`)
+  - `docs/explanation/domain-glossary.md` (dock profile, default pool, tenant status; "a dock belongs to exactly one resource")
+  - `docs/explanation/ux-concept.md` (onboarding checklist screen, pool editor moves docks)
+  - `docs/how-to/set-up-a-site.md`, `docs/how-to/onboard-a-tenant.md`, `docs/how-to/bring-in-carriers.md`, `docs/how-to/run-locally.md` (what the Nordhafen account shows), `docs/tutorials/first-truck-end-to-end.md` (Booked as column, no "not bookable")

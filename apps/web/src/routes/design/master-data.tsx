@@ -1,3 +1,6 @@
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
+import { PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   ChevronRightIcon,
@@ -62,12 +65,12 @@ function MasterDataScreen() {
   const site = sites[0];
   const pool = resources[0];
   if (!site || !pool) return null;
-  const counted = docks.filter((d) => d.status !== 'inactive').length;
+  const counted = docks.filter((d) => d.status !== DockStatus.inactive).length;
   return (
     <OfficeShell
       org={tenantMembership}
       memberships={memberships}
-      nav={tenantNav('master-data')}
+      nav={tenantNav(PrototypeScreen.master_data)}
       breadcrumbs={['Administration', 'Sites and docks', site.name]}
       user={dispatcherUser}
     >
@@ -83,7 +86,7 @@ function MasterDataScreen() {
       <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)_22rem]">
         <nav aria-label="Sites" className="flex flex-col gap-2">
           {sites
-            .filter((s) => s.tenantId === 'acme')
+            .filter((s) => s.tenantId === tenantMembership.id)
             .map((s) => (
               <a
                 key={s.id}
@@ -153,7 +156,9 @@ function MasterDataScreen() {
                         return (
                           <TableRow
                             key={d.id}
-                            className={cn(d.status === 'inactive' && 'text-muted-foreground')}
+                            className={cn(
+                              d.status === DockStatus.inactive && 'text-muted-foreground',
+                            )}
                           >
                             <TableCell className="pl-6 font-semibold">{d.code}</TableCell>
                             <TableCell>{doorLabel[d.doorType]}</TableCell>
@@ -161,14 +166,14 @@ function MasterDataScreen() {
                             <TableCell>{d.adr ? 'Yes' : '—'}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="gap-1">
-                                {d.status === 'maintenance' ? <WrenchIcon /> : null}
+                                {d.status === DockStatus.maintenance ? <WrenchIcon /> : null}
                                 {dockStatusLabel[d.status]}
                               </Badge>
                             </TableCell>
                             <TableCell className="pr-6">
                               {r ? (
                                 <span className="inline-flex items-center gap-1">
-                                  {r.kind === 'pool' ? (
+                                  {r.kind === ResourceKind.pool ? (
                                     <LayersIcon className="size-3.5 text-muted-foreground" />
                                   ) : (
                                     <SquareIcon className="size-3.5 text-muted-foreground" />
@@ -239,7 +244,7 @@ function MasterDataScreen() {
                 </FieldDescription>
                 <div className="flex flex-col gap-1.5">
                   {docks
-                    .filter((d) => d.status !== 'inactive')
+                    .filter((d) => d.status !== DockStatus.inactive)
                     .map((d) => {
                       const r = resourceOf(d.id);
                       const elsewhere = r !== undefined && r.id !== pool.id;

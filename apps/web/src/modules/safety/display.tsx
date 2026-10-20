@@ -1,10 +1,11 @@
 import type {
+  AckStatus,
   PictogramId,
   TranslationState,
   VersionStatus,
-} from '@rampflow/shared/modules/safety/api.authoring';
-import type { AckStatus } from '@rampflow/shared/modules/safety/validity';
+} from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import { BadgeTone, DisplayNamesType } from '@rampflow/shared/values';
 import {
   ArchiveIcon,
   BadgeCheckIcon,
@@ -52,7 +53,7 @@ export function usePictogramName() {
 /** "Polski", "Deutsch", ...: a briefing language in the UI language, by Intl. */
 export function useLanguageName() {
   const locale = useLocale();
-  const names = new Intl.DisplayNames([locale], { type: 'language' });
+  const names = new Intl.DisplayNames([locale], { type: DisplayNamesType.language });
   return (code: string) => {
     const name = names.of(code) ?? code;
     return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);
@@ -73,10 +74,10 @@ export function useDate() {
 type BadgeProps = Omit<StatusBadgeProps, 'meta'>;
 
 const ACK_META = {
-  valid: { icon: ShieldCheckIcon, tone: 'success' },
-  visit_only: { icon: TicketCheckIcon, tone: 'planned' },
-  expired: { icon: ShieldXIcon, tone: 'danger' },
-  outdated: { icon: HistoryIcon, tone: 'onsite' },
+  valid: { icon: ShieldCheckIcon, tone: BadgeTone.success },
+  visit_only: { icon: TicketCheckIcon, tone: BadgeTone.planned },
+  expired: { icon: ShieldXIcon, tone: BadgeTone.danger },
+  outdated: { icon: HistoryIcon, tone: BadgeTone.onsite },
 } as const satisfies Record<AckStatus, Omit<StatusMeta, 'label'>>;
 
 export function AckStatusBadge({ status, ...props }: { status: AckStatus } & BadgeProps) {
@@ -90,9 +91,9 @@ export function AckStatusBadge({ status, ...props }: { status: AckStatus } & Bad
 }
 
 const VERSION_META = {
-  draft: { icon: FilePenIcon, tone: 'planned' },
-  published: { icon: CircleCheckIcon, tone: 'success' },
-  retired: { icon: ArchiveIcon, tone: 'neutral' },
+  draft: { icon: FilePenIcon, tone: BadgeTone.planned },
+  published: { icon: CircleCheckIcon, tone: BadgeTone.success },
+  retired: { icon: ArchiveIcon, tone: BadgeTone.neutral },
 } as const satisfies Record<VersionStatus, Omit<StatusMeta, 'label'>>;
 
 export function VersionStatusBadge({ status, ...props }: { status: VersionStatus } & BadgeProps) {
@@ -106,9 +107,9 @@ export function VersionStatusBadge({ status, ...props }: { status: VersionStatus
 }
 
 const TRANSLATION_META = {
-  source: { icon: PenLineIcon, tone: 'neutral' },
-  machine: { icon: BotIcon, tone: 'onsite' },
-  reviewed: { icon: BadgeCheckIcon, tone: 'success' },
+  source: { icon: PenLineIcon, tone: BadgeTone.neutral },
+  machine: { icon: BotIcon, tone: BadgeTone.onsite },
+  reviewed: { icon: BadgeCheckIcon, tone: BadgeTone.success },
 } as const satisfies Record<TranslationState, Omit<StatusMeta, 'label'>>;
 
 export function TranslationBadge({ state, ...props }: { state: TranslationState } & BadgeProps) {

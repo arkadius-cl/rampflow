@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import type { Entitlements, StaffLocale } from '@rampflow/shared';
+import type { Entitlements } from '@rampflow/shared';
 import type {
   CarrierInvitationBody,
   CarrierInvitationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { EmailTemplate, type StaffLocale, TokenPurpose } from '@rampflow/shared/values';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -75,7 +76,7 @@ export async function inviteCarrier(
       tenantId,
       companyName: body.companyName,
       email: body.email,
-      tokenHash: tokenHashFor('carrier_invitation', id),
+      tokenHash: tokenHashFor(TokenPurpose.carrier_invitation, id),
       invitedBy,
       expiresAt: new Date(now.getTime() + CARRIER_INVITATION_MS),
       // On the request clock, like deactivated_at, which acceptance compares it with.
@@ -89,7 +90,7 @@ export async function inviteCarrier(
   await enqueueEmail(
     tx,
     {
-      template: 'booking.carrier-invitation',
+      template: EmailTemplate.booking_carrier_invitation,
       to: row.email,
       locale: body.locale ?? (inviter?.locale as StaffLocale | null) ?? 'en',
       tenantId,

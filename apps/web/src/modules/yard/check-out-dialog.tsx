@@ -1,3 +1,4 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { YardTruck } from '@rampflow/shared/modules/yard/api';
 import { LogOutIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -30,7 +31,7 @@ export function CheckOutDialog({
 }) {
   const { t } = useTranslation('yard');
   const [reason, setReason] = useState('');
-  const needsReason = truck.status !== 'done';
+  const needsReason = truck.status !== BookingStatus.done;
   const depart = useYardMutation(
     orgId,
     () => yardApi(orgId).depart(truck.id, needsReason ? reason.trim() : undefined),

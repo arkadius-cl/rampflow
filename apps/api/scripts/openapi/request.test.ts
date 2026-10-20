@@ -1,4 +1,5 @@
 import { PutHours } from '@rampflow/shared/modules/booking/api.capacity';
+import { ApiParty, HttpMethod, JsonSchemaType, StoryId } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { file } from '../../src/kernel/describe.ts';
@@ -6,10 +7,15 @@ import type { Endpoint } from './model.ts';
 import { describeRequest, openApiPath } from './request.ts';
 
 const endpoint = (e: Partial<Endpoint>): Endpoint => ({
-  method: 'PUT',
+  method: HttpMethod.PUT,
   path: '/api/t/:orgId/capacity/hours',
-  party: 'tenant',
-  meta: { id: 'booking.capacity.putHours', stories: ['MD-04'], description: '', responses: {} },
+  party: ApiParty.tenant,
+  meta: {
+    id: 'booking.capacity.putHours',
+    stories: [StoryId.MD_04],
+    description: '',
+    responses: {},
+  },
   validators: {},
   guards: [],
   ...e,
@@ -20,14 +26,16 @@ describe('describeRequest', () => {
     const { requestBody } = describeRequest(endpoint({ validators: { json: PutHours } }));
     const body = requestBody?.content['application/json'];
     expect(body?.schema).toMatchObject({
-      type: 'object',
+      type: JsonSchemaType.object,
       required: ['siteId', 'resourceId', 'rows'],
       properties: {
-        siteId: { type: 'string', format: 'uuid' },
+        siteId: { type: JsonSchemaType.string, format: 'uuid' },
         rows: {
-          type: 'array',
+          type: JsonSchemaType.array,
           maxItems: 70,
-          items: { properties: { weekday: { type: 'integer', minimum: 1, maximum: 7 } } },
+          items: {
+            properties: { weekday: { type: JsonSchemaType.integer, minimum: 1, maximum: 7 } },
+          },
         },
       },
     });
@@ -42,7 +50,7 @@ describe('describeRequest', () => {
   it('describes path and query parameters, unvalidated path ids as UUIDs', () => {
     const { parameters, requestBody } = describeRequest(
       endpoint({
-        method: 'GET',
+        method: HttpMethod.GET,
         path: '/api/t/:orgId/things/:code',
         validators: {
           param: z.object({ code: z.string().regex(/^[A-Z]{3}$/) }),
@@ -52,15 +60,30 @@ describe('describeRequest', () => {
     );
     expect(requestBody).toBeUndefined();
     expect(parameters).toEqual([
-      { name: 'orgId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+      {
+        name: 'orgId',
+        in: 'path',
+        required: true,
+        schema: { type: JsonSchemaType.string, format: 'uuid' },
+      },
       {
         name: 'code',
         in: 'path',
         required: true,
-        schema: { type: 'string', pattern: '^[A-Z]{3}$' },
+        schema: { type: JsonSchemaType.string, pattern: '^[A-Z]{3}$' },
       },
-      { name: 'siteId', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
-      { name: 'day', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+      {
+        name: 'siteId',
+        in: 'query',
+        required: true,
+        schema: { type: JsonSchemaType.string, format: 'uuid' },
+      },
+      {
+        name: 'day',
+        in: 'query',
+        required: false,
+        schema: { type: JsonSchemaType.string, format: 'date' },
+      },
     ]);
   });
 

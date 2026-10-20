@@ -1,3 +1,4 @@
+import { OrgKind } from '@rampflow/shared/values';
 import { queryOptions, useQueryClient } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -73,6 +74,6 @@ export function useRefreshMasterData(orgId: string) {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: sitesKey(orgId) }),
       queryClient.invalidateQueries({ queryKey: ['tenant', orgId, 'booking', 'capacity'] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.context('tenant', orgId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.context(OrgKind.tenant, orgId) }),
     ]);
 }

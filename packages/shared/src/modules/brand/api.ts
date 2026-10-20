@@ -1,7 +1,6 @@
-// Shapes of /api/t/:orgId/brand/logo and the public logo URL (TN-05).
+import type { LogoContentType } from './values.ts';
 
-export const LOGO_CONTENT_TYPES = ['image/png', 'image/jpeg'] as const;
-export type LogoContentType = (typeof LOGO_CONTENT_TYPES)[number];
+// Shapes of /api/t/:orgId/brand/logo and the public logo URL (TN-05).
 
 /** 256 KB. One byte more answers 422. */
 export const LOGO_MAX_BYTES = 262_144;

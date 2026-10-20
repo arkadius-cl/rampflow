@@ -1,31 +1,22 @@
-import {
-  COUNTED_DOCK_STATUSES,
-  type CreateDock,
-  type CreateHall,
-  type DOCK_STATUSES,
-  type DOOR_TYPES,
-  type DockView,
-  type HallView,
-  type TEMPERATURE_ZONES,
-  type UpdateDock,
-  type UpdateHall,
+import type {
+  CreateDock,
+  CreateHall,
+  DockView,
+  HallView,
+  UpdateDock,
+  UpdateHall,
 } from '@rampflow/shared/modules/core/api.sites';
+import { CountedDockStatus } from '@rampflow/shared/modules/core/values';
+import { ConflictReason, ErrorCode, Limit, values } from '@rampflow/shared/values';
 import { and, count, eq, inArray } from 'drizzle-orm';
 import type { DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { withinLimit } from '../../../kernel/access.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { resourceDock } from '../../booking/schema.resources.ts';
-import type * as schema from '../schema.ts';
 import { dock, hall } from '../schema.ts';
 import { requireSite } from './sites.ts';
 import { conflictOnUnique, invalid, type TenantRequest } from './tenant.ts';
-
-// The API contract and the table must name the same enumeration values.
-type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-true satisfies Same<(typeof DOOR_TYPES)[number], (typeof schema.DOOR_TYPES)[number]>;
-true satisfies Same<(typeof TEMPERATURE_ZONES)[number], (typeof schema.TEMPERATURE_ZONES)[number]>;
-true satisfies Same<(typeof DOCK_STATUSES)[number], (typeof schema.DOCK_STATUSES)[number]>;
 
 type HallRow = typeof hall.$inferSelect;
 type DockRow = typeof dock.$inferSelect;
@@ -75,7 +66,7 @@ export async function updateHall(
     .set(input)
     .where(and(eq(hall.tenantId, tenantId), eq(hall.siteId, siteId), eq(hall.id, hallId)))
     .returning();
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return hallView(row);
 }
 
@@ -114,14 +105,14 @@ export async function listDocks(tx: Tx, tenantId: TenantId, siteId: SiteId): Pro
 }
 
 const isCounted = (status: DockRow['status']) =>
-  (COUNTED_DOCK_STATUSES as readonly string[]).includes(status);
+  (values(CountedDockStatus) as readonly string[]).includes(status);
 
 /** MD-02: `core.max_docks` counts active and maintenance docks of the whole tenant. */
 export const countCountedDocks = (tenantId: TenantId) => async (tx: Tx) => {
   const [row] = await tx
     .select({ n: count() })
     .from(dock)
-    .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...COUNTED_DOCK_STATUSES])));
+    .where(and(eq(dock.tenantId, tenantId), inArray(dock.status, [...values(CountedDockStatus)])));
   return row?.n ?? 0;
 };
 
@@ -130,7 +121,7 @@ function withinDockLimit(tx: Tx, req: TenantRequest): Promise<void> {
     tx,
     req.tenantId,
     req.entitlements,
-    'core.max_docks',
+    Limit.core.max_docks,
     countCountedDocks(req.tenantId),
   );
 }
@@ -157,8 +148,8 @@ async function rejectDuplicateCode(
     .from(dock)
     .where(and(eq(dock.tenantId, tenantId), eq(dock.siteId, siteId), eq(dock.code, code)));
   if (row && row.id !== except) {
-    throw new ApiError('conflict', `Dock code ${code} exists on this site`, {
-      reason: 'duplicate_code',
+    throw new ApiError(ErrorCode.conflict, `Dock code ${code} exists on this site`, {
+      reason: ConflictReason.duplicate_code,
     });
   }
 }
@@ -177,7 +168,9 @@ export async function createDock(
     .insert(dock)
     .values({ ...input, sort: input.sort ?? 0, tenantId: req.tenantId, siteId })
     .returning()
-    .catch((e: unknown) => conflictOnUnique(e, 'dock_site_code_key', 'duplicate_code'));
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'dock_site_code_key', ConflictReason.duplicate_code),
+    );
   if (!row) throw new Error('dock insert returned nothing');
   const [view] = await dockViews(tx, req.tenantId, [row]);
   return view as DockView;
@@ -196,7 +189,7 @@ export async function updateDock(
     .select()
     .from(dock)
     .where(and(eq(dock.tenantId, req.tenantId), eq(dock.siteId, siteId), eq(dock.id, dockId)));
-  if (!current) throw new ApiError('not_found');
+  if (!current) throw new ApiError(ErrorCode.not_found);
   if (input.hallId) await requireHallOnSite(tx, req.tenantId, siteId, input.hallId);
   if (input.status && isCounted(input.status) && !isCounted(current.status)) {
     await withinDockLimit(tx, req);
@@ -207,8 +200,10 @@ export async function updateDock(
     .set(input)
     .where(and(eq(dock.tenantId, req.tenantId), eq(dock.id, dockId)))
     .returning()
-    .catch((e: unknown) => conflictOnUnique(e, 'dock_site_code_key', 'duplicate_code'));
-  if (!row) throw new ApiError('not_found');
+    .catch((e: unknown) =>
+      conflictOnUnique(e, 'dock_site_code_key', ConflictReason.duplicate_code),
+    );
+  if (!row) throw new ApiError(ErrorCode.not_found);
   const [view] = await dockViews(tx, req.tenantId, [row]);
   return view as DockView;
 }

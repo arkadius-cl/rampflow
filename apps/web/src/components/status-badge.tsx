@@ -1,3 +1,6 @@
+import { type BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
+import type { BriefingState } from '@rampflow/shared/modules/safety/values';
+import { BadgeSize, BadgeTone } from '@rampflow/shared/values';
 import { cva, type VariantProps } from 'class-variance-authority';
 import {
   AlarmClockIcon,
@@ -7,6 +10,7 @@ import {
   CircleCheckIcon,
   ClockIcon,
   DoorOpenIcon,
+  HourglassIcon,
   LogInIcon,
   LogOutIcon,
   type LucideIcon,
@@ -18,46 +22,44 @@ import {
   TimerIcon,
   UserXIcon,
 } from 'lucide-react';
-import type { BookingStatus, Punctuality, SafetyStatus } from '@/lib/domain';
 import { cn } from '@/lib/utils';
-
-export type Tone = 'planned' | 'onsite' | 'active' | 'success' | 'danger' | 'neutral';
 
 export interface StatusMeta {
   label: string;
   icon: LucideIcon;
-  tone: Tone;
+  tone: BadgeTone;
 }
 
 // One registry per status family. Status is never conveyed by colour alone:
 // every badge renders icon + label, and the tone only reinforces it.
 export const BOOKING_STATUS: Record<BookingStatus, StatusMeta> = {
-  confirmed: { label: 'Confirmed', icon: CalendarCheckIcon, tone: 'planned' },
-  checked_in: { label: 'Checked in', icon: LogInIcon, tone: 'onsite' },
-  called: { label: 'Called', icon: BellRingIcon, tone: 'active' },
-  at_dock: { label: 'At dock', icon: DoorOpenIcon, tone: 'active' },
-  loading: { label: 'Loading', icon: PackageOpenIcon, tone: 'active' },
-  done: { label: 'Done', icon: CircleCheckIcon, tone: 'success' },
-  departed: { label: 'Departed', icon: LogOutIcon, tone: 'neutral' },
-  cancelled: { label: 'Cancelled', icon: BanIcon, tone: 'neutral' },
-  no_show: { label: 'No-show', icon: UserXIcon, tone: 'danger' },
-  turned_away: { label: 'Turned away', icon: OctagonXIcon, tone: 'danger' },
+  requested: { label: 'Requested', icon: HourglassIcon, tone: BadgeTone.planned },
+  confirmed: { label: 'Confirmed', icon: CalendarCheckIcon, tone: BadgeTone.planned },
+  checked_in: { label: 'Checked in', icon: LogInIcon, tone: BadgeTone.onsite },
+  called: { label: 'Called', icon: BellRingIcon, tone: BadgeTone.active },
+  at_dock: { label: 'At dock', icon: DoorOpenIcon, tone: BadgeTone.active },
+  loading: { label: 'Loading', icon: PackageOpenIcon, tone: BadgeTone.active },
+  done: { label: 'Done', icon: CircleCheckIcon, tone: BadgeTone.success },
+  departed: { label: 'Departed', icon: LogOutIcon, tone: BadgeTone.neutral },
+  cancelled: { label: 'Cancelled', icon: BanIcon, tone: BadgeTone.neutral },
+  no_show: { label: 'No-show', icon: UserXIcon, tone: BadgeTone.danger },
+  turned_away: { label: 'Turned away', icon: OctagonXIcon, tone: BadgeTone.danger },
 };
 
-export const SAFETY_STATUS: Record<SafetyStatus, StatusMeta> = {
-  valid: { label: 'Briefing valid', icon: ShieldCheckIcon, tone: 'success' },
-  missing: { label: 'Briefing missing', icon: ShieldAlertIcon, tone: 'danger' },
-  expired: { label: 'Briefing expired', icon: ShieldXIcon, tone: 'danger' },
-  invalidated: { label: 'Briefing outdated', icon: ShieldXIcon, tone: 'onsite' },
+export const SAFETY_STATUS: Record<BriefingState, StatusMeta> = {
+  valid: { label: 'Briefing valid', icon: ShieldCheckIcon, tone: BadgeTone.success },
+  missing: { label: 'Briefing missing', icon: ShieldAlertIcon, tone: BadgeTone.danger },
+  expired: { label: 'Briefing expired', icon: ShieldXIcon, tone: BadgeTone.danger },
+  outdated: { label: 'Briefing outdated', icon: ShieldXIcon, tone: BadgeTone.onsite },
 };
 
 export const PUNCTUALITY: Record<Punctuality, StatusMeta> = {
-  early: { label: 'Early', icon: TimerIcon, tone: 'neutral' },
-  on_time: { label: 'On time', icon: ClockIcon, tone: 'success' },
-  late: { label: 'Late', icon: AlarmClockIcon, tone: 'onsite' },
+  early: { label: 'Early', icon: TimerIcon, tone: BadgeTone.neutral },
+  on_time: { label: 'On time', icon: ClockIcon, tone: BadgeTone.success },
+  late: { label: 'Late', icon: AlarmClockIcon, tone: BadgeTone.onsite },
 };
 
-export const toneClasses: Record<Tone, string> = {
+export const toneClasses: Record<BadgeTone, string> = {
   planned: 'bg-tone-planned-bg text-tone-planned border-tone-planned-border',
   onsite: 'bg-tone-onsite-bg text-tone-onsite border-tone-onsite-border',
   active: 'bg-tone-active-bg text-tone-active border-tone-active-border',
@@ -71,13 +73,13 @@ const statusBadgeVariants = cva(
   {
     variants: {
       size: {
-        sm: 'h-5 px-1.5 text-[11px] [&>svg]:size-3',
-        md: 'h-6 px-2 text-xs [&>svg]:size-3.5',
-        lg: 'h-8 px-2.5 text-sm [&>svg]:size-4',
-        xl: 'h-11 px-3.5 text-base [&>svg]:size-5',
+        [BadgeSize.sm]: 'h-5 px-1.5 text-[11px] [&>svg]:size-3',
+        [BadgeSize.md]: 'h-6 px-2 text-xs [&>svg]:size-3.5',
+        [BadgeSize.lg]: 'h-8 px-2.5 text-sm [&>svg]:size-4',
+        [BadgeSize.xl]: 'h-11 px-3.5 text-base [&>svg]:size-5',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { size: BadgeSize.md },
   },
 );
 
@@ -114,7 +116,7 @@ export function BookingStatusBadge({
 export function SafetyBadge({
   status,
   ...props
-}: { status: SafetyStatus } & Omit<StatusBadgeProps, 'meta'>) {
+}: { status: BriefingState } & Omit<StatusBadgeProps, 'meta'>) {
   return <StatusBadge meta={SAFETY_STATUS[status]} {...props} />;
 }
 
@@ -125,8 +127,8 @@ export function PunctualityBadge({
 }: { punctuality: Punctuality; minutes?: number } & Omit<StatusBadgeProps, 'meta' | 'label'>) {
   const meta = PUNCTUALITY[punctuality];
   const label =
-    minutes === undefined || punctuality === 'on_time'
+    minutes === undefined || punctuality === Punctuality.on_time
       ? meta.label
-      : `${meta.label} ${punctuality === 'late' ? '+' : '-'}${minutes} min`;
+      : `${meta.label} ${punctuality === Punctuality.late ? '+' : '-'}${minutes} min`;
   return <StatusBadge meta={meta} label={label} {...props} />;
 }

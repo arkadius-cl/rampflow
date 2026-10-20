@@ -1,10 +1,6 @@
-import type { StaffLocale } from '@rampflow/shared';
-import {
-  KPIS,
-  type KpiKey,
-  type KpiReport,
-  type KpiUnit,
-} from '@rampflow/shared/modules/report/api';
+import { KPIS, type KpiReport } from '@rampflow/shared/modules/report/api';
+import { KpiKey, KpiUnit } from '@rampflow/shared/modules/report/values';
+import type { StaffLocale } from '@rampflow/shared/values';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocale } from '@/lib/i18n';
@@ -17,13 +13,13 @@ export const LOCALE_TAG: Record<StaffLocale, string> = { de: 'de', en: 'en-GB', 
 /** "12,5 %", "44.2 min", "8"; `null` (an empty denominator) becomes "–". */
 export function formatKpi(value: number | null, unit: KpiUnit, locale: StaffLocale): string {
   if (value === null) return '–';
-  const digits = unit === 'count' ? 0 : 1;
+  const digits = unit === KpiUnit.count ? 0 : 1;
   const n = new Intl.NumberFormat(LOCALE_TAG[locale], {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(value);
-  if (unit === 'percent') return `${n} %`;
-  if (unit === 'minutes') return `${n} min`;
+  if (unit === KpiUnit.percent) return `${n} %`;
+  if (unit === KpiUnit.minutes) return `${n} min`;
   return n;
 }
 
@@ -33,8 +29,8 @@ export function useFormatKpi() {
 }
 
 /** Early and late are shown inside the on-time tile, "reported apart" (RP-01). */
-const TILES = KPIS.filter((k) => k.key !== 'earlyRate' && k.key !== 'lateRate');
-const unitOf = (key: KpiKey) => KPIS.find((k) => k.key === key)?.unit ?? 'count';
+const TILES = KPIS.filter((k) => k.key !== KpiKey.earlyRate && k.key !== KpiKey.lateRate);
+const unitOf = (key: KpiKey) => KPIS.find((k) => k.key === key)?.unit ?? KpiUnit.count;
 
 export function KpiTiles({ report }: { report: KpiReport }) {
   const { t } = useTranslation('report');
@@ -67,16 +63,16 @@ export function KpiTiles({ report }: { report: KpiReport }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground">
-              {key === 'onTimeRate' ? (
+              {key === KpiKey.onTimeRate ? (
                 <p className="font-medium text-foreground">
                   {t(($) => $.kpi.early_late, {
-                    early: format(kpis.earlyRate, unitOf('earlyRate')),
-                    late: format(kpis.lateRate, unitOf('lateRate')),
+                    early: format(kpis.earlyRate, unitOf(KpiKey.earlyRate)),
+                    late: format(kpis.lateRate, unitOf(KpiKey.lateRate)),
                   })}
                 </p>
               ) : null}
               <p>
-                {key === 'standgeldVisits'
+                {key === KpiKey.standgeldVisits
                   ? t(($) => $.kpi.hint.standgeldVisits, { minutes: report.standgeldMinutes })
                   : t(($) => $.kpi.hint[key])}
               </p>

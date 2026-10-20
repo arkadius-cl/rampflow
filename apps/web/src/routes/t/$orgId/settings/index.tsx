@@ -1,4 +1,5 @@
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
+import { OrgKind, Permission } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
@@ -21,7 +22,7 @@ const SettingsSearch = z.object({ site: z.uuid().optional().catch(undefined) });
 
 export const Route = createFileRoute('/t/$orgId/settings/')({
   validateSearch: SettingsSearch,
-  beforeLoad: guard({ permission: 'core.manage_settings' }),
+  beforeLoad: guard({ permission: Permission.core.manage_settings }),
   component: TenantSettingsPage,
 });
 
@@ -41,7 +42,7 @@ function TenantSettingsPage() {
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['tenant', orgId, 'core', 'settings'] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.context('tenant', orgId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.context(OrgKind.tenant, orgId) }),
     ]);
   const actions: SettingsActions = {
     save: async (key, value) => {

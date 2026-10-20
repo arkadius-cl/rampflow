@@ -1,10 +1,12 @@
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { JobName } from '@rampflow/shared/values';
+import { ScopeParty } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { TenantId } from '../db/ids.ts';
 import { db } from '../db/pool.ts';
-import { asScope, type JobName, type Tx } from '../db/scope.ts';
+import { asScope, type Tx } from '../db/scope.ts';
 import { jobRun, org } from '../modules/core/schema.ts';
 import type { Clock } from './clock.ts';
 import { describeForLog } from './errors.ts';
@@ -27,6 +29,9 @@ export interface Job {
   everySeconds: number | null;
   run(ctx: JobContext): Promise<JobStats>;
 }
+
+/** What the runner takes: a module's job, or a test's ad-hoc job under a unique name. */
+export type RunnableJob = Omit<Job, 'name'> & { name: string };
 
 const MODULES_DIR = fileURLToPath(new URL('../modules', import.meta.url));
 
@@ -51,7 +56,7 @@ export type TickResult = { ran: false } | { ran: true; stats: JobStats };
  * `pg_try_advisory_xact_lock('job:<name>')`, and a second runner returns at once. The job runs
  * inside that transaction, so a tick costs one pool connection.
  */
-export function runJobTick(job: Job, ctx: Omit<JobContext, 'tx'>): Promise<TickResult> {
+export function runJobTick(job: RunnableJob, ctx: Omit<JobContext, 'tx'>): Promise<TickResult> {
   return db.transaction(async (tx) => {
     const { rows } = await tx.execute<{ locked: boolean }>(
       sql`select pg_try_advisory_xact_lock(hashtextextended(${`job:${job.name}`}, 0)) as locked`,
@@ -83,8 +88,10 @@ export async function forEachTenant(
     const tenantId = id as string as TenantId;
     try {
       const stats = await ctx.tx.transaction((sp) =>
-        asScope(sp, { party: 'tenant', tenantId, siteIds: 'all', actor: systemActor(job) }, (tx) =>
-          step(tx, tenantId),
+        asScope(
+          sp,
+          { party: ScopeParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) },
+          (tx) => step(tx, tenantId),
         ),
       );
       for (const [k, v] of Object.entries(stats)) total[k] = (total[k] ?? 0) + v;

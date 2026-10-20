@@ -1,5 +1,6 @@
 import { catalog, isSettingAvailable, type Role, type SettingKey } from '@rampflow/shared';
 import type { ContextSetting, TenantContext } from '@rampflow/shared/modules/core/api.context';
+import { ScopeParty } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { SiteId } from '../../../db/ids.ts';
@@ -23,7 +24,7 @@ export const tenant = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope, access, db } = c.var;
-    if (scope.party !== 'tenant' || !access.role || !access.entitlements) {
+    if (scope.party !== ScopeParty.tenant || !access.role || !access.entitlements) {
       throw new Error('context runs under a tenant user scope');
     }
     const { entitlements } = access;

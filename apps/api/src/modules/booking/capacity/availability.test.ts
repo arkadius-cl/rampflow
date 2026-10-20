@@ -1,4 +1,12 @@
+import {
+  BookingStatus,
+  ClosureKind,
+  ClosureSource,
+  CreatedParty,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
 import { instantsAt, type LocalDate, type LocalTime, wallClock } from '@rampflow/shared/time';
+import { ConflictReason } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -42,7 +50,7 @@ const at = (s: CapacitySite, day: string, time: string) => {
 async function offers(
   s: CapacitySite,
   day: LocalDate,
-  o: { audience?: 'staff' | 'carrier'; now?: Date } = {},
+  o: { audience?: CreatedParty; now?: Date } = {},
 ) {
   return asTenantAdmin(
     w.A,
@@ -59,7 +67,7 @@ async function offers(
           day,
           loadTypeId: s.loadTypeId,
           loadUnits: 0,
-          audience: o.audience ?? 'staff',
+          audience: o.audience ?? CreatedParty.staff,
         },
       ),
     o.now,
@@ -153,8 +161,8 @@ describe('offered starts (MD-04)', () => {
         {
           tenantId: s.tenantId,
           siteId: s.siteId,
-          kind: 'closed',
-          source: 'manual',
+          kind: ClosureKind.closed,
+          source: ClosureSource.manual,
           startsLocal: `${MONDAY}T08:00`,
           endsLocal: `${MONDAY}T09:00`,
         },
@@ -162,8 +170,8 @@ describe('offered starts (MD-04)', () => {
           tenantId: s.tenantId,
           siteId: s.siteId,
           resourceId: s.resourceId,
-          kind: 'blocked',
-          source: 'manual',
+          kind: ClosureKind.blocked,
+          source: ClosureSource.manual,
           startsLocal: `${MONDAY}T11:00`,
           endsLocal: `${MONDAY}T14:00`,
         },
@@ -185,8 +193,8 @@ describe('offered starts (MD-04)', () => {
       .values({
         tenantId: s.tenantId,
         siteId: s.siteId,
-        kind: 'closed',
-        source: 'holiday',
+        kind: ClosureKind.closed,
+        source: ClosureSource.holiday,
         holidayDate: MONDAY,
         holidayName: 'Testfeiertag',
         startsLocal: `${MONDAY}T00:00`,
@@ -209,7 +217,7 @@ describe('offered starts (MD-04)', () => {
     const s = await newSite({ docks: 2, minutes: 60 });
     await placeBooking(s, at(s, MONDAY, '08:00'), 60);
     await placeBooking(s, at(s, MONDAY, '08:00'), 120);
-    await placeBooking(s, at(s, MONDAY, '06:00'), 60, 'cancelled');
+    await placeBooking(s, at(s, MONDAY, '06:00'), 60, BookingStatus.cancelled);
     const free = wallTimes(await offers(s, MONDAY));
     expect(free).toContain('06:00');
     expect(free).toContain('07:00');
@@ -232,25 +240,29 @@ describe('offered starts (MD-04)', () => {
     const timeline = day.resources[0]?.timeline ?? never();
     expect(checkFit(timeline, at(s, MONDAY, '09:00'), 60)).toEqual({
       ok: false,
-      reason: 'daily_cap_reached',
+      reason: ConflictReason.daily_cap_reached,
     });
   });
 
   it('give carriers only starts between now plus the lead time and the horizon', async () => {
     const s = await newSite({ minutes: 60 });
     const now = at(s, MONDAY, '07:10');
-    const carrier = wallTimes(await offers(s, MONDAY, { audience: 'carrier', now }));
+    const carrier = wallTimes(await offers(s, MONDAY, { audience: CreatedParty.carrier, now }));
     expect(carrier[0]).toBe('09:30');
-    expect(wallTimes(await offers(s, MONDAY, { audience: 'staff', now }))[0]).toBe('06:00');
+    expect(wallTimes(await offers(s, MONDAY, { audience: CreatedParty.staff, now }))[0]).toBe(
+      '06:00',
+    );
     const far = '2026-12-14' as LocalDate;
-    expect((await offers(s, far, { audience: 'carrier', now })).starts).toEqual([]);
-    expect((await offers(s, far, { audience: 'staff', now })).starts.length).toBeGreaterThan(0);
+    expect((await offers(s, far, { audience: CreatedParty.carrier, now })).starts).toEqual([]);
+    expect(
+      (await offers(s, far, { audience: CreatedParty.staff, now })).starts.length,
+    ).toBeGreaterThan(0);
   });
 });
 
 describe('capacity across DST and midnight (ADR-0004)', () => {
   it('a booking at 02:30 earlier on 2026-10-25 leaves 02:30 later offered', async () => {
-    const s = await newSite({ kind: 'single', hours: ALL_WEEK, minutes: 60 });
+    const s = await newSite({ kind: ResourceKind.single, hours: ALL_WEEK, minutes: 60 });
     const [earlier] = instantsAt('2026-10-25' as LocalDate, '02:30' as LocalTime, s.zone);
     await placeBooking(s, earlier ?? never(), 60);
     const free = wallTimes(await offers(s, '2026-10-25' as LocalDate));
@@ -262,7 +274,7 @@ describe('capacity across DST and midnight (ADR-0004)', () => {
   });
 
   it('2027-03-28 has 276 buckets and 46 grid starts', async () => {
-    const s = await newSite({ kind: 'single', hours: ALL_WEEK, minutes: 30 });
+    const s = await newSite({ kind: ResourceKind.single, hours: ALL_WEEK, minutes: 30 });
     const day = '2027-03-28' as LocalDate;
     const timeline = await asTenantAdmin(w.A, (tx, access) =>
       loadDayTimeline(tx, access, { tenantId: s.tenantId, siteId: s.siteId, day }),
@@ -274,7 +286,7 @@ describe('capacity across DST and midnight (ADR-0004)', () => {
 
   it('an overnight shift offers Mon 23:30 for 90 minutes, which then blocks Tue 00:30', async () => {
     const s = await newSite({
-      kind: 'single',
+      kind: ResourceKind.single,
       minutes: 90,
       hours: [
         [1, '22:00', '24:00'],

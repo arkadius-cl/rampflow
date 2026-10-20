@@ -1,19 +1,11 @@
+import type { ApiParty, HttpMethod } from '@rampflow/shared/values';
 import type * as z from 'zod';
 import type { Guard, OpMeta, ValidationTarget } from '../../src/kernel/describe.ts';
 
-export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
-export type HttpMethod = (typeof HTTP_METHODS)[number];
+export type { HttpMethod };
 
 /** The parties of "Areas and parties" in docs/reference/api-routes.md. */
-export type Party =
-  | 'anonymous'
-  | 'user'
-  | 'platform'
-  | 'tenant'
-  | 'carrier'
-  | 'carrier_at_tenant'
-  | 'driver'
-  | 'public';
+export type Party = ApiParty;
 
 /** One method and path of the app, with what the runtime half knows about it. */
 export interface Endpoint {

@@ -1,21 +1,17 @@
 import type { AvisView } from '@rampflow/shared/modules/avis/avis';
+import { Direction } from '@rampflow/shared/modules/booking/values';
+import { DisplayNamesType } from '@rampflow/shared/values';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/lib/i18n';
 
 // The stored avis, read-only, on the booking page (AV-01). Empty values show a dash.
 
-export function AvisSummary({
-  avis,
-  direction,
-}: {
-  avis: AvisView | null;
-  direction: 'inbound' | 'outbound';
-}) {
+export function AvisSummary({ avis, direction }: { avis: AvisView | null; direction: Direction }) {
   const { t } = useTranslation('booking');
   const { t: tAvis } = useTranslation('avis');
   const locale = useLocale();
   const number = new Intl.NumberFormat(locale);
-  const language = new Intl.DisplayNames([locale], { type: 'language' });
+  const language = new Intl.DisplayNames([locale], { type: DisplayNamesType.language });
   if (!avis) return <p className="text-sm text-muted-foreground">{t(($) => $.plan.avis.none)}</p>;
   const dash = '–';
   const vehicleType = avis.vehicle.type;
@@ -34,7 +30,7 @@ export function AvisSummary({
       )),
     ],
     [
-      direction === 'inbound'
+      direction === Direction.inbound
         ? tAvis(($) => $.avis.field.counterpartyInbound)
         : tAvis(($) => $.avis.field.counterpartyOutbound),
       avis.counterpartyName,

@@ -1,18 +1,9 @@
 import * as z from 'zod';
-import { STAFF_LOCALES, type StaffLocale } from '../../locales.ts';
 import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
+import { StaffLocale } from '../../values/locales.ts';
+import { DockStatus, DoorType, TemperatureZone } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
-
-export const DOOR_TYPES = ['dock_leveler', 'ground_level', 'side_loading', 'yard_open'] as const;
-export const TEMPERATURE_ZONES = ['ambient', 'chilled', 'frozen'] as const;
-export const DOCK_STATUSES = ['active', 'maintenance', 'inactive'] as const;
-export type DoorType = (typeof DOOR_TYPES)[number];
-export type TemperatureZone = (typeof TEMPERATURE_ZONES)[number];
-export type DockStatus = (typeof DOCK_STATUSES)[number];
-
-/** Docks that count toward `core.max_docks`. Only `active` docks add capacity (ADR-0004). */
-export const COUNTED_DOCK_STATUSES = ['active', 'maintenance'] as const satisfies DockStatus[];
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();
@@ -30,7 +21,7 @@ const siteFields = {
     .nullable()
     .optional(),
   timeZone: timeZoneSchema,
-  defaultLocale: z.enum(STAFF_LOCALES),
+  defaultLocale: z.enum(StaffLocale),
   phone: z
     .string()
     .regex(/^\+[1-9]\d{6,14}$/, 'E.164, for example +4940123456')
@@ -99,17 +90,17 @@ const dockFields = {
     .min(1)
     .max(16)
     .regex(/^[A-Za-z0-9][A-Za-z0-9 ._/-]*$/, 'Letters, digits, space, dot, dash, slash'),
-  doorType: z.enum(DOOR_TYPES),
-  temperatureZone: z.enum(TEMPERATURE_ZONES),
+  doorType: z.enum(DoorType),
+  temperatureZone: z.enum(TemperatureZone),
   adrAllowed: z.boolean(),
-  status: z.enum(DOCK_STATUSES),
+  status: z.enum(DockStatus),
   sort: z.int().min(0),
 };
 
 export const CreateDock = z.object({
   ...dockFields,
   adrAllowed: dockFields.adrAllowed.default(false),
-  status: dockFields.status.default('active'),
+  status: dockFields.status.default(DockStatus.active),
   sort: dockFields.sort.optional(),
 });
 export const UpdateDock = z.object(dockFields).partial();

@@ -1,9 +1,9 @@
+import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
+import { values } from '@rampflow/shared/values';
 import { check, index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, oneOf, primaryId, type TenantId, type UserId } from '../../db/ids.ts';
 import { tenantPolicies } from '../../db/rls.ts';
 import { appUser, org } from '../core/schema.ts';
-
-export const PRIVACY_REQUEST_KINDS = ['export', 'erase'] as const;
 
 /** TN-06 requests: counts only, search terms are never stored. */
 export const privacyRequestLog = pgTable(
@@ -14,7 +14,7 @@ export const privacyRequestLog = pgTable(
       .$type<TenantId>()
       .notNull()
       .references(() => org.id, { onDelete: 'cascade' }),
-    kind: text('kind', { enum: PRIVACY_REQUEST_KINDS }).notNull(),
+    kind: text('kind', { enum: values(PrivacyRequestKind) }).notNull(),
     matchedBookings: integer('matched_bookings').notNull(),
     matchedAcknowledgements: integer('matched_acknowledgements').notNull(),
     actorUserId: uuid('actor_user_id')
@@ -25,7 +25,7 @@ export const privacyRequestLog = pgTable(
   },
   (t) => [
     index('privacy_request_log_tenant_id_idx').on(t.tenantId),
-    check('privacy_request_log_kind_check', oneOf(t.kind, PRIVACY_REQUEST_KINDS)),
+    check('privacy_request_log_kind_check', oneOf(t.kind, values(PrivacyRequestKind))),
     ...tenantPolicies(t, { site: null, readers: [] }),
   ],
 );

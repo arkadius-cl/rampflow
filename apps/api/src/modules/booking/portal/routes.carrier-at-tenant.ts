@@ -10,6 +10,15 @@ import {
   type PortalOffers,
 } from '@rampflow/shared/modules/booking/api.portal';
 import { PutAvis, SendDriverLink } from '@rampflow/shared/modules/booking/api.staff';
+import { CommandName, CreatedParty, CreateMode } from '@rampflow/shared/modules/booking/values';
+import {
+  ErrorCode,
+  Feature,
+  Permission,
+  ScopeParty,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -34,7 +43,8 @@ import { BookingParam, portalDriverLink } from './routes.carrier.ts';
 
 function atTenant(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== 'carrier_at_tenant') throw new Error(`portal write under ${scope.party}`);
+  if (scope.party !== ScopeParty.carrier_at_tenant)
+    throw new Error(`portal write under ${scope.party}`);
   return { tenantId: scope.tenantId, carrierId: scope.carrierId };
 }
 
@@ -54,7 +64,7 @@ async function withCarrierOffers<T>(run: () => Promise<T>): Promise<T> {
   } catch (e) {
     const offers = e instanceof ApiError ? e.details?.offers : undefined;
     if (!(e instanceof ApiError) || offers === undefined) throw e;
-    throw new ApiError(e.code, e.message, { ...e.details, offers: forCarrier(offers as Offers) });
+    throw e.withDetails({ offers: forCarrier(offers as Offers) });
   }
 }
 
@@ -73,8 +83,8 @@ function view(c: Context<AppEnv>, bookingId: BookingId) {
   );
 }
 
-const book = requirePermission('booking.book');
-const portal = requireEntitlement('booking.carrier_portal');
+const book = requirePermission(Permission.booking.book);
+const portal = requireEntitlement(Feature.booking.carrier_portal);
 
 /** Mounted at `/api/c/:orgId/at/:tenantId` by modules/index.ts. */
 export const carrierAtTenant = new Hono<AppEnv>()
@@ -82,7 +92,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/sites',
     op({
       id: 'booking.portal.listSites',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`{ items }`: active sites with address, phone, `timeZone`, `cutoffMinutes`, `leadMinutes`, `horizonDays` and `avisRules`',
       responses: {},
@@ -99,7 +109,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/load-types',
     op({
       id: 'booking.portal.listLoadTypes',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`?siteId=`; active, carrier-bookable only: `{ items: [{ id, name, direction }] }`',
       responses: {},
@@ -107,7 +117,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     book,
     portal,
     activeLink,
-    validate('query', PortalLoadTypesQuery),
+    validate(ValidationTarget.query, PortalLoadTypesQuery),
     async (c) => {
       const { tenantId } = atTenant(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -119,7 +129,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/availability',
     op({
       id: 'booking.portal.getAvailability',
-      stories: ['BK-04'],
+      stories: [StoryId.BK_04],
       description:
         '`?siteId&loadTypeId&date&loadUnits`; `PortalOffers` with lead time and horizon applied; 404 for a load type carriers cannot book',
       responses: { 200: type<PortalOffers>() },
@@ -127,7 +137,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     book,
     portal,
     activeLink,
-    validate('query', PortalAvailabilityQuery),
+    validate(ValidationTarget.query, PortalAvailabilityQuery),
     async (c) => {
       const { tenantId } = atTenant(c);
       const q = c.req.valid('query');
@@ -135,7 +145,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
       const loadTypeId = q.loadTypeId as LoadTypeId;
       await requireCarrierSite(c.var.db, tenantId, siteId);
       const lt = await loadTypeAt(c.var.db, tenantId, siteId, loadTypeId);
-      if (!lt?.carrierBookable) throw new ApiError('not_found', 'No such load type');
+      if (!lt?.carrierBookable) throw new ApiError(ErrorCode.not_found, 'No such load type');
       const { entitlements, setting } = c.var.access;
       if (!entitlements) throw new Error('carrier at a tenant without entitlements');
       const offers = await offersFor(
@@ -147,7 +157,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
           day: q.date,
           loadTypeId,
           loadUnits: q.loadUnits,
-          audience: 'carrier',
+          audience: CreatedParty.carrier,
         },
       );
       return c.json(forCarrier(offers), 200);
@@ -157,7 +167,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings',
     op({
       id: 'booking.portal.createBooking',
-      stories: ['BK-04', 'AV-01'],
+      stories: [StoryId.BK_04, StoryId.AV_01],
       description:
         '`{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 201 `PortalBookingView`, 200 for a repeated `clientRequestId`; 409 with `offers` when the last unit went elsewhere',
       responses: { 200: type<PortalBookingView>(), 201: type<PortalBookingView>() },
@@ -165,12 +175,12 @@ export const carrierAtTenant = new Hono<AppEnv>()
     book,
     portal,
     activeLink,
-    validate('json', CreateCarrierBooking),
+    validate(ValidationTarget.json, CreateCarrierBooking),
     async (c) => {
       const body = c.req.valid('json');
       const result = await withCarrierOffers(() =>
         createBooking(bookingContext(c), {
-          mode: 'carrier',
+          mode: CreateMode.carrier,
           clientRequestId: body.clientRequestId,
           siteId: body.siteId as SiteId,
           loadTypeId: body.loadTypeId as LoadTypeId,
@@ -185,21 +195,21 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId',
     op({
       id: 'booking.portal.updateBooking',
-      stories: ['BK-05'],
+      stories: [StoryId.BK_05],
       description: '`{ startsAt, version }`; before the cutoff, else 409 `cutoff_passed`',
       responses: { 200: type<PortalBookingView>() },
     }),
     book,
     portal,
     activeLink,
-    validate('param', BookingParam),
-    validate('json', CarrierReschedule),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CarrierReschedule),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await withCarrierOffers(() =>
         transitionBooking(bookingContext(c), bookingId, {
-          type: 'reschedule',
+          type: CommandName.reschedule,
           startsAt: body.startsAt,
           version: body.version,
         }),
@@ -211,18 +221,18 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/cancel',
     op({
       id: 'booking.portal.cancelBooking',
-      stories: ['BK-05'],
+      stories: [StoryId.BK_05],
       description: '`{ reason? }`; before the cutoff; revokes the driver link',
       responses: { 200: type<PortalBookingView>() },
     }),
     book,
     portal,
-    validate('param', BookingParam),
-    validate('json', CarrierCancel),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CarrierCancel),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const reason = c.req.valid('json').reason ?? null;
-      await transitionBooking(bookingContext(c), bookingId, { type: 'cancel', reason });
+      await transitionBooking(bookingContext(c), bookingId, { type: CommandName.cancel, reason });
       return c.json(await view(c, bookingId), 200);
     },
   )
@@ -230,22 +240,22 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/avis',
     op({
       id: 'booking.portal.putAvis',
-      stories: ['AV-02'],
+      stories: [StoryId.AV_02],
       description:
         '`{ avis, version }`; before the cutoff; 409 when the new duration does not fit, and the avis stays',
       responses: { 200: type<PortalBookingView>() },
     }),
     book,
-    requireEntitlement('avis.basic'),
+    requireEntitlement(Feature.avis.basic),
     activeLink,
-    validate('param', BookingParam),
-    validate('json', PutAvis),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, PutAvis),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await withCarrierOffers(() =>
         transitionBooking(bookingContext(c), bookingId, {
-          type: 'update_avis',
+          type: CommandName.update_avis,
           avis: body.avis,
           version: body.version,
         }),
@@ -257,16 +267,18 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/driver-link',
     op({
       id: 'booking.portal.regenerateDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: 'regenerate; `{ url, expiresAt }`',
       responses: { 200: type<PortalDriverLink>() },
     }),
     book,
     activeLink,
-    validate('param', BookingParam),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
-      await transitionBooking(bookingContext(c), bookingId, { type: 'regenerate_driver_link' });
+      await transitionBooking(bookingContext(c), bookingId, {
+        type: CommandName.regenerate_driver_link,
+      });
       return c.json(await portalDriverLink(c, bookingId), 200);
     },
   )
@@ -274,19 +286,19 @@ export const carrierAtTenant = new Hono<AppEnv>()
     '/bookings/:bookingId/driver-link/email',
     op({
       id: 'booking.portal.emailDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: '`{ email, locale }` with one of the 12 driver locales; 202',
       responses: { 202: noBody },
     }),
     book,
-    requireEntitlement('notify.email'),
+    requireEntitlement(Feature.notify.email),
     activeLink,
-    validate('param', BookingParam),
-    validate('json', SendDriverLink),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, SendDriverLink),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'send_driver_link',
+        type: CommandName.send_driver_link,
         ...c.req.valid('json'),
       });
       return c.body(null, 202);

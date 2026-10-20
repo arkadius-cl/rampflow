@@ -1,3 +1,11 @@
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+  StaffLocale,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
@@ -35,57 +43,57 @@ const own = (w: World) => ({ ...atA(w), bookingId: w.A.bookings.own.id });
 const offeredStart = () => new Date(WORLD_NOW.getTime() + 2 * 86_400_000).toISOString();
 
 const carrierCase = {
-  as: 'carrier_user',
-  permission: 'booking.book',
-  entitlement: 'booking.carrier_portal',
-  foreign: 'not_found',
+  as: RouteCaseActor.carrier_user,
+  permission: Permission.booking.book,
+  entitlement: Feature.booking.carrier_portal,
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
 } as const satisfies Partial<RouteCase>;
 
 export const cases = defineRouteCases([
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings',
-    permission: 'booking.view',
+    permission: Permission.booking.view,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId }),
     query: (w) => ({ siteId: w.A.sites[1].id }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings/:bookingId',
-    permission: 'booking.view',
+    permission: Permission.booking.view,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId, bookingId: w.A.bookings.own.id }),
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings/:bookingId/driver-link',
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId, bookingId: w.A.bookings.own.id }),
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings/:bookingId/rebook',
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId, bookingId: w.A.bookings.own.id }),
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${AT}/sites`,
     params: atA,
     setup: withoutRivalLink,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${AT}/load-types`,
     params: atA,
     query: (w) => ({ siteId: w.A.sites[0].id }),
@@ -93,7 +101,7 @@ export const cases = defineRouteCases([
   },
   {
     ...carrierCase,
-    method: 'GET',
+    method: HttpMethod.GET,
     path: `${AT}/availability`,
     params: atA,
     query: (w) => ({
@@ -106,7 +114,7 @@ export const cases = defineRouteCases([
   },
   {
     ...carrierCase,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${AT}/bookings`,
     params: atA,
     body: (w) => ({
@@ -120,7 +128,7 @@ export const cases = defineRouteCases([
   },
   {
     ...carrierCase,
-    method: 'PATCH',
+    method: HttpMethod.PATCH,
     path: `${AT}/bookings/:bookingId`,
     params: own,
     body: () => ({ startsAt: '2026-11-02T09:00:00.000Z', version: 1 }),
@@ -128,33 +136,33 @@ export const cases = defineRouteCases([
   },
   {
     ...carrierCase,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${AT}/bookings/:bookingId/cancel`,
     params: own,
     body: () => ({}),
   },
   {
     ...carrierCase,
-    method: 'PUT',
+    method: HttpMethod.PUT,
     path: `${AT}/bookings/:bookingId/avis`,
-    entitlement: 'avis.basic',
+    entitlement: Feature.avis.basic,
     params: own,
     body: () => ({ avis: avisInput({ counterpartyName: 'Anderer Lieferant' }), version: 1 }),
     setup: bookable,
   },
   {
     ...carrierCase,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${AT}/bookings/:bookingId/driver-link`,
     entitlement: null,
     params: own,
   },
   {
     ...carrierCase,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: `${AT}/bookings/:bookingId/driver-link/email`,
-    entitlement: 'notify.email',
+    entitlement: Feature.notify.email,
     params: own,
-    body: () => ({ email: 'driver@example.test', locale: 'pl' }),
+    body: () => ({ email: 'driver@example.test', locale: StaffLocale.pl }),
   },
 ]);

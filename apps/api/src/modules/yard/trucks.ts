@@ -1,10 +1,8 @@
 import { normalizePlate } from '@rampflow/shared/modules/avis/avis';
-import {
-  type BookingStatus,
-  ON_SITE_STATUSES,
-  punctualityOf,
-} from '@rampflow/shared/modules/booking/lifecycle';
+import { punctualityOf } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus, OnSiteStatus } from '@rampflow/shared/modules/booking/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
+import { AckStatus, SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type {
   ExpectedView,
   OnSiteTruck,
@@ -12,6 +10,7 @@ import type {
   YardTruck,
 } from '@rampflow/shared/modules/yard/api';
 import { type LocalDate, localDayRange, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { Setting, values } from '@rampflow/shared/values';
 import { and, asc, eq, gte, ilike, inArray, lt, or, type SQL, sql } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../db/ids.ts';
 import type { Tx } from '../../db/scope.ts';
@@ -89,13 +88,15 @@ function punctualityFor(b: TruckRow['b'], p: Punctual) {
   if (b.checkedInAt || b.walkIn) {
     return { punctuality: b.punctuality, punctualityMinutes: b.punctualityMinutes };
   }
-  if (b.status !== 'confirmed' && b.status !== 'no_show') {
+  if (b.status !== BookingStatus.confirmed && b.status !== BookingStatus.no_show) {
     return { punctuality: null, punctualityMinutes: null };
   }
   const exact = minutesFromStart(p.now, b.startsAt);
   return {
     punctuality:
-      b.status === 'no_show' ? ('late' as const) : punctualityOf(exact, p.earlyTolerance, p.grace),
+      b.status === BookingStatus.no_show
+        ? ('late' as const)
+        : punctualityOf(exact, p.earlyTolerance, p.grace),
     punctualityMinutes: Math.round(exact),
   };
 }
@@ -146,10 +147,13 @@ async function safetyOf(
 ): Promise<(id: BookingId) => Safety> {
   const enforced = await safetyEnforced(access, where.siteId);
   if (!access.entitlements?.modules.safety)
-    return () => ({ status: 'not_required', enforced: false });
+    return () => ({ status: SafetyStatus.not_required, enforced: false });
   const applicable = await applicableInstructions(tx, where);
   if (applicable.length === 0 || bookingIds.length === 0) {
-    return () => ({ status: applicable.length === 0 ? 'not_required' : 'missing', enforced });
+    return () => ({
+      status: applicable.length === 0 ? SafetyStatus.not_required : SafetyStatus.missing,
+      enforced,
+    });
   }
   const links = await tx
     .select({
@@ -178,10 +182,12 @@ async function safetyOf(
       { version: l.version, bookingId: l.ackBookingId, expiresAt: l.expiresAt },
       { now, bookingId: l.bookingId, materialFloor: instruction.materialFloor },
     );
-    if (status === 'valid') valid.add(`${l.bookingId}:${l.instructionId}`);
+    if (status === AckStatus.valid) valid.add(`${l.bookingId}:${l.instructionId}`);
   }
   return (id) => ({
-    status: applicable.every((i) => valid.has(`${id}:${i.instructionId}`)) ? 'valid' : 'missing',
+    status: applicable.every((i) => valid.has(`${id}:${i.instructionId}`))
+      ? SafetyStatus.valid
+      : SafetyStatus.missing,
     enforced,
   });
 }
@@ -212,8 +218,8 @@ async function trucks(
     s.now,
   );
   const p: Punctual = {
-    earlyTolerance: (await s.access.setting('yard.early_tolerance_minutes', s.siteId)).value,
-    grace: (await s.access.setting('yard.grace_minutes', s.siteId)).value,
+    earlyTolerance: (await s.access.setting(Setting.yard.early_tolerance_minutes, s.siteId)).value,
+    grace: (await s.access.setting(Setting.yard.grace_minutes, s.siteId)).value,
     now: s.now,
   };
   return rows.map((r) => toTruck(r, safety(r.b.id), p));
@@ -234,7 +240,13 @@ export async function truckOf(
   return truck;
 }
 
-const VISIBLE = ['confirmed', 'no_show', ...ON_SITE_STATUSES, 'departed', 'turned_away'] as const;
+const VISIBLE = [
+  'confirmed',
+  'no_show',
+  ...values(OnSiteStatus),
+  'departed',
+  'turned_away',
+] as const;
 
 /**
  * YD-01: the bookings of a site-local day, by start, and the no-shows of that day whose slot
@@ -279,8 +291,9 @@ export function withWaits(t: YardTruck, now: Date, standgeldMinutes: number): On
 /** YD-04: every truck on the site, whatever day it was booked for, by gate-in. */
 export async function onSiteTrucks(s: YardScope): Promise<OnSiteView> {
   const site = await requireSite(s.tx, s.tenantId, s.siteId);
-  const standgeldMinutes = (await s.access.setting('yard.standgeld_flag_minutes', s.siteId)).value;
-  const items = await trucks(s, inArray(booking.status, ON_SITE_STATUSES), [
+  const standgeldMinutes = (await s.access.setting(Setting.yard.standgeld_flag_minutes, s.siteId))
+    .value;
+  const items = await trucks(s, inArray(booking.status, values(OnSiteStatus)), [
     asc(booking.checkedInAt),
     asc(booking.id),
   ]);
@@ -314,7 +327,7 @@ export async function searchTrucks(s: YardScope, q: string): Promise<YardTruck[]
     s,
     and(
       or(
-        inArray(booking.status, ['confirmed', ...ON_SITE_STATUSES]),
+        inArray(booking.status, ['confirmed', ...values(OnSiteStatus)]),
         and(eq(booking.status, 'no_show'), gte(booking.noShowAt, start)),
       ),
       or(

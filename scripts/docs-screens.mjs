@@ -1,13 +1,14 @@
 #!/usr/bin/env node
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium, devices } from '@playwright/test';
 // Walks the core loop of docs/tutorials/first-truck-end-to-end.md in the real app and captures the
 // screens the docs embed to docs/assets/screens/<name>.png.
 // Run `pnpm docs:screens` against a running `pnpm dev` with the dev seed (`pnpm db:seed`). It runs
 // inside the Playwright container and starts nothing itself.
 // Every run changes the demo data like the tutorial does: it switches the demo accounts to English
 // and books one Trans-Pol truck at Hamburg DC, which it takes through the gate and a dock to departure.
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { chromium, devices } from '@playwright/test';
+import { OrgKind } from '../packages/shared/src/values/roles.ts';
 
 const base = process.env.APP_ORIGIN ?? 'http://localhost:5173';
 const out = process.env.DOCS_SCREENS_OUT ?? 'docs/assets/screens';
@@ -56,7 +57,7 @@ async function open(account, device) {
   }, HIDE_DEVTOOLS);
   const page = await context.newPage();
   page.on('pageerror', (e) => note(account, e.message));
-  if (account !== 'driver') {
+  if (Object.hasOwn(ACCOUNTS, account)) {
     await page.goto(`${base}/login`);
     await page.getByLabel('Email').fill(ACCOUNTS[account]);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
@@ -95,10 +96,12 @@ async function goto(page, path) {
   await page.goto(base + path, { waitUntil: 'networkidle' });
 }
 
+/** The seeded tenant the screenshots show. */
+const TENANT = 'Acme Logistics';
 const admin = await open('admin', 'desktop');
 const me = await json(admin, '/me');
-const tenantId = me.memberships.find((m) => m.orgName === 'Acme Logistics')?.orgId;
-if (!tenantId) throw new Error('Acme Logistics is missing: run pnpm db:seed');
+const tenantId = me.memberships.find((m) => m.orgName === TENANT)?.orgId;
+if (!tenantId) throw new Error(`${TENANT} is missing: run pnpm db:seed`);
 const { sites } = await json(admin, `/t/${tenantId}/context`);
 const siteId = (name) => {
   const site = sites.find((s) => s.name === name);
@@ -116,7 +119,7 @@ await shot(admin, 'settings', admin.getByRole('region', { name: 'Booking rules' 
 
 const carrier = await open('carrier', 'desktop');
 const carrierId = (await json(carrier, '/me')).memberships.find(
-  (m) => m.orgKind === 'carrier',
+  (m) => m.orgKind === OrgKind.carrier,
 )?.orgId;
 await goto(carrier, `/c/${carrierId}/book`);
 const siteSelect = carrier.getByRole('combobox', { name: 'Site' });

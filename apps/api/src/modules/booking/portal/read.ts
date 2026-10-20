@@ -8,8 +8,14 @@ import type {
   PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
-import { FINAL_STATUSES, ON_SITE_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import {
+  BookingPeriod,
+  CarrierLinkStatus,
+  FinalBookingStatus,
+  OnSiteStatus,
+} from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Setting, SortOrder, values } from '@rampflow/shared/values';
 import { and, asc, desc, eq, inArray, not, type SQL, sql } from 'drizzle-orm';
 import type * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -109,7 +115,7 @@ const localDay = sql`(${booking.startsAt} at time zone ${booking.siteTimeZone}):
 
 /** CR-05 `when=upcoming`: on site, or not final and starting today or later in site time. */
 const upcoming = (now: Date): SQL =>
-  sql`(${inArray(booking.status, ON_SITE_STATUSES)} or (${not(inArray(booking.status, FINAL_STATUSES))} and ${localDay} >= (${now}::timestamptz at time zone ${booking.siteTimeZone})::date))`;
+  sql`(${inArray(booking.status, values(OnSiteStatus))} or (${not(inArray(booking.status, values(FinalBookingStatus)))} and ${localDay} >= (${now}::timestamptz at time zone ${booking.siteTimeZone})::date))`;
 
 /** CR-05: the carrier's bookings at every tenant, by start, with the filters of the list. */
 export async function listPortalBookings(
@@ -119,7 +125,7 @@ export async function listPortalBookings(
   now: Date,
 ): Promise<PortalBookingPage> {
   const after = q.cursor ? decodeCursor(q.cursor) : null;
-  const ascending = q.order === 'asc';
+  const ascending = q.order === SortOrder.asc;
   const rows = await summaryQuery(tx)
     .where(
       and(
@@ -127,7 +133,11 @@ export async function listPortalBookings(
         q.tenantId ? eq(booking.tenantId, q.tenantId as TenantId) : undefined,
         q.siteId ? eq(booking.siteId, q.siteId as SiteId) : undefined,
         q.status ? eq(booking.status, q.status) : undefined,
-        q.when === 'upcoming' ? upcoming(now) : q.when === 'past' ? not(upcoming(now)) : undefined,
+        q.when === BookingPeriod.upcoming
+          ? upcoming(now)
+          : q.when === BookingPeriod.past
+            ? not(upcoming(now))
+            : undefined,
         q.from ? sql`${localDay} >= ${q.from}::date` : undefined,
         q.to ? sql`${localDay} <= ${q.to}::date` : undefined,
         after
@@ -157,7 +167,7 @@ async function ownBooking(tx: Tx, carrierId: CarrierId, bookingId: BookingId) {
   const [row] = await summaryQuery(tx)
     .where(and(eq(booking.id, bookingId), eq(booking.carrierId, carrierId)))
     .limit(1);
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -188,7 +198,7 @@ export async function loadPortalBooking(
     ? await tx.select({ code: dock.code }).from(dock).where(eq(dock.id, b.dockId))
     : [];
   const access = await atTenant(b.tenantId);
-  const cutoff = (await access.setting('booking.cancel_cutoff_minutes', b.siteId)).value;
+  const cutoff = (await access.setting(Setting.booking.cancel_cutoff_minutes, b.siteId)).value;
   const events = await tx
     .select()
     .from(bookingEvent)
@@ -210,7 +220,7 @@ export async function loadPortalBooking(
       },
       phone: s.phone,
     },
-    linkActive: place.linkStatus === 'active',
+    linkActive: place.linkStatus === CarrierLinkStatus.active,
     dockCode: docked?.code ?? null,
     calledAt: iso(b.calledAt),
     atDockAt: iso(b.atDockAt),

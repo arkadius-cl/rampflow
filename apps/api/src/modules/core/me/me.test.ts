@@ -1,4 +1,5 @@
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
+import { DriverLocale, Role, StaffLocale, ZodIssueCode } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -19,7 +20,7 @@ describe('/api/me', () => {
       userId: user.id,
       orgId: w.B.carrierId,
       orgKind: 'carrier',
-      role: 'carrier_admin',
+      role: Role.carrier_admin,
     });
     const res = await as(app, user).get('/api/me');
     expect(res.status).toBe(200);
@@ -28,33 +29,35 @@ describe('/api/me', () => {
       id: user.id,
       name: expect.any(String),
       email: user.email,
-      locale: 'en',
+      locale: StaffLocale.en,
     });
     expect(me.memberships).toEqual([
       {
         orgId: w.A.tenantId,
         orgKind: 'tenant',
         orgName: expect.stringMatching(/^Tenant A/),
-        role: 'dispatcher',
+        role: Role.dispatcher,
       },
       {
         orgId: w.B.carrierId,
         orgKind: 'carrier',
         orgName: expect.stringMatching(/^Carrier B/),
-        role: 'carrier_admin',
+        role: Role.carrier_admin,
       },
     ]);
   });
 
   it('changes name and locale, and rejects a locale outside de, en and pl', async () => {
     const user = w.A.users.gate_operator;
-    const ok = await as(app, user).patch('/api/me', { body: { name: 'Gerd Gate', locale: 'de' } });
+    const ok = await as(app, user).patch('/api/me', {
+      body: { name: 'Gerd Gate', locale: StaffLocale.de },
+    });
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as MeResponse).user).toMatchObject({
       name: 'Gerd Gate',
-      locale: 'de',
+      locale: StaffLocale.de,
     });
-    const bad = await as(app, user).patch('/api/me', { body: { locale: 'tr' } });
+    const bad = await as(app, user).patch('/api/me', { body: { locale: DriverLocale.tr } });
     expect(bad.status).toBe(422);
     expect(await bad.json()).toMatchObject({
       error: { details: { issues: [{ path: ['locale'] }] } },
@@ -113,7 +116,7 @@ describe('/api/me', () => {
             issues: [
               {
                 path: ['uiPrefs'],
-                code: 'unrecognized_keys',
+                code: ZodIssueCode.unrecognized_keys,
                 message: expect.stringContaining('platform.unknown'),
               },
             ],

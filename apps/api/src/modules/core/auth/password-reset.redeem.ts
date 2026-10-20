@@ -1,3 +1,5 @@
+import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { ScopeParty } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { UserId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -17,10 +19,10 @@ export async function redeemPasswordReset(
   password: string,
   now: Date,
 ): Promise<UserId | null> {
-  const userId = await claimAuthToken(tx, 'password_reset', token, now);
+  const userId = await claimAuthToken(tx, AuthTokenKind.password_reset, token, now);
   if (!userId) return null;
   const passwordHash = await hashPassword(password);
-  await asScope(tx, { party: 'user', userId }, (inner) =>
+  await asScope(tx, { party: ScopeParty.user, userId }, (inner) =>
     inner
       .update(appUser)
       .set({ passwordHash, emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${now})` })

@@ -2,13 +2,16 @@
 // rejecting the marked line, because the @ts-expect-error directive is then unused.
 import * as z from 'zod';
 import type { PackageValues } from '../registry.ts';
+import { EntitlementKind } from '../values/entitlements.ts';
+import { OrgKind } from '../values/roles.ts';
+import { SettingScope } from '../values/settings.ts';
 import { defineModule } from './module.ts';
 
 const base = { id: 'demo', dependsOn: [], locales: 'staff', settings: {}, nav: [] } as const;
 const entitlements = {
-  'demo.on': { kind: 'feature' },
-  'demo.later': { kind: 'feature', reserved: true },
-  'demo.max': { kind: 'limit' },
+  'demo.on': { kind: EntitlementKind.feature },
+  'demo.later': { kind: EntitlementKind.feature, reserved: true },
+  'demo.max': { kind: EntitlementKind.limit },
 } as const;
 const permissions = { 'demo.view': { roles: ['dispatcher'] } } as const;
 
@@ -17,7 +20,7 @@ export const prefix = defineModule({
   enabledBy: null,
   entitlements: {
     // @ts-expect-error keys carry the module id as prefix
-    'other.flag': { kind: 'feature' },
+    'other.flag': { kind: EntitlementKind.feature },
   },
   permissions: {},
 });
@@ -45,7 +48,7 @@ export const badDefault = defineModule({
   permissions,
   settings: {
     // @ts-expect-error the default must pass the schema's type
-    'demo.grid': { schema: z.literal([5, 10]), default: 7, scopes: ['site'] },
+    'demo.grid': { schema: z.literal([5, 10]), default: 7, scopes: [SettingScope.site] },
   },
 });
 
@@ -55,8 +58,13 @@ export const requiresReserved = defineModule({
   entitlements,
   permissions,
   settings: {
-    // @ts-expect-error a setting can only require an implemented feature of its own module
-    'demo.size': { schema: z.int(), default: 3, scopes: ['site'], requires: 'demo.later' },
+    'demo.size': {
+      schema: z.int(),
+      default: 3,
+      scopes: [SettingScope.site],
+      // @ts-expect-error a setting can only require an implemented feature of its own module
+      requires: 'demo.later',
+    },
   },
 });
 
@@ -66,7 +74,7 @@ export const navPermission = defineModule({
   entitlements,
   permissions,
   // @ts-expect-error nav permissions are declared by the same module
-  nav: [{ id: 'x', area: 'tenant', to: '/', icon: 'x', permission: 'demo.nope' }],
+  nav: [{ id: 'x', area: OrgKind.tenant, to: '/', icon: 'x', permission: 'demo.nope' }],
 });
 
 export const carrierNavEntitlement = defineModule({
@@ -77,7 +85,7 @@ export const carrierNavEntitlement = defineModule({
   nav: [
     {
       id: 'x',
-      area: 'carrier',
+      area: OrgKind.carrier,
       to: '/',
       icon: 'x',
       permission: 'demo.view',

@@ -1,12 +1,13 @@
 import * as z from 'zod';
-import { type Block, SafetyLocale, type TranslationState } from './api.authoring.ts';
+import { type Block, SafetyLocale } from './api.authoring.ts';
+import type { InstructionSafety, TranslationState } from './values.ts';
 
 // The briefing routes of the driver PWA (SF-04, ADR-0008). Questions go out without answers.
 
 export interface DriverBriefing {
   instructionId: string;
   name: string;
-  status: 'valid' | 'missing';
+  status: InstructionSafety;
   expiresAt: string | null;
   /** The driver answers the questions before acknowledging. */
   quiz: boolean;

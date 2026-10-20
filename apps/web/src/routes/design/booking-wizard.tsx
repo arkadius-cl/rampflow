@@ -1,3 +1,9 @@
+import {
+  BookingStatus,
+  PrototypeWizardStep,
+  SlotAvailability,
+} from '@rampflow/shared/modules/booking/values';
+import { BadgeSize, PrototypeScreen, StepState } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarPlusIcon,
@@ -36,18 +42,18 @@ import { cn } from '@/lib/utils';
 import { sites } from './-mock';
 import { carrierMembership, carrierNav, carrierUser, memberships } from './-nav';
 
-type Step = 'where' | 'slot' | 'avis' | 'confirmed';
+type Step = PrototypeWizardStep;
 const STEPS: { id: Step; title: string; hint: string }[] = [
-  { id: 'where', title: 'Where and what', hint: 'Warehouse, site, load type' },
-  { id: 'slot', title: 'When', hint: 'Day and start time' },
-  { id: 'avis', title: 'Avis', hint: 'Truck, driver, references' },
-  { id: 'confirmed', title: 'Confirmed', hint: 'Code, QR, driver link' },
+  { id: PrototypeWizardStep.where, title: 'Where and what', hint: 'Warehouse, site, load type' },
+  { id: PrototypeWizardStep.slot, title: 'When', hint: 'Day and start time' },
+  { id: PrototypeWizardStep.avis, title: 'Avis', hint: 'Truck, driver, references' },
+  { id: PrototypeWizardStep.confirmed, title: 'Confirmed', hint: 'Code, QR, driver link' },
 ];
 
 export const Route = createFileRoute('/design/booking-wizard')({
   validateSearch: (search: Record<string, unknown>): { step: Step } => {
     const s = search.step;
-    return { step: STEPS.some((x) => x.id === s) ? (s as Step) : 'where' };
+    return { step: STEPS.some((x) => x.id === s) ? (s as Step) : PrototypeWizardStep.where };
   },
   component: BookingWizardScreen,
 });
@@ -65,24 +71,24 @@ const days: SlotDay[] = [
 ];
 
 const slots: SlotOption[] = [
-  { time: '06:00', state: 'full', free: 0 },
-  { time: '06:30', state: 'free', free: 2 },
-  { time: '07:00', state: 'free', free: 2 },
-  { time: '07:30', state: 'scarce', free: 1 },
-  { time: '08:00', state: 'full', free: 0 },
-  { time: '08:30', state: 'full', free: 0 },
-  { time: '09:00', state: 'scarce', free: 1 },
-  { time: '09:30', state: 'free', free: 2 },
-  { time: '10:00', state: 'free', free: 2 },
-  { time: '10:30', state: 'free', free: 2 },
-  { time: '11:00', state: 'scarce', free: 1 },
-  { time: '11:30', state: 'full', free: 0 },
-  { time: '12:30', state: 'free', free: 2 },
-  { time: '13:00', state: 'free', free: 2 },
-  { time: '13:30', state: 'free', free: 2 },
-  { time: '14:00', state: 'scarce', free: 1 },
-  { time: '14:30', state: 'free', free: 2 },
-  { time: '15:00', state: 'free', free: 2 },
+  { time: '06:00', state: SlotAvailability.full, free: 0 },
+  { time: '06:30', state: SlotAvailability.free, free: 2 },
+  { time: '07:00', state: SlotAvailability.free, free: 2 },
+  { time: '07:30', state: SlotAvailability.scarce, free: 1 },
+  { time: '08:00', state: SlotAvailability.full, free: 0 },
+  { time: '08:30', state: SlotAvailability.full, free: 0 },
+  { time: '09:00', state: SlotAvailability.scarce, free: 1 },
+  { time: '09:30', state: SlotAvailability.free, free: 2 },
+  { time: '10:00', state: SlotAvailability.free, free: 2 },
+  { time: '10:30', state: SlotAvailability.free, free: 2 },
+  { time: '11:00', state: SlotAvailability.scarce, free: 1 },
+  { time: '11:30', state: SlotAvailability.full, free: 0 },
+  { time: '12:30', state: SlotAvailability.free, free: 2 },
+  { time: '13:00', state: SlotAvailability.free, free: 2 },
+  { time: '13:30', state: SlotAvailability.free, free: 2 },
+  { time: '14:00', state: SlotAvailability.scarce, free: 1 },
+  { time: '14:30', state: SlotAvailability.free, free: 2 },
+  { time: '15:00', state: SlotAvailability.free, free: 2 },
 ];
 
 function BookingWizardScreen() {
@@ -92,19 +98,19 @@ function BookingWizardScreen() {
     <OfficeShell
       org={carrierMembership}
       memberships={memberships}
-      nav={carrierNav('wizard')}
+      nav={carrierNav(PrototypeScreen.wizard)}
       breadcrumbs={['New booking', STEPS[index]?.title ?? '']}
       user={carrierUser}
     >
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_17rem]">
         <Stepper index={index} />
         <div className="min-w-0">
-          {step === 'where' ? <WhereStep /> : null}
-          {step === 'slot' ? <SlotStep /> : null}
-          {step === 'avis' ? <AvisStep /> : null}
-          {step === 'confirmed' ? <ConfirmedStep /> : null}
+          {step === PrototypeWizardStep.where ? <WhereStep /> : null}
+          {step === PrototypeWizardStep.slot ? <SlotStep /> : null}
+          {step === PrototypeWizardStep.avis ? <AvisStep /> : null}
+          {step === PrototypeWizardStep.confirmed ? <ConfirmedStep /> : null}
         </div>
-        {step === 'confirmed' ? <div /> : <Summary step={step} />}
+        {step === PrototypeWizardStep.confirmed ? <div /> : <Summary step={step} />}
       </div>
     </OfficeShell>
   );
@@ -114,26 +120,30 @@ function Stepper({ index }: { index: number }) {
   return (
     <ol className="flex gap-2 lg:flex-col" aria-label="Booking steps">
       {STEPS.map((s, i) => {
-        const state = i < index ? 'done' : i === index ? 'current' : 'todo';
+        const state: StepState =
+          i < index ? StepState.done : i === index ? StepState.current : StepState.todo;
         return (
           <li
             key={s.id}
             className="flex items-start gap-3"
-            aria-current={state === 'current' ? 'step' : undefined}
+            aria-current={state === StepState.current ? 'step' : undefined}
           >
             <span
               className={cn(
                 'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-                state === 'done' && 'border-tone-success bg-tone-success text-white',
-                state === 'current' && 'border-primary bg-primary text-primary-foreground',
-                state === 'todo' && 'text-muted-foreground',
+                state === StepState.done && 'border-tone-success bg-tone-success text-white',
+                state === StepState.current && 'border-primary bg-primary text-primary-foreground',
+                state === StepState.todo && 'text-muted-foreground',
               )}
             >
-              {state === 'done' ? <CheckIcon className="size-3.5" /> : i + 1}
+              {state === StepState.done ? <CheckIcon className="size-3.5" /> : i + 1}
             </span>
             <div className="hidden leading-tight lg:block">
               <div
-                className={cn('text-sm font-medium', state === 'todo' && 'text-muted-foreground')}
+                className={cn(
+                  'text-sm font-medium',
+                  state === StepState.todo && 'text-muted-foreground',
+                )}
               >
                 {s.title}
               </div>
@@ -199,7 +209,7 @@ function WhereStep() {
     <StepCard
       title="Where and what"
       description="Pick the warehouse you deliver to and what the truck carries. The load type decides the duration."
-      next="slot"
+      next={PrototypeWizardStep.slot}
     >
       <FieldGroup>
         <Field>
@@ -262,8 +272,8 @@ function SlotStep() {
     <StepCard
       title="When"
       description="Only start times that fit the site's hours, closures and free capacity are offered."
-      back="where"
-      next="avis"
+      back={PrototypeWizardStep.where}
+      next={PrototypeWizardStep.avis}
     >
       <SlotPicker
         days={days}
@@ -289,8 +299,8 @@ function AvisStep() {
     <StepCard
       title="Avis"
       description="Tell the warehouse what arrives. Fields marked required follow the site's settings."
-      back="slot"
-      next="confirmed"
+      back={PrototypeWizardStep.slot}
+      next={PrototypeWizardStep.confirmed}
       nextLabel="Confirm booking"
     >
       <FieldGroup>
@@ -356,7 +366,7 @@ function ConfirmedStep() {
           <div className="flex flex-col items-center gap-2">
             <QrPlaceholder code="Z4KQ-7MDP" size={168} className="border" />
             <div className="font-mono text-2xl font-semibold tracking-wide">Z4KQ-7MDP</div>
-            <BookingStatusBadge status="confirmed" size="lg" />
+            <BookingStatusBadge status={BookingStatus.confirmed} size={BadgeSize.lg} />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">Booked. See you on Wednesday.</h2>
@@ -449,7 +459,7 @@ function Summary({ step }: { step: Step }) {
     ['Site', 'Hamburg DC'],
     ['Load', '33 pallets · inbound'],
     ['Duration', '90 min'],
-    ['Slot', step === 'where' ? undefined : 'Wed 21 Oct, 10:00 CET'],
+    ['Slot', step === PrototypeWizardStep.where ? undefined : 'Wed 21 Oct, 10:00 CET'],
   ];
   return (
     <aside className="flex flex-col gap-3">

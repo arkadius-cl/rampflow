@@ -1,4 +1,12 @@
 import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
+import {
+  BadRequestReason,
+  ErrorCode,
+  PackageId,
+  SettingScope,
+  SettingSource,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -15,7 +23,7 @@ const app = createApp({ clock: testClock(new Date()) });
 
 let w: World;
 beforeAll(async () => {
-  w = await world({ packages: { A: 'start', B: 'pro' } });
+  w = await world({ packages: { A: PackageId.start, B: PackageId.pro } });
 });
 
 const path = (side: World['A'], key = '') => `/api/t/${side.tenantId}/settings${key && `/${key}`}`;
@@ -37,8 +45,8 @@ describe('TN-02 settings', () => {
       module: 'booking',
       scopes: ['platform', 'tenant', 'site'],
       value: 30,
-      source: 'default',
-      inherited: { value: 30, source: 'default' },
+      source: SettingSource.default,
+      inherited: { value: 30, source: SettingSource.default },
     });
     // Site-only keys appear on the site level, platform-and-tenant keys on the tenant level.
     expect(field(before, 'booking.public_link_enabled')).toBeUndefined();
@@ -48,26 +56,32 @@ describe('TN-02 settings', () => {
       body: { siteId: null, value: 60 },
     });
     expect(tenantPut.status).toBe(200);
-    expect(await tenantPut.json()).toMatchObject({ value: 60, source: 'tenant' });
+    expect(await tenantPut.json()).toMatchObject({ value: 60, source: SettingSource.tenant });
     const sitePut = await admin(w.B).put(path(w.B, 'booking.horizon_days'), {
       body: { siteId: w.B.sites[0].id, value: 90 },
     });
     expect(await sitePut.json()).toMatchObject({
       value: 90,
-      source: 'site',
-      inherited: { value: 60, source: 'tenant' },
+      source: SettingSource.site,
+      inherited: { value: 60, source: SettingSource.tenant },
     });
 
     const site0 = await view(w.B, w.B.sites[0].id);
-    expect(site0).toMatchObject({ scope: 'site', siteId: w.B.sites[0].id });
-    expect(field(site0, 'booking.horizon_days')).toMatchObject({ value: 90, source: 'site' });
+    expect(site0).toMatchObject({ scope: SettingScope.site, siteId: w.B.sites[0].id });
+    expect(field(site0, 'booking.horizon_days')).toMatchObject({
+      value: 90,
+      source: SettingSource.site,
+    });
     expect(field(site0, 'booking.public_link_enabled')).toBeDefined();
     expect(field(site0, 'safety.quiz_pass_percent')).toBeUndefined();
     const site1 = await view(w.B, w.B.sites[1].id);
-    expect(field(site1, 'booking.horizon_days')).toMatchObject({ value: 60, source: 'tenant' });
+    expect(field(site1, 'booking.horizon_days')).toMatchObject({
+      value: 60,
+      source: SettingSource.tenant,
+    });
     expect(field(await view(w.B), 'booking.horizon_days')).toMatchObject({
       value: 60,
-      source: 'tenant',
+      source: SettingSource.tenant,
     });
   });
 
@@ -83,7 +97,7 @@ describe('TN-02 settings', () => {
     expect(rows).toEqual([]);
     expect(field(await view(w.B, w.B.sites[1].id), key)).toMatchObject({
       value: 15,
-      source: 'default',
+      source: SettingSource.default,
     });
     expect((await admin(w.B).delete(`${path(w.B, key)}?siteId=${w.B.sites[1].id}`)).status).toBe(
       204,
@@ -99,7 +113,7 @@ describe('TN-02 settings', () => {
     });
     expect(res.status).toBe(403);
     expect(await errorOf(res)).toMatchObject({
-      code: 'entitlement_required',
+      code: ErrorCode.entitlement_required,
       details: { key: 'safety.gate_enforcement' },
     });
   });
@@ -110,14 +124,14 @@ describe('TN-02 settings', () => {
     });
     expect(res.status).toBe(422);
     expect((await errorOf(res)).details?.issues).toEqual([
-      expect.objectContaining({ path: ['value'], code: 'too_big' }),
+      expect.objectContaining({ path: ['value'], code: ZodIssueCode.too_big }),
     ]);
     const platformOnly = await admin(w.B).put(path(w.B, 'privacy.retention.driver_link_hours'), {
       body: { siteId: null, value: 12 },
     });
     expect(platformOnly.status).toBe(400);
     expect(await errorOf(platformOnly)).toMatchObject({
-      details: { reason: 'scope_not_allowed', allowed: ['platform'] },
+      details: { reason: BadRequestReason.scope_not_allowed, allowed: ['platform'] },
     });
     const unknown = await admin(w.B).put(path(w.B, 'booking.nope'), {
       body: { siteId: null, value: 1 },

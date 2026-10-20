@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { expectTouchTargets, openStation, poolDocks, siteOf } from '../support/u9.ts';
+import { expectTouchTargets, openStation, poolDocks, siteOf, test } from '../support/u9.ts';
 
 test.describe('YD-03 Walk-in', () => {
   test('a gate operator walks in an unbooked truck at a closed site and checks it in', async ({

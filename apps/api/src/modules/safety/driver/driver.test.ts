@@ -1,10 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type {
   AttemptResult,
   DriverBriefingContent,
   DriverBriefingList,
 } from '@rampflow/shared/modules/safety/api.driver';
+import {
+  InstructionSafety,
+  SafetyStatus,
+  TranslationState,
+} from '@rampflow/shared/modules/safety/values';
+import { ConflictReason, DriverLocale, TokenPurpose } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -29,12 +36,12 @@ async function completeBriefing(h: Harness, side: WorldSide, jar: Jar, name = 'D
   const { instructionId } = briefingOf(side);
   const attempt = await h.request('POST', `${P}/${instructionId}/attempts`, {
     jar,
-    body: { locale: 'en', answers: right },
+    body: { locale: DriverLocale.en, answers: right },
   });
   expect(attempt.status).toBe(200);
   const ack = await h.request('POST', `${P}/${instructionId}/acknowledgement`, {
     jar,
-    body: { locale: 'en', name, confirmed: true },
+    body: { locale: DriverLocale.en, name, confirmed: true },
   });
   expect(ack.status).toBe(201);
   return ack;
@@ -64,7 +71,7 @@ async function setValidityDays(side: WorldSide, days: number) {
 /** A 30-minute gate-device session for the booking (YD-02), as U9's briefing-session route issues. */
 async function gateDeviceToken(side: WorldSide, b: WorldBooking, now: Date): Promise<string> {
   const id = randomUUID();
-  const token = deriveToken('driver', id);
+  const token = deriveToken(TokenPurpose.driver, id);
   await ownerDb()
     .insert(driverAccess)
     .values({
@@ -74,7 +81,7 @@ async function gateDeviceToken(side: WorldSide, b: WorldBooking, now: Date): Pro
       bookingId: b.id as BookingId,
       carrierId: b.carrierId as never,
       tokenHash: hashToken(token),
-      channel: 'staff',
+      channel: DriverChannel.staff,
       expiresAt: new Date(now.getTime() + 30 * 60_000),
     });
   return token;
@@ -93,10 +100,10 @@ describe('SF-04 complete the briefing', () => {
       {
         instructionId,
         name: 'Site rules',
-        status: 'missing',
+        status: SafetyStatus.missing,
         expiresAt: null,
         quiz: true,
-        locales: [{ locale: 'en', translation: 'source' }],
+        locales: [{ locale: DriverLocale.en, translation: TranslationState.source }],
       },
     ]);
 
@@ -105,7 +112,7 @@ describe('SF-04 complete the briefing', () => {
       await h.request('GET', `${P}/${instructionId}?locale=pl`, { jar })
     ).json()) as DriverBriefingContent;
     expect(content).toMatchObject({
-      locale: 'en',
+      locale: DriverLocale.en,
       version: 1,
       statement: 'I will follow the rules.',
     });
@@ -114,7 +121,7 @@ describe('SF-04 complete the briefing', () => {
 
     const failed = await h.request('POST', `${P}/${instructionId}/attempts`, {
       jar,
-      body: { locale: 'en', answers: wrongFirst },
+      body: { locale: DriverLocale.en, answers: wrongFirst },
     });
     expect((await failed.json()) as AttemptResult).toEqual({
       score: 67,
@@ -124,10 +131,12 @@ describe('SF-04 complete the briefing', () => {
     });
     const early = await h.request('POST', `${P}/${instructionId}/acknowledgement`, {
       jar,
-      body: { locale: 'en', name: 'Dana Driver', confirmed: true },
+      body: { locale: DriverLocale.en, name: 'Dana Driver', confirmed: true },
     });
     expect(early.status).toBe(409);
-    expect(await early.json()).toMatchObject({ error: { details: { reason: 'quiz_not_passed' } } });
+    expect(await early.json()).toMatchObject({
+      error: { details: { reason: ConflictReason.quiz_not_passed } },
+    });
 
     const ack = await completeBriefing(h, w.A, jar);
     const now = h.clock.now();
@@ -147,13 +156,13 @@ describe('SF-04 complete the briefing', () => {
     expect(row).toMatchObject({
       instructionId,
       versionId: publishedId,
-      locale: 'en',
+      locale: DriverLocale.en,
       contentHash: published?.hash,
       score: 100,
       attempts: 2,
       driverName: 'Dana Driver',
       statementShown: 'I will follow the rules.',
-      channel: 'link',
+      channel: DriverChannel.link,
       completedAt: now,
       expiresAt: new Date(now.getTime() + 365 * DAY_MS),
     });
@@ -161,7 +170,10 @@ describe('SF-04 complete the briefing', () => {
     const view = (await (
       await h.request('GET', '/api/driver/booking', { jar })
     ).json()) as DriverBookingView;
-    expect(view.safety).toEqual({ status: 'valid', validUntil: row?.expiresAt?.toISOString() });
+    expect(view.safety).toEqual({
+      status: SafetyStatus.valid,
+      validUntil: row?.expiresAt?.toISOString(),
+    });
   });
 
   it('stores a visit-only acknowledgement and keeps no pass with safety.validity_days 0', async () => {
@@ -198,7 +210,7 @@ describe('SF-04 complete the briefing', () => {
     expect(await countsFor(w.A.tenantId)).toEqual(before);
 
     const list = (await (await h.request('GET', P, { jar })).json()) as DriverBriefingList;
-    expect(list.items[0]).toMatchObject({ instructionId, status: 'valid' });
+    expect(list.items[0]).toMatchObject({ instructionId, status: InstructionSafety.valid });
     expect(list.items[0]?.expiresAt).not.toBeNull();
     const after = await countsFor(w.A.tenantId);
     expect(after).toEqual({
@@ -218,7 +230,10 @@ describe('SF-04 complete the briefing', () => {
     const view = (await (
       await h.request('GET', '/api/driver/booking', { jar })
     ).json()) as DriverBookingView;
-    expect(view.safety).toEqual({ status: 'valid', validUntil: list.items[0]?.expiresAt });
+    expect(view.safety).toEqual({
+      status: SafetyStatus.valid,
+      validUntil: list.items[0]?.expiresAt,
+    });
   });
 
   it('never redeems a pass at another tenant', async () => {

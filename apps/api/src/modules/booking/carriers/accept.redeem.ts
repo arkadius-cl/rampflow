@@ -2,6 +2,8 @@ import type {
   CarrierInvitationAcceptBody,
   CarrierInvitationInspect,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { CarrierLinkSource } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, TokenPurpose, ZodIssueCode } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { type CarrierId, hashToken, type UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -27,7 +29,7 @@ const pendingWhere = (token: string, now: Date) =>
     gt(carrierInvitation.expiresAt, now),
   );
 
-const invalid = () => new ApiError('unauthorized', 'Invalid or expired invitation');
+const invalid = () => new ApiError(ErrorCode.unauthorized, 'Invalid or expired invitation');
 
 async function pending(tx: Tx, token: string, now: Date) {
   const [row] = await tx.select().from(carrierInvitation).where(pendingWhere(token, now));
@@ -43,17 +45,18 @@ export async function inspectCarrierInvitation(
 ): Promise<CarrierInvitationInspect> {
   const inv = await pending(tx, token, now);
   return {
-    tenantName: await tenantName(tx, 'carrier_invitation', inv.tenantId),
-    logoUrl: await tenantLogoUrl(tx, 'carrier_invitation', inv.tenantId, now),
+    tenantName: await tenantName(tx, TokenPurpose.carrier_invitation, inv.tenantId),
+    logoUrl: await tenantLogoUrl(tx, TokenPurpose.carrier_invitation, inv.tenantId, now),
     companyName: inv.companyName,
     email: inv.email,
     hasAccount: (await accountByEmail(tx, inv.email)) !== null,
   };
 }
 
-const missing = (path: 'name' | 'password') => ({
+/** The request fields a new account needs; a zod issue names them as its path. */
+const missing = (path: keyof Pick<CarrierInvitationAcceptBody, 'name' | 'password'>) => ({
   path: [path],
-  code: 'invalid_type',
+  code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
 });
 
@@ -82,7 +85,9 @@ export async function acceptCarrierInvitation(
           ...(name ? [] : [missing('name')]),
           ...(password ? [] : [missing('password')]),
         ];
-        throw new ApiError('validation_failed', 'Name and password are required', { issues });
+        throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', {
+          issues,
+        });
       }
       return { name, password, locale: input.locale ?? null };
     },
@@ -99,10 +104,10 @@ export async function acceptCarrierInvitation(
     .returning({ tenantId: carrierInvitation.tenantId, sentAt: carrierInvitation.createdAt });
   if (!claimed) throw invalid();
 
-  await linkAsTenant(tx, 'carrier_invitation', {
+  await linkAsTenant(tx, TokenPurpose.carrier_invitation, {
     tenantId: claimed.tenantId,
     carrierId,
-    source: 'invitation',
+    source: CarrierLinkSource.invitation,
     reactivateDeactivatedBefore: claimed.sentAt,
   });
   return { userId, carrierId };

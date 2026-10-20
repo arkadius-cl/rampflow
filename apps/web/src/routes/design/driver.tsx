@@ -1,3 +1,6 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { PrototypeDriverStep } from '@rampflow/shared/modules/driver/values';
+import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   BellRingIcon,
@@ -26,16 +29,26 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { DriverStep } from '@/lib/domain';
 import { cn } from '@/lib/utils';
 import { bookings, briefingBlocks, quiz, sites } from './-mock';
 
-const STEPS: DriverStep[] = ['booking', 'briefing', 'quiz', 'waiting', 'called', 'done'];
+const STEPS: PrototypeDriverStep[] = [
+  PrototypeDriverStep.booking,
+  PrototypeDriverStep.briefing,
+  PrototypeDriverStep.quiz,
+  PrototypeDriverStep.waiting,
+  PrototypeDriverStep.called,
+  PrototypeDriverStep.done,
+];
 
 export const Route = createFileRoute('/design/driver')({
-  validateSearch: (search: Record<string, unknown>): { step: DriverStep } => {
+  validateSearch: (search: Record<string, unknown>): { step: PrototypeDriverStep } => {
     const step = search.step;
-    return { step: STEPS.includes(step as DriverStep) ? (step as DriverStep) : 'booking' };
+    return {
+      step: STEPS.includes(step as PrototypeDriverStep)
+        ? (step as PrototypeDriverStep)
+        : PrototypeDriverStep.booking,
+    };
   },
   component: DriverScreen,
 });
@@ -52,8 +65,8 @@ function DriverScreen() {
       <DriverShell
         tenantName="Acme Logistics"
         locale="pl"
-        machineTranslated={step === 'briefing'}
-        offlineSince={step === 'waiting' ? '10:31' : undefined}
+        machineTranslated={step === PrototypeDriverStep.briefing}
+        offlineSince={step === PrototypeDriverStep.waiting ? '10:31' : undefined}
         footer={
           next ? (
             <Button
@@ -68,18 +81,18 @@ function DriverScreen() {
           ) : undefined
         }
       >
-        {step === 'booking' ? <BookingView /> : null}
-        {step === 'briefing' ? <BriefingView /> : null}
-        {step === 'quiz' ? <QuizView /> : null}
-        {step === 'waiting' ? <WaitingView /> : null}
-        {step === 'called' ? <CalledView /> : null}
-        {step === 'done' ? <DoneView /> : null}
+        {step === PrototypeDriverStep.booking ? <BookingView /> : null}
+        {step === PrototypeDriverStep.briefing ? <BriefingView /> : null}
+        {step === PrototypeDriverStep.quiz ? <QuizView /> : null}
+        {step === PrototypeDriverStep.waiting ? <WaitingView /> : null}
+        {step === PrototypeDriverStep.called ? <CalledView /> : null}
+        {step === PrototypeDriverStep.done ? <DoneView /> : null}
       </DriverShell>
     </PhoneFrame>
   );
 }
 
-const footerLabel: Record<DriverStep, string> = {
+const footerLabel: Record<PrototypeDriverStep, string> = {
   booking: 'Start safety briefing',
   briefing: 'I have read this. Go to the quiz',
   quiz: 'Check answers',
@@ -118,7 +131,11 @@ function BookingView() {
         <div className="min-w-0">
           <div className="text-sm text-muted-foreground">Show at the gate</div>
           <div className="font-mono text-2xl font-semibold tracking-wide">{booking.code}</div>
-          <BookingStatusBadge status="confirmed" size="lg" className="mt-2" />
+          <BookingStatusBadge
+            status={BookingStatus.confirmed}
+            size={BadgeSize.lg}
+            className="mt-2"
+          />
         </div>
       </section>
 
@@ -292,7 +309,7 @@ function WaitingView() {
         <p className="text-lg text-muted-foreground">
           You are checked in. We will call you to a dock on this page. Keep it open.
         </p>
-        <BookingStatusBadge status="checked_in" size="xl" />
+        <BookingStatusBadge status={BookingStatus.checked_in} size={BadgeSize.xl} />
         <dl className="mt-2 grid w-full grid-cols-2 gap-3 text-left text-sm">
           <div className="rounded-lg bg-muted p-3">
             <dt className="text-muted-foreground">Checked in</dt>

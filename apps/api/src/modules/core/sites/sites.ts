@@ -1,5 +1,6 @@
 import type { CreateSite, SiteView, UpdateSite } from '@rampflow/shared/modules/core/api.sites';
 import type { TimeZone } from '@rampflow/shared/time';
+import { ErrorCode, Limit } from '@rampflow/shared/values';
 import { and, asc, count, eq } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -36,7 +37,7 @@ export async function requireSite(tx: Tx, tenantId: TenantId, siteId: SiteId): P
     .select()
     .from(site)
     .where(and(eq(site.id, siteId), eq(site.tenantId, tenantId)));
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -63,7 +64,7 @@ export async function createSite(
     tx,
     req.tenantId,
     req.entitlements,
-    'core.max_sites',
+    Limit.core.max_sites,
     countActiveSites(req.tenantId),
   );
   const [row] = await tx
@@ -94,7 +95,7 @@ export async function updateSite(
       tx,
       req.tenantId,
       req.entitlements,
-      'core.max_sites',
+      Limit.core.max_sites,
       countActiveSites(req.tenantId),
     );
   }
@@ -103,7 +104,7 @@ export async function updateSite(
     .set(input)
     .where(and(eq(site.id, siteId), eq(site.tenantId, req.tenantId)))
     .returning();
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   if (row.country !== current.country || row.subdivision !== current.subdivision) {
     await syncHolidays(tx, row, clock.now());
   }

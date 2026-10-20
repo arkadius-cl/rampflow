@@ -1,6 +1,8 @@
-import { DOCK_HOLDING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
+import { BookingStatus, DockHoldingStatus } from '@rampflow/shared/modules/booking/values';
+import { DockStatus } from '@rampflow/shared/modules/core/values';
 import type { DocksView, YardDock } from '@rampflow/shared/modules/yard/api';
 import type { TimeZone } from '@rampflow/shared/time';
+import { values } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { resourceDock } from '../booking/schema.resources.ts';
 import { dock, hall } from '../core/schema.ts';
@@ -10,7 +12,7 @@ import { onSiteTrucks, type YardScope } from './trucks.ts';
 // YD-06: the docks of a site grouped by hall with the truck each one holds, next to the queue of
 // checked-in trucks by slot start. Inactive docks are left out; maintenance docks show.
 
-const HOLDING = new Set<string>(DOCK_HOLDING_STATUSES);
+const HOLDING = new Set<string>(values(DockHoldingStatus));
 
 export async function docksView(s: YardScope): Promise<DocksView> {
   const site = await requireSite(s.tx, s.tenantId, s.siteId);
@@ -33,7 +35,7 @@ export async function docksView(s: YardScope): Promise<DocksView> {
   const onSite = await onSiteTrucks(s);
   const halls = new Map<string, DocksView['halls'][number]>();
   for (const r of rows) {
-    if (r.status === 'inactive') continue;
+    if (r.status === DockStatus.inactive) continue;
     const group = halls.get(r.hallId) ?? { id: r.hallId, name: r.hallName, docks: [] };
     halls.set(r.hallId, group);
     const occupant = onSite.items.find((t) => t.dock?.id === r.id && HOLDING.has(t.status)) ?? null;
@@ -53,7 +55,7 @@ export async function docksView(s: YardScope): Promise<DocksView> {
     timeZone: site.timeZone as TimeZone,
     halls: [...halls.values()],
     queue: onSite.items
-      .filter((t) => t.status === 'checked_in')
+      .filter((t) => t.status === BookingStatus.checked_in)
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id)),
   };
 }

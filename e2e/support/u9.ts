@@ -1,10 +1,12 @@
 import { randomBytes } from 'node:crypto';
-import { expect, type Page } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import pg from 'pg';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import type { World } from './auth.ts';
+import { pinApiClock } from './u12.ts';
 
 // Yard fixtures for the gate and dock specs (U9), written as the owner: bookings of world A's
-// site 1 around the real now, in the state a spec starts from.
+// site 1 around YARD_NOW, in the state a spec starts from.
 
 let pool: pg.Pool | undefined;
 function db(): pg.Pool {
@@ -25,8 +27,31 @@ export interface YardSite {
 
 export const siteOf = (w: World) => w.A.sites[0] as unknown as YardSite;
 
+/**
+ * The instant every yard spec runs at: Monday 10:00 in Europe/Berlin, the `WORLD_NOW` of
+ * apps/api/test/world.ts. The gate lists the site-local day, so a slot an hour away from the real
+ * now could fall on another day late in the evening.
+ */
+export const YARD_NOW = new Date('2026-10-19T08:00:00Z');
+
+/**
+ * `test` with the API clock and the browser clock pinned to YARD_NOW. The API clock is shared by
+ * every spec, so the yard specs run alone in the serial project (playwright.config.ts).
+ */
+export const test = base.extend({
+  page: async ({ page, context, request }, use) => {
+    await pinApiClock(request, YARD_NOW);
+    try {
+      await context.clock.setFixedTime(YARD_NOW);
+      await use(page);
+    } finally {
+      await pinApiClock(request, null);
+    }
+  },
+});
+
 const MINUTE = 60_000;
-export const minutesFromNow = (m: number) => new Date(Date.now() + m * MINUTE);
+export const minutesFromNow = (m: number) => new Date(YARD_NOW.getTime() + m * MINUTE);
 
 /**
  * Makes world A's site 1 take bookings of its load type and puts both docks into its pool, so
@@ -53,7 +78,7 @@ export interface Visit {
   plate: string;
   /** Slot start in minutes from now. */
   start: number;
-  status?: 'confirmed' | 'checked_in' | 'called' | 'at_dock' | 'loading' | 'done';
+  status?: LoadStatus;
   /** Check-in in minutes from now, for on-site states. */
   checkedIn?: number;
   dockId?: string;
@@ -64,9 +89,10 @@ export interface Visit {
 export async function seedVisit(w: World, v: Visit): Promise<{ id: string; code: string }> {
   const s = siteOf(w);
   const code = randomBytes(4).toString('hex').toUpperCase();
-  const status = v.status ?? 'confirmed';
+  const status = v.status ?? LoadStatus.confirmed;
   const startsAt = minutesFromNow(v.start);
-  const checkedInAt = status === 'confirmed' ? null : minutesFromNow(v.checkedIn ?? v.start);
+  const checkedInAt =
+    status === LoadStatus.confirmed ? null : minutesFromNow(v.checkedIn ?? v.start);
   const { rows } = await db().query<{ id: string }>(
     `insert into booking (tenant_id, site_id, resource_id, load_type_id, carrier_id, carrier_name,
        code, status, direction, starts_at, ends_at, blocks_until, site_time_zone, load_units,

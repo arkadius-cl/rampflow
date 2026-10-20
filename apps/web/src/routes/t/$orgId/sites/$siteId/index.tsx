@@ -1,4 +1,6 @@
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { HallView } from '@rampflow/shared/modules/core/api.sites';
+import { Permission } from '@rampflow/shared/values';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { PlusIcon, WarehouseIcon } from 'lucide-react';
@@ -25,7 +27,7 @@ export const Route = createFileRoute('/t/$orgId/sites/$siteId/')({
     Promise.all([
       context.queryClient.ensureQueryData(siteQueries.halls(params.orgId, params.siteId)),
       context.queryClient.ensureQueryData(siteQueries.docks(params.orgId, params.siteId)),
-      allows(context.access, { permission: 'booking.view' })
+      allows(context.access, { permission: Permission.booking.view })
         ? context.queryClient.ensureQueryData(
             capacityQueries.resources(params.orgId, params.siteId),
           )
@@ -38,15 +40,15 @@ function DocksTab() {
   const { t } = useTranslation();
   const { orgId, siteId } = Route.useParams();
   const { can } = useAccess();
-  const canBook = can('booking.manage_resources');
+  const canBook = can(Permission.booking.manage_resources);
   const halls = useSuspenseQuery(siteQueries.halls(orgId, siteId)).data.items;
   const docks = useSuspenseQuery(siteQueries.docks(orgId, siteId)).data.items;
   const resources =
-    useQuery({ ...capacityQueries.resources(orgId, siteId), enabled: can('booking.view') }).data
-      ?.items ?? [];
+    useQuery({ ...capacityQueries.resources(orgId, siteId), enabled: can(Permission.booking.view) })
+      .data?.items ?? [];
   const [hallDialog, setHallDialog] = useState<{ hall: HallView | null } | null>(null);
   const [dockEdit, setDockEdit] = useState<DockEdit | null>(null);
-  const pools = resources.filter((r) => r.kind === 'pool');
+  const pools = resources.filter((r) => r.kind === ResourceKind.pool);
   const holderOf = (dock: { resourceId: string | null }) =>
     resources.find((r) => r.id === dock.resourceId);
 

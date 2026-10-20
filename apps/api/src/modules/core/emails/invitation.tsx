@@ -1,4 +1,4 @@
-import type { Role } from '@rampflow/shared';
+import { Role, TokenPurpose } from '@rampflow/shared/values';
 import { Button, Heading, Text } from '@react-email/components';
 import type { TFunction } from 'i18next';
 import { EmailLayout } from '../../../kernel/email-layout.tsx';
@@ -25,7 +25,7 @@ export const category = 'account';
 export const example: InvitationPayload = {
   invitationId: '01900000-0000-7000-8000-000000000000',
   orgName: 'Acme Logistics',
-  role: 'dispatcher',
+  role: Role.dispatcher,
   inviterName: 'Anna Lenz',
 };
 
@@ -38,7 +38,7 @@ const button = {
 
 /** A single-use link to /invite#<token>, valid for 7 days. */
 export function render(payload: InvitationPayload, t: TFunction) {
-  const link = `${env.APP_ORIGIN}/invite#${deriveToken('invitation', payload.invitationId)}`;
+  const link = `${env.APP_ORIGIN}/invite#${deriveToken(TokenPurpose.invitation, payload.invitationId)}`;
   const values = {
     org: payload.orgName,
     role: t(`shell.roles.${payload.role}`),

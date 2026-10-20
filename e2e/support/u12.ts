@@ -15,6 +15,7 @@ import {
   siteDay,
   type TimeZone,
 } from '../../packages/shared/src/time/index.ts';
+import { DeviceClass } from '../../packages/shared/src/values/ui.ts';
 import { latestEmailTo, linkIn } from './mailpit.ts';
 
 // Core loop fixtures (U12): one pinned time for the API and every browser, and one browser
@@ -69,13 +70,13 @@ export class Timeline {
 
   /** A fresh browser for one person: an office desktop, a station tablet or a phone. */
   async actor(
-    device: 'desktop' | 'tablet' | 'phone' = 'desktop',
+    device: DeviceClass = DeviceClass.desktop,
     timezoneId = 'Europe/Berlin',
   ): Promise<Actor> {
     const use =
-      device === 'phone'
+      device === DeviceClass.phone
         ? devices['Pixel 7']
-        : device === 'tablet'
+        : device === DeviceClass.tablet
           ? { ...devices['Desktop Chrome'], viewport: { width: 1024, height: 768 } }
           : devices['Desktop Chrome'];
     const context = await this.browser.newContext({ ...use, timezoneId });

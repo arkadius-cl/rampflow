@@ -4,6 +4,9 @@ import { type APIRequestContext, type BrowserContext, expect, type Page } from '
 // Seeding, sign-in and accessibility helpers shared by every staff spec. Units add their own
 // helpers in e2e/support/<unit>.ts.
 
+/** axe violations that fail a story's accessibility check. */
+const BLOCKING_IMPACT = new Set<string>(['serious', 'critical']);
+
 export const APP_ORIGIN =
   process.env.APP_ORIGIN ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 
@@ -84,9 +87,7 @@ export async function expectAccessible(page: Page) {
     .exclude('[data-sonner-toast][data-front="false"][data-expanded="false"]')
     .exclude('[data-sonner-toast][data-visible="false"]')
     .analyze();
-  const blocking = result.violations.filter(
-    (v) => v.impact === 'serious' || v.impact === 'critical',
-  );
+  const blocking = result.violations.filter((v) => v.impact && BLOCKING_IMPACT.has(v.impact));
   expect(
     blocking.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`),
   ).toEqual([]);

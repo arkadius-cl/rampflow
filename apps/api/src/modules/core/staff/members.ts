@@ -4,12 +4,13 @@ import {
   type MemberList,
   type MemberView,
 } from '@rampflow/shared/modules/core/api.staff';
+import { ErrorCode, OrgKind, ZodIssueCode } from '@rampflow/shared/values';
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { AnyOrgId, MembershipId, SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { userDisplay } from '../../../kernel/users.ts';
-import { invitation, membership, membershipSite, type OrgKind, site } from '../schema.ts';
+import { invitation, membership, membershipSite, site } from '../schema.ts';
 import { invitationView, isPending, openInvitations } from './invitations.ts';
 
 // Members and pending invitations of one tenant (TN-01) or carrier (CR-04). Site lists exist for
@@ -24,7 +25,7 @@ export interface OrgRef {
 
 async function sitesOf(tx: Tx, org: OrgRef, ids: readonly MembershipId[]) {
   const bySite = new Map<string, string[]>();
-  if (org.orgKind !== 'tenant' || ids.length === 0) return bySite;
+  if (org.orgKind !== OrgKind.tenant || ids.length === 0) return bySite;
   const rows = await tx
     .select({ membershipId: membershipSite.membershipId, siteId: membershipSite.siteId })
     .from(membershipSite)
@@ -123,8 +124,8 @@ export async function requireTenantSites(
   const known = new Set<string>(found.map((r) => r.id));
   const index = siteIds.findIndex((id) => !known.has(id));
   if (index >= 0) {
-    throw new ApiError('validation_failed', 'Invalid json', {
-      issues: [{ path: ['siteIds', index], code: 'custom', message: 'No such site' }],
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
+      issues: [{ path: ['siteIds', index], code: ZodIssueCode.custom, message: 'No such site' }],
     });
   }
   return unique as SiteId[];
@@ -141,7 +142,7 @@ async function requireMembership(tx: Tx, org: OrgRef, id: MembershipId): Promise
         eq(membership.orgKind, org.orgKind),
       ),
     );
-  if (!row) throw new ApiError('not_found');
+  if (!row) throw new ApiError(ErrorCode.not_found);
   return row;
 }
 
@@ -159,11 +160,11 @@ export async function updateMember<R extends string>(
   const current = await requireMembership(tx, org, id);
   const role = change.role ?? (current.role as Role);
   if (change.siteIds && change.siteIds.length > 0 && !isSiteLimited(role)) {
-    throw new ApiError('validation_failed', 'Invalid json', {
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid json', {
       issues: [
         {
           path: ['siteIds'],
-          code: 'custom',
+          code: ZodIssueCode.custom,
           message: 'Only gate and dock operators have a site list',
         },
       ],
@@ -172,7 +173,7 @@ export async function updateMember<R extends string>(
   if (role !== current.role) {
     await tx.update(membership).set({ role }).where(eq(membership.id, id));
   }
-  if (org.orgKind === 'tenant') {
+  if (org.orgKind === OrgKind.tenant) {
     const tenantId = org.orgId as TenantId;
     const replace = !isSiteLimited(role) ? [] : change.siteIds;
     if (replace !== undefined) {

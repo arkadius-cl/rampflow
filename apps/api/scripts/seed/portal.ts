@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType, VehicleType } from '@rampflow/shared/modules/avis/values';
+import { BookingParty, CreateMode } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -7,6 +9,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
+import { CarrierRole, DriverLocale, OrgKind, ScopeParty } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Scope, Tx } from '../../src/db/scope.ts';
@@ -37,8 +40,8 @@ function requestId(name: string): string {
 }
 
 export async function seed(ctx: SeedContext): Promise<void> {
-  const tenantId = (await findOrg(ctx.db, 'tenant', ACME)) as TenantId | null;
-  const carrierId = (await findOrg(ctx.db, 'carrier', TRANS_POL)) as CarrierId | null;
+  const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
+  const carrierId = (await findOrg(ctx.db, OrgKind.carrier, TRANS_POL)) as CarrierId | null;
   if (!tenantId || !carrierId) throw new Error('run the core seed first');
   const [s] = await ctx.db
     .select({ id: site.id, timeZone: site.timeZone })
@@ -59,16 +62,16 @@ export async function seed(ctx: SeedContext): Promise<void> {
   const zone = s.timeZone as TimeZone;
   const now = new Date();
   const scope: Scope = {
-    party: 'carrier_at_tenant',
+    party: ScopeParty.carrier_at_tenant,
     carrierId,
     tenantId,
     userId: user.id,
-    role: 'carrier_admin',
+    role: CarrierRole.carrier_admin,
   };
   const bookingContext = {
     tx,
     tenantId,
-    actor: { party: 'carrier' as const, userId: user.id, carrierId },
+    actor: { party: BookingParty.carrier, userId: user.id, carrierId },
     access: await loadAccess(tx, scope, testClock(now)),
     now,
   };
@@ -76,17 +79,19 @@ export async function seed(ctx: SeedContext): Promise<void> {
   for (const p of PLAN) {
     const day = addDays(siteDay(now, zone), p.inDays);
     const result = await createBooking(bookingContext, {
-      mode: 'carrier',
+      mode: CreateMode.carrier,
       clientRequestId: requestId(`${day}:${p.at}`),
       siteId: s.id as SiteId,
       loadTypeId: palletised.id,
       startsAt: firstInstantFrom(day, p.at as LocalTime, zone),
       avis: AvisInput.parse({
-        references: [{ type: 'purchase_order', value: `PO-${day.replaceAll('-', '')}-TP` }],
+        references: [
+          { type: ReferenceType.purchase_order, value: `PO-${day.replaceAll('-', '')}-TP` },
+        ],
         counterpartyName: 'Elektro Nord AG',
-        loadUnits: [{ type: 'eur_pallet', quantity: p.units }],
-        vehicle: { type: 'semi_trailer', plate: p.plate, plateCountry: 'PL' },
-        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: 'pl' },
+        loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: p.units }],
+        vehicle: { type: VehicleType.semi_trailer, plate: p.plate, plateCountry: 'PL' },
+        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: DriverLocale.pl },
       }),
     });
     if (result.created) created++;

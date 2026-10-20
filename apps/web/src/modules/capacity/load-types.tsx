@@ -1,13 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  DIRECTIONS,
   LoadTypeDuration,
   type LoadTypeView,
   PutLoadTypeResources,
   type ResourceView,
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
+import { Direction, DurationKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
+import { Feature, InputKind, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LockIcon, PencilIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -83,14 +84,14 @@ const LoadTypeForm = UpdateLoadType.pick({
 })
   .required()
   .extend({
-    durationKind: z.enum(['fixed', 'tiers']),
+    durationKind: z.enum(DurationKind),
     minutes: z.number().nullable(),
     tiers: z.array(z.object({ upTo: z.number().nullable(), minutes: z.number().nullable() })),
     resourceIds: PutLoadTypeResources.shape.resourceIds,
   })
   .superRefine((v, ctx) => {
     const [path, parsed] =
-      v.durationKind === 'fixed'
+      v.durationKind === DurationKind.fixed
         ? [['minutes'], FixedDuration.shape.minutes.safeParse(v.minutes)]
         : [['tiers'], TieredDuration.shape.tiers.safeParse(v.tiers)];
     for (const issue of parsed.error?.issues ?? []) {
@@ -100,20 +101,23 @@ const LoadTypeForm = UpdateLoadType.pick({
 type LoadTypeValues = z.infer<typeof LoadTypeForm>;
 
 const durationOf = (v: LoadTypeValues): LoadTypeDuration =>
-  v.durationKind === 'fixed'
-    ? { kind: 'fixed', minutes: v.minutes ?? 0 }
-    : { kind: 'tiers', tiers: v.tiers.map((t) => ({ upTo: t.upTo, minutes: t.minutes ?? 0 })) };
+  v.durationKind === DurationKind.fixed
+    ? { kind: DurationKind.fixed, minutes: v.minutes ?? 0 }
+    : {
+        kind: DurationKind.tiers,
+        tiers: v.tiers.map((t) => ({ upTo: t.upTo, minutes: t.minutes ?? 0 })),
+      };
 
 const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
   name: lt?.name ?? { de: '', en: '' },
-  direction: lt?.direction ?? 'inbound',
+  direction: lt?.direction ?? Direction.inbound,
   bufferMinutes: lt?.bufferMinutes ?? 0,
   carrierBookable: lt?.carrierBookable ?? true,
   active: lt?.active ?? true,
-  durationKind: lt?.duration.kind ?? 'fixed',
-  minutes: lt?.duration.kind === 'fixed' ? lt.duration.minutes : 60,
+  durationKind: lt?.duration.kind ?? DurationKind.fixed,
+  minutes: lt?.duration.kind === DurationKind.fixed ? lt.duration.minutes : 60,
   tiers:
-    lt?.duration.kind === 'tiers'
+    lt?.duration.kind === DurationKind.tiers
       ? lt.duration.tiers
       : [
           { upTo: 16, minutes: 30 },
@@ -124,7 +128,7 @@ const valuesOf = (lt: LoadTypeView | null): LoadTypeValues => ({
 
 function DurationText({ duration }: { duration: LoadTypeDuration }) {
   const { t } = useTranslation('booking');
-  if (duration.kind === 'fixed') {
+  if (duration.kind === DurationKind.fixed) {
     return <>{t(($) => $.capacity.load_types.minutes, { n: duration.minutes })}</>;
   }
   return (
@@ -188,7 +192,7 @@ export function LoadTypesCard({
           </TableHeader>
           <TableBody>
             {loadTypes.map((lt) => {
-              const name = locale === 'de' ? lt.name.de : lt.name.en;
+              const name = locale === StaffLocale.de ? lt.name.de : lt.name.en;
               const eligible = resources.filter((r) => lt.resourceIds.includes(r.id));
               return (
                 <TableRow key={lt.id} className={cn(!lt.active && 'text-muted-foreground')}>
@@ -243,7 +247,10 @@ export function LoadTypesCard({
             <SheetTitle>
               {editing?.loadType
                 ? t(($) => $.capacity.load_types.edit, {
-                    name: locale === 'de' ? editing.loadType.name.de : editing.loadType.name.en,
+                    name:
+                      locale === StaffLocale.de
+                        ? editing.loadType.name.de
+                        : editing.loadType.name.en,
                   })
                 : t(($) => $.capacity.load_types.new)}
             </SheetTitle>
@@ -283,7 +290,7 @@ function LoadTypeFormView({
   const { t } = useTranslation('booking');
   const message = useIssueText();
   const { has } = useAccess();
-  const tiersOn = has('booking.duration_rules');
+  const tiersOn = has(Feature.booking.duration_rules);
   const refresh = useRefreshMasterData(orgId);
   const form = useForm<LoadTypeValues>({
     resolver: zodResolver(LoadTypeForm),
@@ -359,7 +366,7 @@ function LoadTypeFormView({
             />
             <InputGroupAddon align="inline-end">{unit}</InputGroupAddon>
           </InputGroup>
-          <FieldError>{message(fieldState.error, 'number')}</FieldError>
+          <FieldError>{message(fieldState.error, InputKind.number)}</FieldError>
         </Field>
       )}
     />
@@ -374,18 +381,19 @@ function LoadTypeFormView({
     >
       <FieldGroup className="px-4">
         <div className="grid grid-cols-2 gap-3">
-          {(['de', 'en'] as const).map((lang) => (
+          {(
+            [
+              [StaffLocale.de, t(($) => $.capacity.load_types.fields.name_de)],
+              [StaffLocale.en, t(($) => $.capacity.load_types.fields.name_en)],
+            ] as const
+          ).map(([lang, label]) => (
             <Controller
               key={lang}
               name={`name.${lang}`}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={`lt-name-${lang}`}>
-                    {lang === 'de'
-                      ? t(($) => $.capacity.load_types.fields.name_de)
-                      : t(($) => $.capacity.load_types.fields.name_en)}
-                  </FieldLabel>
+                  <FieldLabel htmlFor={`lt-name-${lang}`}>{label}</FieldLabel>
                   <Input id={`lt-name-${lang}`} {...field} aria-invalid={fieldState.invalid} />
                   <FieldError>{message(fieldState.error)}</FieldError>
                 </Field>
@@ -407,7 +415,7 @@ function LoadTypeFormView({
                 onValueChange={(v) => (v[0] ? field.onChange(v[0]) : null)}
                 aria-label={t(($) => $.capacity.load_types.fields.direction)}
               >
-                {DIRECTIONS.map((d) => (
+                {values(Direction).map((d) => (
                   <ToggleGroupItem key={d} value={d}>
                     {t(($) => $.capacity.directions[d])}
                   </ToggleGroupItem>
@@ -433,7 +441,10 @@ function LoadTypeFormView({
                 <ToggleGroupItem value="fixed">
                   {t(($) => $.capacity.load_types.fixed)}
                 </ToggleGroupItem>
-                <ToggleGroupItem value="tiers" disabled={!tiersOn && field.value !== 'tiers'}>
+                <ToggleGroupItem
+                  value="tiers"
+                  disabled={!tiersOn && field.value !== DurationKind.tiers}
+                >
                   {t(($) => $.capacity.load_types.tiered)}
                 </ToggleGroupItem>
               </ToggleGroup>
@@ -446,7 +457,7 @@ function LoadTypeFormView({
             </FieldSet>
           )}
         />
-        {kind === 'fixed' ? (
+        {kind === DurationKind.fixed ? (
           minutesInput(
             'minutes',
             t(($) => $.capacity.load_types.fields.minutes),
@@ -562,7 +573,12 @@ function LoadTypeFormView({
             </FieldSet>
           )}
         />
-        {(['carrierBookable', 'active'] as const).map((name) => (
+        {(
+          [
+            ['carrierBookable', t(($) => $.capacity.load_types.fields.carrier_bookable)],
+            ['active', t(($) => $.capacity.load_types.fields.active)],
+          ] as const
+        ).map(([name, label]) => (
           <Controller
             key={name}
             name={name}
@@ -570,11 +586,7 @@ function LoadTypeFormView({
             render={({ field }) => (
               <Field orientation="horizontal">
                 <Switch id={`lt-${name}`} checked={field.value} onCheckedChange={field.onChange} />
-                <FieldLabel htmlFor={`lt-${name}`}>
-                  {name === 'active'
-                    ? t(($) => $.capacity.load_types.fields.active)
-                    : t(($) => $.capacity.load_types.fields.carrier_bookable)}
-                </FieldLabel>
+                <FieldLabel htmlFor={`lt-${name}`}>{label}</FieldLabel>
               </Field>
             )}
           />

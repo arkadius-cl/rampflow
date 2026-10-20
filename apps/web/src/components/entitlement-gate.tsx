@@ -1,6 +1,6 @@
+import { EntitlementState } from '@rampflow/shared/modules/core/values';
 import { LockIcon, SparklesIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { EntitlementState } from '@/lib/domain';
 import { cn } from '@/lib/utils';
 
 export interface UpsellHintProps {
@@ -53,7 +53,7 @@ export interface EntitlementGateProps extends Omit<UpsellHintProps, 'className'>
 
 /** `on` renders children, `off` renders nothing, `upsell` renders the hint instead. */
 export function EntitlementGate({ state, children, ...hint }: EntitlementGateProps) {
-  if (state === 'on') return children;
-  if (state === 'off') return null;
+  if (state === EntitlementState.on) return children;
+  if (state === EntitlementState.off) return null;
   return <UpsellHint {...hint} />;
 }

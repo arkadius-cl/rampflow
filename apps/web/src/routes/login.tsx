@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Email, type EmailLinkBody, LoginBody } from '@rampflow/shared/modules/core/api.auth';
+import { EmailLinkMode, SignInMode } from '@rampflow/shared/modules/core/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailCheckIcon } from 'lucide-react';
@@ -22,7 +24,7 @@ import { queryKeys } from '@/lib/query-keys';
 
 const LoginSearch = z.object({
   redirect: z.string().optional().catch(undefined),
-  mode: z.enum(['password', 'magic', 'reset']).optional().catch(undefined),
+  mode: z.enum(SignInMode).optional().catch(undefined),
 });
 
 /** Only same-app paths, so a crafted link cannot send a signed-in user elsewhere. */
@@ -36,7 +38,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { t } = useTranslation();
-  const { mode = 'password', redirect } = Route.useSearch();
+  const { mode = SignInMode.password, redirect } = Route.useSearch();
   const titles = {
     password: t(($) => $.auth.login.title),
     magic: t(($) => $.auth.magic.request_title),
@@ -44,7 +46,7 @@ function LoginPage() {
   };
   return (
     <AuthLayout title={titles[mode]}>
-      {mode === 'password' ? (
+      {mode === SignInMode.password ? (
         <PasswordForm redirect={safeRedirect(redirect)} />
       ) : (
         <EmailLinkForm key={mode} kind={mode} />
@@ -77,7 +79,8 @@ function PasswordForm({ redirect }: { redirect: string }) {
   });
   const failure = login.error;
   const retryMinutes =
-    isFailure(failure, 'rate_limited') && typeof failure.details.retryAfterSeconds === 'number'
+    isFailure(failure, ErrorCode.rate_limited) &&
+    typeof failure.details.retryAfterSeconds === 'number'
       ? Math.ceil(failure.details.retryAfterSeconds / 60)
       : null;
 
@@ -95,7 +98,7 @@ function PasswordForm({ redirect }: { redirect: string }) {
                       'minute',
                     ),
                   })
-                : isFailure(failure, 'unauthorized')
+                : isFailure(failure, ErrorCode.unauthorized)
                   ? t(($) => $.auth.login.wrong)
                   : t(($) => $.errors.internal_error)}
             </AlertTitle>
@@ -127,7 +130,7 @@ function PasswordForm({ redirect }: { redirect: string }) {
                 <FieldLabel htmlFor="login-password">{t(($) => $.auth.fields.password)}</FieldLabel>
                 <Link
                   to="/login"
-                  search={{ mode: 'reset' }}
+                  search={{ mode: SignInMode.reset }}
                   className="text-sm text-muted-foreground underline-offset-4 hover:underline"
                 >
                   {t(($) => $.auth.login.forgot)}
@@ -150,7 +153,7 @@ function PasswordForm({ redirect }: { redirect: string }) {
         </Button>
         <Link
           to="/login"
-          search={{ mode: 'magic' }}
+          search={{ mode: SignInMode.magic }}
           className={buttonVariants({ variant: 'outline', size: 'lg' })}
         >
           {t(($) => $.auth.login.magic_instead)}
@@ -164,7 +167,7 @@ const EmailOnly = z.object({ email: Email });
 type EmailOnly = z.infer<typeof EmailOnly>;
 
 /** Asks for a magic link or a reset link. The answer is the same whether or not the email exists. */
-function EmailLinkForm({ kind }: { kind: 'magic' | 'reset' }) {
+function EmailLinkForm({ kind }: { kind: EmailLinkMode }) {
   const { t } = useTranslation();
   const message = useFieldMessage();
   const locale = useLocale();
@@ -176,7 +179,7 @@ function EmailLinkForm({ kind }: { kind: 'magic' | 'reset' }) {
   const request = useMutation({
     mutationFn: (body: EmailLinkBody) =>
       call(
-        kind === 'magic'
+        kind === EmailLinkMode.magic
           ? api.auth['magic-link'].$post({ json: body })
           : api.auth['password-reset'].$post({ json: body }),
       ),
@@ -190,7 +193,7 @@ function EmailLinkForm({ kind }: { kind: 'magic' | 'reset' }) {
           <MailCheckIcon />
           <AlertTitle>{t(($) => $.auth.sent.title)}</AlertTitle>
           <AlertDescription>
-            {kind === 'magic'
+            {kind === EmailLinkMode.magic
               ? t(($) => $.auth.sent.magic, { email: sentTo })
               : t(($) => $.auth.sent.reset, { email: sentTo })}
           </AlertDescription>
@@ -206,7 +209,7 @@ function EmailLinkForm({ kind }: { kind: 'magic' | 'reset' }) {
     <form noValidate onSubmit={form.handleSubmit(({ email }) => request.mutate({ email, locale }))}>
       <FieldGroup>
         <p className="text-sm text-muted-foreground">
-          {kind === 'magic'
+          {kind === EmailLinkMode.magic
             ? t(($) => $.auth.magic.request_hint)
             : t(($) => $.auth.reset.request_hint)}
         </p>
@@ -229,7 +232,7 @@ function EmailLinkForm({ kind }: { kind: 'magic' | 'reset' }) {
         />
         <Button type="submit" size="lg" disabled={request.isPending}>
           {request.isPending ? <Spinner /> : null}
-          {kind === 'magic'
+          {kind === EmailLinkMode.magic
             ? t(($) => $.auth.magic.request_submit)
             : t(($) => $.auth.reset.request_submit)}
         </Button>

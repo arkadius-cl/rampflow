@@ -1,4 +1,4 @@
-import { DRIVER_LOCALES } from '@rampflow/shared/locales';
+import { DriverLocale, values } from '@rampflow/shared/values';
 import { WifiOffIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -98,7 +98,7 @@ function LanguageSwitcher({ label }: { label: string }) {
         }}
         className="w-36"
       >
-        {DRIVER_LOCALES.map((l) => (
+        {values(DriverLocale).map((l) => (
           <NativeSelectOption key={l} value={l} lang={l}>
             {LANGUAGE_NAMES[l]}
           </NativeSelectOption>

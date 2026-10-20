@@ -1,3 +1,13 @@
+import {
+  ApiParty,
+  ApiSection,
+  GuardKind,
+  HttpMethod,
+  Limit,
+  Module,
+  Permission,
+  StoryId,
+} from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { type } from '../../src/kernel/describe.ts';
@@ -7,33 +17,33 @@ import { applyTables, renderTables } from './tables.ts';
 
 const checkIn: Operation = {
   file: 'modules/yard/routes.tenant.ts',
-  section: 'Yard',
+  section: ApiSection.Yard,
   endpoint: {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/bookings/:bookingId/check-in',
-    party: 'tenant',
+    party: ApiParty.tenant,
     meta: {
       id: 'yard.gate.checkIn',
-      stories: ['YD-02'],
+      stories: [StoryId.YD_02],
       description: '`{ plateSeen? }`; 409 `safety_missing` | under enforcement',
-      limits: ['core.max_sites'],
+      limits: [Limit.core.max_sites],
       responses: { 200: type<unknown>() },
     },
     validators: {},
     guards: [
-      { kind: 'module', id: 'yard' },
-      { kind: 'permission', key: 'yard.gate' },
+      { kind: GuardKind.module, id: Module.yard },
+      { kind: GuardKind.permission, key: Permission.yard.gate },
     ],
   },
 };
 
 const inspect: Operation = {
   file: 'modules/core/invitations/routes.public.ts',
-  section: 'Auth, me and invitations',
+  section: ApiSection.auth,
   endpoint: {
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/public/invitations/inspect',
-    party: 'public',
+    party: ApiParty.public,
     meta: { id: 'core.invitations.inspect', stories: [], description: 'Inspect.', responses: {} },
     validators: { json: z.object({ token: z.string() }) },
     guards: [],
@@ -43,17 +53,17 @@ const inspect: Operation = {
 describe('renderTables', () => {
   it('renders the uniform columns from the guards and the op() metadata', () => {
     const tables = renderTables([checkIn, inspect]);
-    expect(tables.get('Yard')?.split('\n').slice(2)).toEqual([
+    expect(tables.get(ApiSection.Yard)?.split('\n').slice(2)).toEqual([
       '| POST | `/api/t/:orgId/yard/bookings/:bookingId/check-in` | tenant | `yard.gate` | module `yard`; limit `core.max_sites` | YD-02 | `yard/routes.tenant.ts` | `{ plateSeen? }`; 409 `safety_missing` \\| under enforcement |',
     ]);
-    expect(tables.get('Auth, me and invitations')).toContain(
+    expect(tables.get(ApiSection.auth)).toContain(
       '| POST | `/api/public/invitations/inspect` | public | token |  |  | `core/invitations/routes.public.ts` | Inspect. |',
     );
   });
 });
 
 describe('applyTables', () => {
-  const yard = markers('Yard');
+  const yard = markers(ApiSection.Yard);
   const doc = `# API\n\nProse before.\n\n${yard.start}\n\n| old |\n\n${yard.end}\n\nProse after.\n`;
 
   it('rewrites only what lies between the markers', () => {

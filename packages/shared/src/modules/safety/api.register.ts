@@ -1,6 +1,7 @@
 import * as z from 'zod';
+import { DriverChannel } from '../driver/values.ts';
 import { SafetyLocale } from './api.authoring.ts';
-import { ACK_STATUSES } from './validity.ts';
+import { AckStatus } from './values.ts';
 
 /**
  * Register filters (SF-03). They travel in a POST body because the driver name is a personal
@@ -12,7 +13,7 @@ export const RegisterFilter = z.object({
   driverName: z.string().trim().min(1).max(120).optional(),
   instructionId: z.uuid().optional(),
   versionId: z.uuid().optional(),
-  status: z.enum(ACK_STATUSES).optional(),
+  status: z.enum(AckStatus).optional(),
 });
 export type RegisterFilter = z.infer<typeof RegisterFilter>;
 
@@ -22,15 +23,13 @@ export const RegisterSearchBody = RegisterFilter.extend({
 });
 export type RegisterSearchBody = z.infer<typeof RegisterSearchBody>;
 
-export const ACK_CHANNELS = ['link', 'staff'] as const;
-
 export const RegisterItem = z.object({
   id: z.uuid(),
   completedAt: z.iso.datetime(),
   expiresAt: z.iso.datetime().nullable(),
-  status: z.enum(ACK_STATUSES),
+  status: z.enum(AckStatus),
   driverName: z.string(),
-  channel: z.enum(ACK_CHANNELS),
+  channel: z.enum(DriverChannel),
   locale: SafetyLocale,
   score: z.int().nullable(),
   attempts: z.int(),

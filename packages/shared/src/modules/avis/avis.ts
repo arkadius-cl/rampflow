@@ -1,28 +1,19 @@
 import * as z from 'zod';
-import { DRIVER_LOCALES } from '../../locales.ts';
-import { REFERENCE_TYPES } from './manifest.ts';
+import { values } from '../../values/define.ts';
+import { DriverLocale } from '../../values/locales.ts';
+import { ZodIssueCode } from '../../values/validation.ts';
+import {
+  AdrClass,
+  DangerousGoodsUnit,
+  LoadUnitType,
+  PackingGroup,
+  ReferenceType,
+  VehicleType,
+} from './values.ts';
 
 // The avis of a booking (AV-01): the fields of domain research §1 without loading method,
 // customs, SSCC and attachments. Parsing normalizes plates, phones and UN numbers, so the API
 // stores one spelling and searches (YD-01, TN-06) match.
-
-export const LOAD_UNIT_TYPES = [
-  'eur_pallet',
-  'eur_half_pallet',
-  'industrial_pallet',
-  'one_way_pallet',
-  'box_pallet',
-  'roll_cage',
-  'small_load_carrier',
-  'carton',
-  'parcel',
-  'loose',
-  'coil',
-  'bulk',
-  'ibc',
-  'other',
-] as const;
-export type LoadUnitType = (typeof LOAD_UNIT_TYPES)[number];
 
 /** UN/ECE Recommendation 21 package codes, so an EDI export is a lookup. */
 export const REC21_CODE: Record<LoadUnitType, string> = {
@@ -41,35 +32,6 @@ export const REC21_CODE: Record<LoadUnitType, string> = {
   ibc: 'WA',
   other: 'ZZ',
 };
-
-export const VEHICLE_TYPES = [
-  'van_3_5t',
-  'rigid_truck',
-  'truck_trailer',
-  'semi_trailer',
-  'mega_trailer',
-  'swap_body',
-  'container',
-  'reefer',
-] as const;
-export type VehicleType = (typeof VEHICLE_TYPES)[number];
-
-export const ADR_CLASSES = [
-  '1',
-  '2',
-  '3',
-  '4.1',
-  '4.2',
-  '4.3',
-  '5.1',
-  '5.2',
-  '6.1',
-  '6.2',
-  '7',
-  '8',
-  '9',
-] as const;
-export const PACKING_GROUPS = ['I', 'II', 'III'] as const;
 
 /** Uppercase without spaces, dashes or dots: "hh-ab 123" and "HH AB123" are the same truck. */
 export function normalizePlate(input: string): string {
@@ -102,28 +64,29 @@ const unNumber = z
 const nullable = <T extends z.ZodType>(schema: T) => schema.nullable().default(null);
 
 const reference = z.object({
-  type: z.enum(REFERENCE_TYPES),
+  type: z.enum(ReferenceType),
   value: z.string().trim().min(1).max(35),
 });
 
 const loadUnit = z
   .object({
-    type: z.enum(LOAD_UNIT_TYPES),
+    type: z.enum(LoadUnitType),
     quantity: z.int().min(1).max(9999),
     stackable: z.boolean().optional(),
     label: z.string().trim().min(1).max(60).optional(),
   })
-  .refine((u) => u.type !== 'other' || u.label !== undefined, {
+  .refine((u) => u.type !== LoadUnitType.other || u.label !== undefined, {
     message: 'Describe the load unit',
     path: ['label'],
   });
 
 const dangerousGoodsItem = z.object({
   unNumber,
-  adrClass: z.enum(ADR_CLASSES),
-  packingGroup: z.enum(PACKING_GROUPS).optional(),
+  // The tuple keeps the API description's order: zod keys a tuple by value, integer-like keys first.
+  adrClass: z.enum(values(AdrClass)),
+  packingGroup: z.enum(PackingGroup).optional(),
   quantity: z.number().positive().max(1_000_000).optional(),
-  unit: z.enum(['kg', 'l']).optional(),
+  unit: z.enum(DangerousGoodsUnit).optional(),
   limitedQuantity: z.boolean().optional(),
 });
 
@@ -159,7 +122,7 @@ export const AvisInput = z.object({
   palletExchange: nullable(z.boolean()),
   vehicle: z
     .object({
-      type: nullable(z.enum(VEHICLE_TYPES)),
+      type: nullable(z.enum(VehicleType)),
       plate: nullable(plateSchema),
       plateCountry: nullable(z.string().regex(/^[A-Z]{2}$/, 'ISO 3166-1 alpha-2')),
       trailerPlate: nullable(plateSchema),
@@ -169,7 +132,7 @@ export const AvisInput = z.object({
     .object({
       name: nullable(z.string().trim().min(1).max(120)),
       phone: nullable(phoneSchema),
-      locale: nullable(z.enum(DRIVER_LOCALES)),
+      locale: nullable(z.enum(DriverLocale)),
     })
     .default({ name: null, phone: null, locale: null }),
   dangerousGoods: z
@@ -192,7 +155,7 @@ export const totalLoadUnits = (avis: Pick<Avis, 'loadUnits'>) =>
 
 /** The settings that make avis fields required (AV-01), resolved for the booking's site. */
 export interface AvisRules {
-  requiredReferenceTypes: readonly (typeof REFERENCE_TYPES)[number][];
+  requiredReferenceTypes: readonly ReferenceType[];
   requireGrossWeight: boolean;
   requireDriverPhone: boolean;
   requirePlate: boolean;
@@ -208,7 +171,7 @@ export interface AvisIssue {
 export function avisRuleIssues(avis: Avis, rules: AvisRules): AvisIssue[] {
   const issues: AvisIssue[] = [];
   const issue = (path: (string | number)[], message: string) =>
-    issues.push({ path, code: 'custom', message });
+    issues.push({ path, code: ZodIssueCode.custom, message });
   for (const type of rules.requiredReferenceTypes) {
     if (!avis.references.some((r) => r.type === type)) {
       issue(['references'], `A reference of type ${type} is required`);

@@ -12,6 +12,8 @@ import {
   RescheduleBooking,
   SendDriverLink,
 } from '@rampflow/shared/modules/booking/api.staff';
+import { CommandName, CreateMode } from '@rampflow/shared/modules/booking/values';
+import { ErrorCode, Feature, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type SiteId } from '../../../db/ids.ts';
@@ -41,7 +43,7 @@ async function driverLink(c: Context<AppEnv>, bookingId: BookingId) {
   const ctx = bookingContext(c);
   await requireBooking(ctx.tx, ctx.tenantId, bookingId);
   const link = await activeDriverLink(ctx.tx, bookingId);
-  if (!link) throw new ApiError('not_found', 'The booking has no active driver link');
+  if (!link) throw new ApiError(ErrorCode.not_found, 'The booking has no active driver link');
   return { url: driverLinkUrl(link.id), expiresAt: link.expiresAt.toISOString() };
 }
 
@@ -51,13 +53,13 @@ export const tenant = new Hono<AppEnv>()
     '/board',
     op({
       id: 'booking.staff.getBoard',
-      stories: ['BK-01'],
+      stories: [StoryId.BK_01],
       description:
         '`?siteId&date`; columns per resource with `slots` (`capacity`, `booked` per grid slot) and `bookings` with `overCapacity`; polled every 15 s',
       responses: { 200: type<BoardView>() },
     }),
-    requirePermission('booking.view'),
-    validate('query', BoardQuery),
+    requirePermission(Permission.booking.view),
+    validate(ValidationTarget.query, BoardQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const q = c.req.valid('query');
@@ -73,13 +75,13 @@ export const tenant = new Hono<AppEnv>()
     '/',
     op({
       id: 'booking.staff.listBookings',
-      stories: ['BK-01'],
+      stories: [StoryId.BK_01],
       description:
         '`?siteId&date&status&limit&cursor`; list view with the same summaries, by start',
       responses: { 200: type<BookingPage>() },
     }),
-    requirePermission('booking.view'),
-    validate('query', BookingListQuery),
+    requirePermission(Permission.booking.view),
+    validate(ValidationTarget.query, BookingListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       return c.json(
@@ -92,12 +94,12 @@ export const tenant = new Hono<AppEnv>()
     '/carrier-options',
     op({
       id: 'booking.staff.listCarrierOptions',
-      stories: ['BK-02'],
+      stories: [StoryId.BK_02],
       description: '`?q=`; actively linked carriers `{ items: [{ id, name }] }`',
       responses: {},
     }),
-    requirePermission('booking.staff_book'),
-    validate('query', CarrierOptionsQuery),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.query, CarrierOptionsQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const items = await carrierOptions(ctx.tx, ctx.tenantId, c.req.valid('query').q);
@@ -108,25 +110,25 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId',
     op({
       id: 'booking.staff.getBooking',
-      stories: ['BK-01', 'BK-03'],
+      stories: [StoryId.BK_01, StoryId.BK_03],
       description: 'booking, avis, safety status',
       responses: { 200: type<BookingView>() },
     }),
-    requirePermission('booking.view'),
-    validate('param', BookingParam),
+    requirePermission(Permission.booking.view),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => c.json(await view(c, c.req.valid('param').bookingId), 200),
   )
   .get(
     '/:bookingId/events',
     op({
       id: 'booking.staff.listBookingEvents',
-      stories: ['YD-08'],
+      stories: [StoryId.YD_08],
       description: '`?limit&cursor`, oldest first; `actor` only with `booking.view_actors`',
       responses: {},
     }),
-    requirePermission('booking.view'),
-    validate('param', BookingParam),
-    validate('query', EventListQuery),
+    requirePermission(Permission.booking.view),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.query, EventListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const page = await loadBookingEvents(
@@ -142,17 +144,17 @@ export const tenant = new Hono<AppEnv>()
     '/',
     op({
       id: 'booking.staff.createBooking',
-      stories: ['BK-02', 'AV-01'],
+      stories: [StoryId.BK_02, StoryId.AV_01],
       description:
         'Needs `booking.force` when `force` is set. `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } | { name }, avis, force?, forceReason? }`; 201, or 200 with the first booking for a repeated `clientRequestId`; `forceReason` required with `force`',
       responses: { 200: type<BookingView>(), 201: type<BookingView>() },
     }),
-    requirePermission('booking.staff_book'),
-    validate('json', CreateStaffBooking),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.json, CreateStaffBooking),
     async (c) => {
       const body = c.req.valid('json');
       const result = await createBooking(bookingContext(c), {
-        mode: 'staff',
+        mode: CreateMode.staff,
         clientRequestId: body.clientRequestId,
         siteId: body.siteId as SiteId,
         resourceId: body.resourceId as ResourceId | undefined,
@@ -169,19 +171,19 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId',
     op({
       id: 'booking.staff.updateBooking',
-      stories: ['BK-03'],
+      stories: [StoryId.BK_03],
       description:
         'Needs `booking.force` when `force` is set. Reschedule `{ startsAt, resourceId?, version, force?, forceReason? }`; moves the driver link expiry to the new start plus 7 days',
       responses: { 200: type<BookingView>() },
     }),
-    requirePermission('booking.staff_book'),
-    validate('param', BookingParam),
-    validate('json', RescheduleBooking),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, RescheduleBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'reschedule',
+        type: CommandName.reschedule,
         startsAt: body.startsAt,
         resourceId: body.resourceId,
         version: body.version,
@@ -194,19 +196,19 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId/avis',
     op({
       id: 'booking.staff.putAvis',
-      stories: ['AV-02'],
+      stories: [StoryId.AV_02],
       description: '`{ avis, version }`; from `checked_in` on, no capacity check',
       responses: { 200: type<BookingView>() },
     }),
-    requirePermission('booking.staff_book'),
-    requireEntitlement('avis.basic'),
-    validate('param', BookingParam),
-    validate('json', PutAvis),
+    requirePermission(Permission.booking.staff_book),
+    requireEntitlement(Feature.avis.basic),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, PutAvis),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'update_avis',
+        type: CommandName.update_avis,
         avis: body.avis,
         version: body.version,
       });
@@ -217,17 +219,17 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId/cancel',
     op({
       id: 'booking.staff.cancelBooking',
-      stories: ['BK-03'],
+      stories: [StoryId.BK_03],
       description: '`{ reason? }` (send `{}` without one)',
       responses: { 200: type<BookingView>() },
     }),
-    requirePermission('booking.staff_book'),
-    validate('param', BookingParam),
-    validate('json', CancelBooking),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, CancelBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const reason = c.req.valid('json').reason ?? null;
-      await transitionBooking(bookingContext(c), bookingId, { type: 'cancel', reason });
+      await transitionBooking(bookingContext(c), bookingId, { type: CommandName.cancel, reason });
       return c.json(await view(c, bookingId), 200);
     },
   )
@@ -235,27 +237,29 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId/driver-link',
     op({
       id: 'booking.staff.getDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: '`{ url, expiresAt }`; 404 once the link is revoked',
       responses: {},
     }),
-    requirePermission('booking.staff_book'),
-    validate('param', BookingParam),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => c.json(await driverLink(c, c.req.valid('param').bookingId), 200),
   )
   .post(
     '/:bookingId/driver-link',
     op({
       id: 'booking.staff.regenerateDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: 'regenerate; answers the new `{ url, expiresAt }`',
       responses: {},
     }),
-    requirePermission('booking.staff_book'),
-    validate('param', BookingParam),
+    requirePermission(Permission.booking.staff_book),
+    validate(ValidationTarget.param, BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
-      await transitionBooking(bookingContext(c), bookingId, { type: 'regenerate_driver_link' });
+      await transitionBooking(bookingContext(c), bookingId, {
+        type: CommandName.regenerate_driver_link,
+      });
       return c.json(await driverLink(c, bookingId), 200);
     },
   )
@@ -263,18 +267,18 @@ export const tenant = new Hono<AppEnv>()
     '/:bookingId/driver-link/email',
     op({
       id: 'booking.staff.emailDriverLink',
-      stories: ['CR-06'],
+      stories: [StoryId.CR_06],
       description: '`{ email, locale }`; 202',
       responses: { 202: noBody },
     }),
-    requirePermission('booking.staff_book'),
-    requireEntitlement('notify.email'),
-    validate('param', BookingParam),
-    validate('json', SendDriverLink),
+    requirePermission(Permission.booking.staff_book),
+    requireEntitlement(Feature.notify.email),
+    validate(ValidationTarget.param, BookingParam),
+    validate(ValidationTarget.json, SendDriverLink),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, {
-        type: 'send_driver_link',
+        type: CommandName.send_driver_link,
         ...c.req.valid('json'),
       });
       return c.body(null, 202);

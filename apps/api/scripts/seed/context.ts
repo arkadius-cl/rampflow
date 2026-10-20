@@ -1,7 +1,8 @@
+import type { OrgKind } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { AnyOrgId } from '../../src/db/ids.ts';
-import { type OrgKind, org } from '../../src/modules/core/schema.ts';
+import { org } from '../../src/modules/core/schema.ts';
 
 type OwnerTx = Parameters<Parameters<NodePgDatabase['transaction']>[0]>[0];
 

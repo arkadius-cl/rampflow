@@ -7,8 +7,21 @@ import {
   type ImplementedFeatureKey,
   type PermissionKey,
   permissionsFor,
-  type Role,
 } from '@rampflow/shared';
+import type { HttpMethod } from '@rampflow/shared/values';
+import {
+  AccountCaseCheck,
+  AccountCredential,
+  EntitlementKind,
+  ErrorCode,
+  ForeignOutcome,
+  Role,
+  RouteCaseActor,
+  RouteCaseCheck,
+  RouteCaseGrant,
+  RouteCaseParty,
+  RouteMethod,
+} from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
 import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
@@ -21,15 +34,13 @@ import { world as seedWorld, type World, type WorldSide } from './world.ts';
 // has a case in a route-cases.ts next to its router; route-coverage.test.ts enforces that, and
 // test/route-cases.test.ts runs every case through checkRouteCase.
 
-export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
 export interface RouteCase {
-  method: Method;
+  method: HttpMethod;
   /** The Hono pattern as in `app.routes`, for example `/api/t/:orgId/yard/bookings/:bookingId/call`. */
   path: string;
   /** A role that may call it, or a driver holding the link of `A.bookings.own`. */
-  as: Role | 'driver';
-  permission: PermissionKey | 'member' | 'driver';
+  as: RouteCaseActor;
+  permission: PermissionKey | RouteCaseGrant;
   /** A feature the route requires beyond its module's gate. */
   entitlement: ImplementedFeatureKey | null;
   /** Path parameters from world A. `orgId` (and `tenantId` under /at/) are swapped per check. */
@@ -42,7 +53,7 @@ export interface RouteCase {
   /** Module fixtures in worlds A and B, written as the owner. */
   setup?: (world: World, db: OwnerDb) => Promise<void>;
   /** What world B (or a rival carrier, or a foreign site) gets: 404, or 2xx without A's data. */
-  foreign: 'not_found' | 'empty';
+  foreign: ForeignOutcome;
   /** A gate or dock operator of the tenant's other site gets 404 (TN-01). */
   siteScoped: boolean;
 }
@@ -58,14 +69,14 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
  * no org id, so the harness checks who may call them and that they reveal no other world.
  */
 export interface AccountRouteCase {
-  method: Method;
+  method: HttpMethod;
   path: string;
   /**
    * `session`: a signed-in user's `rf_session` (party `user`).
    * `token`: an emailed token in the body's `token` field (party `token`).
    * `none`: open to anyone, for example sign-in and link requests.
    */
-  credential: 'session' | 'token' | 'none';
+  credential: AccountCredential;
   /** A token route whose token works once: a second control call must answer 401. */
   singleUse?: boolean;
   /**
@@ -144,7 +155,7 @@ export function coverage(
 ): Coverage {
   const handlers = new Set(
     routes
-      .filter((r) => r.method !== 'ALL' && guarded.test(r.path))
+      .filter((r) => r.method !== RouteMethod.ALL && guarded.test(r.path))
       .map((r) => routeKey(r.method, r.path)),
   );
   const covered = new Set(cases.map((c) => routeKey(c.method, c.path)));
@@ -161,18 +172,18 @@ export const accountCoverage = (
 ) => coverage(routes, cases, ACCOUNT);
 
 const TENANT_ROLES: readonly Role[] = [
-  'dock_operator',
-  'gate_operator',
-  'dispatcher',
-  'tenant_admin',
+  Role.dock_operator,
+  Role.gate_operator,
+  Role.dispatcher,
+  Role.tenant_admin,
 ];
-const CARRIER_ROLES: readonly Role[] = ['carrier_user', 'carrier_admin'];
+const CARRIER_ROLES: readonly Role[] = [Role.carrier_user, Role.carrier_admin];
 
-function actorOf(side: WorldSide, w: World, role: Role | 'driver'): Actor {
+function actorOf(side: WorldSide, w: World, role: RouteCaseActor): Actor {
   switch (role) {
-    case 'driver':
+    case RouteCaseActor.driver:
       return side.bookings.own;
-    case 'platform_admin':
+    case RouteCaseActor.platform_admin:
       return w.platformAdmin;
     default:
       return side.users[role];
@@ -180,7 +191,7 @@ function actorOf(side: WorldSide, w: World, role: Role | 'driver'): Actor {
 }
 
 function rivalOf(side: WorldSide, role: Role): Actor {
-  return role === 'carrier_admin' ? side.users.rival_admin : side.users.rival_user;
+  return role === Role.carrier_admin ? side.users.rival_admin : side.users.rival_user;
 }
 
 function fill(pattern: string, params: Record<string, string>): string {
@@ -203,14 +214,7 @@ function secretsOf(value: unknown, out = new Set<string>()): Set<string> {
 }
 
 export interface Problem {
-  check:
-    | 'control'
-    | 'leak'
-    | 'foreign_org'
-    | 'rival_carrier'
-    | 'site'
-    | 'permission'
-    | 'entitlement';
+  check: RouteCaseCheck;
   detail: string;
 }
 
@@ -224,8 +228,8 @@ async function expectForeign(
   if (leaked.length > 0) return `${res.status} body contains ${leaked.slice(0, 3).join(', ')}`;
   if (res.status === 404) return null;
   // A create in the caller's own org answers 201 or 204; only A's data would be a leak.
-  if (foreign === 'empty' && res.status >= 200 && res.status < 300) return null;
-  return `expected ${foreign === 'empty' ? '404 or 2xx without foreign data' : '404'}, got ${res.status} ${text.slice(0, 200)}`;
+  if (foreign === ForeignOutcome.empty && res.status >= 200 && res.status < 300) return null;
+  return `expected ${foreign === ForeignOutcome.empty ? '404 or 2xx without foreign data' : '404'}, got ${res.status} ${text.slice(0, 200)}`;
 }
 
 async function expectError(res: Response, status: number, code: string): Promise<string | null> {
@@ -261,14 +265,19 @@ async function withFeaturesOff<T>(
 /** The feature named by a 403 `entitlement_required` body, or `null` for any other 403. */
 function requiredFeature(text: string): string | null {
   const { error } = JSON.parse(text) as { error?: { code?: string; details?: { key?: string } } };
-  return error?.code === 'entitlement_required' ? (error.details?.key ?? 'a feature') : null;
+  return error?.code === ErrorCode.entitlement_required
+    ? (error.details?.key ?? 'a feature')
+    : null;
 }
 
 const MODULE_FEATURES = new Set<string>(catalog.flatMap((m) => m.enabledBy ?? []));
 /** Implemented features that gate a route, not a whole module (`requireEntitlement`). */
 const ROUTE_FEATURES = catalog.flatMap((m) =>
   Object.entries(m.entitlements)
-    .filter(([key, d]) => d.kind === 'feature' && !('reserved' in d) && !MODULE_FEATURES.has(key))
+    .filter(
+      ([key, d]) =>
+        d.kind === EntitlementKind.feature && !('reserved' in d) && !MODULE_FEATURES.has(key),
+    )
     .map(([key]) => key),
 );
 
@@ -293,7 +302,7 @@ export async function checkRouteCase(
   const secretsA = secretsOf(A);
   const role = rc.as;
   const party =
-    role === 'driver'
+    role === RouteCaseActor.driver
       ? 'driver'
       : TENANT_ROLES.includes(role)
         ? 'tenant'
@@ -306,62 +315,70 @@ export async function checkRouteCase(
 
   // 1. Foreign tenant, carrier or booking: B's actor with A's ids, then inside B's own org.
   // Platform admins see every org by design (ADR-0002); their routes have no foreign party.
-  if (party !== 'platform') {
+  if (party !== RouteCaseParty.platform) {
     report(
-      'foreign_org',
+      RouteCaseCheck.foreign_org,
       await expectForeign(await call(actorOf(B, w, role), params), rc.foreign, secretsA),
     );
   }
-  if (party === 'tenant' || party === 'carrier') {
+  if (party === RouteCaseParty.tenant || party === RouteCaseParty.carrier) {
     const own = {
       ...params,
-      orgId: party === 'tenant' ? B.tenantId : B.carrierId,
+      orgId: party === RouteCaseParty.tenant ? B.tenantId : B.carrierId,
       ...(rc.path.includes(':tenantId') ? { tenantId: B.tenantId } : {}),
     };
-    report('leak', await expectForeign(await call(actorOf(B, w, role), own), rc.foreign, secretsA));
+    report(
+      RouteCaseCheck.leak,
+      await expectForeign(await call(actorOf(B, w, role), own), rc.foreign, secretsA),
+    );
   }
 
   // 1b. A second carrier linked to the same tenant sees none of the first carrier's rows.
-  if (party === 'carrier') {
+  if (party === RouteCaseParty.carrier) {
     const rivalSecrets = secretsOf([A.carrierId, A.bookings.own, A.bookings.otherSite]);
     const rival = { ...params, orgId: A.rivalCarrierId };
     report(
-      'rival_carrier',
+      RouteCaseCheck.rival_carrier,
       await expectForeign(await call(rivalOf(A, role as Role), rival), rc.foreign, rivalSecrets),
     );
   }
-  if (party === 'driver') {
+  if (party === RouteCaseParty.driver) {
     const rivalSecrets = secretsOf([A.bookings.own.id, A.bookings.own.code]);
     report(
-      'rival_carrier',
+      RouteCaseCheck.rival_carrier,
       await expectForeign(await call(A.bookings.rival, params), rc.foreign, rivalSecrets),
     );
   }
 
   // 2. Foreign site: an operator limited to the other site of the same tenant.
-  if (rc.siteScoped && party === 'tenant') {
-    const operator = role === 'dock_operator' ? 'dock_operator' : 'gate_operator';
+  if (rc.siteScoped && party === RouteCaseParty.tenant) {
+    const operator = role === RouteCaseActor.dock_operator ? 'dock_operator' : 'gate_operator';
     const holds =
-      rc.permission === 'member' ||
+      rc.permission === RouteCaseGrant.member ||
       permissionsFor(catalog, operator).has(rc.permission as PermissionKey);
     const res = await call(A.users[`${operator}_other_site`], params);
     report(
-      'site',
+      RouteCaseCheck.site,
       holds
-        ? await expectForeign(res, 'not_found', secretsOf(A.sites[0]))
+        ? await expectForeign(res, ForeignOutcome.not_found, secretsOf(A.sites[0]))
         : await expectError(res, 403, 'forbidden'),
     );
   }
 
   // 3. Missing permission: the highest role of the same party that lacks it.
-  if (rc.permission !== 'member' && rc.permission !== 'driver') {
-    const roles = party === 'tenant' ? TENANT_ROLES : party === 'carrier' ? CARRIER_ROLES : [];
+  if (rc.permission !== RouteCaseGrant.member && rc.permission !== RouteCaseGrant.driver) {
+    const roles =
+      party === RouteCaseParty.tenant
+        ? TENANT_ROLES
+        : party === RouteCaseParty.carrier
+          ? CARRIER_ROLES
+          : [];
     const lacking = roles
       .filter((r) => !permissionsFor(catalog, r).has(rc.permission as PermissionKey))
       .at(-1);
     if (lacking)
       report(
-        'permission',
+        RouteCaseCheck.permission,
         await expectError(await call(actorOf(A, w, lacking), params), 403, 'forbidden'),
       );
   }
@@ -371,18 +388,19 @@ export async function checkRouteCase(
     ? catalog.find((m) => rc.permission.startsWith(`${m.id}.`))
     : undefined;
   const features = [rc.entitlement, module?.enabledBy ?? null].filter((f) => f !== null);
-  if (party !== 'platform') {
+  if (party !== RouteCaseParty.platform) {
     for (const feature of features) {
       const res = await withFeaturesOff(A.tenantId, [feature], w.platformAdmin.id, () =>
         call(actorOf(A, w, role), params),
       );
-      report('entitlement', await expectError(res, 403, 'entitlement_required'));
+      report(RouteCaseCheck.entitlement, await expectError(res, 403, 'entitlement_required'));
     }
   }
 
   // Control: the case's own actor reaches the handler with every route feature off except the
   // declared one, so a gate the case leaves out answers 403 here instead of passing unseen.
-  const undeclared = party === 'platform' ? [] : ROUTE_FEATURES.filter((f) => f !== rc.entitlement);
+  const undeclared =
+    party === RouteCaseParty.platform ? [] : ROUTE_FEATURES.filter((f) => f !== rc.entitlement);
   const res = await withFeaturesOff(A.tenantId, undeclared, w.platformAdmin.id, () =>
     call(actorOf(A, w, role), params),
   );
@@ -390,16 +408,16 @@ export async function checkRouteCase(
   const gate = res.status === 403 ? requiredFeature(text) : null;
   if (gate) {
     report(
-      'entitlement',
+      RouteCaseCheck.entitlement,
       `answers 403 entitlement_required for ${gate}, but the case declares entitlement: ${rc.entitlement}`,
     );
   } else if (res.status >= 400)
-    report('control', `${role} got ${res.status} ${text.slice(0, 200)}`);
+    report(RouteCaseCheck.control, `${role} got ${res.status} ${text.slice(0, 200)}`);
   return problems;
 }
 
 export interface AccountProblem {
-  check: 'anonymous' | 'wrong_party' | 'foreign_org' | 'reuse' | 'control';
+  check: AccountCaseCheck;
   detail: string;
 }
 
@@ -435,35 +453,42 @@ export async function checkAccountCase(
   const call = (who: Actor, b: unknown = body) =>
     as(app, who).request(ac.method, fill(ac.path, params ?? {}), { body: b });
 
-  if (ac.credential === 'session') {
-    report('anonymous', await expectError(await call(null), 401, 'unauthorized'));
-    report('wrong_party', await expectError(await call(w.A.bookings.own), 401, 'unauthorized'));
+  if (ac.credential === AccountCredential.session) {
+    report(AccountCaseCheck.anonymous, await expectError(await call(null), 401, 'unauthorized'));
+    report(
+      AccountCaseCheck.wrong_party,
+      await expectError(await call(w.A.bookings.own), 401, 'unauthorized'),
+    );
     const res = await call(counterpart(w, actor));
     const text = await res.text();
     const leaked = leakIn(text, secretsOf(w.A));
     if (res.status >= 500 || leaked.length > 0) {
-      report('foreign_org', `${res.status} ${leaked.length ? `leaks ${leaked.join(', ')}` : text}`);
+      report(
+        AccountCaseCheck.foreign_org,
+        `${res.status} ${leaked.length ? `leaks ${leaked.join(', ')}` : text}`,
+      );
     }
   }
-  if (ac.credential === 'token') {
+  if (ac.credential === AccountCredential.token) {
     const withToken = (token: string) => ({ ...(body as object), token });
     const unknown = randomBytes(32).toString('base64url');
     report(
-      'anonymous',
+      AccountCaseCheck.anonymous,
       await expectError(await call(null, withToken(unknown)), 401, 'unauthorized'),
     );
     report(
-      'wrong_party',
+      AccountCaseCheck.wrong_party,
       await expectError(
         await call(w.A.users.tenant_admin, withToken(w.A.bookings.own.driverToken)),
         401,
         'unauthorized',
       ),
     );
-    if (!otherToken) report('wrong_party', 'arrange returns no otherToken of another purpose');
+    if (!otherToken)
+      report(AccountCaseCheck.wrong_party, 'arrange returns no otherToken of another purpose');
     else {
       report(
-        'wrong_party',
+        AccountCaseCheck.wrong_party,
         await expectError(await call(null, withToken(otherToken)), 401, 'unauthorized'),
       );
     }
@@ -471,11 +496,13 @@ export async function checkAccountCase(
 
   const res = await call(actor);
   const text = await res.text();
-  if (res.status >= 400) report('control', `got ${res.status} ${text.slice(0, 200)}`);
+  if (res.status >= 400)
+    report(AccountCaseCheck.control, `got ${res.status} ${text.slice(0, 200)}`);
   const leaked = leakIn(text, secretsOf(w.B));
-  if (leaked.length > 0) report('foreign_org', `control answer leaks ${leaked.join(', ')}`);
-  if (ac.credential === 'token' && (ac.singleUse ?? true)) {
-    report('reuse', await expectError(await call(actor), 401, 'unauthorized'));
+  if (leaked.length > 0)
+    report(AccountCaseCheck.foreign_org, `control answer leaks ${leaked.join(', ')}`);
+  if (ac.credential === AccountCredential.token && (ac.singleUse ?? true)) {
+    report(AccountCaseCheck.reuse, await expectError(await call(actor), 401, 'unauthorized'));
   }
   return problems;
 }

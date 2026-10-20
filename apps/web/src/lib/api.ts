@@ -1,21 +1,10 @@
 import type { AppType } from '@rampflow/api';
+import type { ConflictReason } from '@rampflow/shared/values';
+import { ErrorCode } from '@rampflow/shared/values';
 import { hc } from 'hono/client';
 
 /** The typed API client. Same origin: Vite proxies /api in dev, one host serves both in production. */
 export const api = hc<AppType>('/').api;
-
-/** Every error code of docs/reference/api-routes.md. The UI shows `core:errors.<code>`. */
-export type ErrorCode =
-  | 'bad_request'
-  | 'unauthorized'
-  | 'forbidden'
-  | 'entitlement_required'
-  | 'not_found'
-  | 'conflict'
-  | 'limit_reached'
-  | 'validation_failed'
-  | 'rate_limited'
-  | 'internal_error';
 
 export interface ValidationIssue {
   path: (string | number)[];
@@ -41,6 +30,11 @@ export class ApiFailure extends Error {
     return typeof this.details.reason === 'string' ? this.details.reason : undefined;
   }
 
+  /** The reason of a 409 `conflict`; the API always names one. */
+  get conflictReason(): ConflictReason | undefined {
+    return this.code === ErrorCode.conflict ? (this.details.reason as ConflictReason) : undefined;
+  }
+
   get issues(): ValidationIssue[] {
     return Array.isArray(this.details.issues) ? (this.details.issues as ValidationIssue[]) : [];
   }
@@ -56,7 +50,7 @@ async function failureOf(res: Response): Promise<ApiFailure> {
   const error = body?.error;
   return new ApiFailure(
     res.status,
-    error?.code ?? (res.status >= 500 ? 'internal_error' : 'bad_request'),
+    error?.code ?? (res.status >= 500 ? ErrorCode.internal_error : ErrorCode.bad_request),
     error?.message ?? res.statusText,
     error?.details,
   );

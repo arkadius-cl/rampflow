@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { LoadStatus } from '../../packages/shared/src/modules/booking/values.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import {
   bookingStatus,
@@ -7,6 +8,7 @@ import {
   poolDocks,
   seedVisit,
   siteOf,
+  test,
 } from '../support/u9.ts';
 
 test.describe('YD-07 Assign and call', () => {
@@ -22,14 +24,14 @@ test.describe('YD-07 Assign and call', () => {
       carrier: 'Belegt AG',
       plate: 'HHBA1',
       start: -30,
-      status: 'at_dock',
+      status: LoadStatus.at_dock,
       dockId: s.dockIds[0],
     });
     const waiting = await seedVisit(w, {
       carrier: 'Wartend GmbH',
       plate: 'HHWG2',
       start: -5,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
       phone: '+48600111222',
     });
     await signInAs(context, w.A.users.dock_operator);
@@ -67,7 +69,7 @@ test.describe('YD-07 Assign and call', () => {
       carrier: 'Torruf KG',
       plate: 'HHTK1',
       start: 0,
-      status: 'checked_in',
+      status: LoadStatus.checked_in,
     });
     await signInAs(context, w.A.users.gate_operator);
     await openStation(page, `/t/${w.A.tenantId}/gate?site=${siteOf(w).id}&tab=onsite`);

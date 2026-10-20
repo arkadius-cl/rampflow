@@ -1,4 +1,13 @@
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
+import {
+  EmailTemplate,
+  EnqueueResult,
+  ScopeParty,
+  Setting,
+  SqlState,
+  StaffLocale,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
 import type { AnyOrgId, UserId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -24,17 +33,17 @@ const OUTBOX_DAYS = 7;
 
 /** Carrier accounts are platform data; no user acts, so the scope carries the nil id. */
 const PLATFORM: Scope = {
-  party: 'platform',
+  party: ScopeParty.platform,
   userId: '00000000-0000-0000-0000-000000000000' as UserId,
 };
 
 const isStaffLocale = (l: string | null): l is StaffLocale =>
-  l !== null && (STAFF_LOCALES as readonly string[]).includes(l);
+  l !== null && (values(StaffLocale) as readonly string[]).includes(l);
 
 /** A Postgres foreign-key violation: a row elsewhere still references this one. */
 const isReferenced = (e: unknown): boolean => {
   for (let cur = e; cur && typeof cur === 'object'; cur = (cur as { cause?: unknown }).cause) {
-    if ('code' in cur && cur.code === '23503') return true;
+    if ('code' in cur && cur.code === SqlState.foreign_key_violation) return true;
   }
   return false;
 };
@@ -48,7 +57,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
   const now = clock.now();
   const { value: days } = await asScope(tx, systemScope(JOB), async (s) =>
     (await loadAccess(s, systemScope(JOB), clock)).setting(
-      'privacy.retention.carrier_inactive_days',
+      Setting.privacy.retention.carrier_inactive_days,
       null,
     ),
   );
@@ -85,12 +94,12 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
         const sent = await enqueueEmail(
           tx,
           {
-            template: 'privacy.inactive-notice',
+            template: EmailTemplate.privacy_inactive_notice,
             to: u.email,
             locale: isStaffLocale(u.locale) ? u.locale : 'en',
             tenantId: null,
             payload: {
-              locale: isStaffLocale(u.locale) ? u.locale : 'en',
+              locale: isStaffLocale(u.locale) ? u.locale : StaffLocale.en,
               deletesOn: deletesAt.toISOString().slice(0, 10),
             },
             // A sign-in moves the deadline and so makes a new notice due.
@@ -98,7 +107,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
           },
           null,
         );
-        if (sent === 'enqueued') stats.inactiveNotices++;
+        if (sent === EnqueueResult.enqueued) stats.inactiveNotices++;
         continue;
       }
       const orgs = await tx
@@ -188,10 +197,10 @@ async function runRetention(ctx: JobContext): Promise<JobStats> {
   const now = ctx.clock.now();
   const tenants = await forEachTenant(ctx, JOB, async (tx, tenantId) => {
     const scope: Scope = {
-      party: 'tenant',
+      party: ScopeParty.tenant,
       tenantId,
       siteIds: 'all',
-      actor: { kind: 'system', job: JOB },
+      actor: { kind: TenantActorKind.system, job: JOB },
     };
     const limits = await retentionLimits(await loadAccess(tx, scope, ctx.clock));
     return applyTenantRetention(tx, tenantId, limits, now);

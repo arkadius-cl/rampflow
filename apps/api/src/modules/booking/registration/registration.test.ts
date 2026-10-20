@@ -1,3 +1,21 @@
+import {
+  CarrierLinkSource,
+  CarrierLinkStatus,
+  RegistrationDecision,
+  RegistrationMode,
+  RegistrationStatus,
+} from '@rampflow/shared/modules/booking/values';
+import {
+  ConflictReason,
+  EmailTemplate,
+  ErrorCode,
+  ForbiddenReason,
+  Role,
+  StaffLocale,
+  TokenPurpose,
+  UnauthorizedReason,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -33,7 +51,7 @@ const form = (email: string) => ({
   country: 'LT',
   contactName: 'Rasa Jankauskiene',
   email,
-  locale: 'en',
+  locale: StaffLocale.en,
 });
 
 const mailsTo = (email: string) =>
@@ -46,7 +64,7 @@ async function registered(email: string) {
     .from(carrierRegistration)
     .where(eq(carrierRegistration.email, email));
   if (!row) throw new Error(`no registration for ${email}`);
-  return { row, token: deriveToken('registration', row.id) };
+  return { row, token: deriveToken(TokenPurpose.registration, row.id) };
 }
 
 const linkOf = async (tenantId: TenantId, carrierId: CarrierId) => {
@@ -68,7 +86,7 @@ beforeAll(async () => {
   admin = w.A.users.tenant_admin;
 });
 
-const open = (mode: 'auto_approve' | 'approval_required') =>
+const open = (mode: RegistrationMode) =>
   openLinkFor(ownerDb(), { tenantId: w.A.tenantId, siteId: site, by: admin.id, mode });
 
 async function registerAndVerify(slug: string, email: string) {
@@ -80,7 +98,7 @@ async function registerAndVerify(slug: string, email: string) {
 
 describe('TN-04 the public link', () => {
   it('shows tenant and site while enabled, and 404 once the site setting is off', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const res = await anon.get(`/api/public/links/${slug}`);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ tenantName: expect.stringMatching(/^Tenant A /) });
@@ -126,7 +144,11 @@ describe('TN-04 the public link', () => {
     expect(slug).toMatch(/^[a-z2-7]{10}$/);
     const again = await as(app, admin).post(url, { body: { siteId: siteB } });
     expect(again.status).toBe(200);
-    expect(await again.json()).toMatchObject({ slug, enabled: false, mode: 'approval_required' });
+    expect(await again.json()).toMatchObject({
+      slug,
+      enabled: false,
+      mode: RegistrationMode.approval_required,
+    });
 
     await setSiteSetting(ownerDb(), {
       tenantId: w.A.tenantId,
@@ -157,20 +179,24 @@ describe('TN-04 the public link', () => {
 
 describe('CR-02 register through a public link', () => {
   it('answers an empty 202 and emails a verification link', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('new');
     const res = await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
     expect(res.status).toBe(202);
     expect(await res.text()).toBe('');
     const { row } = await registered(email);
-    expect(row).toMatchObject({ status: 'pending_email', country: 'LT', userId: null });
+    expect(row).toMatchObject({
+      status: RegistrationStatus.pending_email,
+      country: 'LT',
+      userId: null,
+    });
     const [mail] = await mailsTo(email);
-    expect(mail).toMatchObject({ template: 'booking.registration-verify' });
+    expect(mail).toMatchObject({ template: EmailTemplate.booking_registration_verify });
     expect(mail?.payload).toMatchObject({ registrationId: row.id, knownAccount: false });
   });
 
   it('auto_approve: verification creates the carrier, links it at once and signs in', async () => {
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     const email = unique('auto');
     const res = await registerAndVerify(slug, email);
     expect(res.status).toBe(200);
@@ -180,8 +206,8 @@ describe('CR-02 register through a public link', () => {
     const [company] = await ownerDb().select().from(org).where(eq(org.id, body.carrierId));
     expect(company).toMatchObject({ name: 'Baltic Freight UAB', country: 'LT' });
     expect(await linkOf(w.A.tenantId, body.carrierId)).toMatchObject({
-      status: 'active',
-      source: 'public_link',
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.public_link,
     });
     const [user] = await ownerDb().select().from(appUser).where(eq(appUser.email, email));
     expect(user?.emailVerifiedAt).toBeInstanceOf(Date);
@@ -189,7 +215,7 @@ describe('CR-02 register through a public link', () => {
   });
 
   it('approval_required: the registration stays pending and the carrier sees it', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('pending');
     const res = await registerAndVerify(slug, email);
     const body = (await res.json()) as { carrierId: CarrierId; status: string };
@@ -200,7 +226,7 @@ describe('CR-02 register through a public link', () => {
     const carrierUser = {
       id: '' as never,
       email,
-      role: 'carrier_admin' as const,
+      role: Role.carrier_admin,
       sessionToken: session,
     };
     const tenants = await as(app, carrierUser).get(`/api/c/${body.carrierId}/tenants`);
@@ -210,14 +236,14 @@ describe('CR-02 register through a public link', () => {
           tenantId: w.A.tenantId,
           name: expect.stringMatching(/^Tenant A /),
           link: null,
-          registration: expect.objectContaining({ status: 'pending_approval' }),
+          registration: expect.objectContaining({ status: RegistrationStatus.pending_approval }),
         },
       ],
     });
   });
 
   it('works once: a second verification answers 401, also when signed in', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('once');
     const first = await registerAndVerify(slug, email);
     expect(first.status).toBe(200);
@@ -225,7 +251,7 @@ describe('CR-02 register through a public link', () => {
     const verifiedUser = {
       id: row.userId as never,
       email,
-      role: 'carrier_admin' as const,
+      role: Role.carrier_admin,
       sessionToken: sessionOf(first) as string,
     };
     const res = await as(app, verifiedUser).post('/api/public/registrations/verify', {
@@ -236,7 +262,7 @@ describe('CR-02 register through a public link', () => {
   });
 
   it('a known email gets the same 202, a sign-in prompt, and attaches to its org', async () => {
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     const known = w.B.users.carrier_admin;
     const res = await anon.post(`/api/public/links/${slug}/registrations`, {
       body: form(known.email),
@@ -259,7 +285,7 @@ describe('CR-02 register through a public link', () => {
     const anonymous = await anon.post('/api/public/registrations/verify', { body: { token } });
     expect(anonymous.status).toBe(401);
     expect(await anonymous.json()).toMatchObject({
-      error: { details: { reason: 'sign_in_required', email: known.email } },
+      error: { details: { reason: UnauthorizedReason.sign_in_required, email: known.email } },
     });
 
     const orgsBefore = (await ownerDb().select({ id: org.id }).from(org)).length;
@@ -267,34 +293,39 @@ describe('CR-02 register through a public link', () => {
       body: { token },
     });
     expect(verified.status).toBe(200);
-    expect(await verified.json()).toEqual({ carrierId: w.B.carrierId, status: 'approved' });
+    expect(await verified.json()).toEqual({
+      carrierId: w.B.carrierId,
+      status: RegistrationStatus.approved,
+    });
     expect((await ownerDb().select({ id: org.id }).from(org)).length).toBe(orgsBefore);
-    expect(await linkOf(w.A.tenantId, w.B.carrierId)).toMatchObject({ status: 'active' });
+    expect(await linkOf(w.A.tenantId, w.B.carrierId)).toMatchObject({
+      status: CarrierLinkStatus.active,
+    });
   });
 
   it('auto_approve leaves a link the tenant deactivated switched off', async () => {
     await ownerDb()
       .update(tenantCarrierLink)
-      .set({ status: 'deactivated', deactivatedAt: new Date() })
+      .set({ status: CarrierLinkStatus.deactivated, deactivatedAt: new Date() })
       .where(
         and(
           eq(tenantCarrierLink.tenantId, w.A.tenantId),
           eq(tenantCarrierLink.carrierId, w.A.rivalCarrierId),
         ),
       );
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     const rival = w.A.users.rival_admin;
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(rival.email) });
     const { token } = await registered(rival.email);
     const res = await as(app, rival).post('/api/public/registrations/verify', { body: { token } });
     expect(res.status).toBe(200);
     expect(await linkOf(w.A.tenantId, w.A.rivalCarrierId)).toMatchObject({
-      status: 'deactivated',
+      status: CarrierLinkStatus.deactivated,
     });
   });
 
   it('the link expires after 24 hours', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('slow');
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
     const { token } = await registered(email);
@@ -319,7 +350,7 @@ describe('CR-02 verification re-checks the public link', () => {
   };
 
   it('answers 401 once the site switched the link off, and creates nothing', async () => {
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     const email = unique('switched-off');
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
     const { token } = await registered(email);
@@ -329,7 +360,10 @@ describe('CR-02 verification re-checks the public link', () => {
       const res = await anon.post('/api/public/registrations/verify', { body: { token } });
       expect(res.status).toBe(401);
       expect(sessionOf(res)).toBeNull();
-      expect(await unverified(email)).toEqual({ status: 'pending_email', carrierId: null });
+      expect(await unverified(email)).toEqual({
+        status: RegistrationStatus.pending_email,
+        carrierId: null,
+      });
       expect(await ownerDb().select().from(appUser).where(eq(appUser.email, email))).toEqual([]);
     } finally {
       await setSiteSetting(ownerDb(), { ...off, key: 'booking.public_link_enabled', value: true });
@@ -337,14 +371,17 @@ describe('CR-02 verification re-checks the public link', () => {
   });
 
   it('answers 401 once the slug it came through was regenerated', async () => {
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     const email = unique('leaked-slug');
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
     const { token } = await registered(email);
-    await open('auto_approve');
+    await open(RegistrationMode.auto_approve);
     const res = await anon.post('/api/public/registrations/verify', { body: { token } });
     expect(res.status).toBe(401);
-    expect(await unverified(email)).toEqual({ status: 'pending_email', carrierId: null });
+    expect(await unverified(email)).toEqual({
+      status: RegistrationStatus.pending_email,
+      carrierId: null,
+    });
   });
 });
 
@@ -352,14 +389,17 @@ describe('CR-02 only a carrier admin binds an existing company', () => {
   it('a carrier_user gets 403 and the registration stays unverified', async () => {
     const other = await world();
     const member = other.B.users.carrier_user;
-    const slug = await open('auto_approve');
+    const slug = await open(RegistrationMode.auto_approve);
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(member.email) });
     const { token, row } = await registered(member.email);
     const orgsBefore = (await ownerDb().select({ id: org.id }).from(org)).length;
     const res = await as(app, member).post('/api/public/registrations/verify', { body: { token } });
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({
-      error: { code: 'forbidden', details: { reason: 'carrier_admin_required' } },
+      error: {
+        code: ErrorCode.forbidden,
+        details: { reason: ForbiddenReason.carrier_admin_required },
+      },
     });
     expect(await linkOf(w.A.tenantId, other.B.carrierId)).toBeNull();
     expect((await ownerDb().select({ id: org.id }).from(org)).length).toBe(orgsBefore);
@@ -377,7 +417,7 @@ describe('CR-02 only a carrier admin binds an existing company', () => {
       .select({ name: org.name })
       .from(org)
       .where(eq(org.id, other.B.carrierId));
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(carrierAdmin.email) });
     const { token, row } = await registered(carrierAdmin.email);
     const verified = await as(app, carrierAdmin).post('/api/public/registrations/verify', {
@@ -399,7 +439,7 @@ describe('CR-02 only a carrier admin binds an existing company', () => {
     );
     expect(await approved.json()).toMatchObject({ carrierName: company?.name });
     const mail = (await mailsTo(carrierAdmin.email)).find(
-      (m) => m.template === 'booking.registration-approved',
+      (m) => m.template === EmailTemplate.booking_registration_approved,
     );
     expect(mail?.payload).toMatchObject({ carrierName: company?.name });
   });
@@ -407,7 +447,7 @@ describe('CR-02 only a carrier admin binds an existing company', () => {
 
 describe('CR-02 registration limits', () => {
   it('a sixth registration of one email within an hour answers 202 and writes nothing', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('flood');
     for (let i = 0; i < 6; i++) {
       const res = await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
@@ -424,7 +464,7 @@ describe('CR-02 registration limits', () => {
 
 describe('CR-02 concurrent verification', () => {
   it('two verifications of one link: exactly one succeeds and one carrier org exists', async () => {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('race');
     await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
     const { token } = await registered(email);
@@ -450,14 +490,14 @@ describe('CR-02 concurrent verification', () => {
 
 describe('TN-04 decide a registration', () => {
   async function pendingRegistration() {
-    const slug = await open('approval_required');
+    const slug = await open(RegistrationMode.approval_required);
     const email = unique('decide');
     const res = await registerAndVerify(slug, email);
     const { carrierId } = (await res.json()) as { carrierId: CarrierId };
     const { row } = await registered(email);
     return { id: row.id, email, carrierId };
   }
-  const url = (id: string, action: 'approve' | 'reject') =>
+  const url = (id: string, action: RegistrationDecision) =>
     `/api/t/${w.A.tenantId}/carriers/registrations/${id}/${action}`;
 
   it('approving links the carrier and emails it', async () => {
@@ -467,31 +507,37 @@ describe('TN-04 decide a registration', () => {
     );
     const { items } = (await listed.json()) as { items: { id: string; status: string }[] };
     expect(items).toContainEqual(
-      expect.objectContaining({ id: reg.id, status: 'pending_approval' }),
+      expect.objectContaining({ id: reg.id, status: RegistrationStatus.pending_approval }),
     );
 
-    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, 'approve'));
+    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.approve));
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ status: 'approved' });
+    expect(await res.json()).toMatchObject({ status: RegistrationStatus.approved });
     expect(await linkOf(w.A.tenantId, reg.carrierId)).toMatchObject({
-      status: 'active',
-      source: 'public_link',
+      status: CarrierLinkStatus.active,
+      source: CarrierLinkSource.public_link,
     });
     const templates = (await mailsTo(reg.email)).map((m) => m.template);
     expect(templates).toContain('booking.registration-approved');
 
-    const twice = await as(app, w.A.users.dispatcher).post(url(reg.id, 'approve'));
+    const twice = await as(app, w.A.users.dispatcher).post(
+      url(reg.id, RegistrationDecision.approve),
+    );
     expect(twice.status).toBe(409);
     expect(await twice.json()).toMatchObject({
-      error: { details: { reason: 'invalid_transition', status: 'approved' } },
+      error: {
+        details: { reason: ConflictReason.invalid_transition, status: RegistrationStatus.approved },
+      },
     });
   });
 
   it('approve racing reject: exactly one decision wins', async () => {
     const reg = await pendingRegistration();
     const [approved, rejected] = await Promise.all([
-      as(app, w.A.users.dispatcher).post(url(reg.id, 'approve')),
-      as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), { body: { reason: 'Late.' } }),
+      as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.approve)),
+      as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.reject), {
+        body: { reason: 'Late.' },
+      }),
     ]);
     expect([approved.status, rejected.status].sort()).toEqual([200, 409]);
     const linked = await linkOf(w.A.tenantId, reg.carrierId);
@@ -500,13 +546,13 @@ describe('TN-04 decide a registration', () => {
 
   it('rejecting emails the reason and links nothing', async () => {
     const reg = await pendingRegistration();
-    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), {
+    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.reject), {
       body: { reason: 'We only work with ADR carriers.' },
     });
     expect(res.status).toBe(200);
     expect(await linkOf(w.A.tenantId, reg.carrierId)).toBeNull();
     const rejected = (await mailsTo(reg.email)).find(
-      (m) => m.template === 'booking.registration-rejected',
+      (m) => m.template === EmailTemplate.booking_registration_rejected,
     );
     expect(rejected?.payload).toMatchObject({ reason: 'We only work with ADR carriers.' });
   });
@@ -530,13 +576,13 @@ describe('registration emails are account emails', () => {
       by: admin.id,
     });
     const decided: string[] = [];
-    for (const action of ['approve', 'reject'] as const) {
+    for (const action of values(RegistrationDecision)) {
       const email = unique(`quiet-${action}`);
       expect((await registerAndVerify(slug, email)).status).toBe(200);
       const { row } = await registered(email);
       const res = await as(app, quiet.A.users.dispatcher).post(
         `/api/t/${quiet.A.tenantId}/carriers/registrations/${row.id}/${action}`,
-        action === 'reject' ? { body: { reason: 'Full.' } } : {},
+        action === RegistrationDecision.reject ? { body: { reason: 'Full.' } } : {},
       );
       expect(res.status).toBe(200);
       decided.push(...(await mailsTo(email)).map((m) => m.template));

@@ -1,3 +1,5 @@
+import { BookingStatus, PlanView } from '@rampflow/shared/modules/booking/values';
+import { BadgeSize, isValueOf, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   BanIcon,
@@ -46,15 +48,15 @@ import { bookings, NOW, resources, sites } from './-mock';
 import { dispatcherUser, memberships, tenantMembership, tenantNav } from './-nav';
 
 export const Route = createFileRoute('/design/plan-board')({
-  validateSearch: (search: Record<string, unknown>): { view: 'board' | 'list' } => ({
-    view: search.view === 'list' ? 'list' : 'board',
+  validateSearch: (search: Record<string, unknown>): { view: PlanView } => ({
+    view: search.view === PlanView.list ? PlanView.list : PlanView.board,
   }),
   component: PlanBoardScreen,
 });
 
 const site = sites[0];
 const siteItems = sites
-  .filter((s) => s.tenantId === 'acme')
+  .filter((s) => s.tenantId === tenantMembership.id)
   .map((s) => ({ value: s.id, label: s.name }));
 
 function PlanBoardScreen() {
@@ -67,7 +69,7 @@ function PlanBoardScreen() {
     <OfficeShell
       org={tenantMembership}
       memberships={memberships}
-      nav={tenantNav('board')}
+      nav={tenantNav(PrototypeScreen.board)}
       breadcrumbs={['Operations', 'Plan board']}
       user={dispatcherUser}
       flush
@@ -107,7 +109,7 @@ function PlanBoardScreen() {
           value={[view]}
           onValueChange={(v) => {
             const next = v[0];
-            if (next === 'board' || next === 'list') navigate({ search: { view: next } });
+            if (isValueOf(PlanView, next)) navigate({ search: { view: next } });
           }}
           variant="outline"
           size="sm"
@@ -138,7 +140,7 @@ function PlanBoardScreen() {
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col p-4">
-          {view === 'board' ? (
+          {view === PlanView.board ? (
             <PlanBoard
               resources={resources}
               bookings={bookings}
@@ -163,12 +165,18 @@ function PlanBoardScreen() {
 }
 
 function Legend() {
-  const shown = ['confirmed', 'checked_in', 'called', 'loading', 'done'] as const;
+  const shown = [
+    BookingStatus.confirmed,
+    BookingStatus.checked_in,
+    BookingStatus.called,
+    BookingStatus.loading,
+    BookingStatus.done,
+  ];
   return (
     <ul className="hidden items-center gap-1 xl:flex" aria-label="Status legend">
       {shown.map((s) => (
         <li key={s}>
-          <BookingStatusBadge status={s} size="sm" />
+          <BookingStatusBadge status={s} size={BadgeSize.sm} />
         </li>
       ))}
     </ul>
@@ -216,10 +224,10 @@ function BookingList({
                   {b.loadUnits} · {b.loadType}
                 </TableCell>
                 <TableCell>
-                  <BookingStatusBadge status={b.status} size="sm" />
+                  <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
                 </TableCell>
                 <TableCell>
-                  <SafetyBadge status={b.safety} size="sm" />
+                  <SafetyBadge status={b.safety} size={BadgeSize.sm} />
                 </TableCell>
               </TableRow>
             ))}
@@ -231,7 +239,7 @@ function BookingList({
 
 function DetailPanel({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const resource = resources.find((r) => r.id === booking.resourceId);
-  const beforeCheckIn = booking.status === 'confirmed';
+  const beforeCheckIn = booking.status === BookingStatus.confirmed;
   return (
     <aside
       className="flex w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l bg-background p-4"
@@ -318,7 +326,7 @@ function DetailPanel({ booking, onClose }: { booking: Booking; onClose: () => vo
             <li key={`${t.status}-${t.at}`} className="flex items-start gap-2 text-sm">
               <StatusBadge
                 meta={BOOKING_STATUS[t.status]}
-                size="sm"
+                size={BadgeSize.sm}
                 className="mt-0.5 w-28 justify-start"
               />
               <div className="leading-tight">

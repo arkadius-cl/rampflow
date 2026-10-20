@@ -4,7 +4,10 @@ import type {
   DriverLinkView,
   PutAvis,
 } from '@rampflow/shared/modules/booking/api.staff';
+import { BookingDialog, ChangeLock } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
+import { BadgeSize, ConflictReason, ErrorCode, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
@@ -64,7 +67,7 @@ import { BookingTimeline } from '@/modules/booking/timeline';
 // the gate and dock rows. A stable route for U9: /t/$orgId/bookings/$bookingId.
 
 export const Route = createFileRoute('/t/$orgId/bookings/$bookingId')({
-  beforeLoad: guard({ permission: 'booking.view' }),
+  beforeLoad: guard({ permission: Permission.booking.view }),
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(bookingQuery(params.orgId, params.bookingId)),
   component: BookingPage,
@@ -79,7 +82,7 @@ function BookingPage() {
   const change = useChangeAccess(booking.status);
   const dayLabel = useDayLabel();
   const siteTime = useSiteTime();
-  const [dialog, setDialog] = useState<'reschedule' | 'cancel' | null>(null);
+  const [dialog, setDialog] = useState<BookingDialog | null>(null);
   const day = siteDay(new Date(booking.startsAt), booking.timeZone as TimeZone);
 
   return (
@@ -103,7 +106,7 @@ function BookingPage() {
           </p>
           <div className="mt-2 flex flex-wrap gap-1">
             <BookingStatusBadge status={booking.status} />
-            {booking.safety.status === 'not_required' ? null : (
+            {booking.safety.status === SafetyStatus.not_required ? null : (
               <BookingSafetyBadge status={booking.safety.status} />
             )}
             {booking.punctuality ? (
@@ -117,7 +120,7 @@ function BookingPage() {
             ))}
           </div>
         </div>
-        {change.lock === 'no_permission' ? null : (
+        {change.lock === ChangeLock.no_permission ? null : (
           <div className="flex max-w-sm flex-col items-end gap-1">
             <div className="flex gap-2">
               <Button
@@ -151,8 +154,10 @@ function BookingPage() {
           <AvisCard orgId={orgId} booking={booking} canEdit={change.canEditAvis} />
         </div>
         <div className="flex flex-col gap-4">
-          {booking.safety.status === 'not_required' ? null : <SafetyCard booking={booking} />}
-          {access.can('booking.staff_book') && booking.driverLink.active ? (
+          {booking.safety.status === SafetyStatus.not_required ? null : (
+            <SafetyCard booking={booking} />
+          )}
+          {access.can(Permission.booking.staff_book) && booking.driverLink.active ? (
             <DriverLinkCard orgId={orgId} booking={booking} />
           ) : null}
           <Card>
@@ -169,13 +174,13 @@ function BookingPage() {
       <RescheduleDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'reschedule'}
+        open={dialog === BookingDialog.reschedule}
         onOpenChange={(open) => setDialog(open ? 'reschedule' : null)}
       />
       <CancelDialog
         orgId={orgId}
         booking={booking}
-        open={dialog === 'cancel'}
+        open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
     </div>
@@ -302,7 +307,7 @@ function AvisEditForm({
     },
     onError: (e) => {
       if (applyAvisIssues(e, form)) return;
-      if (e instanceof ApiFailure && e.code === 'conflict') return setConflict(e);
+      if (e instanceof ApiFailure && e.code === ErrorCode.conflict) return setConflict(e);
       toast.error(e instanceof ApiFailure ? errorText(tCore, e) : String(e));
     },
   });
@@ -320,7 +325,7 @@ function AvisEditForm({
         <Alert variant="destructive">
           <AlertTitle>{errorText(tCore, conflict)}</AlertTitle>
           <AlertDescription>
-            {conflict.reason === 'stale_version'
+            {conflict.conflictReason === ConflictReason.stale_version
               ? t(($) => $.plan.avis.stale)
               : t(($) => $.plan.avis.unchanged)}
           </AlertDescription>
@@ -351,7 +356,7 @@ function SafetyCard({ booking }: { booking: BookingView }) {
         {booking.safety.instructions.map((i) => (
           <div key={i.instructionId} className="flex flex-wrap items-center justify-between gap-2">
             <span>{i.name}</span>
-            <BookingSafetyBadge status={i.status} size="sm" />
+            <BookingSafetyBadge status={i.status} size={BadgeSize.sm} />
           </div>
         ))}
         {booking.safety.enforced ? (

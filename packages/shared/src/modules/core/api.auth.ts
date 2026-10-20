@@ -1,6 +1,6 @@
 import * as z from 'zod';
-import { ROLES } from '../../contract/module.ts';
-import { STAFF_LOCALES } from '../../locales.ts';
+import { StaffLocale as StaffLocaleSet } from '../../values/locales.ts';
+import { OrgKind, Role } from '../../values/roles.ts';
 import { UiPrefs } from './ui-prefs.ts';
 
 // Request and response bodies of /api/auth, /api/me and /api/public/invitations (U2).
@@ -13,7 +13,7 @@ export const Password = z.string().min(PASSWORD_MIN).max(PASSWORD_MAX);
 export const Email = z.email().max(254);
 /** A token from an emailed link: base64url of 32 bytes. */
 export const EmailToken = z.string().min(20).max(100);
-export const StaffLocale = z.enum(STAFF_LOCALES);
+export const StaffLocale = z.enum(StaffLocaleSet);
 
 export const LoginBody = z.object({ email: Email, password: z.string().min(1).max(PASSWORD_MAX) });
 export type LoginBody = z.infer<typeof LoginBody>;
@@ -33,9 +33,6 @@ export interface MagicLinkInspect {
 export const ResetConfirmBody = z.object({ token: EmailToken, password: Password });
 export type ResetConfirmBody = z.infer<typeof ResetConfirmBody>;
 
-export const OrgKind = z.enum(['platform', 'tenant', 'carrier']);
-export type OrgKind = z.infer<typeof OrgKind>;
-
 export const MeResponse = z.object({
   user: z.object({
     id: z.uuid(),
@@ -44,7 +41,12 @@ export const MeResponse = z.object({
     locale: StaffLocale.nullable(),
   }),
   memberships: z.array(
-    z.object({ orgId: z.uuid(), orgKind: OrgKind, orgName: z.string(), role: z.enum(ROLES) }),
+    z.object({
+      orgId: z.uuid(),
+      orgKind: z.enum(OrgKind),
+      orgName: z.string(),
+      role: z.enum(Role),
+    }),
   ),
   /** Stored UI state: known, valid keys only (ADR-0014). */
   uiPrefs: UiPrefs,
@@ -57,9 +59,9 @@ export const MePatchBody = z
 export type MePatchBody = z.infer<typeof MePatchBody>;
 
 export const InvitationInspectResponse = z.object({
-  orgKind: OrgKind,
+  orgKind: z.enum(OrgKind),
   orgName: z.string(),
-  role: z.enum(ROLES),
+  role: z.enum(Role),
   email: z.string(),
   /** An account with this email exists: the holder signs in, then accepts. */
   hasAccount: z.boolean(),
@@ -75,5 +77,5 @@ export const InvitationAcceptBody = z.object({
 });
 export type InvitationAcceptBody = z.infer<typeof InvitationAcceptBody>;
 
-export const InvitationAcceptResponse = z.object({ orgId: z.uuid(), orgKind: OrgKind });
+export const InvitationAcceptResponse = z.object({ orgId: z.uuid(), orgKind: z.enum(OrgKind) });
 export type InvitationAcceptResponse = z.infer<typeof InvitationAcceptResponse>;

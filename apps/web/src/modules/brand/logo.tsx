@@ -1,8 +1,6 @@
-import {
-  LOGO_CONTENT_TYPES,
-  LOGO_MAX_BYTES,
-  type LogoResponse,
-} from '@rampflow/shared/modules/brand/api';
+import { LOGO_MAX_BYTES, type LogoResponse } from '@rampflow/shared/modules/brand/api';
+import { LogoContentType, LogoProblem } from '@rampflow/shared/modules/brand/values';
+import { ErrorCode, isValueOf, values, ZodIssueCode } from '@rampflow/shared/values';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, TrashIcon, UploadIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
@@ -30,12 +28,10 @@ export const logoQuery = (orgId: string) =>
     queryFn: () => call<LogoResponse>(api.t[':orgId'].brand.logo.$get({ param: { orgId } })),
   });
 
-type LogoProblem = 'type' | 'size';
-
 /** The client-side check of a chosen file. */
 function problemOf(file: File): LogoProblem | null {
-  if (!(LOGO_CONTENT_TYPES as readonly string[]).includes(file.type)) return 'type';
-  if (file.size > LOGO_MAX_BYTES) return 'size';
+  if (!isValueOf(LogoContentType, file.type)) return LogoProblem.type;
+  if (file.size > LOGO_MAX_BYTES) return LogoProblem.size;
   return null;
 }
 
@@ -65,8 +61,10 @@ export function LogoScreen({ orgId }: { orgId: string }) {
       toast.success(t(($) => $.logo.uploaded));
     },
     onError: (e) => {
-      if (!isFailure(e, 'validation_failed')) return;
-      setProblem(e.issues.some((i) => i.code === 'too_big') ? 'size' : 'type');
+      if (!isFailure(e, ErrorCode.validation_failed)) return;
+      setProblem(
+        e.issues.some((i) => i.code === ZodIssueCode.too_big) ? LogoProblem.size : LogoProblem.type,
+      );
     },
   });
   const remove = async () => {
@@ -147,7 +145,7 @@ export function LogoScreen({ orgId }: { orgId: string }) {
                 ref={input}
                 id={inputId}
                 type="file"
-                accept={LOGO_CONTENT_TYPES.join(',')}
+                accept={values(LogoContentType).join(',')}
                 aria-invalid={problem !== null}
                 onChange={(e) => {
                   const chosen = e.target.files?.[0] ?? null;
@@ -157,9 +155,9 @@ export function LogoScreen({ orgId }: { orgId: string }) {
               />
               <FieldDescription>{t(($) => $.logo.hint)}</FieldDescription>
               <FieldError>
-                {problem === 'type'
+                {problem === LogoProblem.type
                   ? t(($) => $.logo.wrong_type)
-                  : problem === 'size'
+                  : problem === LogoProblem.size
                     ? t(($) => $.logo.too_big)
                     : null}
               </FieldError>

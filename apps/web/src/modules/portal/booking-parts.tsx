@@ -1,4 +1,5 @@
 import type { PortalAddress, PortalBookingView } from '@rampflow/shared/modules/booking/api.portal';
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +87,7 @@ export function AddressLines({ address }: { address: PortalAddress }) {
 
 /** Whether the carrier may still change or cancel: confirmed and before the cutoff (BK-05). */
 export const beforeCutoff = (b: Pick<PortalBookingView, 'status' | 'cutoffAt'>, now = Date.now()) =>
-  b.status === 'confirmed' && now < Date.parse(b.cutoffAt);
+  b.status === BookingStatus.confirmed && now < Date.parse(b.cutoffAt);
 
 /** BK-05: until when changes are free, or the site phone once they are closed. */
 export function CutoffNote({
@@ -101,7 +102,7 @@ export function CutoffNote({
   const { t } = useTranslation('booking');
   const dayLabel = useDayLabel();
   const siteTime = useSiteTime();
-  if (booking.status !== 'confirmed') return null;
+  if (booking.status !== BookingStatus.confirmed) return null;
   if (beforeCutoff(booking)) {
     return (
       <span className={className}>

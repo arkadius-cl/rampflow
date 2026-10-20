@@ -1,8 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LOAD_UNIT_TYPES, phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
-import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
-import { TURN_AWAY_REASONS } from '@rampflow/shared/modules/booking/lifecycle';
+import { phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
+import { TurnAwayReason, WalkInOutcome } from '@rampflow/shared/modules/booking/values';
+import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { WalkInBody } from '@rampflow/shared/modules/yard/api';
+import { ErrorCode, HtmlInputType, values, ZodIssueCode } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { LogInIcon, OctagonXIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -34,23 +36,29 @@ const optional = (schema: z.ZodType) => z.union([z.literal(''), schema]);
 
 const WalkInForm = z
   .object({
-    outcome: z.enum(['check_in', 'turn_away']),
+    outcome: z.enum(WalkInOutcome),
     carrierName: z.string().trim().min(1).max(120),
     loadTypeId: z.uuid(),
     plateSeen: plateSchema,
-    reason: z.union([z.literal(''), z.enum(TURN_AWAY_REASONS)]),
-    referenceType: z.enum(REFERENCE_TYPES),
+    reason: z.union([z.literal(''), z.enum(TurnAwayReason)]),
+    referenceType: z.enum(ReferenceType),
     referenceValue: z.string().trim().max(35),
     counterpartyName: z.string().trim().max(120),
-    loadUnitType: z.enum(LOAD_UNIT_TYPES),
+    loadUnitType: z.enum(LoadUnitType),
     quantity: z.string().regex(/^\d{0,4}$/),
     driverName: z.string().trim().max(120),
     driverPhone: optional(phoneSchema),
   })
   .superRefine((f, ctx) => {
     const required = (path: Path<WalkInFormInput>) =>
-      ctx.addIssue({ code: 'too_small', minimum: 1, origin: 'string', input: '', path: [path] });
-    if (f.outcome === 'turn_away') {
+      ctx.addIssue({
+        code: ZodIssueCode.too_small,
+        minimum: 1,
+        origin: 'string',
+        input: '',
+        path: [path],
+      });
+    if (f.outcome === WalkInOutcome.turn_away) {
       if (f.reason === '') required('reason');
       return;
     }
@@ -69,12 +77,16 @@ function bodyOf(f: WalkInFormOutput, siteId: string, clientRequestId: string): W
     carrier: { name: f.carrierName },
     plateSeen: f.plateSeen,
   };
-  if (f.outcome === 'turn_away') {
-    return { ...base, outcome: 'turn_away', reason: f.reason === '' ? 'other' : f.reason };
+  if (f.outcome === WalkInOutcome.turn_away) {
+    return {
+      ...base,
+      outcome: WalkInOutcome.turn_away,
+      reason: f.reason === '' ? TurnAwayReason.other : f.reason,
+    };
   }
   return {
     ...base,
-    outcome: 'check_in',
+    outcome: WalkInOutcome.check_in,
     avis: {
       references: [{ type: f.referenceType, value: f.referenceValue }],
       counterpartyName: f.counterpartyName,
@@ -128,15 +140,15 @@ export function WalkInDialog({
   const form = useForm<WalkInFormInput, unknown, WalkInFormOutput>({
     resolver: zodResolver(WalkInForm),
     defaultValues: {
-      outcome: 'check_in',
+      outcome: WalkInOutcome.check_in,
       carrierName: '',
       loadTypeId: '',
       plateSeen: '',
       reason: '',
-      referenceType: 'delivery_note',
+      referenceType: ReferenceType.delivery_note,
       referenceValue: '',
       counterpartyName: '',
-      loadUnitType: 'eur_pallet',
+      loadUnitType: LoadUnitType.eur_pallet,
       quantity: '',
       driverName: '',
       driverPhone: '',
@@ -147,11 +159,11 @@ export function WalkInDialog({
       toast.success(
         t(($) => $.gate.walk_in.done, { carrier: 'name' in body.carrier ? body.carrier.name : '' }),
       );
-      if (result.safety === 'missing') setSafetyMissing(true);
+      if (result.safety === SafetyStatus.missing) setSafetyMissing(true);
       else onDone();
     },
     onError: (e) => {
-      if (!(e instanceof ApiFailure) || e.code !== 'validation_failed') return;
+      if (!(e instanceof ApiFailure) || e.code !== ErrorCode.validation_failed) return;
       for (const issue of e.issues) {
         const key = Object.keys(SERVER_FIELDS).find((k) => issue.path.join('.').startsWith(k));
         if (key) form.setError(SERVER_FIELDS[key] as Path<WalkInFormInput>, { type: issue.code });
@@ -166,7 +178,7 @@ export function WalkInDialog({
   const text = (
     name: Path<WalkInFormInput>,
     label: string,
-    o: { mono?: boolean; type?: string } = {},
+    o: { mono?: boolean; type?: HtmlInputType } = {},
   ) => (
     <Controller
       name={name}
@@ -192,6 +204,8 @@ export function WalkInDialog({
     name: Path<WalkInFormInput>,
     label: string,
     options: { value: string; label: string }[],
+    /** The message of a refinement (`custom`) issue on this field. */
+    refinement?: string,
   ) => (
     <Controller
       name={name}
@@ -213,8 +227,8 @@ export function WalkInDialog({
             ))}
           </NativeSelect>
           <FieldError>
-            {name === 'loadTypeId' && fieldState.error?.type === 'custom'
-              ? t(($) => $.gate.walk_in.load_type_unavailable)
+            {refinement && fieldState.error?.type === ZodIssueCode.custom
+              ? refinement
               : message(fieldState.error)}
           </FieldError>
         </Field>
@@ -256,6 +270,7 @@ export function WalkInDialog({
               'loadTypeId',
               t(($) => $.gate.walk_in.load_type),
               [choose, ...loadTypes.map((l) => ({ value: l.id, label: loadTypeName(l.name) }))],
+              t(($) => $.gate.walk_in.load_type_unavailable),
             )}
             {text(
               'counterpartyName',
@@ -264,7 +279,10 @@ export function WalkInDialog({
             {select(
               'referenceType',
               t(($) => $.gate.walk_in.reference_type),
-              REFERENCE_TYPES.map((r) => ({ value: r, label: ta(($) => $.avis.referenceType[r]) })),
+              values(ReferenceType).map((r) => ({
+                value: r,
+                label: ta(($) => $.avis.referenceType[r]),
+              })),
             )}
             {text(
               'referenceValue',
@@ -273,12 +291,15 @@ export function WalkInDialog({
             {select(
               'loadUnitType',
               ta(($) => $.avis.field.loadUnits),
-              LOAD_UNIT_TYPES.map((u) => ({ value: u, label: ta(($) => $.avis.loadUnitType[u]) })),
+              values(LoadUnitType).map((u) => ({
+                value: u,
+                label: ta(($) => $.avis.loadUnitType[u]),
+              })),
             )}
             {text(
               'quantity',
               ta(($) => $.avis.field.quantity),
-              { type: 'number' },
+              { type: HtmlInputType.number },
             )}
             {text(
               'driverName',
@@ -287,7 +308,7 @@ export function WalkInDialog({
             {text(
               'driverPhone',
               ta(($) => $.avis.field.driverPhone),
-              { type: 'tel' },
+              { type: HtmlInputType.tel },
             )}
           </FieldGroup>
           <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border p-4">
@@ -297,7 +318,7 @@ export function WalkInDialog({
                 t(($) => $.gate.check_in.turn_away_title),
                 [
                   { value: '', label: t(($) => $.gate.check_in.choose_reason) },
-                  ...TURN_AWAY_REASONS.map((r) => ({
+                  ...values(TurnAwayReason).map((r) => ({
                     value: r,
                     label: tb(($) => $.lifecycle.turnAwayReason[r]),
                   })),
@@ -310,7 +331,7 @@ export function WalkInDialog({
               size="lg"
               className="h-12"
               disabled={!online || walkIn.isPending}
-              onClick={() => submit('turn_away')}
+              onClick={() => submit(WalkInOutcome.turn_away)}
             >
               <OctagonXIcon /> {t(($) => $.gate.walk_in.turn_away)}
             </Button>
@@ -329,7 +350,7 @@ export function WalkInDialog({
             size="lg"
             className="h-12 min-w-44"
             disabled={!online || walkIn.isPending}
-            onClick={() => submit('check_in')}
+            onClick={() => submit(WalkInOutcome.check_in)}
           >
             <LogInIcon /> {t(($) => $.gate.walk_in.check_in_now)}
           </Button>

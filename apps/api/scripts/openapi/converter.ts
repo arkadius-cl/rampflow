@@ -1,3 +1,4 @@
+import { JsonSchemaType } from '@rampflow/shared/values';
 import ts from 'typescript-6';
 import type { JsonSchema } from './schema.ts';
 
@@ -18,10 +19,16 @@ export class ConversionError extends Error {
 
 /** The branded strings of packages/shared/src/time and their wire format (ADR-0012). */
 const TIME_TYPES: Record<string, JsonSchema> = {
-  LocalDate: { type: 'string', format: 'date' },
-  LocalTime: { type: 'string', pattern: '^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$' },
-  LocalDateTime: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d$' },
-  TimeZone: { type: 'string', description: 'IANA time zone, such as `Europe/Berlin`.' },
+  LocalDate: { type: JsonSchemaType.string, format: 'date' },
+  LocalTime: { type: JsonSchemaType.string, pattern: '^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$' },
+  LocalDateTime: {
+    type: JsonSchemaType.string,
+    pattern: '^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d$',
+  },
+  TimeZone: {
+    type: JsonSchemaType.string,
+    description: 'IANA time zone, such as `Europe/Berlin`.',
+  },
 };
 
 /** Code-point order, the same on every machine. */
@@ -104,13 +111,14 @@ export class Converter {
     const shown = () => this.checker.typeToString(type);
     if (f & ts.TypeFlags.Any) throw new ConversionError(path, 'any is not a JSON shape');
     if (f & ts.TypeFlags.Unknown) return {};
-    if (f & ts.TypeFlags.String) return { type: 'string' };
-    if (f & ts.TypeFlags.Number) return { type: 'number' };
-    if (f & ts.TypeFlags.Boolean) return { type: 'boolean' };
-    if (f & ts.TypeFlags.Null) return { type: 'null' };
-    if (type.isStringLiteral()) return { type: 'string', const: type.value };
-    if (type.isNumberLiteral()) return { type: 'number', const: type.value };
-    if (f & ts.TypeFlags.BooleanLiteral) return { type: 'boolean', const: shown() === 'true' };
+    if (f & ts.TypeFlags.String) return { type: JsonSchemaType.string };
+    if (f & ts.TypeFlags.Number) return { type: JsonSchemaType.number };
+    if (f & ts.TypeFlags.Boolean) return { type: JsonSchemaType.boolean };
+    if (f & ts.TypeFlags.Null) return { type: JsonSchemaType.null };
+    if (type.isStringLiteral()) return { type: JsonSchemaType.string, const: type.value };
+    if (type.isNumberLiteral()) return { type: JsonSchemaType.number, const: type.value };
+    if (f & ts.TypeFlags.BooleanLiteral)
+      return { type: JsonSchemaType.boolean, const: type === this.checker.getTrueType() };
     if (f & ts.TypeFlags.TypeParameter) throw new ConversionError(path, `unresolved ${shown()}`);
     if (type.isUnion()) return this.union(type, path);
     if (type.isIntersection()) return this.intersection(type, path);
@@ -122,9 +130,9 @@ export class Converter {
     const members = type.types.filter((t) => !(t.flags & ts.TypeFlags.Undefined));
     const literals = members.filter((t) => !(t.flags & ts.TypeFlags.Null));
     const nullable = literals.length < members.length;
-    if (literals.length === 0) return { type: 'null' };
+    if (literals.length === 0) return { type: JsonSchemaType.null };
     if (literals.length === 2 && literals.every((t) => t.flags & ts.TypeFlags.BooleanLiteral)) {
-      return nullable ? { type: ['boolean', 'null'] } : { type: 'boolean' };
+      return nullable ? { type: ['boolean', 'null'] } : { type: JsonSchemaType.boolean };
     }
     if (literals.every((t) => t.isStringLiteral()) || literals.every((t) => t.isNumberLiteral())) {
       // Sorted: the checker's member order follows type ids, which shift with unrelated code.
@@ -148,7 +156,7 @@ export class Converter {
         return { ...only, type: [only.type, 'null'] };
       }
     }
-    return { anyOf: nullable ? [...schemas, { type: 'null' }] : schemas };
+    return { anyOf: nullable ? [...schemas, { type: JsonSchemaType.null }] : schemas };
   }
 
   /** `string & z.$brand<'X'>` is a string on the wire; object intersections merge. */
@@ -174,18 +182,19 @@ export class Converter {
       file &&
       this.program.isSourceFileDefaultLibrary(file) &&
       (symbol.flags & (ts.SymbolFlags.Interface | ts.SymbolFlags.Class)) !== 0;
-    if (builtIn && symbol.getName() === 'Date') return { type: 'string', format: 'date-time' };
+    if (builtIn && symbol.getName() === Date.name)
+      return { type: JsonSchemaType.string, format: 'date-time' };
     if (builtIn && !checker.isArrayType(type) && !checker.isTupleType(type)) {
       throw new ConversionError(path, `unsupported built-in ${checker.typeToString(type)}`);
     }
     if (checker.isArrayType(type)) {
       const [item] = checker.getTypeArguments(type as ts.TypeReference);
-      return { type: 'array', items: item ? this.toSchema(item, `${path}[]`) : {} };
+      return { type: JsonSchemaType.array, items: item ? this.toSchema(item, `${path}[]`) : {} };
     }
     if (checker.isTupleType(type)) {
       const items = checker.getTypeArguments(type as ts.TypeReference);
       return {
-        type: 'array',
+        type: JsonSchemaType.array,
         prefixItems: items.map((t, i) => this.toSchema(t, `${path}[${i}]`)),
         minItems: items.length,
         maxItems: items.length,
@@ -206,7 +215,7 @@ export class Converter {
       if (!optional) required.push(name);
     }
     return {
-      type: 'object',
+      type: JsonSchemaType.object,
       ...(Object.keys(properties).length ? { properties } : {}),
       ...(required.length ? { required } : {}),
       ...(index ? { additionalProperties: this.toSchema(index.type, `${path}[key]`) } : {}),

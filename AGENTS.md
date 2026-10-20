@@ -21,7 +21,8 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 | `pnpm db:up` | Start Postgres and Mailpit (podman). Tests need it. |
 | `pnpm db:seed` | Load the demo data. Accounts are in `docs/how-to/run-locally.md`. |
 | `pnpm dev` | Run the API, the web app and the driver app, reachable from the LAN at the printed `APP_ORIGIN`. |
-| `pnpm verify` | Lint, typecheck, unit and integration tests, docs check, i18n check, API description check. Green before every commit. |
+| `pnpm verify` | Lint, typecheck, value-set check, unit and integration tests, docs check, i18n check, API description check. Green before every commit. |
+| `pnpm values:check` | Report string literals that bypass a central value set (ADR-0019). `--fix` rewrites them to `X.member` and adds the import; pass package paths to narrow it (`pnpm values:check apps/web`). |
 | `pnpm test:e2e` | Playwright inside the pinned container, on a fresh `<checkout db>_e2e` and ports +5, never the dev database or `pnpm dev`. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
 | `pnpm format` | Biome fixes. |
 | `pnpm docs:index` | Regenerate `docs/INDEX.md` and the catalog tables in `docs/reference/module-contract.md`. Run after changing any doc or manifest. |
@@ -42,6 +43,14 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 ## Code conventions
 
 - **Types first.** Name the data shape, then write logic. Derive types from zod schemas and the manifests (`PermissionKey`, `SettingValue<K>`, ...). Parse external data at the boundary; trust it inside.
+- **Value sets** (ADR-0019). Every closed set of strings (status, kind, role, reason, error code, party, channel, tab, manifest key) is defined once, as a self-keyed object in a `values.ts`:
+
+  ```ts
+  export const BookingStatus = { requested: 'requested', no_show: 'no_show' } as const;
+  export type BookingStatus = ValueOf<typeof BookingStatus>;
+  ```
+
+  Module sets go in `packages/shared/src/modules/<id>/values.ts`, cross-cutting ones in `packages/shared/src/values/` (`@rampflow/shared/values`). Reuse that one definition everywhere: `BookingStatus.no_show` in code and tests, `z.enum(BookingStatus)` in zod and search params, `text(..., { enum: values(BookingStatus) })` and `oneOf(t.status, values(BookingStatus))` in Drizzle, `Permission.booking.view`, `Feature.booking.pools` and `Module.yard` for manifest keys. Never write a member as a string literal: `pnpm lint` (`lint/value-literals.grit`) and `pnpm values:check` both fail on it. A set that does not exist yet is created in the right `values.ts`, never inlined as a union or an array.
 - **Imports.** `import * as z from 'zod'`. Relative imports carry the `.ts` extension. Shared code: `@rampflow/shared` or `@rampflow/shared/modules/<id>/<file>`.
 - **TypeScript 7.** No `baseUrl`; use `paths`. Every tsconfig lists its `types` explicitly.
 - **Module layout.** Follow "Directory layout" in `docs/reference/module-contract.md`: `schema*.ts`, `<area>/routes.<party>.ts`, `<area>/route-cases.ts`, `emails/<name>.tsx`, `jobs/<name>.ts`.

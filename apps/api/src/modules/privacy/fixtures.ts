@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { StaffLocale } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { type OwnerDb, ownerDb } from '../../../test/db.ts';
 import type { WorldSide } from '../../../test/world.ts';
@@ -36,13 +38,13 @@ export async function seedAcknowledgement(
       tenantId: side.tenantId,
       instructionId: briefing.instructionId,
       versionId: briefing.publishedId,
-      locale: 'en',
+      locale: StaffLocale.en,
       contentHash: randomBytes(32),
       bookingId: o.bookingId ?? null,
       carrierId: side.carrierId,
       driverName: o.driverName,
       statementShown: 'I have read and understood the site rules.',
-      channel: 'link',
+      channel: DriverChannel.link,
       score: null,
       attempts: 1,
       completedAt: o.completedAt,

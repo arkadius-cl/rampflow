@@ -1,4 +1,6 @@
+import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { EraseResult, SubjectMatches } from '@rampflow/shared/modules/privacy/api';
+import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -36,7 +38,7 @@ const acks: Record<'held' | 'expired' | 'linked' | 'other', string> = {
 beforeAll(async () => {
   w = await world();
   briefing = await seedBriefing(ownerDb(), w.A);
-  const booked = (startsAt: Date) => seedBooking(w.A, { startsAt, status: 'departed' });
+  const booked = (startsAt: Date) => seedBooking(w.A, { startsAt, status: BookingStatus.departed });
   jans = (await booked(ago(20))).id as BookingId;
   anna = (await booked(ago(19))).id as BookingId;
   byPlateOnly = (await booked(ago(18))).id as BookingId;
@@ -114,7 +116,7 @@ describe('TN-06 data subject requests', () => {
       .where(eq(privacyRequestLog.tenantId, w.A.tenantId));
     expect(logs).toEqual([
       expect.objectContaining({
-        kind: 'export',
+        kind: PrivacyRequestKind.export,
         matchedBookings: 1,
         matchedAcknowledgements: 3,
         actorUserId: w.A.users.tenant_admin.id,

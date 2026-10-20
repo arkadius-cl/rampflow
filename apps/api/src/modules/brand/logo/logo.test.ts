@@ -1,4 +1,5 @@
 import { LOGO_MAX_BYTES, type LogoResponse } from '@rampflow/shared/modules/brand/api';
+import { ZodIssueCode } from '@rampflow/shared/values';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
@@ -49,7 +50,7 @@ describe('TN-05 logo', () => {
     const tooBig = await upload(w.B, 'image/jpeg', jpegOf(LOGO_MAX_BYTES + 1));
     expect(tooBig.status).toBe(422);
     expect((await errorOf(tooBig)).details?.issues).toEqual([
-      expect.objectContaining({ code: 'too_big' }),
+      expect.objectContaining({ code: ZodIssueCode.too_big }),
     ]);
   });
 
@@ -58,7 +59,7 @@ describe('TN-05 logo', () => {
       const res = await upload(w.B, type, SVG);
       expect(res.status).toBe(422);
       expect((await errorOf(res)).details?.issues).toEqual([
-        expect.objectContaining({ code: 'invalid_format' }),
+        expect.objectContaining({ code: ZodIssueCode.invalid_format }),
       ]);
     }
   });

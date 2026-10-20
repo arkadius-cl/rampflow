@@ -12,12 +12,20 @@ import {
   parseEntitlementOverride,
   permissionsFor,
   type ResolvedSetting,
-  type Role,
   resolveEntitlements,
   resolveSetting,
   type SettingKey,
   type SettingValue,
 } from '@rampflow/shared';
+import {
+  DescribedKind,
+  ErrorCode,
+  GuardKind,
+  Role,
+  ScopeParty,
+  SystemActorName,
+  TenantActorKind,
+} from '@rampflow/shared/values';
 import { eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -47,12 +55,12 @@ const NO_PERMISSIONS: ReadonlySet<PermissionKey> = new Set();
 
 function roleOf(scope: Scope): Role | null {
   switch (scope.party) {
-    case 'platform':
-      return 'platform_admin';
-    case 'tenant':
-      return scope.actor.kind === 'user' ? scope.actor.role : null;
-    case 'carrier':
-    case 'carrier_at_tenant':
+    case ScopeParty.platform:
+      return Role.platform_admin;
+    case ScopeParty.tenant:
+      return scope.actor.kind === TenantActorKind.user ? scope.actor.role : null;
+    case ScopeParty.carrier:
+    case ScopeParty.carrier_at_tenant:
       return scope.role;
     default:
       return null;
@@ -61,10 +69,10 @@ function roleOf(scope: Scope): Role | null {
 
 function tenantOf(scope: Scope): TenantId | null {
   switch (scope.party) {
-    case 'tenant':
-    case 'carrier_at_tenant':
-    case 'driver':
-    case 'public':
+    case ScopeParty.tenant:
+    case ScopeParty.carrier_at_tenant:
+    case ScopeParty.driver:
+    case ScopeParty.public:
       return scope.tenantId;
     default:
       return null;
@@ -129,8 +137,13 @@ function settingLoader(tx: Tx, tenantId: TenantId | null): Access['setting'] {
  * resolved as the tenant, inside the same transaction.
  */
 function entitlementsOf(tx: Tx, scope: Scope, tenantId: TenantId, now: Date) {
-  if (scope.party === 'tenant') return loadEntitlements(tx, tenantId, now);
-  const asTenant: Scope = { party: 'tenant', tenantId, siteIds: [], actor: systemActor('access') };
+  if (scope.party === ScopeParty.tenant) return loadEntitlements(tx, tenantId, now);
+  const asTenant: Scope = {
+    party: ScopeParty.tenant,
+    tenantId,
+    siteIds: [],
+    actor: systemActor(SystemActorName.access),
+  };
   return asScope(tx, asTenant, (inner) => loadEntitlements(inner, tenantId, now));
 }
 
@@ -160,32 +173,36 @@ export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
     const { entitlements } = c.var.access;
     if (entitlements && !entitlements.modules[id]) {
-      throw new ApiError('entitlement_required', `Module ${id} is off`, {
+      throw new ApiError(ErrorCode.entitlement_required, `Module ${id} is off`, {
         key: blockingFeature(catalog, entitlements, id),
       });
     }
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'module', id } });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.module, id } });
 }
 
 export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
-    if (!c.var.access.permissions.has(key)) throw new ApiError('forbidden', `Missing ${key}`);
+    if (!c.var.access.permissions.has(key))
+      throw new ApiError(ErrorCode.forbidden, `Missing ${key}`);
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'permission', key } });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.permission, key } });
 }
 
 /** For features finer than the module, for example `yard.call_to_dock`. */
 export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandler<AppEnv> {
   const guard = createMiddleware<AppEnv>(async (c, next) => {
     if (!c.var.access.entitlements?.features[key]) {
-      throw new ApiError('entitlement_required', `${key} is off`, { key });
+      throw new ApiError(ErrorCode.entitlement_required, `${key} is off`, { key });
     }
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'entitlement', key } });
+  return register(guard, {
+    kind: DescribedKind.guard,
+    guard: { kind: GuardKind.entitlement, key },
+  });
 }
 
 /** Mounts a router of a module that can be off. Needs a non-root prefix. */
@@ -210,6 +227,6 @@ export async function withinLimit(
     sql`select pg_advisory_xact_lock(hashtextextended(${`limit:${tenantId}:${key}`}, 0))`,
   );
   if ((await count(tx)) + 1 > limit) {
-    throw new ApiError('limit_reached', `Limit ${key} of ${limit} reached`, { key, limit });
+    throw new ApiError(ErrorCode.limit_reached, `Limit ${key} of ${limit} reached`, { key, limit });
   }
 }

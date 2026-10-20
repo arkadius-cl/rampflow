@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZodIssueCode } from '../../values/validation.ts';
 import { parseStoredUiPrefs, UiPrefs } from './ui-prefs.ts';
 
 describe('parseStoredUiPrefs', () => {
@@ -36,7 +37,7 @@ describe('UiPrefs', () => {
   it('rejects an unknown key and names it', () => {
     const result = UiPrefs.safeParse({ 'platform.unknown': [] });
     expect(result.error?.issues).toMatchObject([
-      { code: 'unrecognized_keys', path: [], keys: ['platform.unknown'] },
+      { code: ZodIssueCode.unrecognized_keys, path: [], keys: ['platform.unknown'] },
     ]);
   });
 });

@@ -1,3 +1,4 @@
+import { InputKind, ZodIssueCode } from '@rampflow/shared/values';
 import type { FieldError } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Resources } from '@/lib/i18n-resources.gen';
@@ -18,19 +19,19 @@ const CUSTOM: Readonly<Record<string, Validation>> = {
   'Upper bounds ascend and only the last tier is open': 'tiers',
 };
 
-function validationOf(error: FieldError, kind: 'text' | 'number'): Validation {
+function validationOf(error: FieldError, kind: InputKind): Validation {
   switch (error.type) {
-    case 'too_small':
-      return kind === 'text' ? 'required' : 'too_small';
-    case 'too_big':
-      return kind === 'text' ? 'too_long' : 'too_big';
-    case 'invalid_type':
+    case ZodIssueCode.too_small:
+      return kind === InputKind.text ? 'required' : 'too_small';
+    case ZodIssueCode.too_big:
+      return kind === InputKind.text ? 'too_long' : 'too_big';
+    case ZodIssueCode.invalid_type:
       return 'required';
-    case 'invalid_format':
+    case ZodIssueCode.invalid_format:
       return 'format';
-    case 'not_multiple_of':
+    case ZodIssueCode.not_multiple_of:
       return 'multiple_of_5';
-    case 'custom':
+    case ZodIssueCode.custom:
       return CUSTOM[error.message ?? ''] ?? 'invalid';
     default:
       return 'invalid';
@@ -40,7 +41,7 @@ function validationOf(error: FieldError, kind: 'text' | 'number'): Validation {
 /** `message(fieldState.error)` for text fields, `message(error, 'number')` for numbers. */
 export function useIssueText() {
   const { t } = useTranslation();
-  return (error: FieldError | undefined, kind: 'text' | 'number' = 'text') =>
+  return (error: FieldError | undefined, kind: InputKind = InputKind.text) =>
     error ? t(($) => $.sites.validation[validationOf(error, kind)]) : undefined;
 }
 

@@ -4,6 +4,15 @@ import type {
   InvitationAcceptBody,
   InvitationInspectResponse,
 } from '@rampflow/shared/modules/core/api.auth';
+import {
+  ConflictReason,
+  ErrorCode,
+  OrgKind,
+  ScopeParty,
+  SystemActorName,
+  UnauthorizedReason,
+  ZodIssueCode,
+} from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
   type AnyOrgId,
@@ -19,7 +28,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { systemActor } from '../../../kernel/system.ts';
 import { accountByEmail } from '../auth/lookup.ts';
 import { hashPassword } from '../auth/password.ts';
-import { appUser, invitation, membership, membershipSite, type OrgKind, org } from '../schema.ts';
+import { appUser, invitation, membership, membershipSite, org } from '../schema.ts';
 
 // Staff, tenant admin, platform admin and carrier user invitations (PL-01, TN-01, CR-01, CR-04).
 // Every function runs in a transaction under the token scope of the presented token (ADR-0002,
@@ -38,7 +47,7 @@ const pendingWhere = (token: string, now: Date) =>
 
 async function pending(tx: Tx, token: string, now: Date): Promise<PendingInvitation> {
   const [row] = await tx.select().from(invitation).where(pendingWhere(token, now));
-  if (!row) throw new ApiError('unauthorized', 'Invalid or expired invitation');
+  if (!row) throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired invitation');
   return row;
 }
 
@@ -48,17 +57,22 @@ async function pending(tx: Tx, token: string, now: Date): Promise<PendingInvitat
  */
 function orgScope(orgKind: OrgKind, orgId: AnyOrgId, userId: UserId, role: Role): Scope {
   switch (orgKind) {
-    case 'tenant':
+    case OrgKind.tenant:
       return {
-        party: 'tenant',
+        party: ScopeParty.tenant,
         tenantId: orgId as TenantId,
         siteIds: 'all',
-        actor: systemActor('invitation'),
+        actor: systemActor(SystemActorName.invitation),
       };
-    case 'carrier':
-      return { party: 'carrier', carrierId: orgId as CarrierId, userId, role: role as CarrierRole };
-    case 'platform':
-      return { party: 'platform', userId };
+    case OrgKind.carrier:
+      return {
+        party: ScopeParty.carrier,
+        carrierId: orgId as CarrierId,
+        userId,
+        role: role as CarrierRole,
+      };
+    case OrgKind.platform:
+      return { party: ScopeParty.platform, userId };
   }
 }
 
@@ -72,7 +86,8 @@ export async function inspectInvitation(
   // Carrier and platform invitations come from an admin of that org (CR-04); the org name is
   // read as the inviter. Tenant names are read by the system actor.
   const reader = inv.invitedBy;
-  if (inv.orgKind !== 'tenant' && !reader) throw new Error(`Invitation ${inv.id} has no inviter`);
+  if (inv.orgKind !== OrgKind.tenant && !reader)
+    throw new Error(`Invitation ${inv.id} has no inviter`);
   const [named] = await asScope(
     tx,
     orgScope(inv.orgKind, inv.orgId, reader as UserId, inv.role as Role),
@@ -105,9 +120,10 @@ async function signedInAs(tx: Tx, userId: UserId | null, email: string): Promise
   return me && me.email.toLowerCase() === email.toLowerCase() ? userId : null;
 }
 
-const missing = (path: 'name' | 'password') => ({
+/** The request fields a new account needs; a zod issue names them as its path. */
+const missing = (path: keyof Pick<InvitationAcceptBody, 'name' | 'password'>) => ({
   path: [path],
-  code: 'invalid_type',
+  code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
 });
 
@@ -121,7 +137,7 @@ async function createAccount(
   const { name, password } = input;
   if (!name || !password) {
     const issues = [...(name ? [] : [missing('name')]), ...(password ? [] : [missing('password')])];
-    throw new ApiError('validation_failed', 'Name and password are required', { issues });
+    throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', { issues });
   }
   const id = randomUUID() as UserId;
   // The token party may insert users but reads back only its own, so the id is ours and a
@@ -161,11 +177,15 @@ export async function acceptInvitation(
   let userId = await signedInAs(tx, input.signedIn, inv.email);
   if (!userId) {
     if (await accountByEmail(tx, inv.email)) {
-      throw new ApiError('unauthorized', 'Sign in to accept', { reason: 'sign_in_required' });
+      throw new ApiError(ErrorCode.unauthorized, 'Sign in to accept', {
+        reason: UnauthorizedReason.sign_in_required,
+      });
     }
     userId = await createAccount(tx, inv, input, now);
     if (!userId) {
-      throw new ApiError('unauthorized', 'Sign in to accept', { reason: 'sign_in_required' });
+      throw new ApiError(ErrorCode.unauthorized, 'Sign in to accept', {
+        reason: UnauthorizedReason.sign_in_required,
+      });
     }
   }
 
@@ -180,7 +200,7 @@ export async function acceptInvitation(
       siteIds: invitation.siteIds,
       invitedBy: invitation.invitedBy,
     });
-  if (!claimed) throw new ApiError('unauthorized', 'Invalid or expired invitation');
+  if (!claimed) throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired invitation');
 
   const role = claimed.role as Role;
   const joined = userId;
@@ -201,9 +221,11 @@ export async function acceptInvitation(
         })
         .onConflictDoNothing();
       if (created.rowCount !== 1) {
-        throw new ApiError('conflict', 'Already a member', { reason: 'already_member' });
+        throw new ApiError(ErrorCode.conflict, 'Already a member', {
+          reason: ConflictReason.already_member,
+        });
       }
-      if (claimed.orgKind === 'tenant' && claimed.siteIds.length > 0) {
+      if (claimed.orgKind === OrgKind.tenant && claimed.siteIds.length > 0) {
         await inner.insert(membershipSite).values(
           claimed.siteIds.map((siteId) => ({
             membershipId: id,

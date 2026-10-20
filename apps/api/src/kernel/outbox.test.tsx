@@ -1,4 +1,13 @@
 import { randomUUID } from 'node:crypto';
+import {
+  EmailCategory,
+  EmailTemplate,
+  ScopeParty,
+  StaffLocale,
+  TenantActorKind,
+  TenantRole,
+  TokenPurpose,
+} from '@rampflow/shared/values';
 import { Text } from '@react-email/components';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -6,51 +15,45 @@ import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
 import { type TenantId, wrapJson } from '../db/ids.ts';
 import { type Scope, withScope } from '../db/scope.ts';
+import { example as confirmedExample } from '../modules/booking/emails/confirmed.tsx';
 import { entitlementOverride } from '../modules/core/schema.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
 import { loadAccess } from './access.ts';
 import { systemClock } from './clock.ts';
 import { EmailLayout } from './email-layout.tsx';
-import { type Job, runJobTick } from './jobs.ts';
+import { type RunnableJob, runJobTick } from './jobs.ts';
 import { type Mailer, smtpMailer } from './mailer.ts';
 import {
   deliverOutbox,
-  type EmailTemplate,
+  type EmailTemplateModule,
   enqueueEmail,
   retryDelayMs,
   type TemplateLoader,
 } from './outbox.ts';
 import { deriveToken } from './tokens.ts';
 
-declare module './outbox.ts' {
-  interface EmailTemplates {
-    'core.probe': { authTokenId: string };
-    'booking.probe': { bookingId: string };
-  }
-}
-
 const MAILPIT = `http://${process.env.SMTP_HOST ?? 'localhost'}:8025`;
 
-const probe: EmailTemplate<{ authTokenId: string }> = {
-  category: 'account',
+const probe: EmailTemplateModule<{ authTokenId: string }> = {
+  category: EmailCategory.account,
   render: (payload) => ({
     subject: 'Your sign-in link',
     body: (
       <EmailLayout lang="en" preview="Sign in" footer="rampflow">
-        <Text>{`https://rampflow.test/auth/magic#${deriveToken('magic_link', payload.authTokenId)}`}</Text>
+        <Text>{`https://rampflow.test/auth/magic#${deriveToken(TokenPurpose.magic_link, payload.authTokenId)}`}</Text>
       </EmailLayout>
     ),
   }),
   example: { authTokenId: '00000000-0000-0000-0000-000000000000' },
 };
-const bookingProbe: EmailTemplate<{ bookingId: string }> = {
-  category: 'booking',
+const bookingProbe: EmailTemplateModule<{ bookingId: string }> = {
+  category: EmailCategory.booking,
   render: (p) => ({ subject: `Booking ${p.bookingId}`, body: <Text>{p.bookingId}</Text> }),
   example: { bookingId: '00000000-0000-0000-0000-000000000000' },
 };
 const templates: TemplateLoader = async (id) => {
-  if (id === 'core.probe') return probe as EmailTemplate<unknown>;
-  if (id === 'booking.probe') return bookingProbe as EmailTemplate<unknown>;
+  if (id === EmailTemplate.core_magic_link) return probe as EmailTemplateModule<unknown>;
+  if (id === EmailTemplate.booking_confirmed) return bookingProbe as EmailTemplateModule<unknown>;
   throw new Error(`no template ${id}`);
 };
 
@@ -60,16 +63,20 @@ beforeAll(async () => {
 });
 
 const tenantScope = (): Scope => ({
-  party: 'tenant',
+  party: ScopeParty.tenant,
   tenantId: w.A.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: 'dispatcher' },
+  actor: {
+    kind: TenantActorKind.user,
+    userId: w.A.users.dispatcher.id,
+    role: TenantRole.dispatcher,
+  },
 });
 
 const rowsTo = (to: string) =>
   ownerDb().select().from(outboxMessage).where(eq(outboxMessage.toEmail, to));
 
-function outboxJob(mailer: Mailer): Job {
+function outboxJob(mailer: Mailer): RunnableJob {
   return {
     name: `outbox-test-${randomUUID()}`,
     everySeconds: null,
@@ -84,13 +91,13 @@ async function mailpitMessagesTo(to: string): Promise<{ ID: string; Subject: str
 }
 
 const enqueueProbe = (to: string, tenantId: TenantId | null, extra: { dedupeKey?: string } = {}) =>
-  withScope({ party: 'anonymous' }, (tx) =>
+  withScope({ party: ScopeParty.anonymous }, (tx) =>
     enqueueEmail(
       tx,
       {
-        template: 'core.probe',
+        template: EmailTemplate.core_magic_link,
         to,
-        locale: 'en',
+        locale: StaffLocale.en,
         payload: { authTokenId: randomUUID() },
         tenantId,
         ...extra,
@@ -104,13 +111,13 @@ describe('enqueueEmail', () => {
   it('leaves no outbox row when the transaction rolls back', async () => {
     const to = `rollback-${randomUUID()}@outbox.test`;
     await expect(
-      withScope({ party: 'anonymous' }, async (tx) => {
+      withScope({ party: ScopeParty.anonymous }, async (tx) => {
         await enqueueEmail(
           tx,
           {
-            template: 'core.probe',
+            template: EmailTemplate.core_magic_link,
             to,
-            locale: 'en',
+            locale: StaffLocale.en,
             payload: { authTokenId: randomUUID() },
             tenantId: null,
           },
@@ -140,10 +147,10 @@ describe('enqueueEmail', () => {
           enqueueEmail(
             tx,
             {
-              template: 'booking.probe',
+              template: EmailTemplate.booking_confirmed,
               to,
-              locale: 'de',
-              payload: { bookingId: w.A.bookings.own.id },
+              locale: StaffLocale.de,
+              payload: { ...confirmedExample, bookingId: w.A.bookings.own.id },
               tenantId: w.A.tenantId,
             },
             entitlements,
@@ -152,9 +159,9 @@ describe('enqueueEmail', () => {
           enqueueEmail(
             tx,
             {
-              template: 'core.probe',
+              template: EmailTemplate.core_magic_link,
               to,
-              locale: 'de',
+              locale: StaffLocale.de,
               payload: { authTokenId: randomUUID() },
               tenantId: w.A.tenantId,
             },
@@ -181,15 +188,21 @@ describe('enqueueEmail', () => {
   it('stores row ids, never the token a link carries', async () => {
     const to = `token-${randomUUID()}@outbox.test`;
     const authTokenId = randomUUID();
-    await withScope({ party: 'anonymous' }, (tx) =>
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
       enqueueEmail(
         tx,
-        { template: 'core.probe', to, locale: 'en', payload: { authTokenId }, tenantId: null },
+        {
+          template: EmailTemplate.core_magic_link,
+          to,
+          locale: StaffLocale.en,
+          payload: { authTokenId },
+          tenantId: null,
+        },
         null,
         templates,
       ),
     );
-    const token = deriveToken('magic_link', authTokenId);
+    const token = deriveToken(TokenPurpose.magic_link, authTokenId);
     expect(JSON.stringify(await rowsTo(to))).not.toContain(token);
   });
 });
@@ -211,10 +224,16 @@ describe('outbox worker', () => {
   it('delivers to Mailpit, marks the row sent and drops its payload', async () => {
     const to = `deliver-${randomUUID()}@outbox.test`;
     const authTokenId = randomUUID();
-    await withScope({ party: 'anonymous' }, (tx) =>
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
       enqueueEmail(
         tx,
-        { template: 'core.probe', to, locale: 'en', payload: { authTokenId }, tenantId: null },
+        {
+          template: EmailTemplate.core_magic_link,
+          to,
+          locale: StaffLocale.en,
+          payload: { authTokenId },
+          tenantId: null,
+        },
         null,
         templates,
       ),
@@ -229,7 +248,7 @@ describe('outbox worker', () => {
     const message = (await (
       await fetch(`${MAILPIT}/api/v1/message/${messages[0]?.ID}`)
     ).json()) as { Text: string };
-    expect(message.Text).toContain(deriveToken('magic_link', authTokenId));
+    expect(message.Text).toContain(deriveToken(TokenPurpose.magic_link, authTokenId));
   });
 
   it('schedules a retry when the transport fails, without addresses in last_error', async () => {
