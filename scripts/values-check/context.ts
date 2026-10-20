@@ -130,15 +130,23 @@ export function isPropertyNames(
   const pathsOf = (argument: ts.Type) =>
     Boolean(argument.flags & ts.TypeFlags.Object) &&
     union.every((path) => hasPath(checker, argument, path));
-  // The checker drops `keyof` once the object type is resolved, so the annotation is read too.
+  // The checker drops `keyof` once the object type is resolved, so the written types are read
+  // too: the anchor's annotation and the alias declarations it refers to.
+  const written = (node: ts.Node | undefined, depth: number): boolean => {
+    if (!node || depth > 4) return false;
+    if (ts.isParenthesizedTypeNode(node)) return written(node.type, depth);
+    if (ts.isTypeOperatorNode(node)) return node.operator === ts.SyntaxKind.KeyOfKeyword;
+    if (!ts.isTypeReferenceNode(node)) return false;
+    if (node.typeArguments?.some((a) => pathsOf(checker.getTypeFromTypeNode(a)))) return true;
+    let symbol = checker.getSymbolAtLocation(node.typeName);
+    if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol);
+    const alias = symbol?.declarations?.find(ts.isTypeAliasDeclaration);
+    return written(alias?.type, depth + 1);
+  };
   const annotation =
     context.anchor && 'type' in context.anchor ? (context.anchor.type as ts.Node) : undefined;
-  if (annotation && ts.isTypeOperatorNode(annotation)) {
-    return annotation.operator === ts.SyntaxKind.KeyOfKeyword;
-  }
-  if (annotation && ts.isTypeReferenceNode(annotation) && annotation.typeArguments) {
-    if (annotation.typeArguments.some((a) => pathsOf(checker.getTypeFromTypeNode(a)))) return true;
-  }
+  const aliased = context.alias?.declarations?.find(ts.isTypeAliasDeclaration);
+  if (written(annotation, 0) || written(aliased?.type, 1)) return true;
   return context.whole.some((type) => {
     const origin = (type as { origin?: ts.Type }).origin;
     if (type.flags & ts.TypeFlags.Index || (origin && origin.flags & ts.TypeFlags.Index)) {

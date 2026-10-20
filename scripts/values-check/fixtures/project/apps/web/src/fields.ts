@@ -40,3 +40,12 @@ const BADGE: Record<BookingStatus, number> = {
 export function keyOfSetRecord(status: keyof typeof BADGE): boolean {
   return status === 'confirmed'; // → BookingStatus.confirmed
 }
+
+interface Catalog {
+  validation: { required: string; too_long: string };
+}
+type MessageKey = keyof Catalog['validation'];
+
+export function aliasOfKeyOf(): MessageKey {
+  return 'too_long'; // → silent
+}
