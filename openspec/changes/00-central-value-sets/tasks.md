@@ -40,14 +40,14 @@
 
 ## 7. Docs and agent guidance
 
-- [ ] 7.1 Write `docs/decisions/ADR-0019-central-value-sets.md` (frontmatter per `docs/CONVENTIONS.md`, tag `adr`): the self-keyed `as const` object, the location in `values.ts`, manifest key trees, the two enforcement layers, and the alternatives (TS `enum`, arrays, a helper, lint only). Verify with `pnpm docs:check`.
+- [x] 7.1 Write `docs/decisions/ADR-0019-central-value-sets.md` (frontmatter per `docs/CONVENTIONS.md`, tag `adr`): the self-keyed `as const` object, the location in `values.ts`, manifest key trees, the two enforcement layers, and the alternatives (TS `enum`, arrays, a helper, lint only). Verify with `pnpm docs:check`.
 - [ ] 7.2 `AGENTS.md`, code conventions: a **Value sets** rule. It states the form with a three-line example, the one place, the reuse in zod, Drizzle, search params and tests, the ban on literals with the two checks that enforce it, and that a missing set is created in `values.ts` and never inlined. Add `pnpm values:check` to the commands table and to the `pnpm verify` description. Verify `pnpm verify` is green.
 - [ ] 7.3 Update the code examples in `docs/reference/module-contract.md` ("A route", "Directory layout" with `values.ts`, "Derived types"), `docs/tutorials/first-module-change.md` and `docs/how-to/add-a-module-or-entitlement.md` (new keys appear as `Permission.<module>.<name>`). Verify the tutorial's code compiles by following it on a scratch branch, and `pnpm docs:check`.
 - [ ] 7.4 Run `pnpm docs:index`. Verify `docs/INDEX.md` lists ADR-0019 and `pnpm docs:check` passes.
 
 ## 8. Re-plan 01 to 04
 
-- [ ] 8.1 Rewrite every planned value set and literal in the artifacts of `01-data-table`, `02-tenant-self-registration`, `03-tenant-onboarding` and `04-platform-tenant-views` to the new form, for example `TenantStatus`, `TenantFlag`, `OnboardingStep`, `TaxIdType`, `TaxIdStatus`, `HoursTemplate`, the new conflict reasons as `ConflictReason` members, and guards as `Permission...` and `Feature...`. Each set goes in its module's `values.ts`. Verify `openspec validate --all` passes, and that `grep -nE "\] as const|=== '" openspec/changes/0[1-4]-*/*.md openspec/changes/0[1-4]-*/specs -r` finds no planned array value set or literal comparison.
+- [x] 8.1 Rewrite every planned value set and literal in the artifacts of `01-data-table`, `02-tenant-self-registration`, `03-tenant-onboarding` and `04-platform-tenant-views` to the new form, for example `TenantStatus`, `TenantFlag`, `OnboardingStep`, `TaxIdType`, `TaxIdStatus`, `HoursTemplate`, the new conflict reasons as `ConflictReason` members, and guards as `Permission...` and `Feature...`. Each set goes in its module's `values.ts`. Verify `openspec validate --all` passes, and that `grep -nE "\] as const|=== '" openspec/changes/0[1-4]-*/*.md openspec/changes/0[1-4]-*/specs -r` finds no planned array value set or literal comparison.
 
 ## 9. Integration
 
