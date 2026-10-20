@@ -42,3 +42,4 @@ export const queryKey = (orgId: string) => ['tenant', orgId, 'staff'] as const;
 export const cancelled = { reason: 'Ware nicht fertig' };
 // Labels and codes in fields named like discriminants are text, not set members.
 export const membership = { role: 'Tenant admin', code: 'A-01' };
+export const emptyForm = { type: '', status: '' };

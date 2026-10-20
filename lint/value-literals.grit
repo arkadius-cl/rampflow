@@ -62,6 +62,8 @@ or {
     // Text with a capital or a space is a label or a code ('Tenant admin', 'A-01'), not a set
     // member; a typed field is still checked by `pnpm values:check`.
     not $value <: r"['\"`].*[A-Z\s].*['\"`]",
+    // An empty field of a form's defaults, as `''` is exempt from comparisons.
+    not $value <: empty_string(),
     not $member <: within `$_ as const`,
     register_diagnostic(span=$member, message="Use the central value set member for this field (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },
