@@ -7,7 +7,7 @@ import { latestEmailTo, linkIn } from './mailpit.ts';
 
 const APP_ORIGIN = process.env.APP_ORIGIN ?? `http://localhost:${process.env.WEB_PORT ?? 5173}`;
 
-const asPlatformAdmin = (w: World) => ({
+export const asPlatformAdmin = (w: World) => ({
   Cookie: `rf_session=${w.platformAdmin.sessionToken}`,
   Origin: APP_ORIGIN,
 });

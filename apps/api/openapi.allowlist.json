@@ -29,7 +29,6 @@
     "core.invitations.inspectInvitation",
     "core.me.getMe",
     "core.me.updateMe",
-    "core.platform.listTenants",
     "core.sites.listDocks",
     "core.sites.listHalls",
     "core.sites.listSites",

@@ -29,7 +29,10 @@
     "name": "Nazwa firmy",
     "package": "Pakiet",
     "admin_email": "E-mail administratora",
-    "empty": "Brak klientów."
+    "empty": "Brak klientów.",
+    "created_at": "Utworzono",
+    "no_match": "Brak pasujących klientów",
+    "search": "Szukaj klientów po nazwie"
   },
   "packages": {
     "title": "Pakiety",

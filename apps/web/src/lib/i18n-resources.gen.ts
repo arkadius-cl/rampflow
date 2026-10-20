@@ -19,6 +19,7 @@ import type brand_logo from '@rampflow/i18n/locales/en/brand/logo.json';
 import type brand_module from '@rampflow/i18n/locales/en/brand/module.json';
 import type brand_nav from '@rampflow/i18n/locales/en/brand/nav.json';
 import type core_auth from '@rampflow/i18n/locales/en/core/auth.json';
+import type core_data_table from '@rampflow/i18n/locales/en/core/data-table.json';
 import type core_entitlements from '@rampflow/i18n/locales/en/core/entitlements.json';
 import type core_errors from '@rampflow/i18n/locales/en/core/errors.json';
 import type core_module from '@rampflow/i18n/locales/en/core/module.json';
@@ -92,6 +93,7 @@ export interface Resources {
   };
   core: {
     auth: typeof core_auth;
+    'data-table': typeof core_data_table;
     entitlements: typeof core_entitlements;
     errors: typeof core_errors;
     module: typeof core_module;

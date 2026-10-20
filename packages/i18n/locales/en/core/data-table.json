@@ -1,0 +1,22 @@
+{
+  "search": "Search",
+  "clear": "Clear filters",
+  "rows_per_page": "Rows per page",
+  "first_page": "First page",
+  "previous_page": "Previous page",
+  "next_page": "Next page",
+  "last_page": "Last page",
+  "page": "Page {{page}} of {{pages}}",
+  "range": "{{from}}–{{to}} of {{total}}",
+  "range_empty": "0 of {{total}}",
+  "selected": "{{count}} selected",
+  "no_values": "No value found.",
+  "sorted_asc": "sorted ascending",
+  "sorted_desc": "sorted descending",
+  "criteria_search": "Search: “{{q}}”",
+  "criteria_facet": "{{facet}}: {{values}}",
+  "no_match": "No row matches the active criteria: {{criteria}}.",
+  "loading": "Loading",
+  "error": "The list could not be loaded.",
+  "retry": "Try again"
+}

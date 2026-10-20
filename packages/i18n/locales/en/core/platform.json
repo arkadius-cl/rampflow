@@ -29,7 +29,10 @@
     "name": "Company name",
     "package": "Package",
     "admin_email": "Admin email",
-    "empty": "No tenants yet."
+    "empty": "No tenants yet.",
+    "created_at": "Created",
+    "no_match": "No tenants match",
+    "search": "Search tenants by name"
   },
   "packages": {
     "title": "Packages",

@@ -1,27 +1,35 @@
-import type {
-  PackageList,
-  TenantDetail,
-  TenantList,
+import type { ListStateOf } from '@rampflow/shared/contract/list';
+import {
+  type PackageList,
+  type TenantDetail,
+  type TenantList,
+  TenantListQuery,
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
 import type { CarrierUserList, StaffList } from '@rampflow/shared/modules/core/api.staff';
 import { OrgKind } from '@rampflow/shared/values';
-import { queryOptions } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 
 // Query options of the core administration screens (U3). Keys follow lib/query-keys.ts.
 
 export const platformKeys = {
-  tenants: () => [OrgKind.platform, 'tenants'] as const,
+  /** Every page of the tenant list, whatever its query: the prefix mutations invalidate. */
+  tenantLists: () => [OrgKind.platform, 'tenants', 'list'] as const,
   tenant: (tenantId: string) => [OrgKind.platform, 'tenants', tenantId] as const,
   packages: () => [OrgKind.platform, 'packages'] as const,
   settings: () => [OrgKind.platform, 'settings'] as const,
 };
 
-export const tenantsQuery = queryOptions({
-  queryKey: platformKeys.tenants(),
-  queryFn: () => call<TenantList>(api.platform.tenants.$get()),
-});
+/** One page of the tenant list; the previous page stays visible while the next one loads. */
+export const tenantListQuery = (state: ListStateOf<typeof TenantListQuery>) => {
+  const query = TenantListQuery.toQuery(state);
+  return queryOptions({
+    queryKey: [...platformKeys.tenantLists(), query] as const,
+    queryFn: () => call<TenantList>(api.platform.tenants.$get({ query })),
+    placeholderData: keepPreviousData,
+  });
+};
 
 export const tenantQuery = (tenantId: string) =>
   queryOptions({

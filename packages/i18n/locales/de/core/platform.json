@@ -29,7 +29,10 @@
     "name": "Firmenname",
     "package": "Paket",
     "admin_email": "E-Mail der Admin-Person",
-    "empty": "Noch keine Mandanten."
+    "empty": "Noch keine Mandanten.",
+    "created_at": "Angelegt",
+    "no_match": "Keine Mandanten gefunden",
+    "search": "Mandanten nach Namen suchen"
   },
   "packages": {
     "title": "Pakete",

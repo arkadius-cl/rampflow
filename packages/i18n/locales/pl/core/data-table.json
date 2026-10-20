@@ -1,0 +1,22 @@
+{
+  "search": "Szukaj",
+  "clear": "Wyczyść filtry",
+  "rows_per_page": "Wierszy na stronę",
+  "first_page": "Pierwsza strona",
+  "previous_page": "Poprzednia strona",
+  "next_page": "Następna strona",
+  "last_page": "Ostatnia strona",
+  "page": "Strona {{page}} z {{pages}}",
+  "range": "{{from}}–{{to}} z {{total}}",
+  "range_empty": "0 z {{total}}",
+  "selected": "Wybrano: {{count}}",
+  "no_values": "Nie znaleziono wartości.",
+  "sorted_asc": "posortowano rosnąco",
+  "sorted_desc": "posortowano malejąco",
+  "criteria_search": "Wyszukiwanie: „{{q}}”",
+  "criteria_facet": "{{facet}}: {{values}}",
+  "no_match": "Żaden wiersz nie pasuje do aktywnych kryteriów: {{criteria}}.",
+  "loading": "Ładowanie",
+  "error": "Nie udało się wczytać listy.",
+  "retry": "Spróbuj ponownie"
+}

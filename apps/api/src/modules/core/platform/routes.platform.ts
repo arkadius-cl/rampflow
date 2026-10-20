@@ -5,6 +5,8 @@ import {
   type PackageList,
   PutOverride,
   type TenantDetail,
+  type TenantList,
+  TenantListQuery,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
 import {
@@ -70,11 +72,12 @@ export const platform = new Hono<AppEnv>()
       id: 'core.platform.listTenants',
       stories: [StoryId.PL_01, StoryId.PL_04],
       description:
-        '`{ items: [{ id, name, package, usage }] }`. `usage` holds one meter `{ used, limit, soft, over }` per limit: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
-      responses: {},
+        'One page of tenants: `{ items: [{ id, name, package, createdAt, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise } } }`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q` and `package`; `facets.package` counts per package the tenants matching `q`, ignoring `package`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
+      responses: { 200: type<TenantList>() },
     }),
     tenants,
-    async (c) => c.json({ items: await listTenants(c.var.db, c.var.clock.now()) }, 200),
+    validate(ValidationTarget.query, TenantListQuery.query),
+    async (c) => c.json(await listTenants(c.var.db, c.req.valid('query'), c.var.clock.now()), 200),
   )
   .post(
     '/tenants',

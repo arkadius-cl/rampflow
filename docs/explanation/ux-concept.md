@@ -144,7 +144,7 @@ Scope tabs (tenant, then each site). Sections per module. Each row is a `Setting
 
 ### Platform admin (PL-01, PL-02, PL-04)
 
-A tenant table with meters for sites, docks, users and bookings per month. A soft limit above 100 % shows a red "108 % soft" with a warning icon and blocks nothing. Below, the selected tenant's package select, an override table (key, package value, override with "higher" or "lower" and "soft", expiry, remove) and an add-override form whose key select contains only non-reserved keys.
+A data table of tenants: Tenant (link to the tenant view, sortable), Package, Created (instant in the viewer's zone with the zone name, sortable), and meters for sites, docks, users and bookings per month (not sortable). The toolbar searches the tenant name and filters by package with a count per package; "Clear filters" appears while either is set. 25 tenants per page by default, 10, 25, 50 or 100 to choose. "Create tenant" stays in the page header whatever the filters. A soft limit above 100 % shows a red "108 % soft" with a warning icon and blocks nothing. Below, the selected tenant's package select, an override table (key, package value, override with "higher" or "lower" and "soft", expiry, remove) and an add-override form whose key select contains only non-reserved keys.
 
 ## Interaction patterns
 
@@ -155,6 +155,7 @@ A tenant table with meters for sites, docks, users and bookings per month. A sof
 - **Driver flow.** Booking, briefing, quiz, waiting, called, done. Each screen has one primary action in the sticky footer. The PWA polls every 15 s while visible and shows the last known state with its time when offline.
 - **Settings inheritance.** Source badge on every value, "Reset to inherited" only on overrides at the current scope, hidden when the entitlement is off.
 - **Entitlement gating.** `EntitlementGate` renders children when on, nothing when off, and an `UpsellHint` when the page is an admin page. Navigation items of off features are not rendered. API 403 `entitlement_required` maps to the same hint on admin pages and to a plain "not available" page elsewhere.
+- **Lists.** Lists that users browse are `DataTable`s ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)): search, facets, sort and paging run on the server, and the state lives in the URL with the API's parameter names, so a filtered list is a link. A facet, sort or page change adds a history entry, a typing run in the search field adds one, so back restores the previous list. Changing the search, a facet or the page size returns to page 1. First load shows the header with placeholder rows; a later fetch keeps the previous rows, marks the table busy and shows a spinner in the toolbar. A failed fetch shows an error with "Try again". Two empty states: "none yet" with the list's primary action, and "no match" naming the active criteria with "Clear filters". Each row links to its entity's own view.
 - **Org switching.** The org menu in the sidebar header lists all memberships with kind and role. Selecting one navigates to that org's home route. Carriers work across tenants inside one org through filters, not switches.
 
 ## Visual language
@@ -179,7 +180,7 @@ A tenant table with meters for sites, docks, users and bookings per month. A sof
 | Driver | Progress, RadioGroup, Checkbox, Field, Input, Button | `DriverShell`, `PhoneFrame` |
 | Master data | Card, Table, Badge, Field, Input, InputGroup, ToggleGroup, Checkbox, Progress, Button | none |
 | Settings | Tabs, Switch, Input, NativeSelect, Button | `SettingField`, `SourceBadge`, `UpsellHint` |
-| Platform admin | Table, Badge, Card, Field, Input, NativeSelect, Progress, Button | usage `Meter` |
+| Platform admin | Table, Badge, Card, Field, Input, InputGroup, NativeSelect, Select, Popover, Command, Empty, Skeleton, Spinner, Progress, Button | `DataTable`, usage `Meter` |
 
 Custom components and why no shadcn component fits:
 
@@ -190,6 +191,7 @@ Custom components and why no shadcn component fits:
 - `SettingField` and `SourceBadge` (`components/settings-field.tsx`). Field plus provenance plus reset is a product pattern, not a form primitive.
 - `EntitlementGate` and `UpsellHint` (`components/entitlement-gate.tsx`). Behavioural wrapper around the three entitlement states.
 - Shells (`components/shells/`). Composed from Sidebar for the office; the tablet shell (gate and dock stations) and the driver shell are plain layout because Sidebar assumes a desktop.
+- `DataTable` (`components/data-table/`). The shadcn data-table is a guide, not a registry item, so the table, toolbar, faceted filter, sortable header and pagination are composed here from Table, InputGroup, Popover, Command, Badge, Select and Empty on TanStack Table v9, with the state hook that keeps them in the URL.
 - `QrPlaceholder`. Stand-in for a QR encoder; the implementation swaps in a real one.
 
 ## Copy tone and i18n

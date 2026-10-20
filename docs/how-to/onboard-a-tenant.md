@@ -5,7 +5,7 @@ type: how-to
 audience: [platform-admin, tenant-admin, developer]
 tags: [tenancy, entitlements, settings, staff, branding]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/reference/api-routes.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md]
 ---
 
@@ -25,7 +25,7 @@ If the invitation expires or goes to the wrong address, open the tenant and send
 
 Packages are fixed in code (`/platform/packages` shows them). For one tenant, an override changes one key:
 
-1. Open the tenant from the tenant list.
+1. Open the tenant from the tenant list. To find it, type part of its name into the search field or filter by package; select its name to open it.
 2. Add an override: choose the key, the value (on or off for a feature, a number or unlimited for a limit), an optional expiry date and a note, for example "trial until end of November".
 3. The override applies from the tenant's next request. It can raise or lower the package value. At its expiry it stops applying and the package value returns.
 
@@ -37,7 +37,14 @@ Reserved keys (features that are not built yet) cannot be overridden. Turning a 
 
 ## 4. Check usage
 
-The tenant list shows sites, docks, internal users and bookings this month against the package limits. A soft limit (bookings per month) above 100% is flagged but blocks nothing; raise it with an override or move the tenant to a larger package. Internal users count members plus invitations that are still open.
+The tenant list shows sites, docks, internal users and bookings this month against the package limits.
+
+![The tenant list with search, package filter, the created column and usage meters](../assets/screens/platform-tenants.png)
+
+- **Find a tenant.** Type part of the name into the search field; letter case does not matter. Use **Package** to show only some packages; each package shows how many tenants match the search. **Clear filters** removes both.
+- **Order and page.** Select the **Tenant** or **Created** header to sort by name or by creation date, again to reverse. The list shows 25 tenants per page; change it under **Rows per page**.
+- **Share the view.** The address bar holds the search, filter, sort and page, so a copied link opens the same list for another platform admin, and the browser's back button returns to the previous list.
+ A soft limit (bookings per month) above 100% is flagged but blocks nothing; raise it with an override or move the tenant to a larger package. Internal users count members plus invitations that are still open.
 
 ## 5. Invite staff
 

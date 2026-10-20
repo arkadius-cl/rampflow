@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import {
-  catalog,
-  type Entitlements,
-  type PackageId,
-  packages,
-  parseEntitlementOverride,
-} from '@rampflow/shared';
+import { catalog, type Entitlements, packages, parseEntitlementOverride } from '@rampflow/shared';
+import type { ListStateOf } from '@rampflow/shared/contract/list';
 import type { EntitlementDef, Limit } from '@rampflow/shared/contract/module';
 import type {
   CreateTenant,
@@ -14,6 +9,8 @@ import type {
   PackageList,
   PutOverride,
   TenantDetail,
+  TenantList,
+  TenantListQuery,
   TenantSummary,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
@@ -23,13 +20,16 @@ import {
   ErrorCode,
   OrgKind,
   OverrideErrorCode,
+  PackageId,
   Role,
+  values,
   ZodIssueCode,
 } from '@rampflow/shared/values';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
+import { contains, facetCounts, orderBy, pageOf, pageWindow } from '../../../kernel/list.ts';
 import { entitlementOverride, invitation, org, tenantSubscription } from '../schema.ts';
 import { isPending, issueInvitation } from '../staff/invitations.ts';
 import { usageOf } from './usage.ts';
@@ -93,22 +93,29 @@ interface TenantRow {
   id: TenantId;
   name: string;
   package: PackageId;
+  createdAt: Date;
 }
 
-async function tenantRows(tx: Tx, tenantId?: TenantId): Promise<TenantRow[]> {
-  const rows = await tx
-    .select({ id: org.id, name: org.name, package: tenantSubscription.package })
-    .from(org)
-    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
-    .where(and(eq(org.kind, 'tenant'), tenantId ? eq(org.id, tenantId) : undefined))
-    .orderBy(asc(org.name));
-  return rows.map((r) => ({ ...r, id: r.id as string as TenantId }));
-}
+const TENANT_COLUMNS = {
+  id: org.id,
+  name: org.name,
+  package: tenantSubscription.package,
+  createdAt: org.createdAt,
+};
+
+const asTenantRow = (r: { id: string } & Omit<TenantRow, 'id'>): TenantRow => ({
+  ...r,
+  id: r.id as TenantId,
+});
 
 async function requireTenant(tx: Tx, tenantId: TenantId): Promise<TenantRow> {
-  const [row] = await tenantRows(tx, tenantId);
+  const [row] = await tx
+    .select(TENANT_COLUMNS)
+    .from(org)
+    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
+    .where(and(eq(org.kind, OrgKind.tenant), eq(org.id, tenantId)));
   if (!row) throw new ApiError(ErrorCode.not_found);
-  return row;
+  return asTenantRow(row);
 }
 
 async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
@@ -117,15 +124,53 @@ async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
     const u = usage.get(row.id);
     if (!u) throw new Error(`no usage for ${row.id}`);
     return {
-      summary: { ...row, usage: u.usage } satisfies TenantSummary,
+      summary: {
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+        usage: u.usage,
+      } satisfies TenantSummary,
       entitlements: u.entitlements,
     };
   });
 }
 
-/** PL-04: every tenant with its usage against its limits. */
-export async function listTenants(tx: Tx, now: Date): Promise<TenantSummary[]> {
-  return (await summaries(tx, await tenantRows(tx), now)).map((s) => s.summary);
+export type TenantListState = ListStateOf<typeof TenantListQuery>;
+
+/**
+ * PL-04: one page of tenants with their usage, the total and the package counts. Usage is
+ * counted for the page rows only, so the work per request is bounded by the page size.
+ */
+export async function listTenants(tx: Tx, state: TenantListState, now: Date): Promise<TenantList> {
+  const criteria = and(eq(org.kind, OrgKind.tenant), contains(state.q, org.name));
+  const packages =
+    state.package.length > 0 ? inArray(tenantSubscription.package, state.package) : undefined;
+  const where = and(criteria, packages);
+  const [totalRow] = await tx
+    .select({ n: count() })
+    .from(org)
+    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
+    .where(where);
+  // The package counts ignore the package selection, so they show what another choice adds.
+  const byPackage = await tx
+    .select({ value: tenantSubscription.package, count: count() })
+    .from(org)
+    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
+    .where(criteria)
+    .groupBy(tenantSubscription.package);
+  const { limit, offset } = pageWindow(state);
+  const rows = await tx
+    .select(TENANT_COLUMNS)
+    .from(org)
+    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
+    .where(where)
+    .orderBy(...orderBy(state, { name: org.name, createdAt: org.createdAt }, org.id))
+    .limit(limit)
+    .offset(offset);
+  const items = (await summaries(tx, rows.map(asTenantRow), now)).map((s) => s.summary);
+  return {
+    ...pageOf(state, totalRow?.n ?? 0, items),
+    facets: { package: facetCounts(values(PackageId), byPackage) },
+  };
 }
 
 function entitlementViews(pkg: PackageId, resolved: Entitlements): EntitlementView[] {

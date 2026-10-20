@@ -42,7 +42,7 @@ function useRefreshTenant(tenantId: string) {
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: platformKeys.tenant(tenantId) }),
-      queryClient.invalidateQueries({ queryKey: platformKeys.tenants(), exact: true }),
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenantLists() }),
     ]);
 }
 
