@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Feature, Module, Permission } from '@rampflow/shared/values';
+import { Feature, Module, Permission, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
@@ -39,12 +39,19 @@ describe('validate()', () => {
   const Param = z.object({ thingId: z.uuid() });
   const Query = z.object({ limit: z.coerce.number().int().min(1) });
   const Body = z.object({ name: z.string().min(1) });
-  const byParam = validate('param', Param);
-  const byQuery = validate('query', Query);
-  const byJson = validate('json', Body);
+  const byParam = validate(ValidationTarget.param, Param);
+  const byQuery = validate(ValidationTarget.query, Query);
+  const byJson = validate(ValidationTarget.json, Body);
   const app = new Hono()
     .post('/things/:thingId', byParam, byQuery, byJson, (c) =>
-      c.json({ ...c.req.valid('param'), ...c.req.valid('query'), ...c.req.valid('json') }, 200),
+      c.json(
+        {
+          ...c.req.valid(ValidationTarget.param),
+          ...c.req.valid(ValidationTarget.query),
+          ...c.req.valid(ValidationTarget.json),
+        },
+        200,
+      ),
     )
     .onError(onError);
   const thingId = '01a1553d-581a-73e8-9dab-91b3572905c5';

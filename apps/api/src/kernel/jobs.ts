@@ -1,8 +1,8 @@
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { JobName } from '@rampflow/shared/values';
+import { ScopeParty } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { TenantId } from '../db/ids.ts';
 import { db } from '../db/pool.ts';
@@ -90,7 +90,7 @@ export async function forEachTenant(
       const stats = await ctx.tx.transaction((sp) =>
         asScope(
           sp,
-          { party: ActorParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) },
+          { party: ScopeParty.tenant, tenantId, siteIds: 'all', actor: systemActor(job) },
           (tx) => step(tx, tenantId),
         ),
       );

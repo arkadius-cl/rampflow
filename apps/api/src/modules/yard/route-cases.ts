@@ -1,6 +1,12 @@
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
-import { OnSiteStatus } from '@rampflow/shared/modules/booking/values';
-import { Feature, HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import { CommandName, OnSiteStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import type { OwnerDb } from '../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../test/route-cases.ts';
 import type { World, WorldSide } from '../../../test/world.ts';
@@ -27,7 +33,7 @@ const ownIn = (status: keyof typeof STEPS) => async (w: World) => {
       for (const type of STEPS[status]) {
         const dockId = side.sites[0].dockIds[0];
         const command: CommandInput =
-          type === 'check_in' ? { type, plateSeen: null } : { type, dockId };
+          type === CommandName.check_in ? { type, plateSeen: null } : { type, dockId };
         await transitionBooking(ctx, side.bookings.own.id, command);
       }
     });
@@ -40,18 +46,18 @@ const briefings = async (w: World, db: OwnerDb) => {
 };
 
 const gate = {
-  as: Role.gate_operator,
+  as: RouteCaseActor.gate_operator,
   permission: Permission.yard.gate,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 
 const call = {
-  as: Role.dock_operator,
+  as: RouteCaseActor.dock_operator,
   permission: Permission.yard.call,
   entitlement: Feature.yard.call_to_dock,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 

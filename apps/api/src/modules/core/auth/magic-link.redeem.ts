@@ -1,3 +1,4 @@
+import { ScopeParty } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { hashToken } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -22,7 +23,7 @@ export async function inspectMagicLink(tx: Tx, token: string, now: Date): Promis
     );
   if (!row) return null;
   const { userId } = row;
-  const [user] = await asScope(tx, { party: 'user', userId }, (inner) =>
+  const [user] = await asScope(tx, { party: ScopeParty.user, userId }, (inner) =>
     inner.select({ email: appUser.email }).from(appUser).where(eq(appUser.id, userId)),
   );
   return user?.email ?? null;

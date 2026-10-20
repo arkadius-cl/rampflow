@@ -4,7 +4,15 @@ import type {
   ModuleId,
   PermissionKey,
 } from '@rampflow/shared';
-import { StoryId, values } from '@rampflow/shared/values';
+import {
+  BodyKind,
+  DescribedKind,
+  ForeignOutcome,
+  type GuardKind,
+  StoryId,
+  ValidationTarget,
+  values,
+} from '@rampflow/shared/values';
 import type { MiddlewareHandler } from 'hono';
 import type * as z from 'zod';
 
@@ -21,15 +29,15 @@ declare const declared: unique symbol;
 
 /** A JSON body of type `T`. Only the static half of the generator reads `T`. */
 export interface JsonBody<T> {
-  readonly kind: 'json';
+  readonly kind: typeof BodyKind.json;
   readonly [declared]?: T;
 }
 export interface NoBody {
-  readonly kind: 'empty';
+  readonly kind: typeof BodyKind.empty;
 }
 /** A body that is not JSON: a CSV export, an uploaded or served image. */
 export interface FileBody {
-  readonly kind: 'file';
+  readonly kind: typeof BodyKind.file;
   readonly mediaTypes: readonly [string, ...string[]];
 }
 export type Body = JsonBody<unknown> | NoBody | FileBody;
@@ -37,13 +45,13 @@ export type Body = JsonBody<unknown> | NoBody | FileBody;
 export type SuccessStatus = 200 | 201 | 202 | 204;
 
 export function type<T>(): JsonBody<T> {
-  return { kind: 'json' };
+  return { kind: BodyKind.json };
 }
 
-export const noBody: NoBody = { kind: 'empty' };
+export const noBody: NoBody = { kind: ForeignOutcome.empty };
 
 export function file(...mediaTypes: [string, ...string[]]): FileBody {
-  return { kind: 'file', mediaTypes };
+  return { kind: BodyKind.file, mediaTypes };
 }
 
 export interface OpMeta {
@@ -59,16 +67,16 @@ export interface OpMeta {
 }
 
 export type Guard =
-  | { kind: 'permission'; key: PermissionKey }
-  | { kind: 'entitlement'; key: ImplementedFeatureKey }
-  | { kind: 'module'; id: ModuleId };
+  | { kind: typeof GuardKind.permission; key: PermissionKey }
+  | { kind: typeof GuardKind.entitlement; key: ImplementedFeatureKey }
+  | { kind: typeof GuardKind.module; id: ModuleId };
 
-export type ValidationTarget = 'param' | 'query' | 'json';
+export { ValidationTarget };
 
 export type Described =
-  | { kind: 'op'; meta: OpMeta }
-  | { kind: 'validator'; target: ValidationTarget; schema: z.ZodType }
-  | { kind: 'guard'; guard: Guard };
+  | { kind: typeof DescribedKind.op; meta: OpMeta }
+  | { kind: typeof DescribedKind.validator; target: ValidationTarget; schema: z.ZodType }
+  | { kind: typeof DescribedKind.guard; guard: Guard };
 
 // biome-ignore lint/complexity/noBannedTypes: keyed by the middleware functions Hono stores in app.routes
 const registry = new WeakMap<Function, Described>();
@@ -86,5 +94,5 @@ export function describedBy(handler: Function): Described | undefined {
 
 /** The operation metadata of a route. Goes first in the route's chain. */
 export function op(meta: OpMeta): MiddlewareHandler {
-  return register<MiddlewareHandler>(async (_c, next) => next(), { kind: 'op', meta });
+  return register<MiddlewareHandler>(async (_c, next) => next(), { kind: DescribedKind.op, meta });
 }

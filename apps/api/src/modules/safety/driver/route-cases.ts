@@ -1,4 +1,10 @@
-import { Feature, HttpMethod } from '@rampflow/shared/values';
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  RouteCaseActor,
+  RouteCaseGrant,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import type { BookingId, TenantId } from '../../../db/ids.ts';
@@ -10,10 +16,10 @@ const P = '/api/driver/briefings';
 // Instructions apply to every site of their tenant, so the rival carrier's driver at the same
 // tenant reads them too: `empty` means 404 for world B and no data of A's own booking.
 const base = {
-  as: 'driver',
-  permission: 'driver',
+  as: RouteCaseActor.driver,
+  permission: RouteCaseGrant.driver,
   entitlement: Feature.safety.briefings,
-  foreign: 'empty',
+  foreign: ForeignOutcome.empty,
   siteScoped: false,
   setup: async (w, o) => {
     await seedBriefing(o, w.A);

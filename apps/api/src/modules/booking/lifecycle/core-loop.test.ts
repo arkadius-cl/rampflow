@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { ActorParty, CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { ActorParty, CommandName, CreateMode } from '@rampflow/shared/modules/booking/values';
 import { TenantRole } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -28,7 +28,7 @@ describe('core loop: create, check in, call, uncall, call, dock, load, complete,
     const [dock1, dock2] = A.sites[0].dockIds;
     const created = await asStaff(A, A.users.dispatcher, at('2026-10-19T08:00:00Z'), (ctx) =>
       createBooking(ctx, {
-        mode: CreatedParty.staff,
+        mode: CreateMode.staff,
         clientRequestId: randomUUID(),
         siteId: A.sites[0].id,
         loadTypeId: A.sites[0].loadTypeId,
@@ -46,20 +46,28 @@ describe('core loop: create, check in, call, uncall, call, dock, load, complete,
     ) => asStaff(A, A.users[user], at(now), (ctx) => transitionBooking(ctx, id, run));
 
     await step(TenantRole.gate_operator, '2026-11-02T07:50:00Z', {
-      type: 'check_in',
+      type: CommandName.check_in,
       plateSeen: 'PO12345',
     });
-    await step(TenantRole.dock_operator, '2026-11-02T07:55:00Z', { type: 'call', dockId: dock1 });
-    await step(TenantRole.dock_operator, '2026-11-02T08:00:00Z', { type: 'uncall' });
-    await step(TenantRole.gate_operator, '2026-11-02T08:02:00Z', { type: 'call', dockId: dock2 });
-    await step(TenantRole.dock_operator, '2026-11-02T08:05:00Z', { type: 'dock' });
-    await step(TenantRole.dock_operator, '2026-11-02T08:10:00Z', { type: 'start_loading' });
+    await step(TenantRole.dock_operator, '2026-11-02T07:55:00Z', {
+      type: CommandName.call,
+      dockId: dock1,
+    });
+    await step(TenantRole.dock_operator, '2026-11-02T08:00:00Z', { type: CommandName.uncall });
+    await step(TenantRole.gate_operator, '2026-11-02T08:02:00Z', {
+      type: CommandName.call,
+      dockId: dock2,
+    });
+    await step(TenantRole.dock_operator, '2026-11-02T08:05:00Z', { type: CommandName.dock });
+    await step(TenantRole.dock_operator, '2026-11-02T08:10:00Z', {
+      type: CommandName.start_loading,
+    });
     await step(TenantRole.dock_operator, '2026-11-02T08:50:00Z', {
-      type: 'complete',
+      type: CommandName.complete,
       actualLoadUnits: 9,
       discrepancyNote: 'Eine Palette fehlt',
     });
-    await step(TenantRole.gate_operator, '2026-11-02T09:00:00Z', { type: 'depart' });
+    await step(TenantRole.gate_operator, '2026-11-02T09:00:00Z', { type: CommandName.depart });
 
     expect(await bookingRow(id)).toMatchObject({
       status: 'departed',

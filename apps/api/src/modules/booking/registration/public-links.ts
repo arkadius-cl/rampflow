@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PublicLinkInfo, PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, Setting } from '@rampflow/shared/values';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import { type Scope, type Tx, withScope } from '../../../db/scope.ts';
@@ -131,7 +131,7 @@ export interface PublicLinkTarget {
 
 /** The tenant and site of an unrevoked slug, or 404. Runs before any tenant is known. */
 export async function resolveSlug(slug: string): Promise<PublicLinkTarget> {
-  const [link] = await withScope({ party: 'anonymous' }, (tx) =>
+  const [link] = await withScope({ party: ScopeParty.anonymous }, (tx) =>
     tx
       .select({ tenantId: publicLink.tenantId, siteId: publicLink.siteId })
       .from(publicLink)
@@ -141,7 +141,10 @@ export async function resolveSlug(slug: string): Promise<PublicLinkTarget> {
   return link;
 }
 
-export const publicScope = (link: PublicLinkTarget): Scope => ({ party: 'public', ...link });
+export const publicScope = (link: PublicLinkTarget): Scope => ({
+  party: ScopeParty.public,
+  ...link,
+});
 
 /**
  * 404 unless the link a registration came through still takes registrations: its slug is not

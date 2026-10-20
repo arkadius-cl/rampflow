@@ -8,7 +8,7 @@ import {
   Punctuality,
   TurnAwayReason,
 } from '@rampflow/shared/modules/booking/values';
-import { values } from '@rampflow/shared/values';
+import { PolicyCommand, ScopeParty, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -141,7 +141,7 @@ export const booking = pgTable(
       sql`${t.dockId} is not null or ${t.status} not in (${inStatuses(values(DockHoldingStatus))})`,
     ),
     ...carrierOwnedPolicies({ ...t, bookingId: t.id }, { update: true, driver: true }),
-    lockOnly(ActorParty.driver, bookingIs(t.id)),
+    lockOnly(ScopeParty.driver, bookingIs(t.id)),
   ],
 );
 
@@ -174,6 +174,10 @@ export const bookingEvent = pgTable(
     index('booking_event_carrier_id_idx').on(t.carrierId),
     check('booking_event_actor_party_check', oneOf(t.actorParty, values(ActorParty))),
     ...carrierOwnedPolicies(t, { update: false, driver: true }),
-    allow(ActorParty.driver, 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.insert,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
   ],
 );

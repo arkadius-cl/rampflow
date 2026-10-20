@@ -1,4 +1,4 @@
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { world } from '../../test/world.ts';
@@ -17,8 +17,10 @@ const ClockBody = z.object({ now: z.iso.datetime({ offset: true }).nullable() })
 
 export const testRoutes = (clock: PinnableClock) =>
   new Hono<AppEnv>()
-    .post('/seed', validate('json', SeedBody), async (c) => c.json(await world(), 201))
-    .post('/clock', validate('json', ClockBody), (c) => {
+    .post('/seed', validate(ValidationTarget.json, SeedBody), async (c) =>
+      c.json(await world(), 201),
+    )
+    .post('/clock', validate(ValidationTarget.json, ClockBody), (c) => {
       const { now } = c.req.valid('json');
       clock.pin(now === null ? null : new Date(now));
       return c.json({ now: clock.now().toISOString() }, 200);

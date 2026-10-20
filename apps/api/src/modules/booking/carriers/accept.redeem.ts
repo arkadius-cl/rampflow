@@ -81,8 +81,8 @@ export async function acceptCarrierInvitation(
       const { name, password } = input;
       if (!name || !password) {
         const issues = [
-          ...(name ? [] : [missing('name')]),
-          ...(password ? [] : [missing('password')]),
+          ...(name ? [] : [missing('name')]), // values-check-ignore: a request field name, the path of a zod issue
+          ...(password ? [] : [missing('password')]), // values-check-ignore: a request field name, the path of a zod issue
         ];
         throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', {
           issues,

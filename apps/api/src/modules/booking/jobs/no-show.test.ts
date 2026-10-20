@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { CreatedParty, CreateMode } from '@rampflow/shared/modules/booking/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -52,7 +52,7 @@ beforeAll(async () => {
 const staffBookAtStart = (now: Date) =>
   asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
     createBooking(ctx, {
-      mode: CreatedParty.staff,
+      mode: CreateMode.staff,
       clientRequestId: randomUUID(),
       siteId: w.A.sites[0].id,
       loadTypeId: w.A.sites[0].loadTypeId,

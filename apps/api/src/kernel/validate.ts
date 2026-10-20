@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
-import { ErrorCode } from '@rampflow/shared/values';
+import { DescribedKind, ErrorCode } from '@rampflow/shared/values';
 import type { ValidationTargets } from 'hono';
 import type * as z from 'zod';
 import { register, type ValidationTarget } from './describe.ts';
@@ -35,5 +35,9 @@ export function validate<Target extends ValidationTarget, Schema extends z.ZodTy
   target: Target,
   schema: Schema,
 ) {
-  return register(zValidator(target, schema, onInvalid), { kind: 'validator', target, schema });
+  return register(zValidator(target, schema, onInvalid), {
+    kind: DescribedKind.validator,
+    target,
+    schema,
+  });
 }

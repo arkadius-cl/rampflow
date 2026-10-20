@@ -1,5 +1,6 @@
 import type { ValueOf } from '../../values/define.ts';
 import { ConflictReason } from '../../values/errors.ts';
+import { SystemActorName } from '../../values/jobs.ts';
 import { SafetyStatus } from '../safety/values.ts';
 
 // The booking lifecycle's value sets (ADR-0005, docs/reference/booking-lifecycle.md).
@@ -304,3 +305,17 @@ export const BookingChange = {
   avis: 'avis',
 } as const;
 export type BookingChange = ValueOf<typeof BookingChange>;
+
+/** A tenant's decision on a pending carrier registration (TN-03). */
+export const RegistrationDecision = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+export type RegistrationDecision = ValueOf<typeof RegistrationDecision>;
+
+/** The system actor a carrier redemption writes as, named after its token kind. */
+export const CarrierRedeemActor = {
+  carrier_invitation: SystemActorName.carrier_invitation,
+  registration: SystemActorName.registration,
+} as const;
+export type CarrierRedeemActor = ValueOf<typeof CarrierRedeemActor>;

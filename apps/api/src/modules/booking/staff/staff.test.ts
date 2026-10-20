@@ -6,7 +6,12 @@ import type {
   BookingPage,
   BookingView,
 } from '@rampflow/shared/modules/booking/api.staff';
-import { CreatedParty } from '@rampflow/shared/modules/booking/values';
+import {
+  CommandName,
+  CreatedParty,
+  CreateMode,
+  DurationKind,
+} from '@rampflow/shared/modules/booking/values';
 import { DriverLocale } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -109,7 +114,7 @@ describe('reschedule and cancel (BK-03)', () => {
     const late = await seedBooking(w.A, { startsAt });
     const cancelAt = (id: string, now: Date) =>
       asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
-        transitionBooking(ctx, id, { type: 'cancel' }),
+        transitionBooking(ctx, id, { type: CommandName.cancel }),
       );
     // Default cutoff: 120 minutes before the start, at 06:00Z.
     expect((await cancelAt(early.id, new Date('2026-11-04T05:59:00Z'))).booking.cancelledLate).toBe(
@@ -201,7 +206,7 @@ describe('the avis (AV-01, AV-02)', () => {
         name: { de: 'Palettiert', en: 'Palletised' },
         direction: 'inbound',
         duration: {
-          kind: 'tiers',
+          kind: DurationKind.tiers,
           tiers: [
             { upTo: 10, minutes: 30 },
             { upTo: null, minutes: 120 },
@@ -234,7 +239,7 @@ describe('the avis (AV-01, AV-02)', () => {
     expect(unchanged.avis?.loadUnits).toEqual([{ type: 'eur_pallet', quantity: 10 }]);
 
     await asStaff(w.A, w.A.users.tenant_admin, new Date(MON_0800), (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'check_in' }),
+      transitionBooking(ctx, b.id, { type: CommandName.check_in }),
     );
     const accepted = await dispatcher().put(`${base()}/${b.id}/avis`, {
       body: { ...bigger, version: 2 },
@@ -402,7 +407,7 @@ describe('booking emails to the booking contact', () => {
     await expect(
       asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), async (ctx) => {
         await createBooking(ctx, {
-          mode: CreatedParty.staff,
+          mode: CreateMode.staff,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -434,7 +439,7 @@ describe('booking emails to the booking contact', () => {
       createdBy: mail.A.users.carrier_user.id,
     });
     await asStaff(mail.A, mail.A.users.dispatcher, new Date('2026-10-19T08:00:00Z'), (ctx) =>
-      transitionBooking(ctx, b.id, { type: 'cancel' }),
+      transitionBooking(ctx, b.id, { type: CommandName.cancel }),
     );
     expect(await deliveredTo(mail.A.users.carrier_user.email)).toEqual([
       `Booking ${b.code} cancelled`,

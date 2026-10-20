@@ -1,13 +1,13 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
-  ActorParty,
   BookingStatus,
   Direction,
+  DurationKind,
   type LoadStatus,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
-import { TenantRole } from '@rampflow/shared/values';
+import { ScopeParty, TenantActorKind, TenantRole } from '@rampflow/shared/values';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import type { BookingId, DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -115,7 +115,7 @@ export async function capacitySite(
       siteId,
       name: { de: 'Paletten', en: 'Pallets' },
       direction: 'inbound',
-      duration: { kind: 'fixed', minutes: o.minutes ?? 60 },
+      duration: { kind: DurationKind.fixed, minutes: o.minutes ?? 60 },
       bufferMinutes: o.buffer ?? 0,
     })
     .returning();
@@ -171,10 +171,14 @@ export function asTenantAdmin<T>(
   now = new Date('2026-10-19T08:00:00Z'),
 ): Promise<T> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId: side.tenantId,
     siteIds: 'all',
-    actor: { kind: 'user', userId: side.users.tenant_admin.id, role: TenantRole.tenant_admin },
+    actor: {
+      kind: TenantActorKind.user,
+      userId: side.users.tenant_admin.id,
+      role: TenantRole.tenant_admin,
+    },
   };
   return withScope(scope, async (tx) => fn(tx, await loadAccess(tx, scope, testClock(now))));
 }

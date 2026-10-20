@@ -1,6 +1,8 @@
 // Runs before every test file in its worker: points DATABASE_URL and MIGRATION_DATABASE_URL at
 // this worker's clone of the template database, creating it on first use. It must run before
 // anything imports src/kernel/env.ts, which reads DATABASE_URL once.
+
+import { DatabaseUrlVar } from '@rampflow/shared/values';
 import { afterAll } from 'vitest';
 import {
   databaseOf,
@@ -11,8 +13,8 @@ import {
 } from '../scripts/db-setup.ts';
 import { templateDatabase, workerDatabase } from './names.ts';
 
-const owner = requireUrl('MIGRATION_DATABASE_URL');
-const app = requireUrl('DATABASE_URL');
+const owner = requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL);
+const app = requireUrl(DatabaseUrlVar.DATABASE_URL);
 const base = databaseOf(app).replace(/_test_\d+$/, '');
 const worker = workerDatabase(base, process.env.VITEST_POOL_ID ?? '1');
 

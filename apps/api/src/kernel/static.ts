@@ -14,6 +14,9 @@ const IMMUTABLE = 'public, max-age=31536000, immutable';
 /** ADR-0008: no third-party scripts, images or connections in the driver PWA. */
 export const DRIVER_CSP = "default-src 'self'; img-src 'self' data:; connect-src 'self'";
 
+/** The driver PWA's path prefix; the staff app serves everything else. */
+const DRIVER_PREFIX = '/d';
+
 /**
  * Serves the built SPAs in production: files as they are, every other path gets the app's
  * `index.html`. Hashed assets are immutable; `index.html` is always revalidated.
@@ -25,12 +28,12 @@ export function staticFiles(roots: StaticRoots): Hono {
     await next();
     if (!c.res.ok) return;
     c.res.headers.set('Cache-Control', c.req.path.includes('/assets/') ? IMMUTABLE : 'no-cache');
-    if (c.req.path === '/d' || c.req.path.startsWith('/d/')) {
+    if (c.req.path === DRIVER_PREFIX || c.req.path.startsWith(`${DRIVER_PREFIX}/`)) {
       c.res.headers.set('Referrer-Policy', 'no-referrer');
       c.res.headers.set('Content-Security-Policy', DRIVER_CSP);
     }
   });
-  const spa = (prefix: '/d' | '', root: string) => {
+  const spa = (prefix: string, root: string) => {
     const rel = relative(process.cwd(), root);
     app.use(
       `${prefix}/*`,
@@ -44,7 +47,7 @@ export function staticFiles(roots: StaticRoots): Hono {
       return serveStatic({ root: rel, path: 'index.html' })(c, next);
     });
   };
-  spa('/d', roots.driver);
+  spa(DRIVER_PREFIX, roots.driver);
   spa('', roots.web);
   return app;
 }

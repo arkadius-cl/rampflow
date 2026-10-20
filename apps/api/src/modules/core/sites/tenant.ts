@@ -1,7 +1,6 @@
 import type { Entitlements } from '@rampflow/shared';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import type { ConflictReason } from '@rampflow/shared/values';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, TenantActorKind } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
@@ -16,12 +15,12 @@ export interface TenantRequest {
 
 export function tenantRequest(c: Context<AppEnv>): TenantRequest {
   const { scope, access } = c.var;
-  if (scope.party !== ActorParty.tenant || !access.entitlements) {
+  if (scope.party !== ScopeParty.tenant || !access.entitlements) {
     throw new Error(`tenant route under party ${scope.party}`);
   }
   return {
     tenantId: scope.tenantId,
-    userId: scope.actor.kind === 'user' ? scope.actor.userId : null,
+    userId: scope.actor.kind === TenantActorKind.user ? scope.actor.userId : null,
     entitlements: access.entitlements,
   };
 }

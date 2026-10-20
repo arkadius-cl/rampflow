@@ -1,5 +1,16 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, Feature, HttpMethod, Module, Permission, Role } from '@rampflow/shared/values';
+import {
+  AccountCredential,
+  AccountHarnessDefect,
+  ErrorCode,
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Module,
+  Permission,
+  RouteCaseActor,
+  RouteHarnessDefect,
+  ScopeParty,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -48,14 +59,15 @@ describe('route cases of every module', () => {
 // The account harness against a toy /api/me: correct, without the session check, reading every
 // membership past the user filter, and accepting a driver cookie as a session.
 
-type AccountDefect = 'none' | 'no_session' | 'all_users' | 'driver_is_user';
-
-function toyAccountApp(defect: AccountDefect) {
+function toyAccountApp(defect: AccountHarnessDefect) {
   const resolve = async (c: Context<AppEnv>) => {
-    if (defect === 'driver_is_user' && c.req.header('Cookie')?.startsWith('rf_driver=')) {
+    if (
+      defect === AccountHarnessDefect.driver_is_user &&
+      c.req.header('Cookie')?.startsWith('rf_driver=')
+    ) {
       return { party: 'anonymous' } as const;
     }
-    if (defect === 'no_session') return { party: 'anonymous' } as const;
+    if (defect === AccountHarnessDefect.no_session) return { party: 'anonymous' } as const;
     return userScope(c);
   };
   const me = new Hono<AppEnv>().use(scoped(resolve)).get('/', async (c) => {
@@ -64,7 +76,9 @@ function toyAccountApp(defect: AccountDefect) {
       .select({ orgId: membership.orgId, userId: membership.userId })
       .from(membership);
     const visible = rows.filter(
-      (r) => defect === 'all_users' || (scope.party === 'user' && r.userId === scope.userId),
+      (r) =>
+        defect === AccountHarnessDefect.all_users ||
+        (scope.party === ScopeParty.user && r.userId === scope.userId),
     );
     return c.json({ orgs: visible.map((r) => r.orgId) });
   });
@@ -81,39 +95,37 @@ function toyAccountApp(defect: AccountDefect) {
 const meCase: AccountRouteCase = {
   method: HttpMethod.GET,
   path: '/api/me',
-  credential: 'session',
+  credential: AccountCredential.session,
   arrange: async (w) => ({ actor: w.A.users.dispatcher }),
 };
 
-const accountChecks = async (defect: AccountDefect) =>
+const accountChecks = async (defect: AccountHarnessDefect) =>
   [...new Set((await checkAccountCase(toyAccountApp(defect), meCase)).map((p) => p.check))].sort();
 
 describe('the account harness', () => {
   it('passes a correct session route', async () => {
-    expect(await checkAccountCase(toyAccountApp('none'), meCase)).toEqual([]);
+    expect(await checkAccountCase(toyAccountApp(AccountHarnessDefect.none), meCase)).toEqual([]);
   });
 
   it('fails a route that serves anonymous callers', async () => {
-    expect(await accountChecks('no_session')).toContain('anonymous');
+    expect(await accountChecks(AccountHarnessDefect.no_session)).toContain('anonymous');
   });
 
   it('fails a route that treats a driver cookie as a session', async () => {
-    expect(await accountChecks('driver_is_user')).toEqual(['wrong_party']);
+    expect(await accountChecks(AccountHarnessDefect.driver_is_user)).toEqual(['wrong_party']);
   });
 
   it('fails a route that shows other users their memberships', async () => {
-    expect(await accountChecks('all_users')).toContain('foreign_org');
+    expect(await accountChecks(AccountHarnessDefect.all_users)).toContain('foreign_org');
   });
 });
 
 // The harness must catch the defects it exists for. A toy area, wired like modules/index.ts,
 // in a correct version and with one defect each.
 
-type Defect = 'none' | 'bypasses_rls' | 'no_permission' | 'no_entitlement';
-
-function toyApp(defect: Defect) {
+function toyApp(defect: RouteHarnessDefect) {
   const readDock = async (c: { var: AppEnv['Variables'] }, dockId: DockId) => {
-    if (defect === 'bypasses_rls') {
+    if (defect === RouteHarnessDefect.bypasses_rls) {
       return (
         await ownerDb()
           .select({ id: dock.id, code: dock.code })
@@ -121,7 +133,7 @@ function toyApp(defect: Defect) {
           .where(eq(dock.id, dockId))
       )[0];
     }
-    const tenantId = c.var.scope.party === ActorParty.tenant ? c.var.scope.tenantId : null;
+    const tenantId = c.var.scope.party === ScopeParty.tenant ? c.var.scope.tenantId : null;
     if (!tenantId) return undefined;
     const rows = await c.var.db
       .select({ id: dock.id, code: dock.code })
@@ -131,10 +143,10 @@ function toyApp(defect: Defect) {
   };
   const yard = new Hono<AppEnv>().get(
     '/docks/:dockId',
-    defect === 'no_permission'
+    defect === RouteHarnessDefect.no_permission
       ? async (_c, next) => next()
       : requirePermission(Permission.yard.dock),
-    defect === 'no_entitlement'
+    defect === RouteHarnessDefect.no_entitlement
       ? async (_c, next) => next()
       : requireEntitlement(Feature.yard.call_to_dock),
     async (c) => {
@@ -148,7 +160,7 @@ function toyApp(defect: Defect) {
     .get('/bookings/:bookingId', requirePermission(Permission.booking.view), async (c) => {
       const id = c.req.param('bookingId') as BookingId;
       const rows =
-        defect === 'bypasses_rls'
+        defect === RouteHarnessDefect.bypasses_rls
           ? await ownerDb()
               .select({ id: booking.id, code: booking.code })
               .from(booking)
@@ -178,50 +190,53 @@ const [dockCase, bookingCase] = defineRouteCases([
   {
     method: HttpMethod.GET,
     path: '/api/t/:orgId/yard/docks/:dockId',
-    as: Role.dock_operator,
+    as: RouteCaseActor.dock_operator,
     permission: Permission.yard.dock,
     entitlement: Feature.yard.call_to_dock,
     params: (w) => ({ orgId: w.A.tenantId, dockId: w.A.sites[0].dockIds[0] }),
-    foreign: 'not_found',
+    foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },
   {
     method: HttpMethod.GET,
     path: '/api/c/:orgId/bookings/:bookingId',
-    as: Role.carrier_user,
+    as: RouteCaseActor.carrier_user,
     permission: Permission.booking.view,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId, bookingId: w.A.bookings.own.id }),
-    foreign: 'not_found',
+    foreign: ForeignOutcome.not_found,
     siteScoped: false,
   },
 ]) as [RouteCase, RouteCase];
 
-const checks = async (defect: Defect, rc: RouteCase) =>
+const checks = async (defect: RouteHarnessDefect, rc: RouteCase) =>
   [...new Set((await checkRouteCase(toyApp(defect), rc)).map((p) => p.check))].sort();
 
 describe('the harness', () => {
   it('passes correct routes', async () => {
-    expect(await checkRouteCase(toyApp('none'), dockCase)).toEqual([]);
-    expect(await checkRouteCase(toyApp('none'), bookingCase)).toEqual([]);
+    expect(await checkRouteCase(toyApp(RouteHarnessDefect.none), dockCase)).toEqual([]);
+    expect(await checkRouteCase(toyApp(RouteHarnessDefect.none), bookingCase)).toEqual([]);
   });
 
   it('fails a handler that reads past RLS without a tenant filter', async () => {
-    expect(await checks('bypasses_rls', dockCase)).toEqual(['leak', 'site']);
+    expect(await checks(RouteHarnessDefect.bypasses_rls, dockCase)).toEqual(['leak', 'site']);
   });
 
   it('fails a carrier route that shows another carrier of the same tenant its booking', async () => {
-    expect(await checks('bypasses_rls', bookingCase)).toEqual(['leak', 'rival_carrier']);
+    expect(await checks(RouteHarnessDefect.bypasses_rls, bookingCase)).toEqual([
+      'leak',
+      'rival_carrier',
+    ]);
   });
 
   it('fails a route without its permission or entitlement check', async () => {
-    expect(await checks('no_permission', dockCase)).toEqual(['permission']);
-    expect(await checks('no_entitlement', dockCase)).toEqual(['entitlement']);
+    expect(await checks(RouteHarnessDefect.no_permission, dockCase)).toEqual(['permission']);
+    expect(await checks(RouteHarnessDefect.no_entitlement, dockCase)).toEqual(['entitlement']);
   });
 
   it('fails a case that leaves out the entitlement its route requires', async () => {
     const undeclared = { ...dockCase, entitlement: null };
-    expect(await checkRouteCase(toyApp('none'), undeclared)).toEqual([
+    expect(await checkRouteCase(toyApp(RouteHarnessDefect.none), undeclared)).toEqual([
       {
         check: 'entitlement',
         detail: expect.stringContaining('yard.call_to_dock'),
@@ -231,6 +246,6 @@ describe('the harness', () => {
 
   it('fails a case whose actor never reaches the handler', async () => {
     const wrongActor = { ...dockCase, as: 'carrier_user' as const };
-    expect(await checks('none', wrongActor)).toContain('control');
+    expect(await checks(RouteHarnessDefect.none, wrongActor)).toContain('control');
   });
 });

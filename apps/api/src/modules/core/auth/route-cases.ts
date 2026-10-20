@@ -1,5 +1,5 @@
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
-import { HttpMethod } from '@rampflow/shared/values';
+import { AccountCredential, HttpMethod } from '@rampflow/shared/values';
 import { defineAccountCases } from '../../../../test/route-cases.ts';
 import { account, authTokenFor } from './fixtures.ts';
 
@@ -7,7 +7,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/auth/login',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (_w, db) => {
       const a = await account(db);
       return { actor: null, body: { email: a.email, password: a.password } };
@@ -16,19 +16,19 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/auth/logout',
-    credential: 'session',
+    credential: AccountCredential.session,
     arrange: async (w) => ({ actor: w.A.users.dispatcher }),
   },
   {
     method: HttpMethod.POST,
     path: '/api/auth/magic-link',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (_w, db) => ({ actor: null, body: { email: (await account(db)).email } }),
   },
   {
     method: HttpMethod.POST,
     path: '/api/auth/magic-link/exchange',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (_w, db) => {
       const a = await account(db);
       return {
@@ -41,7 +41,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/auth/magic-link/inspect',
-    credential: 'token',
+    credential: AccountCredential.token,
     singleUse: false,
     arrange: async (_w, db) => {
       const a = await account(db);
@@ -55,13 +55,13 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/auth/password-reset',
-    credential: 'none',
+    credential: AccountCredential.none,
     arrange: async (_w, db) => ({ actor: null, body: { email: (await account(db)).email } }),
   },
   {
     method: HttpMethod.POST,
     path: '/api/auth/password-reset/confirm',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (_w, db) => {
       const a = await account(db);
       const token = await authTokenFor(db, AuthTokenKind.password_reset, a.id);

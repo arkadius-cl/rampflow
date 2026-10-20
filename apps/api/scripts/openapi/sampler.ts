@@ -1,3 +1,4 @@
+import { JsonSchemaType } from '@rampflow/shared/values';
 import type { JsonSchema } from './schema.ts';
 
 // Request body examples for Bruno and Postman (design D10): the first enum value, the lower bound,
@@ -42,22 +43,24 @@ export function sample(
     const first = alternatives.find((s) => s.type !== 'null') ?? alternatives[0];
     return first ? sample(first, components, name) : null;
   }
-  const type = Array.isArray(schema.type) ? schema.type.find((t) => t !== 'null') : schema.type;
+  const type = Array.isArray(schema.type)
+    ? schema.type.find((t) => t !== JsonSchemaType.null)
+    : schema.type;
   switch (type) {
-    case 'string':
+    case JsonSchemaType.string:
       return sampleString(schema, name);
-    case 'integer':
-    case 'number':
+    case JsonSchemaType.integer:
+    case JsonSchemaType.number:
       return schema.minimum ?? (schema.exclusiveMinimum ?? 0) + 1;
-    case 'boolean':
+    case JsonSchemaType.boolean:
       return false;
-    case 'null':
+    case JsonSchemaType.null:
       return null;
-    case 'array': {
+    case JsonSchemaType.array: {
       const items = schema.items ? sample(schema.items, components) : null;
       return Array.from({ length: schema.minItems ?? 0 }, () => items);
     }
-    case 'object': {
+    case JsonSchemaType.object: {
       const out: Record<string, unknown> = {};
       for (const name of schema.required ?? []) {
         const property = schema.properties?.[name];

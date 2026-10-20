@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Entitlements } from '@rampflow/shared';
 import { LOGO_MAX_BYTES, type LogoView, logoUrl } from '@rampflow/shared/modules/brand/api';
 import { LogoContentType } from '@rampflow/shared/modules/brand/values';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, ZodIssueCode } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -25,18 +25,22 @@ export function sniffLogo(bytes: Uint8Array): LogoContentType | null {
   return null;
 }
 
-const issue = (code: 'too_big' | 'invalid_format', message: string) =>
+const issue = (
+  code: typeof ZodIssueCode.too_big | typeof ZodIssueCode.invalid_format,
+  message: string,
+) =>
   new ApiError(ErrorCode.validation_failed, 'Invalid logo', {
     issues: [{ path: [], code, message }],
   });
 
-export const tooBig = () => issue('too_big', `At most ${LOGO_MAX_BYTES} bytes`);
+export const tooBig = () => issue(ZodIssueCode.too_big, `At most ${LOGO_MAX_BYTES} bytes`);
 
 /** 422 unless the bytes are a PNG or JPEG of at most 256 KB. */
 export function parseLogo(bytes: Uint8Array): { contentType: LogoContentType; bytes: Buffer } {
   if (bytes.length > LOGO_MAX_BYTES) throw tooBig();
   const contentType = sniffLogo(bytes);
-  if (!contentType || bytes.length === 0) throw issue('invalid_format', 'PNG or JPEG only');
+  if (!contentType || bytes.length === 0)
+    throw issue(ZodIssueCode.invalid_format, 'PNG or JPEG only');
   return { contentType, bytes: Buffer.from(bytes) };
 }
 

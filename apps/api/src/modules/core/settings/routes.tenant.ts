@@ -4,7 +4,7 @@ import {
   SettingsQuery,
   type SettingsView,
 } from '@rampflow/shared/modules/core/api.settings';
-import { Permission, SettingScope, StoryId } from '@rampflow/shared/values';
+import { Permission, SettingScope, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import * as z from 'zod';
@@ -45,7 +45,7 @@ export const tenant = new Hono<AppEnv>()
         '`?siteId=` reads the site level, without it the tenant level: `{ scope, siteId, items: [{ key, module, scopes, value, source, inherited: { value, source } }] }` for every available key the level may hold',
       responses: { 200: type<SettingsView>() },
     }),
-    validate('query', SettingsQuery),
+    validate(ValidationTarget.query, SettingsQuery),
     async (c) => {
       const { req, target } = await targetOf(c, c.req.valid('query').siteId);
       return c.json(await settingsView(c.var.db, target, req.entitlements), 200);
@@ -60,8 +60,8 @@ export const tenant = new Hono<AppEnv>()
         'Needs the entitlement that the key\'s `requires` names. `{ siteId: uuid | null, value }` → the field. 400 for an unknown key or a level the key lacks (`scope_not_allowed`, `allowed`), 403 `entitlement_required` with the blocking feature, 422 under `["value", ...]`, 404 for another tenant\'s site',
       responses: { 200: type<SettingEntry>() },
     }),
-    validate('param', KeyParam),
-    validate('json', PutTenantSetting),
+    validate(ValidationTarget.param, KeyParam),
+    validate(ValidationTarget.json, PutTenantSetting),
     async (c) => {
       const { siteId, value } = c.req.valid('json');
       const { req, target } = await targetOf(c, siteId);
@@ -85,8 +85,8 @@ export const tenant = new Hono<AppEnv>()
       description: '`?siteId=`; "Reset to inherited"',
       responses: { 204: noBody },
     }),
-    validate('param', KeyParam),
-    validate('query', SettingsQuery),
+    validate(ValidationTarget.param, KeyParam),
+    validate(ValidationTarget.query, SettingsQuery),
     async (c) => {
       const { target } = await targetOf(c, c.req.valid('query').siteId);
       await resetSetting(c.var.db, target, c.req.valid('param').key);

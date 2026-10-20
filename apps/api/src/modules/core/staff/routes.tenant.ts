@@ -6,7 +6,14 @@ import {
   type TenantRole,
   UpdateStaff,
 } from '@rampflow/shared/modules/core/api.staff';
-import { Limit, OrgKind, Permission, Setting, StoryId } from '@rampflow/shared/values';
+import {
+  Limit,
+  OrgKind,
+  Permission,
+  Setting,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import * as z from 'zod';
@@ -57,7 +64,7 @@ export const tenant = new Hono<AppEnv>()
       limits: [Limit.core.max_internal_users],
       responses: { 201: type<StaffInvitationView>() },
     }),
-    validate('json', InviteStaff),
+    validate(ValidationTarget.json, InviteStaff),
     async (c) => {
       const req = tenantRequest(c);
       const tx = c.var.db;
@@ -98,7 +105,7 @@ export const tenant = new Hono<AppEnv>()
       description: '204, the link stops working',
       responses: { 204: noBody },
     }),
-    validate('param', InvitationParam),
+    validate(ValidationTarget.param, InvitationParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const { invitationId } = c.req.valid('param');
@@ -115,8 +122,8 @@ export const tenant = new Hono<AppEnv>()
         '`{ role?, siteIds? }` → the member; a role without a site list drops its `membership_site` rows',
       responses: { 200: type<StaffMemberView>() },
     }),
-    validate('param', MembershipParam),
-    validate('json', UpdateStaff),
+    validate(ValidationTarget.param, MembershipParam),
+    validate(ValidationTarget.json, UpdateStaff),
     async (c) => {
       const { tenantId, userId } = tenantRequest(c);
       const view = await updateMember<TenantRole>(
@@ -137,7 +144,7 @@ export const tenant = new Hono<AppEnv>()
       description: "access ends on the member's next request",
       responses: { 204: noBody },
     }),
-    validate('param', MembershipParam),
+    validate(ValidationTarget.param, MembershipParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const org_ = { orgId: tenantId, orgKind: 'tenant' as const };

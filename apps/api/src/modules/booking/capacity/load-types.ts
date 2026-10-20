@@ -4,7 +4,7 @@ import type {
   LoadTypeView,
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
-import { Direction } from '@rampflow/shared/modules/booking/values';
+import { Direction, DurationKind } from '@rampflow/shared/modules/booking/values';
 import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
@@ -26,12 +26,12 @@ type LoadTypeRow = typeof loadType.$inferSelect;
 export const SEEDED_LOAD_TYPES = [
   {
     name: { de: 'Paket / Transporter', en: 'Parcel / van' },
-    duration: { kind: 'fixed', minutes: 15 },
+    duration: { kind: DurationKind.fixed, minutes: 15 },
   },
   {
     name: { de: 'Palettiert', en: 'Palletised' },
     duration: {
-      kind: 'tiers',
+      kind: DurationKind.tiers,
       tiers: [
         { upTo: 16, minutes: 30 },
         { upTo: 33, minutes: 60 },
@@ -41,7 +41,7 @@ export const SEEDED_LOAD_TYPES = [
   },
   {
     name: { de: 'Lose verladen', en: 'Floor-loaded / loose' },
-    duration: { kind: 'fixed', minutes: 90 },
+    duration: { kind: DurationKind.fixed, minutes: 90 },
   },
 ] as const satisfies readonly { name: LoadTypeView['name']; duration: LoadTypeDuration }[];
 
@@ -60,7 +60,10 @@ export async function seedLoadTypes(tx: Tx, s: { id: SiteId; tenantId: TenantId 
 
 /** Tiered durations need `booking.duration_rules` to be written (MD-05). */
 function requireDurationRules(req: TenantRequest, duration: LoadTypeDuration | undefined): void {
-  if (duration?.kind === 'tiers' && !req.entitlements.features['booking.duration_rules']) {
+  if (
+    duration?.kind === DurationKind.tiers &&
+    !req.entitlements.features['booking.duration_rules']
+  ) {
     throw new ApiError(ErrorCode.entitlement_required, 'booking.duration_rules is off', {
       key: 'booking.duration_rules',
     });

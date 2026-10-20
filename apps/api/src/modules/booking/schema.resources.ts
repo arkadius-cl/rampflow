@@ -5,7 +5,7 @@ import {
   Direction,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
-import { values } from '@rampflow/shared/values';
+import { PolicyReader, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -78,7 +78,10 @@ export const bookableResource = pgTable(
       sql`${t.capacityCap} is null or (${t.kind} = 'pool' and ${t.capacityCap} >= 1)`,
     ),
     check('bookable_resource_daily_cap_check', sql`${t.dailyCap} is null or ${t.dailyCap} >= 1`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -107,7 +110,7 @@ export const resourceDock = pgTable(
     index('resource_dock_resource_id_idx').on(t.resourceId),
     index('resource_dock_tenant_id_idx').on(t.tenantId),
     index('resource_dock_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
 
@@ -135,7 +138,7 @@ export const openingHours = pgTable(
     index('opening_hours_resource_id_idx').on(t.resourceId),
     check('opening_hours_weekday_check', sql`${t.weekday} between 1 and 7`),
     check('opening_hours_window_check', sql`${t.opens} < ${t.closes}`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
 
@@ -176,7 +179,7 @@ export const closure = pgTable(
       'closure_holiday_date_check',
       sql`(${t.source} = 'holiday') = (${t.holidayDate} is not null)`,
     ),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );
 
@@ -202,7 +205,10 @@ export const loadType = pgTable(
     index('load_type_site_id_idx').on(t.siteId),
     check('load_type_direction_check', oneOf(t.direction, values(Direction))),
     check('load_type_buffer_check', sql`${t.bufferMinutes} between 0 and 240`),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -227,6 +233,6 @@ export const loadTypeResource = pgTable(
     index('load_type_resource_resource_id_idx').on(t.resourceId),
     index('load_type_resource_tenant_id_idx').on(t.tenantId),
     index('load_type_resource_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier_at_tenant'] }),
+    ...tenantPolicies(t, { site: t.siteId, readers: [PolicyReader.carrier_at_tenant] }),
   ],
 );

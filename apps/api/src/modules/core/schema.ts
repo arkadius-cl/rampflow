@@ -1,9 +1,5 @@
 import { ROLE_PARTY } from '@rampflow/shared';
-import {
-  ActorParty,
-  CarrierLinkSource,
-  CarrierLinkStatus,
-} from '@rampflow/shared/modules/booking/values';
+import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import {
   AuthTokenKind,
   DockStatus,
@@ -11,7 +7,15 @@ import {
   RateLimitBucket,
   TemperatureZone,
 } from '@rampflow/shared/modules/core/values';
-import { OrgKind, PackageId, StaffLocale, values } from '@rampflow/shared/values';
+import {
+  OrgKind,
+  PackageId,
+  PolicyCommand,
+  PolicyReader,
+  ScopeParty,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -81,32 +85,36 @@ export const org = pgTable(
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
     check('org_kind_check', oneOf(t.kind, values(OrgKind))),
     check('org_name_length', sql`char_length(${t.name}) between 1 and 120`),
-    allow(OrgKind.platform, 'all', always),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
     allow(
-      'user',
-      'select',
+      ScopeParty.user,
+      PolicyCommand.select,
       sql`exists (select 1 from membership m where m.org_id = ${t.id} and m.user_id = (select app.user_id()))`,
     ),
     // A tenant reads its own org, the carriers linked to it (TN-03), and the carriers a
     // registration would link, so it decides on the company it actually gets (TN-04).
     allow(
-      ActorParty.tenant,
-      'select',
+      ScopeParty.tenant,
+      PolicyCommand.select,
       sql`${tenantIs(t.id)} or exists (select 1 from tenant_carrier_link l where l.tenant_id = (select app.tenant_id()) and l.carrier_id = ${t.id}) or exists (select 1 from carrier_registration r where r.tenant_id = (select app.tenant_id()) and r.carrier_id = ${t.id})`,
     ),
-    allow('carrier_at_tenant', 'select', sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`),
-    allow(ActorParty.driver, 'select', tenantIs(t.id)),
-    allow('public', 'select', tenantIs(t.id)),
+    allow(
+      ScopeParty.carrier_at_tenant,
+      PolicyCommand.select,
+      sql`${tenantIs(t.id)} or ${carrierIs(t.id)}`,
+    ),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.id)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.id)),
     // A carrier reads its own org, linked tenants, and tenants it registered at (CR-02).
     allow(
-      ActorParty.carrier,
-      'select',
+      ScopeParty.carrier,
+      PolicyCommand.select,
       sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
     ),
-    allow(ActorParty.system, 'select', always),
+    allow(ScopeParty.system, PolicyCommand.select, always),
     // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02).
-    allow('user', 'insert', sql`${t.kind} = 'carrier'`),
-    allow('token', 'insert', sql`${t.kind} = 'carrier'`),
+    allow(ScopeParty.user, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
+    allow(ScopeParty.token, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
   ],
 );
 
@@ -129,16 +137,16 @@ export const appUser = pgTable(
   (t) => [
     check('app_user_locale_check', oneOf(t.locale, values(StaffLocale))),
     check('app_user_ui_prefs_check', sql`jsonb_typeof(${t.uiPrefs}) = 'object'`),
-    allow(OrgKind.platform, 'all', always),
-    allow('user', 'select', userIs(t.id)),
-    allow('user', 'update', userIs(t.id)),
-    allow('token', 'select', userIs(t.id)),
-    allow('token', 'update', userIs(t.id)),
-    allow('token', 'insert', always),
-    allow('public', 'insert', always),
-    allow(ActorParty.tenant, 'select', sharesOrg(t.id)),
-    allow(ActorParty.carrier, 'select', sharesOrg(t.id)),
-    allow('carrier_at_tenant', 'select', sharesOrg(t.id)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.id)),
+    allow(ScopeParty.user, PolicyCommand.update, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.select, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.update, userIs(t.id)),
+    allow(ScopeParty.token, PolicyCommand.insert, always),
+    allow(ScopeParty.public, PolicyCommand.insert, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, sharesOrg(t.id)),
+    allow(ScopeParty.carrier, PolicyCommand.select, sharesOrg(t.id)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, sharesOrg(t.id)),
   ],
 );
 
@@ -226,10 +234,10 @@ export const membership = pgTable(
     unique('membership_id_org_key').on(t.id, t.orgId),
     index('membership_org_id_idx').on(t.orgId),
     check('membership_role_check', membershipRoleCheck(t.orgKind, t.role)),
-    allow('user', 'select', userIs(t.userId)),
-    allow(OrgKind.platform, 'all', always),
-    allow(ActorParty.tenant, 'all', tenantIs(t.orgId)),
-    allow(ActorParty.carrier, 'all', carrierIs(t.orgId)),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.userId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.orgId)),
+    allow(ScopeParty.carrier, PolicyCommand.all, carrierIs(t.orgId)),
   ],
 );
 
@@ -257,12 +265,12 @@ export const tenantSubscription = pgTable(
 
 function tenantEntitlementPolicies(t: { tenantId: AnyPgColumn }) {
   return [
-    allow(OrgKind.platform, 'all', always),
-    allow(ActorParty.tenant, 'select', tenantIs(t.tenantId)),
-    allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow(ActorParty.driver, 'select', tenantIs(t.tenantId)),
-    allow('public', 'select', tenantIs(t.tenantId)),
-    allow(ActorParty.carrier, 'select', linkedTenant(t.tenantId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, linkedTenant(t.tenantId)),
   ];
 }
 
@@ -289,8 +297,8 @@ export const entitlementOverride = pgTable(
     check('entitlement_override_value_wrapped', isWrappedJson(t.value)),
     // The note is the platform's internal reason: carriers, drivers and the public never read
     // overrides; loadAccess resolves their tenant's entitlements as the tenant (kernel/access.ts).
-    allow(OrgKind.platform, 'all', always),
-    allow(ActorParty.tenant, 'select', tenantIs(t.tenantId)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.select, tenantIs(t.tenantId)),
   ],
 );
 
@@ -321,7 +329,12 @@ export const site = pgTable(
     check('site_default_locale_check', oneOf(t.defaultLocale, values(StaffLocale))),
     ...tenantPolicies(t, {
       site: t.id,
-      readers: ['carrier', 'carrier_at_tenant', 'driver', 'public'],
+      readers: [
+        PolicyReader.carrier,
+        PolicyReader.carrier_at_tenant,
+        PolicyReader.driver,
+        PolicyReader.public,
+      ],
     }),
   ],
 );
@@ -353,7 +366,7 @@ export const membershipSite = pgTable(
     index('membership_site_site_id_idx').on(t.siteId),
     index('membership_site_user_id_idx').on(t.userId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('user', 'select', userIs(t.userId)),
+    allow(ScopeParty.user, PolicyCommand.select, userIs(t.userId)),
   ],
 );
 
@@ -386,11 +399,11 @@ export const invitation = pgTable(
       .on(t.orgId, t.email)
       .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
     check('invitation_role_check', membershipRoleCheck(t.orgKind, t.role)),
-    allow(OrgKind.platform, 'all', always),
-    allow(ActorParty.tenant, 'all', tenantIs(t.orgId)),
-    allow(ActorParty.carrier, 'all', carrierIs(t.orgId)),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.platform, PolicyCommand.all, always),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.orgId)),
+    allow(ScopeParty.carrier, PolicyCommand.all, carrierIs(t.orgId)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );
 
@@ -422,19 +435,19 @@ export const settingValue = pgTable(
     }).onDelete('cascade'),
     index('setting_value_site_id_idx').on(t.siteId),
     pgPolicy('any_select_platform_rows', {
-      for: 'select',
+      for: PolicyCommand.select,
       using: sql`(select app.party()) is not null and ${t.tenantId} is null`,
     }),
-    allow(OrgKind.platform, 'all', sql`${t.tenantId} is null`),
+    allow(ScopeParty.platform, PolicyCommand.all, sql`${t.tenantId} is null`),
     allow(
-      ActorParty.tenant,
-      'all',
+      ScopeParty.tenant,
+      PolicyCommand.all,
       and(tenantIs(t.tenantId), sql`${t.siteId} is null or ${siteAllowed(t.siteId)}`),
     ),
-    allow('carrier_at_tenant', 'select', tenantIs(t.tenantId)),
-    allow(ActorParty.driver, 'select', tenantIs(t.tenantId)),
-    allow('public', 'select', tenantIs(t.tenantId)),
-    allow(ActorParty.carrier, 'select', linkedTenant(t.tenantId)),
+    allow(ScopeParty.carrier_at_tenant, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.public, PolicyCommand.select, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, linkedTenant(t.tenantId)),
   ],
 );
 
@@ -453,7 +466,10 @@ export const hall = pgTable(
     unique('hall_id_site_key').on(t.id, t.siteId),
     index('hall_tenant_id_idx').on(t.tenantId),
     index('hall_site_id_idx').on(t.siteId),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -483,7 +499,10 @@ export const dock = pgTable(
     check('dock_door_type_check', oneOf(t.doorType, values(DoorType))),
     check('dock_temperature_zone_check', oneOf(t.temperatureZone, values(TemperatureZone))),
     check('dock_status_check', oneOf(t.status, values(DockStatus))),
-    ...tenantPolicies(t, { site: t.siteId, readers: ['carrier', 'carrier_at_tenant', 'driver'] }),
+    ...tenantPolicies(t, {
+      site: t.siteId,
+      readers: [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    }),
   ],
 );
 
@@ -508,9 +527,13 @@ export const tenantCarrierLink = pgTable(
     index('tenant_carrier_link_carrier_id_idx').on(t.carrierId),
     check('tenant_carrier_link_status_check', oneOf(t.status, values(CarrierLinkStatus))),
     check('tenant_carrier_link_source_check', oneOf(t.source, values(CarrierLinkSource))),
-    allow(ActorParty.tenant, 'all', tenantIs(t.tenantId)),
-    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
-    allow('carrier_at_tenant', 'select', and(tenantIs(t.tenantId), carrierIs(t.carrierId))),
+    allow(ScopeParty.tenant, PolicyCommand.all, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),
+    allow(
+      ScopeParty.carrier_at_tenant,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), carrierIs(t.carrierId)),
+    ),
   ],
 );
 

@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
   Feature,
   Limit,
   Module,
   PackageId,
   Permission,
+  ScopeParty,
   Setting,
+  TenantActorKind,
   TenantRole,
 } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
@@ -41,10 +42,10 @@ const tenantOf = (
   side: World['A'],
   userKey: 'dispatcher' | 'tenant_admin' = TenantRole.dispatcher,
 ): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: side.users[userKey].id, role: userKey },
+  actor: { kind: TenantActorKind.user, userId: side.users[userKey].id, role: userKey },
 });
 
 const override = (tenantId: World['A']['tenantId'], key: string, value: unknown) =>

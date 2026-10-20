@@ -11,6 +11,7 @@ import {
   BookingStatus,
   CarrierLinkStatus,
   CreatedParty,
+  DurationKind,
 } from '@rampflow/shared/modules/booking/values';
 import { DriverLocale } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
@@ -319,7 +320,7 @@ describe('change and cancel (BK-05)', () => {
     ];
     await ownerDb()
       .update(loadType)
-      .set({ duration: { kind: 'tiers', tiers } })
+      .set({ duration: { kind: DurationKind.tiers, tiers } })
       .where(eq(loadType.id, s.loadTypeId));
     const b = await booked(s, mon('09:00'));
     const res = await carrierAs(carrierUser()).put(`${at(w.A)}/bookings/${b.id}/avis`, {

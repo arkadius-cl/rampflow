@@ -1,4 +1,4 @@
-import { OrgKind } from '@rampflow/shared/values';
+import { ApiParty, DescribedKind, HttpMethod, values } from '@rampflow/shared/values';
 import type { RouterRoute } from 'hono/types';
 import type * as z from 'zod';
 import {
@@ -7,28 +7,21 @@ import {
   type OpMeta,
   type ValidationTarget,
 } from '../../src/kernel/describe.ts';
-import {
-  type Endpoint,
-  endpointKey,
-  GeneratorError,
-  HTTP_METHODS,
-  type HttpMethod,
-  type Party,
-} from './model.ts';
+import { type Endpoint, endpointKey, GeneratorError, type Party } from './model.ts';
 
 /** First match wins, so the more specific prefix comes first. */
 const PARTY_PREFIXES: readonly (readonly [string, Party])[] = [
-  ['/api/c/:orgId/at/:tenantId', 'carrier_at_tenant'],
+  ['/api/c/:orgId/at/:tenantId', ApiParty.carrier_at_tenant],
   // The one /api/auth route that runs in the user scope.
-  ['/api/auth/logout', 'user'],
-  ['/api/c/:orgId', OrgKind.carrier],
-  ['/api/t/:orgId', OrgKind.tenant],
-  ['/api/platform', OrgKind.platform],
-  ['/api/driver', 'driver'],
-  ['/api/public', 'public'],
-  ['/api/auth', 'anonymous'],
-  ['/api/me', 'user'],
-  ['/api/health', 'anonymous'],
+  ['/api/auth/logout', ApiParty.user],
+  ['/api/c/:orgId', ApiParty.carrier],
+  ['/api/t/:orgId', ApiParty.tenant],
+  ['/api/platform', ApiParty.platform],
+  ['/api/driver', ApiParty.driver],
+  ['/api/public', ApiParty.public],
+  ['/api/auth', ApiParty.anonymous],
+  ['/api/me', ApiParty.user],
+  ['/api/health', ApiParty.anonymous],
 ];
 
 /** Mounted only in tests or development, and never part of the description. */
@@ -41,7 +34,8 @@ export function partyOf(path: string): Party | null {
   return hit?.[1] ?? null;
 }
 
-const isMethod = (m: string): m is HttpMethod => (HTTP_METHODS as readonly string[]).includes(m);
+const isMethod = (m: string): m is HttpMethod =>
+  (values(HttpMethod) as readonly string[]).includes(m);
 
 /** Whether Hono runs a middleware registered at `pattern` for a request to `path`. */
 export function patternMatches(pattern: string, path: string): boolean {
@@ -79,8 +73,8 @@ export function collectEndpoints(routes: readonly RouterRoute[]): Endpoint[] {
     const validators: Partial<Record<ValidationTarget, z.ZodType>> = {};
     for (const e of entries) {
       const d = describedBy(e.handler);
-      if (d?.kind === 'op') ops.push(d.meta);
-      if (d?.kind === 'validator') validators[d.target] = d.schema;
+      if (d?.kind === DescribedKind.op) ops.push(d.meta);
+      if (d?.kind === DescribedKind.validator) validators[d.target] = d.schema;
     }
     if (ops.length !== 1) problems.push(`${key}: needs exactly one op(), has ${ops.length}`);
     const guards: Guard[] = [];
@@ -88,7 +82,8 @@ export function collectEndpoints(routes: readonly RouterRoute[]): Endpoint[] {
       if (r.method !== 'ALL' && r.method !== method) continue;
       if (!patternMatches(r.path, path)) continue;
       const d = describedBy(r.handler);
-      if (d?.kind === 'guard' && !guards.some((g) => sameGuard(g, d.guard))) guards.push(d.guard);
+      if (d?.kind === DescribedKind.guard && !guards.some((g) => sameGuard(g, d.guard)))
+        guards.push(d.guard);
     }
     const [meta] = ops;
     if (party && meta && ops.length === 1) {

@@ -1,5 +1,11 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, OrgKind, SiteLimitedRole, values } from '@rampflow/shared/values';
+import {
+  ErrorCode,
+  OrgKind,
+  ScopeParty,
+  SiteLimitedRole,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
@@ -40,7 +46,7 @@ export async function sessionUser(c: Context<AppEnv>): Promise<UserId | null> {
   if (!token) return null;
   const id = hashToken(token);
   const now = c.var.clock.now();
-  return withScope({ party: 'anonymous' }, async (tx) => {
+  return withScope({ party: ScopeParty.anonymous }, async (tx) => {
     const [row] = await tx
       .select({
         userId: session.userId,
@@ -53,7 +59,7 @@ export async function sessionUser(c: Context<AppEnv>): Promise<UserId | null> {
     const idle = now.getTime() - row.lastSeenAt.getTime();
     if (row.expiresAt <= now || idle >= SESSION_IDLE_MS) return null;
     const { userId } = row;
-    const [user] = await asScope(tx, { party: 'user', userId }, () =>
+    const [user] = await asScope(tx, { party: ScopeParty.user, userId }, () =>
       tx.select({ disabledAt: appUser.disabledAt }).from(appUser).where(eq(appUser.id, userId)),
     );
     if (!user || user.disabledAt) return null;
@@ -78,7 +84,7 @@ function pathId<T extends string>(c: Context<AppEnv>, name: string): T {
 }
 
 async function membershipIn(userId: UserId, orgId: AnyOrgId, kind: OrgKind) {
-  return withScope({ party: 'user', userId }, async (tx) => {
+  return withScope({ party: ScopeParty.user, userId }, async (tx) => {
     const [row] = await tx
       .select({ id: membership.id, role: membership.role })
       .from(membership)
@@ -98,23 +104,23 @@ async function membershipIn(userId: UserId, orgId: AnyOrgId, kind: OrgKind) {
   });
 }
 
-export const anonymousScope: ScopeResolver = async () => ({ party: 'anonymous' });
+export const anonymousScope: ScopeResolver = async () => ({ party: ScopeParty.anonymous });
 
 export const userScope: ScopeResolver = async (c) => ({
-  party: 'user',
+  party: ScopeParty.user,
   userId: await requireUser(c),
 });
 
 export const platformScope: ScopeResolver = async (c) => {
   const userId = await requireUser(c);
-  const found = await withScope({ party: 'user', userId }, (tx) =>
+  const found = await withScope({ party: ScopeParty.user, userId }, (tx) =>
     tx
       .select({ role: membership.role })
       .from(membership)
       .where(and(eq(membership.userId, userId), eq(membership.orgKind, 'platform'))),
   );
   if (!found.some((m) => m.role === 'platform_admin')) throw new ApiError(ErrorCode.not_found);
-  return { party: OrgKind.platform, userId };
+  return { party: ScopeParty.platform, userId };
 };
 
 /**
@@ -129,10 +135,10 @@ export const tenantScope: ScopeResolver = async (c) => {
   const role = m.role as TenantRole;
   const limited = siteLimitedRoles.has(role) && m.siteIds.length > 0;
   return {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: limited ? (m.siteIds as SiteId[]) : 'all',
-    actor: { kind: 'user', userId, role },
+    actor: { kind: TenantActorKind.user, userId, role },
   };
 };
 
@@ -146,12 +152,12 @@ export const carrierScope: ScopeResolver = async (c) => {
   if (!m) throw new ApiError(ErrorCode.not_found);
   const role = m.role as CarrierRole;
   const atTenant = AT_TENANT.exec(c.req.path)?.[1];
-  if (atTenant === undefined) return { party: ActorParty.carrier, carrierId, userId, role };
+  if (atTenant === undefined) return { party: ScopeParty.carrier, carrierId, userId, role };
 
   const parsed = uuid.safeParse(atTenant);
   if (!parsed.success) throw new ApiError(ErrorCode.not_found);
   const tenantId = parsed.data as TenantId;
-  const carrier: Scope = { party: ActorParty.carrier, carrierId, userId, role };
+  const carrier: Scope = { party: ScopeParty.carrier, carrierId, userId, role };
   const [link] = await withScope(carrier, (tx) =>
     tx
       .select({ status: tenantCarrierLink.status })
@@ -161,7 +167,7 @@ export const carrierScope: ScopeResolver = async (c) => {
       ),
   );
   if (!link) throw new ApiError(ErrorCode.not_found);
-  return { party: 'carrier_at_tenant', carrierId, tenantId, userId, role };
+  return { party: ScopeParty.carrier_at_tenant, carrierId, tenantId, userId, role };
 };
 
 /** `/api/driver/*`: the `rf_driver` cookie names an unrevoked, unexpired `driver_access` row. */
@@ -186,7 +192,7 @@ export const driverScope: ScopeResolver = async (c) => {
       ),
   );
   if (!access) throw new ApiError(ErrorCode.unauthorized);
-  return { party: ActorParty.driver, ...access };
+  return { party: ScopeParty.driver, ...access };
 };
 
 /**
@@ -194,5 +200,5 @@ export const driverScope: ScopeResolver = async (c) => {
  * signed-in user accepting an invitation, if any.
  */
 export function tokenScope(token: string, userId: UserId | null): Scope {
-  return { party: 'token', tokenHash: hashToken(token), userId };
+  return { party: ScopeParty.token, tokenHash: hashToken(token), userId };
 }

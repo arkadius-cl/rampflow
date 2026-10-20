@@ -1,4 +1,3 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import type {
@@ -6,7 +5,7 @@ import type {
   RegisterPage,
 } from '@rampflow/shared/modules/safety/api.register';
 import { AckStatus } from '@rampflow/shared/modules/safety/values';
-import { DriverLocale, StaffLocale, values } from '@rampflow/shared/values';
+import { DriverLocale, ScopeParty, StaffLocale, values } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerDb } from '../../../../test/db.ts';
@@ -57,7 +56,7 @@ beforeAll(async () => {
   const record = (b: WorldBooking, driverName: string, completedAt: Date, validityDays: number) =>
     asParty(
       {
-        party: ActorParty.driver,
+        party: ScopeParty.driver,
         tenantId: side.tenantId,
         bookingId: b.id,
         channel: DriverChannel.link,

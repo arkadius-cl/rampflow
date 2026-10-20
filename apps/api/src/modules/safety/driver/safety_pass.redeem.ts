@@ -1,8 +1,8 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
 import { type BookingStatus, sourceStates } from '@rampflow/shared/modules/booking/lifecycle';
-import { ActorParty, BookingParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { BookingParty, CommandName, LinkVia } from '@rampflow/shared/modules/booking/values';
 import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
-import { ErrorCode, SystemActorName } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, SystemActorName } from '@rampflow/shared/values';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { TokenHash } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -24,7 +24,7 @@ import {
 // the tenant, inside the request transaction (ADR-0002).
 
 const asTenant = (tenantId: SafetyTarget['tenantId']): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId,
   siteIds: 'all',
   actor: systemActor(SystemActorName.safety_pass),
@@ -79,7 +79,8 @@ export async function redeemPasses(
   target: SafetyTarget & { status: BookingStatus },
   deviceHash: TokenHash,
 ): Promise<number> {
-  if (!sourceStates('link_acknowledgement', BookingParty.driver).includes(target.status)) return 0;
+  if (!sourceStates(CommandName.link_acknowledgement, BookingParty.driver).includes(target.status))
+    return 0;
   const { tx, now } = ctx;
   return asScope(tx, asTenant(target.tenantId), async (inner) => {
     const safety = await bookingSafety(inner, ctx.access, target, now);
@@ -115,7 +116,7 @@ export async function redeemPasses(
       if (!missing.has(pass.instructionId)) continue;
       try {
         await transitionBooking({ ...ctx, tx: inner }, target.id, {
-          type: 'link_acknowledgement',
+          type: CommandName.link_acknowledgement,
           acknowledgementId: pass.acknowledgementId,
           via: LinkVia.pass,
         });

@@ -6,7 +6,7 @@ import {
   TokenBody,
 } from '@rampflow/shared/modules/core/api.auth';
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, StoryId } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { noBody, op } from '../../../kernel/describe.ts';
@@ -54,7 +54,7 @@ async function linkRequestAllowed(kind: AuthTokenKind, email: string, now: Date)
  */
 async function sendLinkEmail(kind: AuthTokenKind, body: EmailLinkBody, now: Date): Promise<void> {
   if (!(await linkRequestAllowed(kind, body.email, now))) return;
-  await withScope({ party: 'anonymous' }, async (tx) => {
+  await withScope({ party: ScopeParty.anonymous }, async (tx) => {
     const account = await accountByEmail(tx, body.email);
     if (!account || account.disabledAt) return;
     if (kind === AuthTokenKind.magic_link && !account.emailVerifiedAt) return;
@@ -83,14 +83,14 @@ export const anonymous = new Hono<AppEnv>()
         '`{ email, password }` → 200 `{ ok }`; sets `rf_session`. A wrong password, an unknown, unverified or disabled email all answer the same 401; 429 `rate_limited` after 5 failures in 15 minutes for the email and client address, or 30 for the client address alone',
       responses: {},
     }),
-    validate('json', LoginBody),
+    validate(ValidationTarget.json, LoginBody),
     async (c) => {
       const { email, password } = c.req.valid('json');
       const now = c.var.clock.now();
       const keys = loginKeys(email, clientIp(c));
       // One transaction locks the key, counts, verifies and records a failure, and commits even
       // for a wrong password, so a burst for one key is serialized and every failure counts.
-      const outcome = await withScope({ party: 'anonymous' }, async (tx) => {
+      const outcome = await withScope({ party: ScopeParty.anonymous }, async (tx) => {
         const limit = await lockLoginKeys(tx, keys, now);
         if (limit.limited) return limit;
         const account = await accountByEmail(tx, email);
@@ -138,7 +138,7 @@ export const anonymous = new Hono<AppEnv>()
         "`{ email, locale? }`; 202. Sends only to verified, enabled accounts, in `locale` (the page's language, default `de`); stops sending after 5 per hour per email",
       responses: { 202: noBody },
     }),
-    validate('json', EmailLinkBody),
+    validate(ValidationTarget.json, EmailLinkBody),
     async (c) => {
       await sendLinkEmail(AuthTokenKind.magic_link, c.req.valid('json'), c.var.clock.now());
       return c.body(null, 202);
@@ -154,7 +154,7 @@ export const anonymous = new Hono<AppEnv>()
       responses: {},
     }),
     scoped(anonymousScope),
-    validate('json', TokenBody),
+    validate(ValidationTarget.json, TokenBody),
     async (c) => {
       const email = await inspectMagicLink(c.var.db, c.req.valid('json').token, c.var.clock.now());
       if (!email) throw new ApiError(ErrorCode.unauthorized, 'Invalid or expired link');
@@ -170,7 +170,7 @@ export const anonymous = new Hono<AppEnv>()
       responses: {},
     }),
     scoped(anonymousScope),
-    validate('json', TokenBody),
+    validate(ValidationTarget.json, TokenBody),
     async (c) => {
       const now = c.var.clock.now();
       const userId = await claimAuthToken(
@@ -193,7 +193,7 @@ export const anonymous = new Hono<AppEnv>()
         '`{ email, locale? }`; 202, as for the magic link (unverified accounts included)',
       responses: { 202: noBody },
     }),
-    validate('json', EmailLinkBody),
+    validate(ValidationTarget.json, EmailLinkBody),
     async (c) => {
       await sendLinkEmail(AuthTokenKind.password_reset, c.req.valid('json'), c.var.clock.now());
       return c.body(null, 202);
@@ -209,7 +209,7 @@ export const anonymous = new Hono<AppEnv>()
       responses: {},
     }),
     scoped(anonymousScope),
-    validate('json', ResetConfirmBody),
+    validate(ValidationTarget.json, ResetConfirmBody),
     async (c) => {
       const { token, password } = c.req.valid('json');
       const now = c.var.clock.now();

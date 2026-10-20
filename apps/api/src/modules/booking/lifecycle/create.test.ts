@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { AvisInput } from '@rampflow/shared/modules/avis/avis';
-import { CreatedParty, Direction, TurnAwayReason } from '@rampflow/shared/modules/booking/values';
+import {
+  CommandName,
+  CreateMode,
+  Direction,
+  TurnAwayReason,
+  WalkInOutcome,
+} from '@rampflow/shared/modules/booking/values';
 import { ErrorCode } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -44,7 +50,7 @@ const oneDockSite = (o: Partial<Parameters<typeof capacitySite>[1]> = {}) =>
 const staffCreate = (s: CapacitySite, startsAt: Date, o: { forceReason?: string } = {}) =>
   asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
     createBooking(ctx, {
-      mode: CreatedParty.staff,
+      mode: CreateMode.staff,
       clientRequestId: randomUUID(),
       siteId: s.siteId,
       loadTypeId: s.loadTypeId,
@@ -131,7 +137,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
         .where(eq(booking.id, onSecond.id));
       const carrier = asCarrier(w.A, w.A.users.carrier_user, NOW, (ctx) =>
         createBooking(ctx, {
-          mode: CreatedParty.carrier,
+          mode: CreateMode.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -141,7 +147,7 @@ describe('capacity under concurrency (ADR-0004)', () => {
       );
       const reschedule = asStaff(w.A, w.A.users.dispatcher, NOW, (ctx) =>
         transitionBooking(ctx, onSecond.id, {
-          type: 'reschedule',
+          type: CommandName.reschedule,
           startsAt: new Date(start.getTime() + 30 * 60_000).toISOString(),
           resourceId: s.resourceId,
           version: 1,
@@ -214,7 +220,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const now = new Date('2026-11-02T07:20:00Z');
     const staffSoon = await asStaff(w.A, w.A.users.dispatcher, now, (ctx) =>
       createBooking(ctx, {
-        mode: CreatedParty.staff,
+        mode: CreateMode.staff,
         clientRequestId: randomUUID(),
         siteId: s.siteId,
         loadTypeId: s.loadTypeId,
@@ -229,7 +235,7 @@ describe('createBooking in staff mode (BK-02)', () => {
     const carrier = (startsAt: Date, at: Date) =>
       asCarrier(w.A, w.A.users.carrier_user, at, (ctx) =>
         createBooking(ctx, {
-          mode: CreatedParty.carrier,
+          mode: CreateMode.carrier,
           clientRequestId: randomUUID(),
           siteId: s.siteId,
           loadTypeId: s.loadTypeId,
@@ -265,7 +271,7 @@ describe('walk-in mode (YD-03)', () => {
   const walkIn = (now: Date, outcome: WalkInCreate['outcome']) =>
     asStaff(walkInWorld.A, walkInWorld.A.users.gate_operator, now, (ctx) =>
       createBooking(ctx, {
-        mode: 'walk_in',
+        mode: CreateMode.walk_in,
         clientRequestId: randomUUID(),
         siteId: walkInWorld.A.sites[0].id as SiteId,
         loadTypeId: walkInWorld.A.sites[0].loadTypeId,
@@ -277,7 +283,7 @@ describe('walk-in mode (YD-03)', () => {
 
   it('checks in before opening hours as a gate operator, starting at the grid slot of now', async () => {
     const now = new Date('2026-11-02T04:50:00Z'); // Monday 05:50 CET, before the 06:00 opening
-    const result = await walkIn(now, { kind: 'check_in', avis });
+    const result = await walkIn(now, { kind: WalkInOutcome.check_in, avis });
     expect(result.booking).toMatchObject({
       status: 'checked_in',
       walkIn: true,
@@ -295,14 +301,17 @@ describe('walk-in mode (YD-03)', () => {
   it('checks in at a full slot', async () => {
     const at = new Date('2026-11-02T09:00:00Z');
     for (const _ of [1, 2]) await seedBooking(walkInWorld.A, { startsAt: at, minutes: 30 });
-    const result = await walkIn(new Date('2026-11-02T09:05:00Z'), { kind: 'check_in', avis });
+    const result = await walkIn(new Date('2026-11-02T09:05:00Z'), {
+      kind: WalkInOutcome.check_in,
+      avis,
+    });
     expect(result.booking).toMatchObject({ status: 'checked_in', startsAt: at });
   });
 
   it('turns an unbooked truck away without a driver link, recording the plate', async () => {
     const now = new Date('2026-11-02T10:10:00Z');
     const result = await walkIn(now, {
-      kind: 'turn_away',
+      kind: WalkInOutcome.turn_away,
       avis: null,
       reason: TurnAwayReason.documents_missing,
     });
@@ -327,13 +336,13 @@ describe('walk-in mode (YD-03)', () => {
     await seedBriefing(ownerDb(), enforced.A);
     const result = await asStaff(enforced.A, enforced.A.users.gate_operator, NOW, (ctx) =>
       createBooking(ctx, {
-        mode: 'walk_in',
+        mode: CreateMode.walk_in,
         clientRequestId: randomUUID(),
         siteId: enforced.A.sites[0].id,
         loadTypeId: enforced.A.sites[0].loadTypeId,
         carrier: { name: 'Unangemeldet KG' },
         plateSeen: 'B-XY 123',
-        outcome: { kind: 'check_in', avis },
+        outcome: { kind: WalkInOutcome.check_in, avis },
       }),
     );
     expect(result).toMatchObject({

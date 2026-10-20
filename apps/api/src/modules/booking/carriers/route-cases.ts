@@ -1,6 +1,14 @@
 import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
-import { Feature, HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import {
+  AccountCredential,
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+  RouteCaseGrant,
+} from '@rampflow/shared/values';
 import {
   defineAccountCases,
   defineRouteCases,
@@ -21,10 +29,10 @@ const of = (w: World) => {
 };
 
 const base = {
-  as: Role.dispatcher,
+  as: RouteCaseActor.dispatcher,
   permission: Permission.booking.manage_carriers,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
   setup: async (w, db) => {
     const invitation = await carrierInvitationFor(db, {
@@ -44,7 +52,7 @@ const base = {
 const org = (w: World) => ({ orgId: w.A.tenantId });
 
 export const cases = defineRouteCases([
-  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: 'empty' },
+  { ...base, method: HttpMethod.GET, path: P, params: org, foreign: ForeignOutcome.empty },
   {
     ...base,
     method: HttpMethod.POST,
@@ -52,7 +60,7 @@ export const cases = defineRouteCases([
     entitlement: Feature.booking.carrier_portal,
     params: org,
     body: () => ({ companyName: 'Baltic Freight UAB', email: unique('case') }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -60,7 +68,7 @@ export const cases = defineRouteCases([
     path: `${P}/invitations/:invitationId`,
     params: (w) => ({ ...org(w), invitationId: of(w).invitationId }),
     // Deleting answers 204 even when nothing matched; B's revoke must leave A's invitation alone.
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -75,7 +83,7 @@ export const cases = defineRouteCases([
     path: `${P}/registrations`,
     entitlement: Feature.booking.public_link,
     params: org,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -98,7 +106,7 @@ export const cases = defineRouteCases([
     path: `${P}/public-links`,
     entitlement: Feature.booking.public_link,
     params: org,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...base,
@@ -118,11 +126,11 @@ export const cases = defineRouteCases([
   {
     method: HttpMethod.GET,
     path: '/api/c/:orgId/tenants',
-    as: Role.carrier_user,
-    permission: 'member',
+    as: RouteCaseActor.carrier_user,
+    permission: RouteCaseGrant.member,
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
     siteScoped: false,
   },
 ]);
@@ -131,7 +139,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/public/carrier-invitations/inspect',
-    credential: 'token',
+    credential: AccountCredential.token,
     singleUse: false,
     arrange: async (w, db) => {
       const inv = await carrierInvitationFor(db, {
@@ -148,7 +156,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/public/carrier-invitations/accept',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (w, db) => {
       const inv = await carrierInvitationFor(db, {
         tenantId: w.A.tenantId,

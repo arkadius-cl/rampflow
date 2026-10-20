@@ -9,7 +9,7 @@ import {
   RejectRegistrationBody,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { Feature, Permission, StoryId } from '@rampflow/shared/values';
+import { Feature, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type SiteId } from '../../../db/ids.ts';
@@ -69,7 +69,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     requireEntitlement(Feature.booking.carrier_portal),
-    validate('json', CarrierInvitationBody),
+    validate(ValidationTarget.json, CarrierInvitationBody),
     async (c) => {
       const { tenantId, userId, entitlements } = tenantRequest(c);
       if (!userId) throw new Error('carrier invitations need a signed-in inviter');
@@ -92,7 +92,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 204: noBody },
     }),
     manage,
-    validate('param', InvitationParam),
+    validate(ValidationTarget.param, InvitationParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       await revokeInvitation(
@@ -131,7 +131,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
-    validate('param', RegistrationParam),
+    validate(ValidationTarget.param, RegistrationParam),
     async (c) => {
       const { tenantId, userId, entitlements } = tenantRequest(c);
       const view = await decideRegistration(c.var.db, {
@@ -155,8 +155,8 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
-    validate('param', RegistrationParam),
-    validate('json', RejectRegistrationBody),
+    validate(ValidationTarget.param, RegistrationParam),
+    validate(ValidationTarget.json, RejectRegistrationBody),
     async (c) => {
       const { tenantId, userId, entitlements } = tenantRequest(c);
       const view = await decideRegistration(c.var.db, {
@@ -197,7 +197,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
-    validate('json', PublicLinkBody),
+    validate(ValidationTarget.json, PublicLinkBody),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('json').siteId as SiteId;
@@ -215,7 +215,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
-    validate('param', SiteParam),
+    validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const view = await regeneratePublicLink(
@@ -237,8 +237,8 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<CarrierLinkView>() },
     }),
     manage,
-    validate('param', CarrierParam),
-    validate('json', CarrierLinkPatch),
+    validate(ValidationTarget.param, CarrierParam),
+    validate(ValidationTarget.json, CarrierLinkPatch),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const view = await setLinkStatus(

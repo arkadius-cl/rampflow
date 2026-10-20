@@ -1,7 +1,7 @@
-import { ActorParty, LinkVia } from '@rampflow/shared/modules/booking/values';
+import { LinkVia } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { TranslationState, VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { values } from '@rampflow/shared/values';
+import { PolicyCommand, PolicyReader, ScopeParty, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -55,7 +55,7 @@ export const safetyInstruction = pgTable(
   (t) => [
     unique('safety_instruction_id_tenant_key').on(t.id, t.tenantId),
     index('safety_instruction_tenant_id_idx').on(t.tenantId),
-    ...tenantPolicies(t, { site: null, readers: ['driver'] }),
+    ...tenantPolicies(t, { site: null, readers: [PolicyReader.driver] }),
   ],
 );
 
@@ -81,7 +81,7 @@ export const safetyInstructionSite = pgTable(
     siteForeignKey(t),
     index('safety_instruction_site_site_id_idx').on(t.siteId),
     index('safety_instruction_site_tenant_id_idx').on(t.tenantId),
-    ...tenantPolicies(t, { site: null, readers: ['driver'] }),
+    ...tenantPolicies(t, { site: null, readers: [PolicyReader.driver] }),
   ],
 );
 
@@ -112,7 +112,11 @@ export const safetyVersion = pgTable(
     check('safety_version_status_check', oneOf(t.status, values(VersionStatus))),
     ...tenantPolicies(t, { site: null, readers: [] }),
     // Retired versions too, so a driver session can judge an acknowledgement of an older version.
-    allow(ActorParty.driver, 'select', and(tenantIs(t.tenantId), sql`${t.status} <> 'draft'`)),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), sql`${t.status} <> 'draft'`),
+    ),
   ],
 );
 
@@ -141,8 +145,8 @@ export const safetyContent = pgTable(
     check('safety_content_translation_check', oneOf(t.translation, values(TranslationState))),
     ...tenantPolicies(t, { site: null, readers: [] }),
     allow(
-      ActorParty.driver,
-      'select',
+      ScopeParty.driver,
+      PolicyCommand.select,
       and(
         tenantIs(t.tenantId),
         sql`exists (select 1 from safety_version v where v.id = ${t.versionId} and v.status = 'published')`,
@@ -188,8 +192,16 @@ export const safetyAcknowledgement = pgTable(
     index('safety_acknowledgement_carrier_id_idx').on(t.carrierId),
     check('safety_acknowledgement_channel_check', oneOf(t.channel, values(DriverChannel))),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow(ActorParty.driver, 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
-    allow(ActorParty.driver, 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.insert,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
   ],
 );
 
@@ -220,11 +232,23 @@ export const bookingAcknowledgement = pgTable(
     index('booking_acknowledgement_site_id_idx').on(t.siteId),
     index('booking_acknowledgement_acknowledgement_id_idx').on(t.acknowledgementId),
     check('booking_acknowledgement_via_check', oneOf(t.via, values(LinkVia))),
-    allow(ActorParty.tenant, 'all', and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
-    allow(ActorParty.driver, 'select', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
-    allow(ActorParty.driver, 'insert', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(ScopeParty.tenant, PolicyCommand.all, and(tenantIs(t.tenantId), siteAllowed(t.siteId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.select,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.insert,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
     // A repeated briefing in the same visit relinks the newer acknowledgement.
-    allow(ActorParty.driver, 'update', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(
+      ScopeParty.driver,
+      PolicyCommand.update,
+      and(tenantIs(t.tenantId), bookingIs(t.bookingId)),
+    ),
   ],
 );
 
@@ -252,7 +276,7 @@ export const safetyAttempt = pgTable(
     }).onDelete('cascade'),
     index('safety_attempt_tenant_id_idx').on(t.tenantId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow(ActorParty.driver, 'all', and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
+    allow(ScopeParty.driver, PolicyCommand.all, and(tenantIs(t.tenantId), bookingIs(t.bookingId))),
   ],
 );
 
@@ -276,6 +300,6 @@ export const safetyPass = pgTable(
     index('safety_pass_tenant_id_idx').on(t.tenantId),
     index('safety_pass_acknowledgement_id_idx').on(t.acknowledgementId),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow(ActorParty.driver, 'insert', tenantIs(t.tenantId)),
+    allow(ScopeParty.driver, PolicyCommand.insert, tenantIs(t.tenantId)),
   ],
 );

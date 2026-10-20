@@ -4,7 +4,7 @@ import {
   type SubjectMatches,
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
-import { Permission, Setting, StoryId } from '@rampflow/shared/values';
+import { Permission, Setting, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
 import { op, type } from '../../../kernel/describe.ts';
@@ -43,7 +43,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<SubjectMatches>() },
     }),
     manage,
-    validate('json', SubjectQuery),
+    validate(ValidationTarget.json, SubjectQuery),
     async (c) => {
       return c.json(await findSubject(await subjectContext(c), c.req.valid('json')), 200);
     },
@@ -57,7 +57,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     manage,
-    validate('json', SubjectQuery),
+    validate(ValidationTarget.json, SubjectQuery),
     async (c) => {
       const ctx = await subjectContext(c);
       const body = await exportSubject(ctx, c.req.valid('json'));
@@ -78,7 +78,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<EraseResult>() },
     }),
     manage,
-    validate('json', EraseRequest),
+    validate(ValidationTarget.json, EraseRequest),
     async (c) => {
       const { confirm: _, ...subject } = c.req.valid('json');
       return c.json(await eraseSubject(await subjectContext(c), subject), 200);

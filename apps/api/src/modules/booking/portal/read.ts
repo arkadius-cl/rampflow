@@ -9,12 +9,13 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import type { BookingEventView } from '@rampflow/shared/modules/booking/api.staff';
 import {
+  BookingPeriod,
   CarrierLinkStatus,
   FinalBookingStatus,
   OnSiteStatus,
 } from '@rampflow/shared/modules/booking/values';
 import type { TimeZone } from '@rampflow/shared/time';
-import { ErrorCode, Setting, values } from '@rampflow/shared/values';
+import { ErrorCode, Setting, SortOrder, values } from '@rampflow/shared/values';
 import { and, asc, desc, eq, inArray, not, type SQL, sql } from 'drizzle-orm';
 import type * as z from 'zod';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -124,7 +125,7 @@ export async function listPortalBookings(
   now: Date,
 ): Promise<PortalBookingPage> {
   const after = q.cursor ? decodeCursor(q.cursor) : null;
-  const ascending = q.order === 'asc';
+  const ascending = q.order === SortOrder.asc;
   const rows = await summaryQuery(tx)
     .where(
       and(
@@ -132,7 +133,11 @@ export async function listPortalBookings(
         q.tenantId ? eq(booking.tenantId, q.tenantId as TenantId) : undefined,
         q.siteId ? eq(booking.siteId, q.siteId as SiteId) : undefined,
         q.status ? eq(booking.status, q.status) : undefined,
-        q.when === 'upcoming' ? upcoming(now) : q.when === 'past' ? not(upcoming(now)) : undefined,
+        q.when === BookingPeriod.upcoming
+          ? upcoming(now)
+          : q.when === BookingPeriod.past
+            ? not(upcoming(now))
+            : undefined,
         q.from ? sql`${localDay} >= ${q.from}::date` : undefined,
         q.to ? sql`${localDay} <= ${q.to}::date` : undefined,
         after

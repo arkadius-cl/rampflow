@@ -1,5 +1,5 @@
 import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
-import { HttpMethod, OrgKind, Role } from '@rampflow/shared/values';
+import { AccountCredential, HttpMethod, OrgKind, Role } from '@rampflow/shared/values';
 import { defineAccountCases } from '../../../../test/route-cases.ts';
 import { authTokenFor } from '../auth/fixtures.ts';
 import { invitationFor } from './fixtures.ts';
@@ -8,7 +8,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/public/invitations/inspect',
-    credential: 'token',
+    credential: AccountCredential.token,
     singleUse: false,
     arrange: async (w, db) => {
       const inv = await invitationFor(db, {
@@ -27,7 +27,7 @@ export const accountCases = defineAccountCases([
   {
     method: HttpMethod.POST,
     path: '/api/public/invitations/accept',
-    credential: 'token',
+    credential: AccountCredential.token,
     arrange: async (w, db) => {
       const inv = await invitationFor(db, {
         orgId: w.A.tenantId,

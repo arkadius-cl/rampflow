@@ -1,6 +1,6 @@
 import type { DriverLocale } from '@rampflow/shared';
 import type { ContentBody } from '@rampflow/shared/modules/safety/api.authoring';
-import { PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
+import { BlockKind, PictogramId, TranslationState } from '@rampflow/shared/modules/safety/values';
 
 // The 12-language platform template (SF-01, domain research §4). Pictograms and correct answers
 // are fixed here once; each locale supplies only text, so every locale has the same shape.
@@ -332,8 +332,8 @@ export function templateContent(locale: DriverLocale, options: { quiz: boolean }
   return {
     title: text.title,
     blocks: RULE_PICTOGRAMS.flatMap((id, i) => [
-      { kind: 'pictogram', id },
-      { kind: 'text', text: text.rules[i] as string },
+      { kind: BlockKind.pictogram, id },
+      { kind: BlockKind.text, text: text.rules[i] as string },
     ]),
     questions: options.quiz
       ? text.questions.map(([prompt, opts], i) => ({

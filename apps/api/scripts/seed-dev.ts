@@ -4,6 +4,8 @@
 // scripts/seed/<module>.ts, exports `seed(ctx)`, and runs in its own transaction in the order
 // below. A later seed finds earlier data by name (for example `findOrg(ctx.db, 'tenant', ...)`).
 // Accounts and passwords are listed in docs/how-to/run-locally.md.
+
+import { DatabaseUrlVar } from '@rampflow/shared/values';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import { requireUrl } from './db-setup.ts';
@@ -22,7 +24,9 @@ if (nodeEnv !== 'development' && nodeEnv !== 'test') {
   process.exit(1);
 }
 
-const pool = new pg.Pool({ connectionString: requireUrl('MIGRATION_DATABASE_URL').toString() });
+const pool = new pg.Pool({
+  connectionString: requireUrl(DatabaseUrlVar.MIGRATION_DATABASE_URL).toString(),
+});
 try {
   const db = drizzle(pool);
   for (const name of SEEDS) {

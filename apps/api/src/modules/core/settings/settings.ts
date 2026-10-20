@@ -8,7 +8,12 @@ import {
   type SettingLevels,
 } from '@rampflow/shared';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
-import { ErrorCode, SettingScope } from '@rampflow/shared/values';
+import {
+  BadRequestReason,
+  ErrorCode,
+  SettingScope,
+  SettingWriteErrorCode,
+} from '@rampflow/shared/values';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { type SiteId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -106,20 +111,20 @@ function writeError(
   error: Exclude<ReturnType<typeof parseSettingWrite>, { ok: true }>['error'],
 ): ApiError {
   switch (error.code) {
-    case 'unknown_key':
+    case SettingWriteErrorCode.unknown_key:
       return new ApiError(ErrorCode.bad_request, `Unknown setting ${error.key}`, {
-        reason: 'unknown_key',
+        reason: BadRequestReason.unknown_key,
       });
-    case 'scope_not_allowed':
+    case SettingWriteErrorCode.scope_not_allowed:
       return new ApiError(ErrorCode.bad_request, `${error.key} has no ${error.scope} level`, {
-        reason: 'scope_not_allowed',
+        reason: BadRequestReason.scope_not_allowed,
         allowed: error.allowed,
       });
-    case 'entitlement_required':
+    case SettingWriteErrorCode.entitlement_required:
       return new ApiError(ErrorCode.entitlement_required, `${error.entitlement} is off`, {
         key: error.entitlement,
       });
-    case 'invalid_value':
+    case SettingWriteErrorCode.invalid_value:
       return new ApiError(ErrorCode.validation_failed, 'Invalid json', {
         issues: error.issues.map((i) => ({ ...i, path: ['value', ...i.path] })),
       });
@@ -129,7 +134,7 @@ function writeError(
 /** The key, if the catalog has it; else 400 like any other unknown key. */
 export function requireSettingKey(key: string): SettingKey {
   const found = ALL_SETTINGS.find((s) => s.key === key);
-  if (!found) throw writeError({ code: 'unknown_key', key });
+  if (!found) throw writeError({ code: SettingWriteErrorCode.unknown_key, key });
   return found.key;
 }
 

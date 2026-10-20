@@ -1,4 +1,4 @@
-import { BookingStatus, CreatedParty } from '@rampflow/shared/modules/booking/values';
+import { BookingStatus, CommandName, CreatedParty } from '@rampflow/shared/modules/booking/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -116,7 +116,11 @@ describe('BK-07 reminder job', () => {
     const moved = at(start, 48);
     const { version } = await bookingRow(id);
     await asStaff(w.A, w.A.users.dispatcher, at(start, -19), (ctx) =>
-      transitionBooking(ctx, id, { type: 'reschedule', startsAt: moved.toISOString(), version }),
+      transitionBooking(ctx, id, {
+        type: CommandName.reschedule,
+        startsAt: moved.toISOString(),
+        version,
+      }),
     );
     await tick(at(start, -18));
     expect(await reminderStarts(id)).toEqual([start.toISOString()]);

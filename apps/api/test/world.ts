@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { Direction } from '@rampflow/shared/modules/booking/values';
+import { Direction, DurationKind } from '@rampflow/shared/modules/booking/values';
 import { OrgKind, PackageId, Role, TokenPurpose } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import {
@@ -193,7 +193,7 @@ async function worldSite(o: OwnerDb, tenantId: TenantId, n: number): Promise<Wor
     siteId: id,
     name: { de: 'Palette', en: 'Pallets' },
     direction: 'inbound',
-    duration: { kind: 'fixed', minutes: 30 },
+    duration: { kind: DurationKind.fixed, minutes: 30 },
   });
   return { id, hallId, dockIds, resourceId, loadTypeId };
 }

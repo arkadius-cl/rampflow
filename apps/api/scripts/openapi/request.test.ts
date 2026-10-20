@@ -1,5 +1,5 @@
 import { PutHours } from '@rampflow/shared/modules/booking/api.capacity';
-import { HttpMethod, OrgKind, StoryId } from '@rampflow/shared/values';
+import { ApiParty, HttpMethod, StoryId } from '@rampflow/shared/values';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { file } from '../../src/kernel/describe.ts';
@@ -9,7 +9,7 @@ import { describeRequest, openApiPath } from './request.ts';
 const endpoint = (e: Partial<Endpoint>): Endpoint => ({
   method: HttpMethod.PUT,
   path: '/api/t/:orgId/capacity/hours',
-  party: OrgKind.tenant,
+  party: ApiParty.tenant,
   meta: {
     id: 'booking.capacity.putHours',
     stories: [StoryId.MD_04],

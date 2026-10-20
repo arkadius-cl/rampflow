@@ -28,3 +28,11 @@ export const EmailCategory = {
   booking: 'booking',
 } as const;
 export type EmailCategory = ValueOf<typeof EmailCategory>;
+
+/** What `enqueue` did: wrote an outbox row, found one with the same dedupe key, or sent nothing. */
+export const EnqueueResult = {
+  enqueued: 'enqueued',
+  duplicate: 'duplicate',
+  skipped: 'skipped',
+} as const;
+export type EnqueueResult = ValueOf<typeof EnqueueResult>;

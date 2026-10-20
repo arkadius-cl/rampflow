@@ -1,7 +1,7 @@
 import type { Role } from '@rampflow/shared';
 import { MePatchBody, type MeResponse } from '@rampflow/shared/modules/core/api.auth';
 import { parseStoredUiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, ValidationTarget } from '@rampflow/shared/values';
 import { asc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { UserId } from '../../../db/ids.ts';
@@ -47,7 +47,7 @@ async function me(tx: Tx, userId: UserId): Promise<MeResponse> {
 }
 
 const userOf = (scope: AppEnv['Variables']['scope']): UserId => {
-  if (scope.party !== 'user') throw new Error('/api/me runs under the user scope');
+  if (scope.party !== ScopeParty.user) throw new Error('/api/me runs under the user scope');
   return scope.userId;
 };
 
@@ -72,7 +72,7 @@ export const user = new Hono<AppEnv>()
         '`{ name?, locale?, uiPrefs? }`; `uiPrefs` merges key by key into the stored object; answers like GET',
       responses: {},
     }),
-    validate('json', MePatchBody),
+    validate(ValidationTarget.json, MePatchBody),
     async (c) => {
       const userId = userOf(c.var.scope);
       const { uiPrefs, ...patch } = c.req.valid('json');

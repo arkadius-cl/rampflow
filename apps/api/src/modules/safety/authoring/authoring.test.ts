@@ -1,4 +1,3 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import type {
   Instruction,
@@ -6,7 +5,15 @@ import type {
   VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { isAcknowledgementValid } from '@rampflow/shared/modules/safety/validity';
-import { DriverLocale, PackageId, TenantRole, values } from '@rampflow/shared/values';
+import { BlockKind } from '@rampflow/shared/modules/safety/values';
+import {
+  DriverLocale,
+  PackageId,
+  ScopeParty,
+  TenantActorKind,
+  TenantRole,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asParty, ownerCount, ownerDb } from '../../../../test/db.ts';
@@ -56,13 +63,17 @@ const publish = (side: WorldSide, versionId: string, materialChange = false) =>
   admin(side).post(`${base(side)}/versions/${versionId}/publish`, { body: { materialChange } });
 
 const tenantScope = (side: WorldSide): Scope => ({
-  party: ActorParty.tenant,
+  party: ScopeParty.tenant,
   tenantId: side.tenantId,
   siteIds: 'all',
-  actor: { kind: 'user', userId: side.users.dispatcher.id, role: TenantRole.dispatcher },
+  actor: {
+    kind: TenantActorKind.user,
+    userId: side.users.dispatcher.id,
+    role: TenantRole.dispatcher,
+  },
 });
 const driverScope = (side: WorldSide): Scope => ({
-  party: ActorParty.driver,
+  party: ScopeParty.driver,
   tenantId: side.tenantId,
   bookingId: side.bookings.own.id,
   channel: DriverChannel.link,
@@ -89,7 +100,7 @@ describe('SF-01 author a briefing', () => {
       ),
     );
     for (const c of draft.content) {
-      expect(c.blocks.filter((b) => b.kind === 'pictogram')).toHaveLength(6);
+      expect(c.blocks.filter((b) => b.kind === BlockKind.pictogram)).toHaveLength(6);
       expect(c.questions).toHaveLength(3);
       expect(c.contentHash).toMatch(/^[0-9a-f]{64}$/);
     }

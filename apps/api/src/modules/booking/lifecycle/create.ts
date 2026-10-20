@@ -6,7 +6,10 @@ import {
   BookingParty,
   BookingStatus,
   CarrierLinkStatus,
+  CommandName,
   CreatedParty,
+  CreateMode,
+  WalkInOutcome,
 } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
@@ -15,6 +18,7 @@ import {
   ConflictReason,
   EmailTemplate,
   ErrorCode,
+  ForbiddenReason,
   Permission,
   Setting,
 } from '@rampflow/shared/values';
@@ -56,14 +60,14 @@ interface CreateBase {
 
 /** BK-04: a carrier books an offered start for itself. */
 export interface CarrierCreate extends CreateBase {
-  mode: 'carrier';
+  mode: typeof CreateMode.carrier;
   startsAt: Date;
   avis: Avis;
 }
 
 /** BK-02: staff book for a linked carrier or a free-text name; `forceReason` books over capacity. */
 export interface StaffCreate extends CreateBase {
-  mode: 'staff';
+  mode: typeof CreateMode.staff;
   resourceId?: ResourceId;
   startsAt: Date;
   carrier: CarrierRef;
@@ -73,14 +77,14 @@ export interface StaffCreate extends CreateBase {
 
 /** YD-03: a truck at the gate without a booking. It starts at the grid slot containing now. */
 export interface WalkInCreate extends CreateBase {
-  mode: 'walk_in';
+  mode: typeof CreateMode.walk_in;
   resourceId?: ResourceId;
   carrier: CarrierRef;
   plateSeen: string;
   /** `turn_away` needs only the plate seen and a reason; the avis may stay empty. */
   outcome:
-    | { kind: 'check_in'; avis: Avis }
-    | { kind: 'turn_away'; avis: Avis | null; reason: TurnAwayReason };
+    | { kind: typeof WalkInOutcome.check_in; avis: Avis }
+    | { kind: typeof WalkInOutcome.turn_away; avis: Avis | null; reason: TurnAwayReason };
 }
 
 export type CreateBookingRequest = CarrierCreate | StaffCreate | WalkInCreate;
@@ -108,9 +112,9 @@ function requirePermissions(ctx: BookingContext, req: CreateBookingRequest) {
     ctx.access.permissions.has(p);
   const party = ctx.actor.party;
   const allowed =
-    req.mode === CreatedParty.carrier
+    req.mode === CreateMode.carrier
       ? party === BookingParty.carrier && has(Permission.booking.book)
-      : req.mode === 'staff'
+      : req.mode === CreateMode.staff
         ? party === BookingParty.staff &&
           has(Permission.booking.staff_book) &&
           (req.forceReason === undefined || has(Permission.booking.force))
@@ -133,7 +137,7 @@ async function siteOf(ctx: BookingContext, siteId: SiteId) {
 async function bookableLoadType(ctx: BookingContext, req: CreateBookingRequest) {
   const lt = await loadTypeAt(ctx.tx, ctx.tenantId, req.siteId, req.loadTypeId);
   // Carriers see only carrier-bookable load types (BK-04): anything else is unknown to them.
-  if (!lt || (req.mode === CreatedParty.carrier && !lt.carrierBookable)) {
+  if (!lt || (req.mode === CreateMode.carrier && !lt.carrierBookable)) {
     throw new ApiError(ErrorCode.not_found, 'No such load type');
   }
   if (!lt.active) throw invalid(['loadTypeId'], 'The load type is inactive');
@@ -155,13 +159,13 @@ async function carrierOf(
   ctx: BookingContext,
   req: CreateBookingRequest,
 ): Promise<{ carrierId: CarrierId | null; carrierName: string }> {
-  if (req.mode === CreatedParty.carrier) {
+  if (req.mode === CreateMode.carrier) {
     if (ctx.actor.party !== BookingParty.carrier)
       throw new Error('carrier create without a carrier actor');
     const carrierId = ctx.actor.carrierId;
     if (!(await linkActive(ctx, carrierId))) {
       throw new ApiError(ErrorCode.forbidden, 'The carrier link is deactivated', {
-        reason: 'link_inactive',
+        reason: ForbiddenReason.link_inactive,
       });
     }
     const [row] = await ctx.tx.select({ name: org.name }).from(org).where(eq(org.id, carrierId));
@@ -265,7 +269,7 @@ export async function createBooking(
   const s = await siteOf(ctx, req.siteId);
   const lt = await bookableLoadType(ctx, req);
   const carrier = await carrierOf(ctx, req);
-  const avis = req.mode === 'walk_in' ? req.outcome.avis : req.avis;
+  const avis = req.mode === CreateMode.walk_in ? req.outcome.avis : req.avis;
 
   await lockSiteCapacity(ctx.tx, req.siteId);
   const existing = await existingRequest(ctx, req.clientRequestId);
@@ -277,7 +281,7 @@ export async function createBooking(
   const block = blockOf(lt, loadUnits, ctx.access);
   let resourceId: ResourceId;
   let startsAt: Date;
-  if (req.mode === 'walk_in') {
+  if (req.mode === CreateMode.walk_in) {
     resourceId = await walkInResource(ctx, lt, req.resourceId);
     startsAt = await walkInStart(ctx, s.id, s.zone);
   } else {
@@ -314,9 +318,9 @@ export async function createBooking(
   }
 
   const window = windowOf(startsAt, block);
-  const forceReason = req.mode === CreatedParty.staff ? (req.forceReason ?? null) : null;
+  const forceReason = req.mode === CreateMode.staff ? (req.forceReason ?? null) : null;
   const createdBy = actorUserId(ctx.actor);
-  const createdParty = req.mode === CreatedParty.carrier ? 'carrier' : 'staff';
+  const createdParty = req.mode === CreateMode.carrier ? 'carrier' : 'staff';
   const row = await insertBooking(ctx, {
     tenantId: ctx.tenantId,
     siteId: s.id,
@@ -332,7 +336,7 @@ export async function createBooking(
     createdBy,
     clientRequestId: req.clientRequestId,
     forced: forceReason !== null,
-    walkIn: req.mode === 'walk_in',
+    walkIn: req.mode === CreateMode.walk_in,
     updatedAt: ctx.now,
   });
   const owner = {
@@ -341,7 +345,7 @@ export async function createBooking(
     siteId: row.siteId,
     carrierId: row.carrierId,
   };
-  const plateSeen = req.mode === 'walk_in' ? normalizePlate(req.plateSeen) : undefined;
+  const plateSeen = req.mode === CreateMode.walk_in ? normalizePlate(req.plateSeen) : undefined;
   if (avis) {
     await writeAvis(ctx.tx, owner, avis, { updatedBy: createdBy, now: ctx.now, plateSeen });
   } else if (plateSeen !== undefined) {
@@ -365,20 +369,20 @@ export async function createBooking(
       loadTypeId: lt.id,
       loadUnits,
       createdParty,
-      walkIn: req.mode === 'walk_in',
+      walkIn: req.mode === CreateMode.walk_in,
       forced: forceReason !== null,
       forceReason,
     },
   });
 
-  if (req.mode !== 'walk_in') {
+  if (req.mode !== CreateMode.walk_in) {
     await issueDriverLink(ctx.tx, row, { channel: DriverChannel.link, createdBy });
     await emailContacts(ctx, row, EmailTemplate.booking_confirmed, {});
     return { booking: row, created: true, safety: null };
   }
-  if (req.outcome.kind === 'turn_away') {
+  if (req.outcome.kind === WalkInOutcome.turn_away) {
     const { booking: turned } = await transitionBooking(ctx, row.id, {
-      type: 'turn_away',
+      type: CommandName.turn_away,
       reason: req.outcome.reason,
     });
     return { booking: turned, created: true, safety: null };
@@ -389,7 +393,7 @@ export async function createBooking(
     return { booking: row, created: true, safety: SafetyStatus.missing };
   }
   const { booking: checkedIn } = await transitionBooking(ctx, row.id, {
-    type: 'check_in',
+    type: CommandName.check_in,
     plateSeen: plateSeen ?? null,
   });
   return { booking: checkedIn, created: true, safety: safety.status };

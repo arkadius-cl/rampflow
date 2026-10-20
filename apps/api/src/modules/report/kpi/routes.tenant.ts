@@ -11,6 +11,7 @@ import {
   Setting,
   StaffLocale,
   StoryId,
+  ValidationTarget,
   values,
 } from '@rampflow/shared/values';
 import { type Context, Hono } from 'hono';
@@ -62,7 +63,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<KpiReport>() },
     }),
     view,
-    validate('query', ReportFilter),
+    validate(ValidationTarget.query, ReportFilter),
     async (c) => {
       return c.json(await kpiReport(reportContext(c), c.req.valid('query')), 200);
     },
@@ -77,7 +78,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     view,
     exportCsv,
-    validate('query', ReportFilter),
+    validate(ValidationTarget.query, ReportFilter),
     async (c) => {
       const filter = c.req.valid('query');
       const report = await kpiReport(reportContext(c), filter);
@@ -99,7 +100,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<VisitPage>() },
     }),
     view,
-    validate('query', VisitQuery),
+    validate(ValidationTarget.query, VisitQuery),
     async (c) => {
       return c.json(await visitPage(reportContext(c), c.req.valid('query')), 200);
     },
@@ -115,7 +116,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     view,
     exportCsv,
-    validate('query', ReportFilter),
+    validate(ValidationTarget.query, ReportFilter),
     async (c) => {
       const filter = c.req.valid('query');
       const { site, items } = await allVisits(reportContext(c), filter);

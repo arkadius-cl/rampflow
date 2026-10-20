@@ -1,4 +1,5 @@
 import { dirname, join, relative } from 'node:path';
+import { BodyKind } from '@rampflow/shared/values';
 import ts from 'typescript-6';
 import type { SuccessStatus } from '../../src/kernel/describe.ts';
 import { ConversionError, Converter, type ConverterOptions } from './converter.ts';
@@ -153,7 +154,7 @@ export function analyze(input: StaticInput): StaticResult {
         }
         continue;
       }
-      if (json !== (meta.kind === 'json')) {
+      if (json !== (meta.kind === BodyKind.json)) {
         problems.push(
           `${id} ${status}: op() declares ${meta.kind}, the handler answers ${out.format}`,
         );

@@ -143,7 +143,7 @@ export interface CarrierInvitationAccepted {
 
 export interface RegistrationVerified {
   carrierId: string;
-  status: Extract<RegistrationStatus, 'approved' | 'pending_approval'>;
+  status: typeof RegistrationStatus.approved | typeof RegistrationStatus.pending_approval;
 }
 
 /** GET /api/c/:orgId/tenants: a tenant the carrier is linked to or registered at. */

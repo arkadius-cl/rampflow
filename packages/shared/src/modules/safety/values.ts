@@ -60,3 +60,10 @@ export const BlockKind = {
   pictogram: 'pictogram',
 } as const;
 export type BlockKind = ValueOf<typeof BlockKind>;
+
+/** An acknowledgement's status when a visit links it (YD-02), or that its briefing no longer applies. */
+export const AckLinkStatus = {
+  ...AckStatus,
+  not_applicable: 'not_applicable',
+} as const;
+export type AckLinkStatus = ValueOf<typeof AckLinkStatus>;

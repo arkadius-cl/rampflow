@@ -17,8 +17,15 @@ import {
   type SettingKey,
   type SettingValue,
 } from '@rampflow/shared';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, OrgKind, Role, SystemActorName } from '@rampflow/shared/values';
+import {
+  DescribedKind,
+  ErrorCode,
+  GuardKind,
+  Role,
+  ScopeParty,
+  SystemActorName,
+  TenantActorKind,
+} from '@rampflow/shared/values';
 import { eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
@@ -48,12 +55,12 @@ const NO_PERMISSIONS: ReadonlySet<PermissionKey> = new Set();
 
 function roleOf(scope: Scope): Role | null {
   switch (scope.party) {
-    case OrgKind.platform:
+    case ScopeParty.platform:
       return Role.platform_admin;
-    case ActorParty.tenant:
-      return scope.actor.kind === 'user' ? scope.actor.role : null;
-    case ActorParty.carrier:
-    case 'carrier_at_tenant':
+    case ScopeParty.tenant:
+      return scope.actor.kind === TenantActorKind.user ? scope.actor.role : null;
+    case ScopeParty.carrier:
+    case ScopeParty.carrier_at_tenant:
       return scope.role;
     default:
       return null;
@@ -62,10 +69,10 @@ function roleOf(scope: Scope): Role | null {
 
 function tenantOf(scope: Scope): TenantId | null {
   switch (scope.party) {
-    case ActorParty.tenant:
-    case 'carrier_at_tenant':
-    case ActorParty.driver:
-    case 'public':
+    case ScopeParty.tenant:
+    case ScopeParty.carrier_at_tenant:
+    case ScopeParty.driver:
+    case ScopeParty.public:
       return scope.tenantId;
     default:
       return null;
@@ -130,9 +137,9 @@ function settingLoader(tx: Tx, tenantId: TenantId | null): Access['setting'] {
  * resolved as the tenant, inside the same transaction.
  */
 function entitlementsOf(tx: Tx, scope: Scope, tenantId: TenantId, now: Date) {
-  if (scope.party === ActorParty.tenant) return loadEntitlements(tx, tenantId, now);
+  if (scope.party === ScopeParty.tenant) return loadEntitlements(tx, tenantId, now);
   const asTenant: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: [],
     actor: systemActor(SystemActorName.access),
@@ -172,7 +179,7 @@ export function requireModule(id: ModuleId): MiddlewareHandler<AppEnv> {
     }
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'module', id } });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.module, id } });
 }
 
 export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv> {
@@ -181,7 +188,7 @@ export function requirePermission(key: PermissionKey): MiddlewareHandler<AppEnv>
       throw new ApiError(ErrorCode.forbidden, `Missing ${key}`);
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'permission', key } });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.permission, key } });
 }
 
 /** For features finer than the module, for example `yard.call_to_dock`. */
@@ -192,7 +199,10 @@ export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandle
     }
     await next();
   });
-  return register(guard, { kind: 'guard', guard: { kind: 'entitlement', key } });
+  return register(guard, {
+    kind: DescribedKind.guard,
+    guard: { kind: GuardKind.entitlement, key },
+  });
 }
 
 /** Mounts a router of a module that can be off. Needs a non-root prefix. */

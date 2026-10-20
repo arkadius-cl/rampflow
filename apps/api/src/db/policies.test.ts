@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
-import { CarrierRole, SystemActorName } from '@rampflow/shared/values';
+import { CarrierRole, ScopeParty, SystemActorName, TenantActorKind } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
@@ -25,13 +24,13 @@ beforeAll(async () => {
 });
 
 const driver = (): Scope => ({
-  party: ActorParty.driver,
+  party: ScopeParty.driver,
   tenantId: w.A.tenantId,
   bookingId: w.A.bookings.own.id,
   channel: DriverChannel.link,
 });
 const carrierAt = (rival = false): Scope => ({
-  party: 'carrier_at_tenant',
+  party: ScopeParty.carrier_at_tenant,
   carrierId: rival ? w.A.rivalCarrierId : w.A.carrierId,
   tenantId: w.A.tenantId,
   userId: rival ? w.A.users.rival_user.id : w.A.users.carrier_user.id,
@@ -127,10 +126,10 @@ describe('carrier at a tenant', () => {
       return asScope(
         tx,
         {
-          party: ActorParty.tenant,
+          party: ScopeParty.tenant,
           tenantId: w.A.tenantId,
           siteIds: 'all',
-          actor: { kind: 'system', job: SystemActorName.capacity },
+          actor: { kind: TenantActorKind.system, job: SystemActorName.capacity },
         },
         (inner) =>
           inner
@@ -147,12 +146,12 @@ describe('carrier company creation', () => {
   it('lets a signed-in user create a carrier org and become its admin, but not a tenant', async () => {
     const userId = w.A.users.dispatcher.id;
     const carrierId = randomUUID() as OrgId;
-    await withScope({ party: 'user', userId }, async (tx) => {
+    await withScope({ party: ScopeParty.user, userId }, async (tx) => {
       await tx.insert(org).values({ id: carrierId, kind: 'carrier', name: 'New Spedition' });
       await asScope(
         tx,
         {
-          party: ActorParty.carrier,
+          party: ScopeParty.carrier,
           carrierId: carrierId as never,
           userId,
           role: CarrierRole.carrier_admin,
@@ -167,7 +166,7 @@ describe('carrier company creation', () => {
       await ownerDb().select().from(membership).where(eq(membership.orgId, carrierId)),
     ).toHaveLength(1);
     await expect(
-      withScope({ party: 'user', userId }, (tx) =>
+      withScope({ party: ScopeParty.user, userId }, (tx) =>
         tx.insert(org).values({ kind: 'tenant', name: 'Sneaky' }),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
@@ -184,7 +183,9 @@ describe('outbox inserts', () => {
   });
 
   it('accepts account emails from any party and tenant emails only for the own tenant', async () => {
-    await withScope({ party: 'anonymous' }, (tx) => tx.insert(outboxMessage).values(row(null)));
+    await withScope({ party: ScopeParty.anonymous }, (tx) =>
+      tx.insert(outboxMessage).values(row(null)),
+    );
     await withScope(driver(), (tx) => tx.insert(outboxMessage).values(row(w.A.tenantId)));
     await expect(
       withScope(driver(), (tx) => tx.insert(outboxMessage).values(row(w.B.tenantId))),
@@ -193,7 +194,7 @@ describe('outbox inserts', () => {
 
   it('reads nothing back outside the system scope', async () => {
     await expect(
-      withScope({ party: 'anonymous' }, (tx) =>
+      withScope({ party: ScopeParty.anonymous }, (tx) =>
         tx.insert(outboxMessage).values(row(null)).returning(),
       ),
     ).rejects.toMatchObject(RLS_DENIED);
@@ -218,7 +219,7 @@ describe('scope switching', () => {
       });
     const userId = w.B.users.dispatcher.id;
     const claim = () =>
-      withScope({ party: 'token', tokenHash, userId: null }, async (tx) => {
+      withScope({ party: ScopeParty.token, tokenHash, userId: null }, async (tx) => {
         const claimed = await tx
           .update(invitation)
           .set({ acceptedAt: new Date(), acceptedUserId: userId })
@@ -228,10 +229,10 @@ describe('scope switching', () => {
         await asScope(
           tx,
           {
-            party: ActorParty.tenant,
+            party: ScopeParty.tenant,
             tenantId: w.A.tenantId,
             siteIds: 'all',
-            actor: { kind: 'system', job: SystemActorName.invitation },
+            actor: { kind: TenantActorKind.system, job: SystemActorName.invitation },
           },
           (inner) =>
             inner
@@ -247,7 +248,9 @@ describe('scope switching', () => {
 
   it('refuses a second scoped transaction inside one', async () => {
     await expect(
-      withScope({ party: 'anonymous' }, () => withScope({ party: 'anonymous' }, async () => 1)),
+      withScope({ party: ScopeParty.anonymous }, () =>
+        withScope({ party: ScopeParty.anonymous }, async () => 1),
+      ),
     ).rejects.toThrow(/asScope/);
   });
 });

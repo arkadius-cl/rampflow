@@ -1,4 +1,11 @@
-import { HttpMethod, Permission, StoryId } from '@rampflow/shared/values';
+import {
+  DescribedKind,
+  GuardKind,
+  HttpMethod,
+  Permission,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { describe, expect, it } from 'vitest';
 import * as z from 'zod';
@@ -15,14 +22,14 @@ const marker = (guard: Guard & { kind: 'permission' }): MiddlewareHandler =>
       await next();
       c.res.headers.append('x-guards', guard.key);
     },
-    { kind: 'guard', guard },
+    { kind: DescribedKind.guard, guard },
   );
 
 const meta = (id: `${string}.${string}.${string}`) =>
   op({ id, stories: [StoryId.MD_03], description: 'Toy.', responses: {} });
 
-const staff = marker({ kind: 'permission', key: Permission.core.manage_staff });
-const view = marker({ kind: 'permission', key: Permission.booking.view });
+const staff = marker({ kind: GuardKind.permission, key: Permission.core.manage_staff });
+const view = marker({ kind: GuardKind.permission, key: Permission.booking.view });
 
 const Body = z.object({ name: z.string() });
 
@@ -30,7 +37,9 @@ const Body = z.object({ name: z.string() });
 const first = new Hono().use(staff).get('/a', meta('toy.first.getA'), (c) => c.json({}, 200));
 const second = new Hono()
   .get('/b', meta('toy.second.getB'), view, (c) => c.json({}, 200))
-  .post('/b', meta('toy.second.createB'), validate('json', Body), (c) => c.json({}, 201));
+  .post('/b', meta('toy.second.createB'), validate(ValidationTarget.json, Body), (c) =>
+    c.json({}, 201),
+  );
 const toy = new Hono().route('/api/t/:orgId/s', new Hono().route('/', first).route('/', second));
 
 describe('collectEndpoints', () => {

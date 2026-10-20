@@ -1,4 +1,4 @@
-import { RegistrationMode } from '@rampflow/shared/modules/booking/values';
+import { RegistrationDecision, RegistrationMode } from '@rampflow/shared/modules/booking/values';
 import { TokenPurpose } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -459,7 +459,7 @@ describe('TN-04 decide a registration', () => {
     const { row } = await registered(email);
     return { id: row.id, email, carrierId };
   }
-  const url = (id: string, action: 'approve' | 'reject') =>
+  const url = (id: string, action: RegistrationDecision) =>
     `/api/t/${w.A.tenantId}/carriers/registrations/${id}/${action}`;
 
   it('approving links the carrier and emails it', async () => {
@@ -472,7 +472,7 @@ describe('TN-04 decide a registration', () => {
       expect.objectContaining({ id: reg.id, status: 'pending_approval' }),
     );
 
-    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, 'approve'));
+    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.approve));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ status: 'approved' });
     expect(await linkOf(w.A.tenantId, reg.carrierId)).toMatchObject({
@@ -482,7 +482,9 @@ describe('TN-04 decide a registration', () => {
     const templates = (await mailsTo(reg.email)).map((m) => m.template);
     expect(templates).toContain('booking.registration-approved');
 
-    const twice = await as(app, w.A.users.dispatcher).post(url(reg.id, 'approve'));
+    const twice = await as(app, w.A.users.dispatcher).post(
+      url(reg.id, RegistrationDecision.approve),
+    );
     expect(twice.status).toBe(409);
     expect(await twice.json()).toMatchObject({
       error: { details: { reason: 'invalid_transition', status: 'approved' } },
@@ -492,8 +494,10 @@ describe('TN-04 decide a registration', () => {
   it('approve racing reject: exactly one decision wins', async () => {
     const reg = await pendingRegistration();
     const [approved, rejected] = await Promise.all([
-      as(app, w.A.users.dispatcher).post(url(reg.id, 'approve')),
-      as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), { body: { reason: 'Late.' } }),
+      as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.approve)),
+      as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.reject), {
+        body: { reason: 'Late.' },
+      }),
     ]);
     expect([approved.status, rejected.status].sort()).toEqual([200, 409]);
     const linked = await linkOf(w.A.tenantId, reg.carrierId);
@@ -502,7 +506,7 @@ describe('TN-04 decide a registration', () => {
 
   it('rejecting emails the reason and links nothing', async () => {
     const reg = await pendingRegistration();
-    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, 'reject'), {
+    const res = await as(app, w.A.users.dispatcher).post(url(reg.id, RegistrationDecision.reject), {
       body: { reason: 'We only work with ADR carriers.' },
     });
     expect(res.status).toBe(200);
@@ -538,7 +542,7 @@ describe('registration emails are account emails', () => {
       const { row } = await registered(email);
       const res = await as(app, quiet.A.users.dispatcher).post(
         `/api/t/${quiet.A.tenantId}/carriers/registrations/${row.id}/${action}`,
-        action === 'reject' ? { body: { reason: 'Full.' } } : {},
+        action === RegistrationDecision.reject ? { body: { reason: 'Full.' } } : {},
       );
       expect(res.status).toBe(200);
       decided.push(...(await mailsTo(email)).map((m) => m.template));

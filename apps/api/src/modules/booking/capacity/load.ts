@@ -1,4 +1,4 @@
-import { ActorParty, ClosureSource, LoadStatus } from '@rampflow/shared/modules/booking/values';
+import { ClosureSource, LoadStatus } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   firstInstantFrom,
@@ -10,7 +10,7 @@ import {
   localDayRange,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { ErrorCode, Setting, SystemActorName, values } from '@rampflow/shared/values';
+import { ErrorCode, ScopeParty, Setting, SystemActorName, values } from '@rampflow/shared/values';
 import { and, eq, gt, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { type BookingId, oneOf, type SiteId, type TenantId } from '../../../db/ids.ts';
 import { asScope, type Tx } from '../../../db/scope.ts';
@@ -150,7 +150,7 @@ export async function loadDayTimeline(
   const load = await asScope(
     tx,
     {
-      party: ActorParty.tenant,
+      party: ScopeParty.tenant,
       tenantId: req.tenantId,
       siteIds: 'all',
       actor: systemActor(SystemActorName.capacity),

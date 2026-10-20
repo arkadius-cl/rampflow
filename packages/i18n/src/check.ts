@@ -1,9 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  type AnyModuleManifest,
-  SOURCE_LOCALE,
-} from '@rampflow/shared';
+import { type AnyModuleManifest, SOURCE_LOCALE } from '@rampflow/shared';
 import {
   CatalogProblemKind,
   DriverLocale,

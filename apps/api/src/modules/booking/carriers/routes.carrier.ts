@@ -1,6 +1,5 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { StoryId } from '@rampflow/shared/values';
+import { ScopeParty, StoryId } from '@rampflow/shared/values';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { CarrierId } from '../../../db/ids.ts';
@@ -67,7 +66,7 @@ export const carrier = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope } = c.var;
-    if (scope.party !== ActorParty.carrier)
+    if (scope.party !== ScopeParty.carrier)
       throw new Error(`carrier route under party ${scope.party}`);
     return c.json({ items: await linkedTenants(c.var.db, scope.carrierId) }, 200);
   },

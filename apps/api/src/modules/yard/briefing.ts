@@ -1,5 +1,5 @@
 import { sourceStates } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingParty } from '@rampflow/shared/modules/booking/values';
+import { BookingParty, CommandName } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
 import { AckStatus } from '@rampflow/shared/modules/safety/values';
@@ -20,7 +20,7 @@ import { safetyAcknowledgement, safetyVersion } from '../safety/schema.ts';
 const CANDIDATE_LIMIT = 20;
 const BRIEFING_SESSION_MS = 30 * 60_000;
 /** States in which a briefing can still be linked: the gate's `link_acknowledgement`. */
-const LINKABLE = sourceStates('link_acknowledgement', BookingParty.staff);
+const LINKABLE = sourceStates(CommandName.link_acknowledgement, BookingParty.staff);
 
 async function linkableBooking(ctx: BookingContext, bookingId: BookingId) {
   const [b] = await ctx.tx

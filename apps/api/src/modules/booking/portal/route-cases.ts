@@ -1,4 +1,10 @@
-import { Feature, HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
@@ -36,10 +42,10 @@ const own = (w: World) => ({ ...atA(w), bookingId: w.A.bookings.own.id });
 const offeredStart = () => new Date(WORLD_NOW.getTime() + 2 * 86_400_000).toISOString();
 
 const carrierCase = {
-  as: Role.carrier_user,
+  as: RouteCaseActor.carrier_user,
   permission: Permission.booking.book,
   entitlement: Feature.booking.carrier_portal,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: false,
 } as const satisfies Partial<RouteCase>;
 
@@ -52,7 +58,7 @@ export const cases = defineRouteCases([
     entitlement: null,
     params: (w) => ({ orgId: w.A.carrierId }),
     query: (w) => ({ siteId: w.A.sites[1].id }),
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...carrierCase,
@@ -82,7 +88,7 @@ export const cases = defineRouteCases([
     path: `${AT}/sites`,
     params: atA,
     setup: withoutRivalLink,
-    foreign: 'empty',
+    foreign: ForeignOutcome.empty,
   },
   {
     ...carrierCase,

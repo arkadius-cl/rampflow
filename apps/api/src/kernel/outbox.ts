@@ -1,6 +1,6 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import type { Entitlements } from '@rampflow/shared';
-import { EmailCategory, SystemActorName } from '@rampflow/shared/values';
+import { EmailCategory, type EnqueueResult, SystemActorName } from '@rampflow/shared/values';
 import { render as renderEmail } from '@react-email/render';
 import { and, asc, eq, isNull, lte } from 'drizzle-orm';
 import type { TFunction } from 'i18next';
@@ -44,7 +44,7 @@ export interface OutboxEmail<K extends TemplateId> {
   dedupeKey?: string;
 }
 
-export type EnqueueResult = 'enqueued' | 'duplicate' | 'skipped';
+export type { EnqueueResult };
 
 export type TemplateLoader = (id: string) => Promise<EmailTemplateModule<unknown>>;
 

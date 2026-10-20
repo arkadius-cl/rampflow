@@ -1,7 +1,14 @@
 import { createHash } from 'node:crypto';
-import { ActorParty, BookingParty } from '@rampflow/shared/modules/booking/values';
+import { BookingParty } from '@rampflow/shared/modules/booking/values';
 import { notify } from '@rampflow/shared/modules/notify/manifest';
-import { EmailTemplate, Setting, StaffLocale, values } from '@rampflow/shared/values';
+import {
+  EmailTemplate,
+  EnqueueResult,
+  ScopeParty,
+  Setting,
+  StaffLocale,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, gt, lte } from 'drizzle-orm';
 import type { TenantId } from '../../../db/ids.ts';
 import type { Scope, Tx } from '../../../db/scope.ts';
@@ -40,7 +47,7 @@ const staffLocale = (l: string | null): l is StaffLocale =>
  */
 async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<JobStats> {
   const scope: Scope = {
-    party: ActorParty.tenant,
+    party: ScopeParty.tenant,
     tenantId,
     siteIds: 'all',
     actor: systemActor(JOB),
@@ -89,7 +96,7 @@ async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<
         },
         access.entitlements,
       );
-      if (result === 'enqueued') stats.reminded++;
+      if (result === EnqueueResult.enqueued) stats.reminded++;
     }
   }
   return stats;

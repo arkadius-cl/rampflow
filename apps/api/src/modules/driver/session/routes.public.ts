@@ -1,6 +1,6 @@
 import { RateLimitBucket } from '@rampflow/shared/modules/core/values';
 import { ExchangeBody } from '@rampflow/shared/modules/driver/api';
-import { ErrorCode, StoryId } from '@rampflow/shared/values';
+import { ErrorCode, StoryId, ValidationTarget } from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
 import { noBody, op } from '../../../kernel/describe.ts';
@@ -26,7 +26,7 @@ export const publicApi = new Hono<AppEnv>().post(
     responses: { 204: noBody },
   }),
   rateLimit(RateLimitBucket.driver_exchange),
-  validate('json', ExchangeBody),
+  validate(ValidationTarget.json, ExchangeBody),
   async (c) => {
     const { token } = c.req.valid('json');
     const now = c.var.clock.now();

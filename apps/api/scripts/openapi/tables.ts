@@ -1,3 +1,4 @@
+import { ApiParty, GuardKind } from '@rampflow/shared/values';
 import { type Operation, takesToken } from './document.ts';
 import { markers, SECTIONS, type Section } from './sections.ts';
 
@@ -14,16 +15,20 @@ const code = (s: string) => `\`${s}\``;
 const cell = (s: string) => s.replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
 
 function permissionCell({ endpoint: e }: Operation): string {
-  const keys = e.guards.flatMap((g) => (g.kind === 'permission' ? [code(g.key)] : []));
+  const keys = e.guards.flatMap((g) => (g.kind === GuardKind.permission ? [code(g.key)] : []));
   if (keys.length) return keys.join(' and ');
   if (MEMBER_PARTIES.has(e.party)) return 'member';
-  if (e.party === 'driver') return 'driver';
+  if (e.party === ApiParty.driver) return 'driver';
   return takesToken(e) ? 'token' : 'none';
 }
 
 function entitlementCell({ endpoint: e }: Operation): string {
   const parts = e.guards.flatMap((g) =>
-    g.kind === 'module' ? [`module ${code(g.id)}`] : g.kind === 'entitlement' ? [code(g.key)] : [],
+    g.kind === GuardKind.module
+      ? [`module ${code(g.id)}`]
+      : g.kind === GuardKind.entitlement
+        ? [code(g.key)]
+        : [],
   );
   for (const key of e.meta.limits ?? []) parts.push(`limit ${code(key)}`);
   return parts.join('; ');

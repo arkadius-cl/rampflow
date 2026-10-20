@@ -1,6 +1,12 @@
 import { createServerI18n } from '@rampflow/i18n/server';
 import { RegisterFilter, RegisterSearchBody } from '@rampflow/shared/modules/safety/api.register';
-import { Permission, StaffLocale, StoryId, values } from '@rampflow/shared/values';
+import {
+  Permission,
+  StaffLocale,
+  StoryId,
+  ValidationTarget,
+  values,
+} from '@rampflow/shared/values';
 import { Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
 import { file, op } from '../../../kernel/describe.ts';
@@ -45,7 +51,7 @@ export const tenant = new Hono<AppEnv>()
       responses: {},
     }),
     view,
-    validate('json', RegisterSearchBody),
+    validate(ValidationTarget.json, RegisterSearchBody),
     async (c) => {
       const { limit, cursor, ...filter } = c.req.valid('json');
       const page = await searchRegister(c.var.db, {
@@ -68,7 +74,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: file('text/csv') },
     }),
     view,
-    validate('json', RegisterFilter),
+    validate(ValidationTarget.json, RegisterFilter),
     async (c) => {
       const { tenantId, userId } = tenantActor(c);
       const now = c.var.clock.now();

@@ -1,5 +1,12 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
-import { EmailTemplate, OrgKind, Setting, StaffLocale, values } from '@rampflow/shared/values';
+import {
+  EmailTemplate,
+  EnqueueResult,
+  ScopeParty,
+  Setting,
+  StaffLocale,
+  TenantActorKind,
+  values,
+} from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
 import type { AnyOrgId, UserId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
@@ -25,7 +32,7 @@ const OUTBOX_DAYS = 7;
 
 /** Carrier accounts are platform data; no user acts, so the scope carries the nil id. */
 const PLATFORM: Scope = {
-  party: OrgKind.platform,
+  party: ScopeParty.platform,
   userId: '00000000-0000-0000-0000-000000000000' as UserId,
 };
 
@@ -99,7 +106,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
           },
           null,
         );
-        if (sent === 'enqueued') stats.inactiveNotices++;
+        if (sent === EnqueueResult.enqueued) stats.inactiveNotices++;
         continue;
       }
       const orgs = await tx
@@ -189,10 +196,10 @@ async function runRetention(ctx: JobContext): Promise<JobStats> {
   const now = ctx.clock.now();
   const tenants = await forEachTenant(ctx, JOB, async (tx, tenantId) => {
     const scope: Scope = {
-      party: ActorParty.tenant,
+      party: ScopeParty.tenant,
       tenantId,
       siteIds: 'all',
-      actor: { kind: 'system', job: JOB },
+      actor: { kind: TenantActorKind.system, job: JOB },
     };
     const limits = await retentionLimits(await loadAccess(tx, scope, ctx.clock));
     return applyTenantRetention(tx, tenantId, limits, now);

@@ -1,4 +1,3 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import {
   type CarrierRole,
   type CarrierUserInvitationView,
@@ -7,7 +6,14 @@ import {
   InviteCarrierUser,
   UpdateCarrierUser,
 } from '@rampflow/shared/modules/core/api.staff';
-import { OrgKind, Permission, Setting, StoryId } from '@rampflow/shared/values';
+import {
+  OrgKind,
+  Permission,
+  ScopeParty,
+  Setting,
+  StoryId,
+  ValidationTarget,
+} from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
@@ -26,7 +32,7 @@ const MembershipParam = z.object({ membershipId: idSchema<'membership'>() });
 
 function carrierRequest(c: Context<AppEnv>) {
   const { scope } = c.var;
-  if (scope.party !== ActorParty.carrier)
+  if (scope.party !== ScopeParty.carrier)
     throw new Error(`carrier route under party ${scope.party}`);
   const org_: OrgRef = { orgId: scope.carrierId, orgKind: OrgKind.carrier };
   return { org: org_, userId: scope.userId };
@@ -56,7 +62,7 @@ export const carrier = new Hono<AppEnv>()
       description: "`{ email, role }` → 201; the email goes out in the inviter's locale",
       responses: { 201: type<CarrierUserInvitationView>() },
     }),
-    validate('json', InviteCarrierUser),
+    validate(ValidationTarget.json, InviteCarrierUser),
     async (c) => {
       const { org: org_, userId } = carrierRequest(c);
       const tx = c.var.db;
@@ -92,7 +98,7 @@ export const carrier = new Hono<AppEnv>()
       description: 'Revokes an invitation; the link stops working.',
       responses: { 204: noBody },
     }),
-    validate('param', InvitationParam),
+    validate(ValidationTarget.param, InvitationParam),
     async (c) => {
       const { org: org_ } = carrierRequest(c);
       const { invitationId } = c.req.valid('param');
@@ -108,8 +114,8 @@ export const carrier = new Hono<AppEnv>()
       description: '`{ role }`',
       responses: { 200: type<CarrierUserView>() },
     }),
-    validate('param', MembershipParam),
-    validate('json', UpdateCarrierUser),
+    validate(ValidationTarget.param, MembershipParam),
+    validate(ValidationTarget.json, UpdateCarrierUser),
     async (c) => {
       const { org: org_, userId } = carrierRequest(c);
       const view = await updateMember<CarrierRole>(
@@ -130,7 +136,7 @@ export const carrier = new Hono<AppEnv>()
       description: 'Removes a member from the carrier.',
       responses: { 204: noBody },
     }),
-    validate('param', MembershipParam),
+    validate(ValidationTarget.param, MembershipParam),
     async (c) => {
       const { org: org_ } = carrierRequest(c);
       await removeMember(c.var.db, org_, c.req.valid('param').membershipId);

@@ -1,6 +1,12 @@
-import { ActorParty } from '@rampflow/shared/modules/booking/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
-import { CarrierRole, JobName, OrgKind, TenantRole } from '@rampflow/shared/values';
+import {
+  CarrierRole,
+  PolicyReader,
+  ScopeParty,
+  SystemActorName,
+  TenantActorKind,
+  TenantRole,
+} from '@rampflow/shared/values';
 import { getTableColumns, getTableName, sql } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -57,30 +63,32 @@ type Reader = 'carrier' | 'carrier_at_tenant' | 'driver' | 'public';
 const tenantRef =
   (readers: readonly Reader[], siteColumn?: string): Rule =>
   (c, r, rel) =>
-    (is(c, ActorParty.tenant) && sameTenant(c, r) && (!siteColumn || siteOk(c, r[siteColumn]))) ||
-    (readers.includes('carrier') && is(c, ActorParty.carrier) && linked(c, rel, r.tenant_id)) ||
-    readers.some((p) => p !== 'carrier' && is(c, p) && sameTenant(c, r));
+    (is(c, ScopeParty.tenant) && sameTenant(c, r) && (!siteColumn || siteOk(c, r[siteColumn]))) ||
+    (readers.includes(PolicyReader.carrier) &&
+      is(c, ScopeParty.carrier) &&
+      linked(c, rel, r.tenant_id)) ||
+    readers.some((p) => p !== PolicyReader.carrier && is(c, p) && sameTenant(c, r));
 
-const tenantPrivate: Rule = (c, r) => is(c, ActorParty.tenant) && sameTenant(c, r);
+const tenantPrivate: Rule = (c, r) => is(c, ScopeParty.tenant) && sameTenant(c, r);
 
 const bookingFamily =
   (bookingColumn: string, driverReads = true): Rule =>
   (c, r) =>
-    (is(c, ActorParty.tenant) && sameTenant(c, r) && siteOk(c, r.site_id)) ||
-    (is(c, ActorParty.carrier) && r.carrier_id === c.carrier) ||
-    (is(c, 'carrier_at_tenant') && sameTenant(c, r) && r.carrier_id === c.carrier) ||
-    (driverReads && is(c, ActorParty.driver) && r[bookingColumn] === c.booking);
+    (is(c, ScopeParty.tenant) && sameTenant(c, r) && siteOk(c, r.site_id)) ||
+    (is(c, ScopeParty.carrier) && r.carrier_id === c.carrier) ||
+    (is(c, ScopeParty.carrier_at_tenant) && sameTenant(c, r) && r.carrier_id === c.carrier) ||
+    (driverReads && is(c, ScopeParty.driver) && r[bookingColumn] === c.booking);
 
 const driverOwn: Rule = (c, r) =>
-  is(c, ActorParty.driver) && sameTenant(c, r) && r.booking_id === c.booking;
+  is(c, ScopeParty.driver) && sameTenant(c, r) && r.booking_id === c.booking;
 
 const sharesOrg = (c: Ctx, rel: Relations, user: unknown) =>
   rel.memberships.some(
     (m) =>
       m.user_id === user &&
-      ((is(c, ActorParty.tenant) && m.org_id === c.tenant) ||
-        (is(c, ActorParty.carrier, 'carrier_at_tenant') && m.org_id === c.carrier) ||
-        (is(c, ActorParty.tenant) &&
+      ((is(c, ScopeParty.tenant) && m.org_id === c.tenant) ||
+        (is(c, ScopeParty.carrier, ScopeParty.carrier_at_tenant) && m.org_id === c.carrier) ||
+        (is(c, ScopeParty.tenant) &&
           m.org_kind === 'carrier' &&
           rel.links.some((l) => l.tenant_id === c.tenant && l.carrier_id === m.org_id))),
   );
@@ -88,90 +96,119 @@ const sharesOrg = (c: Ctx, rel: Relations, user: unknown) =>
 /** Who may read which row, per table, as the data model states it. */
 const ORACLE: Record<string, Rule> = {
   org: (c, r, rel) =>
-    is(c, OrgKind.platform, ActorParty.system) ||
-    (is(c, 'user') && rel.memberships.some((m) => m.user_id === c.user && m.org_id === r.id)) ||
-    (is(c, ActorParty.tenant, ActorParty.driver, 'public') && r.id === c.tenant) ||
-    (is(c, ActorParty.tenant) &&
+    is(c, ScopeParty.platform, ScopeParty.system) ||
+    (is(c, ScopeParty.user) &&
+      rel.memberships.some((m) => m.user_id === c.user && m.org_id === r.id)) ||
+    (is(c, ScopeParty.tenant, ScopeParty.driver, ScopeParty.public) && r.id === c.tenant) ||
+    (is(c, ScopeParty.tenant) &&
       rel.links.some((l) => l.tenant_id === c.tenant && l.carrier_id === r.id)) ||
-    (is(c, ActorParty.tenant) &&
+    (is(c, ScopeParty.tenant) &&
       rel.registrations.some((g) => g.tenant_id === c.tenant && g.carrier_id === r.id)) ||
-    (is(c, 'carrier_at_tenant') && (r.id === c.tenant || r.id === c.carrier)) ||
-    (is(c, ActorParty.carrier) &&
+    (is(c, ScopeParty.carrier_at_tenant) && (r.id === c.tenant || r.id === c.carrier)) ||
+    (is(c, ScopeParty.carrier) &&
       (r.id === c.carrier ||
         linked(c, rel, r.id) ||
         rel.registrations.some((g) => g.carrier_id === c.carrier && g.tenant_id === r.id))),
   app_user: (c, r, rel) =>
-    is(c, OrgKind.platform) ||
-    (is(c, 'user', 'token') && r.id === c.user) ||
-    (is(c, ActorParty.tenant, ActorParty.carrier, 'carrier_at_tenant') && sharesOrg(c, rel, r.id)),
+    is(c, ScopeParty.platform) ||
+    (is(c, ScopeParty.user, ScopeParty.token) && r.id === c.user) ||
+    (is(c, ScopeParty.tenant, ScopeParty.carrier, ScopeParty.carrier_at_tenant) &&
+      sharesOrg(c, rel, r.id)),
   membership: (c, r) =>
-    is(c, OrgKind.platform) ||
-    (is(c, 'user') && r.user_id === c.user) ||
-    (is(c, ActorParty.tenant) && r.org_id === c.tenant) ||
-    (is(c, ActorParty.carrier) && r.org_id === c.carrier),
-  membership_site: (c, r) => tenantPrivate(c, r, never) || (is(c, 'user') && r.user_id === c.user),
+    is(c, ScopeParty.platform) ||
+    (is(c, ScopeParty.user) && r.user_id === c.user) ||
+    (is(c, ScopeParty.tenant) && r.org_id === c.tenant) ||
+    (is(c, ScopeParty.carrier) && r.org_id === c.carrier),
+  membership_site: (c, r) =>
+    tenantPrivate(c, r, never) || (is(c, ScopeParty.user) && r.user_id === c.user),
   invitation: (c, r) =>
-    is(c, OrgKind.platform) ||
-    (is(c, ActorParty.tenant) && r.org_id === c.tenant) ||
-    (is(c, ActorParty.carrier) && r.org_id === c.carrier) ||
-    (is(c, 'token') && r.token_hash === c.token),
+    is(c, ScopeParty.platform) ||
+    (is(c, ScopeParty.tenant) && r.org_id === c.tenant) ||
+    (is(c, ScopeParty.carrier) && r.org_id === c.carrier) ||
+    (is(c, ScopeParty.token) && r.token_hash === c.token),
   tenant_subscription: (c, r, rel) =>
-    is(c, OrgKind.platform) ||
-    (is(c, ActorParty.tenant, 'carrier_at_tenant', ActorParty.driver, 'public') &&
+    is(c, ScopeParty.platform) ||
+    (is(c, ScopeParty.tenant, ScopeParty.carrier_at_tenant, ScopeParty.driver, ScopeParty.public) &&
       sameTenant(c, r)) ||
-    (is(c, ActorParty.carrier) && linked(c, rel, r.tenant_id)),
+    (is(c, ScopeParty.carrier) && linked(c, rel, r.tenant_id)),
   entitlement_override: (c, r) =>
-    is(c, OrgKind.platform) || (is(c, ActorParty.tenant) && sameTenant(c, r)),
+    is(c, ScopeParty.platform) || (is(c, ScopeParty.tenant) && sameTenant(c, r)),
   setting_value: (c, r, rel) =>
     (c.party !== null && r.tenant_id === null) ||
-    (is(c, ActorParty.tenant) &&
+    (is(c, ScopeParty.tenant) &&
       sameTenant(c, r) &&
       (r.site_id === null || siteOk(c, r.site_id))) ||
-    (is(c, 'carrier_at_tenant', ActorParty.driver, 'public') && sameTenant(c, r)) ||
-    (is(c, ActorParty.carrier) && linked(c, rel, r.tenant_id)),
-  site: tenantRef(['carrier', 'carrier_at_tenant', 'driver', 'public'], 'id'),
-  hall: tenantRef(['carrier', 'carrier_at_tenant', 'driver'], 'site_id'),
-  dock: tenantRef(['carrier', 'carrier_at_tenant', 'driver'], 'site_id'),
+    (is(c, ScopeParty.carrier_at_tenant, ScopeParty.driver, ScopeParty.public) &&
+      sameTenant(c, r)) ||
+    (is(c, ScopeParty.carrier) && linked(c, rel, r.tenant_id)),
+  site: tenantRef(
+    [
+      PolicyReader.carrier,
+      PolicyReader.carrier_at_tenant,
+      PolicyReader.driver,
+      PolicyReader.public,
+    ],
+    'id',
+  ),
+  hall: tenantRef(
+    [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    'site_id',
+  ),
+  dock: tenantRef(
+    [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    'site_id',
+  ),
   tenant_carrier_link: (c, r) =>
-    (is(c, ActorParty.tenant) && sameTenant(c, r)) ||
-    (is(c, ActorParty.carrier) && r.carrier_id === c.carrier) ||
-    (is(c, 'carrier_at_tenant') && sameTenant(c, r) && r.carrier_id === c.carrier),
-  outbox_message: (c) => is(c, ActorParty.system),
-  bookable_resource: tenantRef(['carrier', 'carrier_at_tenant', 'driver'], 'site_id'),
-  load_type: tenantRef(['carrier', 'carrier_at_tenant', 'driver'], 'site_id'),
-  resource_dock: tenantRef(['carrier_at_tenant'], 'site_id'),
-  opening_hours: tenantRef(['carrier_at_tenant'], 'site_id'),
-  closure: tenantRef(['carrier_at_tenant'], 'site_id'),
-  load_type_resource: tenantRef(['carrier_at_tenant'], 'site_id'),
+    (is(c, ScopeParty.tenant) && sameTenant(c, r)) ||
+    (is(c, ScopeParty.carrier) && r.carrier_id === c.carrier) ||
+    (is(c, ScopeParty.carrier_at_tenant) && sameTenant(c, r) && r.carrier_id === c.carrier),
+  outbox_message: (c) => is(c, ScopeParty.system),
+  bookable_resource: tenantRef(
+    [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    'site_id',
+  ),
+  load_type: tenantRef(
+    [PolicyReader.carrier, PolicyReader.carrier_at_tenant, PolicyReader.driver],
+    'site_id',
+  ),
+  resource_dock: tenantRef([PolicyReader.carrier_at_tenant], 'site_id'),
+  opening_hours: tenantRef([PolicyReader.carrier_at_tenant], 'site_id'),
+  closure: tenantRef([PolicyReader.carrier_at_tenant], 'site_id'),
+  load_type_resource: tenantRef([PolicyReader.carrier_at_tenant], 'site_id'),
   booking: bookingFamily('id'),
   booking_event: bookingFamily('booking_id'),
   avis: bookingFamily('booking_id', false),
   avis_reference: bookingFamily('booking_id', false),
   driver_access: (c, r, rel) =>
-    bookingFamily('booking_id')(c, r, rel) || (is(c, 'token') && r.token_hash === c.token),
+    bookingFamily('booking_id')(c, r, rel) || (is(c, ScopeParty.token) && r.token_hash === c.token),
   carrier_invitation: (c, r) =>
-    tenantPrivate(c, r, never) || (is(c, 'token') && r.token_hash === c.token),
+    tenantPrivate(c, r, never) || (is(c, ScopeParty.token) && r.token_hash === c.token),
   carrier_registration: (c, r) =>
     tenantPrivate(c, r, never) ||
-    (is(c, ActorParty.carrier) && r.carrier_id === c.carrier) ||
-    (is(c, 'token') && r.token_hash === c.token),
-  safety_instruction: tenantRef(['driver']),
-  safety_instruction_site: tenantRef(['driver']),
+    (is(c, ScopeParty.carrier) && r.carrier_id === c.carrier) ||
+    (is(c, ScopeParty.token) && r.token_hash === c.token),
+  safety_instruction: tenantRef([PolicyReader.driver]),
+  safety_instruction_site: tenantRef([PolicyReader.driver]),
   safety_version: (c, r) =>
     tenantPrivate(c, r, never) ||
-    (is(c, ActorParty.driver) && sameTenant(c, r) && r.status !== 'draft'),
+    (is(c, ScopeParty.driver) && sameTenant(c, r) && r.status !== 'draft'),
   safety_content: (c, r, rel) =>
     tenantPrivate(c, r, rel) ||
-    (is(c, ActorParty.driver) &&
+    (is(c, ScopeParty.driver) &&
       sameTenant(c, r) &&
       rel.versionStatus.get(String(r.version_id)) === 'published'),
   safety_acknowledgement: (c, r) => tenantPrivate(c, r, never) || driverOwn(c, r, never),
   booking_acknowledgement: (c, r) =>
-    (is(c, ActorParty.tenant) && sameTenant(c, r) && siteOk(c, r.site_id)) ||
+    (is(c, ScopeParty.tenant) && sameTenant(c, r) && siteOk(c, r.site_id)) ||
     driverOwn(c, r, never),
   safety_attempt: (c, r) => tenantPrivate(c, r, never) || driverOwn(c, r, never),
   safety_pass: tenantPrivate,
-  tenant_logo: tenantRef(['carrier', 'carrier_at_tenant', 'driver', 'public']),
+  tenant_logo: tenantRef([
+    PolicyReader.carrier,
+    PolicyReader.carrier_at_tenant,
+    PolicyReader.driver,
+    PolicyReader.public,
+  ]),
   privacy_request_log: tenantPrivate,
 };
 const never: Relations = {
@@ -298,12 +335,18 @@ describe('row-level security catalog', () => {
 
 describe('party matrix: each party reads exactly the rows its policies allow', () => {
   const parties: [string, () => { scope: Scope; ctx: Ctx }][] = [
-    ['anonymous', () => ({ scope: { party: 'anonymous' }, ctx: { party: 'anonymous' } })],
+    [
+      'anonymous',
+      () => ({ scope: { party: ScopeParty.anonymous }, ctx: { party: ScopeParty.anonymous } }),
+    ],
     [
       'user',
       () => {
         const userId = w.A.users.dispatcher.id;
-        return { scope: { party: 'user', userId }, ctx: { party: 'user', user: userId } };
+        return {
+          scope: { party: ScopeParty.user, userId },
+          ctx: { party: ScopeParty.user, user: userId },
+        };
       },
     ],
     [
@@ -311,8 +354,8 @@ describe('party matrix: each party reads exactly the rows its policies allow', (
       () => {
         const userId = w.platformAdmin.id;
         return {
-          scope: { party: OrgKind.platform, userId },
-          ctx: { party: OrgKind.platform, user: userId },
+          scope: { party: ScopeParty.platform, userId },
+          ctx: { party: ScopeParty.platform, user: userId },
         };
       },
     ],
@@ -320,78 +363,86 @@ describe('party matrix: each party reads exactly the rows its policies allow', (
       'tenant (all sites)',
       () => ({
         scope: {
-          party: ActorParty.tenant,
+          party: ScopeParty.tenant,
           tenantId: w.A.tenantId,
           siteIds: 'all',
-          actor: { kind: 'user', userId: w.A.users.dispatcher.id, role: TenantRole.dispatcher },
+          actor: {
+            kind: TenantActorKind.user,
+            userId: w.A.users.dispatcher.id,
+            role: TenantRole.dispatcher,
+          },
         },
-        ctx: { party: ActorParty.tenant, tenant: w.A.tenantId, sites: 'all' },
+        ctx: { party: ScopeParty.tenant, tenant: w.A.tenantId, sites: 'all' },
       }),
     ],
     [
       'tenant (gate operator of site 1)',
       () => ({
         scope: {
-          party: ActorParty.tenant,
+          party: ScopeParty.tenant,
           tenantId: w.A.tenantId,
           siteIds: [w.A.sites[0].id],
           actor: {
-            kind: 'user',
+            kind: TenantActorKind.user,
             userId: w.A.users.gate_operator.id,
             role: TenantRole.gate_operator,
           },
         },
-        ctx: { party: ActorParty.tenant, tenant: w.A.tenantId, sites: [w.A.sites[0].id] },
+        ctx: { party: ScopeParty.tenant, tenant: w.A.tenantId, sites: [w.A.sites[0].id] },
       }),
     ],
     [
       'carrier',
       () => ({
         scope: {
-          party: ActorParty.carrier,
+          party: ScopeParty.carrier,
           carrierId: w.A.carrierId,
           userId: w.A.users.carrier_admin.id,
           role: CarrierRole.carrier_admin,
         },
-        ctx: { party: ActorParty.carrier, carrier: w.A.carrierId },
+        ctx: { party: ScopeParty.carrier, carrier: w.A.carrierId },
       }),
     ],
     [
       'carrier_at_tenant',
       () => ({
         scope: {
-          party: 'carrier_at_tenant',
+          party: ScopeParty.carrier_at_tenant,
           carrierId: w.A.carrierId,
           tenantId: w.A.tenantId,
           userId: w.A.users.carrier_user.id,
           role: CarrierRole.carrier_user,
         },
-        ctx: { party: 'carrier_at_tenant', carrier: w.A.carrierId, tenant: w.A.tenantId },
+        ctx: { party: ScopeParty.carrier_at_tenant, carrier: w.A.carrierId, tenant: w.A.tenantId },
       }),
     ],
     [
       'carrier_at_tenant (rival carrier of the same tenant)',
       () => ({
         scope: {
-          party: 'carrier_at_tenant',
+          party: ScopeParty.carrier_at_tenant,
           carrierId: w.A.rivalCarrierId,
           tenantId: w.A.tenantId,
           userId: w.A.users.rival_user.id,
           role: CarrierRole.carrier_user,
         },
-        ctx: { party: 'carrier_at_tenant', carrier: w.A.rivalCarrierId, tenant: w.A.tenantId },
+        ctx: {
+          party: ScopeParty.carrier_at_tenant,
+          carrier: w.A.rivalCarrierId,
+          tenant: w.A.tenantId,
+        },
       }),
     ],
     [
       'driver',
       () => ({
         scope: {
-          party: ActorParty.driver,
+          party: ScopeParty.driver,
           tenantId: w.A.tenantId,
           bookingId: w.A.bookings.own.id,
           channel: DriverChannel.link,
         },
-        ctx: { party: ActorParty.driver, tenant: w.A.tenantId, booking: w.A.bookings.own.id },
+        ctx: { party: ScopeParty.driver, tenant: w.A.tenantId, booking: w.A.bookings.own.id },
       }),
     ],
     [
@@ -399,23 +450,23 @@ describe('party matrix: each party reads exactly the rows its policies allow', (
       () => {
         const tokenHash = hashToken(invitationToken);
         return {
-          scope: { party: 'token', tokenHash, userId: null },
-          ctx: { party: 'token', token: `\\x${tokenHash.toString('hex')}`, user: null },
+          scope: { party: ScopeParty.token, tokenHash, userId: null },
+          ctx: { party: ScopeParty.token, token: `\\x${tokenHash.toString('hex')}`, user: null },
         };
       },
     ],
     [
       'public',
       () => ({
-        scope: { party: 'public', tenantId: w.A.tenantId, siteId: w.A.sites[0].id },
-        ctx: { party: 'public', tenant: w.A.tenantId },
+        scope: { party: ScopeParty.public, tenantId: w.A.tenantId, siteId: w.A.sites[0].id },
+        ctx: { party: ScopeParty.public, tenant: w.A.tenantId },
       }),
     ],
     [
       'system',
       () => ({
-        scope: { party: ActorParty.system, job: JobName.outbox },
-        ctx: { party: ActorParty.system },
+        scope: { party: ScopeParty.system, job: SystemActorName.outbox },
+        ctx: { party: ScopeParty.system },
       }),
     ],
   ];

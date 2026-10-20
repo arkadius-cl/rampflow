@@ -1,4 +1,6 @@
+export * from './api.ts';
 export * from './catalogs.ts';
+export * from './cli.ts';
 export { type ValueOf, values } from './define.ts';
 export * from './dom.ts';
 export * from './emails.ts';
@@ -12,6 +14,9 @@ export * from './list.ts';
 export * from './locales.ts';
 export * from './packages.ts';
 export * from './roles.ts';
+export * from './route-cases.ts';
+export * from './scope.ts';
+export * from './seed.ts';
 export * from './settings.ts';
 export * from './sql.ts';
 export * from './stories.ts';

@@ -1,4 +1,10 @@
-import { Feature, HttpMethod, Permission, Role } from '@rampflow/shared/values';
+import {
+  Feature,
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 
@@ -6,10 +12,10 @@ const P = '/api/t/:orgId/settings';
 
 // Settings need core.manage_settings, which operators lack: `siteScoped` checks the 403.
 const base = {
-  as: Role.tenant_admin,
+  as: RouteCaseActor.tenant_admin,
   permission: Permission.core.manage_settings,
   entitlement: null,
-  foreign: 'not_found',
+  foreign: ForeignOutcome.not_found,
   siteScoped: true,
 } as const satisfies Partial<RouteCase>;
 

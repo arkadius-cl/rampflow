@@ -1,5 +1,5 @@
-import { ActorParty, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { StaffLocale, values } from '@rampflow/shared/values';
+import { RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import { PolicyCommand, ScopeParty, StaffLocale, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import { char, check, index, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import {
@@ -46,8 +46,8 @@ export const carrierInvitation = pgTable(
       .on(t.tenantId, t.email)
       .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );
 
@@ -118,9 +118,9 @@ export const carrierRegistration = pgTable(
     ),
     check('carrier_registration_locale_check', oneOf(t.locale, values(StaffLocale))),
     ...tenantPolicies(t, { site: null, readers: [] }),
-    allow('public', 'insert', tenantIs(t.tenantId)),
-    allow(ActorParty.carrier, 'select', carrierIs(t.carrierId)),
-    allow('token', 'select', tokenIs(t.tokenHash)),
-    allow('token', 'update', tokenIs(t.tokenHash)),
+    allow(ScopeParty.public, PolicyCommand.insert, tenantIs(t.tenantId)),
+    allow(ScopeParty.carrier, PolicyCommand.select, carrierIs(t.carrierId)),
+    allow(ScopeParty.token, PolicyCommand.select, tokenIs(t.tokenHash)),
+    allow(ScopeParty.token, PolicyCommand.update, tokenIs(t.tokenHash)),
   ],
 );
