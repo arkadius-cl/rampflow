@@ -1,4 +1,3 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   ContentBody,
   CreateInstructionBody,
@@ -10,8 +9,9 @@ import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
 import { requirePermission } from '../../../kernel/access.ts';
+import { op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { tenantActor } from './actor.ts';
 import {
   createInstruction,
@@ -32,14 +32,32 @@ const manage = requirePermission('safety.manage_briefings');
 
 /** SF-01, SF-02. Mounted at `/api/t/:orgId/safety` with `withModule('safety')`. */
 export const tenant = new Hono<AppEnv>()
-  .get('/instructions', manage, async (c) => {
-    const { tenantId } = tenantActor(c);
-    return c.json({ items: await listInstructions(c.var.db, tenantId) }, 200);
-  })
+  .get(
+    '/instructions',
+    op({
+      id: 'safety.authoring.listInstructions',
+      stories: ['SF-01'],
+      description: '`{ items }` with sites, archive time, published and draft version',
+      responses: {},
+    }),
+    manage,
+    async (c) => {
+      const { tenantId } = tenantActor(c);
+      return c.json({ items: await listInstructions(c.var.db, tenantId) }, 200);
+    },
+  )
   .post(
     '/instructions',
+    op({
+      id: 'safety.authoring.createInstruction',
+      stories: ['SF-01'],
+      description:
+        '`{ name, allSites, siteIds }`; version 1 draft from the 12-language platform template, de and en flagged `source`, the others `machine`; template questions only with `safety.quiz`; a site of another tenant answers 404',
+      limits: ['safety.max_briefing_templates'],
+      responses: {},
+    }),
     manage,
-    zValidator('json', CreateInstructionBody, onInvalid),
+    validate('json', CreateInstructionBody),
     async (c) => {
       const instruction = await createInstruction(c.var.db, {
         ...tenantActor(c),
@@ -50,9 +68,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .patch(
     '/instructions/:instructionId',
+    op({
+      id: 'safety.authoring.updateInstruction',
+      stories: ['SF-01'],
+      description:
+        '`{ name?, allSites?, siteIds?, archived? }`; `allSites` and `siteIds` change together; `archived: false` counts against the limit again',
+      responses: {},
+    }),
     manage,
-    zValidator('param', InstructionParam, onInvalid),
-    zValidator('json', UpdateInstructionBody, onInvalid),
+    validate('param', InstructionParam),
+    validate('json', UpdateInstructionBody),
     async (c) => {
       const instruction = await updateInstruction(c.var.db, {
         ...tenantActor(c),
@@ -65,8 +90,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/instructions/:instructionId/versions',
+    op({
+      id: 'safety.authoring.listVersions',
+      stories: ['SF-01'],
+      description: '`{ items }`, newest first, with locales, translation flags and question counts',
+      responses: {},
+    }),
     manage,
-    zValidator('param', InstructionParam, onInvalid),
+    validate('param', InstructionParam),
     async (c) => {
       const { tenantId } = tenantActor(c);
       const items = await listVersions(c.var.db, tenantId, c.req.valid('param').instructionId);
@@ -75,8 +106,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/instructions/:instructionId/versions',
+    op({
+      id: 'safety.authoring.createVersion',
+      stories: ['SF-01'],
+      description:
+        'new draft copied from the latest version (201); the open draft if one exists (200); without `safety.quiz` the copy drops its questions',
+      responses: {},
+    }),
     manage,
-    zValidator('param', InstructionParam, onInvalid),
+    validate('param', InstructionParam),
     async (c) => {
       const { created, version } = await openDraft(c.var.db, {
         ...tenantActor(c),
@@ -85,15 +123,33 @@ export const tenant = new Hono<AppEnv>()
       return c.json(version, created ? 201 : 200);
     },
   )
-  .get('/versions/:versionId', manage, zValidator('param', VersionParam, onInvalid), async (c) => {
-    const { tenantId } = tenantActor(c);
-    return c.json(await getVersion(c.var.db, tenantId, c.req.valid('param').versionId), 200);
-  })
+  .get(
+    '/versions/:versionId',
+    op({
+      id: 'safety.authoring.getVersion',
+      stories: ['SF-01'],
+      description: 'all locales with questions, answers and content hash',
+      responses: {},
+    }),
+    manage,
+    validate('param', VersionParam),
+    async (c) => {
+      const { tenantId } = tenantActor(c);
+      return c.json(await getVersion(c.var.db, tenantId, c.req.valid('param').versionId), 200);
+    },
+  )
   .put(
     '/versions/:versionId/content/:locale',
+    op({
+      id: 'safety.authoring.putVersionContent',
+      stories: ['SF-01', 'SF-02'],
+      description:
+        'Needs `safety.quiz` when questions are sent. `{ title, blocks, questions, statement, translation }`; draft only, else 409 `invalid_transition` with `status`; at most 5 questions, 2 to 4 options each',
+      responses: {},
+    }),
     manage,
-    zValidator('param', ContentParam, onInvalid),
-    zValidator('json', ContentBody, onInvalid),
+    validate('param', ContentParam),
+    validate('json', ContentBody),
     async (c) => {
       const { versionId, locale } = c.req.valid('param');
       const content = await putContent(c.var.db, {
@@ -107,9 +163,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/versions/:versionId/publish',
+    op({
+      id: 'safety.authoring.publishVersion',
+      stories: ['SF-01', 'SF-02'],
+      description:
+        '`{ materialChange }`; retires the previous version; with `safety.quiz`, 409 `conflict` reason `quiz_incomplete` with `locales`, `min`, `max` unless every locale has 3 to 5 questions; without it, 403 `entitlement_required` while any locale has questions; repeating it answers 200',
+      responses: {},
+    }),
     manage,
-    zValidator('param', VersionParam, onInvalid),
-    zValidator('json', PublishBody, onInvalid),
+    validate('param', VersionParam),
+    validate('json', PublishBody),
     async (c) => {
       const version = await publishVersion(c.var.db, {
         ...tenantActor(c),

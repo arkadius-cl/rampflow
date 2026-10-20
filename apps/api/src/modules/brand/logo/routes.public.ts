@@ -1,12 +1,12 @@
-import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type TenantId } from '../../../db/ids.ts';
 import { type Scope, withScope } from '../../../db/scope.ts';
 import { loadAccess } from '../../../kernel/access.ts';
+import { file, op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { logoBytes } from './logo.ts';
 
 const LogoParam = z.object({
@@ -21,7 +21,14 @@ const LogoParam = z.object({
  */
 export const publicApi = new Hono<AppEnv>().get(
   '/:tenantId/:sha',
-  zValidator('param', LogoParam, onInvalid),
+  op({
+    id: 'brand.logo.getLogoImage',
+    stories: ['TN-05'],
+    description:
+      "Needs the tenant's module `brand`. The image with `Cache-Control: public, max-age=31536000, immutable`; 404 for another hash, no logo or `brand.logo` off. URLs come from `logoUrl(tenantId, sha, origin?)` in `@rampflow/shared/modules/brand/api`, or `currentLogoUrl(tx, tenantId, entitlements, origin)` in `brand/logo/logo.ts`",
+    responses: { 200: file('image/png', 'image/jpeg') },
+  }),
+  validate('param', LogoParam),
   async (c) => {
     const { tenantId, sha } = c.req.valid('param');
     const scope: Scope = { party: 'public', tenantId: tenantId as TenantId, siteId: null };

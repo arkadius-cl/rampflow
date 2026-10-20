@@ -1,4 +1,3 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   EmailLinkBody,
   LoginBody,
@@ -8,13 +7,14 @@ import {
 } from '@rampflow/shared/modules/core/api.auth';
 import { Hono } from 'hono';
 import { withScope } from '../../../db/scope.ts';
+import { noBody, op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { enqueueEmail } from '../../../kernel/outbox.ts';
 import { clientIp, consumeRateLimit } from '../../../kernel/rate-limit.ts';
 import { scoped } from '../../../kernel/scoped.ts';
 import { anonymousScope, userScope } from '../../../kernel/scopes.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { lockLoginKeys, loginKeys, recordLoginFailure } from './login-limit.ts';
 import { accountByEmail } from './lookup.ts';
 import { inspectMagicLink } from './magic-link.redeem.ts';
@@ -72,44 +72,86 @@ async function sendLinkEmail(kind: AuthTokenKind, body: EmailLinkBody, now: Date
 }
 
 export const anonymous = new Hono<AppEnv>()
-  .post('/login', zValidator('json', LoginBody, onInvalid), async (c) => {
-    const { email, password } = c.req.valid('json');
-    const now = c.var.clock.now();
-    const keys = loginKeys(email, clientIp(c));
-    // One transaction locks the key, counts, verifies and records a failure, and commits even
-    // for a wrong password, so a burst for one key is serialized and every failure counts.
-    const outcome = await withScope({ party: 'anonymous' }, async (tx) => {
-      const limit = await lockLoginKeys(tx, keys, now);
-      if (limit.limited) return limit;
-      const account = await accountByEmail(tx, email);
-      const matches = await verifyPassword(password, account?.passwordHash ?? (await dummyHash()));
-      if (!account || !matches || !account.emailVerifiedAt || account.disabledAt) {
-        await recordLoginFailure(tx, keys, now);
-        return { failed: true } as const;
-      }
-      await startSession(c, tx, account.id, now);
-      return { signedIn: true } as const;
-    });
-    if ('limited' in outcome && outcome.limited) {
-      throw new ApiError('rate_limited', 'Too many failed sign-ins', {
-        retryAfterSeconds: outcome.retryAfterSeconds,
+  .post(
+    '/login',
+    op({
+      id: 'core.auth.login',
+      stories: ['CR-03'],
+      description:
+        '`{ email, password }` → 200 `{ ok }`; sets `rf_session`. A wrong password, an unknown, unverified or disabled email all answer the same 401; 429 `rate_limited` after 5 failures in 15 minutes for the email and client address, or 30 for the client address alone',
+      responses: {},
+    }),
+    validate('json', LoginBody),
+    async (c) => {
+      const { email, password } = c.req.valid('json');
+      const now = c.var.clock.now();
+      const keys = loginKeys(email, clientIp(c));
+      // One transaction locks the key, counts, verifies and records a failure, and commits even
+      // for a wrong password, so a burst for one key is serialized and every failure counts.
+      const outcome = await withScope({ party: 'anonymous' }, async (tx) => {
+        const limit = await lockLoginKeys(tx, keys, now);
+        if (limit.limited) return limit;
+        const account = await accountByEmail(tx, email);
+        const matches = await verifyPassword(
+          password,
+          account?.passwordHash ?? (await dummyHash()),
+        );
+        if (!account || !matches || !account.emailVerifiedAt || account.disabledAt) {
+          await recordLoginFailure(tx, keys, now);
+          return { failed: true } as const;
+        }
+        await startSession(c, tx, account.id, now);
+        return { signedIn: true } as const;
       });
-    }
-    if ('failed' in outcome) throw new ApiError('unauthorized', 'Wrong email or password');
-    return c.json({ ok: true } as const, 200);
-  })
-  .post('/logout', scoped(userScope), async (c) => {
-    await endSession(c, c.var.db);
-    return c.body(null, 204);
-  })
-  .post('/magic-link', zValidator('json', EmailLinkBody, onInvalid), async (c) => {
-    await sendLinkEmail('magic_link', c.req.valid('json'), c.var.clock.now());
-    return c.body(null, 202);
-  })
+      if ('limited' in outcome && outcome.limited) {
+        throw new ApiError('rate_limited', 'Too many failed sign-ins', {
+          retryAfterSeconds: outcome.retryAfterSeconds,
+        });
+      }
+      if ('failed' in outcome) throw new ApiError('unauthorized', 'Wrong email or password');
+      return c.json({ ok: true } as const, 200);
+    },
+  )
+  .post(
+    '/logout',
+    op({
+      id: 'core.auth.logout',
+      stories: ['CR-03'],
+      description: '204; deletes the session and clears the cookie',
+      responses: { 204: noBody },
+    }),
+    scoped(userScope),
+    async (c) => {
+      await endSession(c, c.var.db);
+      return c.body(null, 204);
+    },
+  )
+  .post(
+    '/magic-link',
+    op({
+      id: 'core.auth.requestMagicLink',
+      stories: ['CR-03'],
+      description:
+        "`{ email, locale? }`; 202. Sends only to verified, enabled accounts, in `locale` (the page's language, default `de`); stops sending after 5 per hour per email",
+      responses: { 202: noBody },
+    }),
+    validate('json', EmailLinkBody),
+    async (c) => {
+      await sendLinkEmail('magic_link', c.req.valid('json'), c.var.clock.now());
+      return c.body(null, 202);
+    },
+  )
   .post(
     '/magic-link/inspect',
+    op({
+      id: 'core.auth.inspectMagicLink',
+      stories: ['CR-03'],
+      description:
+        '`{ token }` → 200 `{ email }` of the account the link signs in to, without using the link; 401 for an unknown, used or expired link. `/auth/magic` shows it and exchanges only after the holder clicks "Continue as" (login CSRF)',
+      responses: {},
+    }),
     scoped(anonymousScope),
-    zValidator('json', TokenBody, onInvalid),
+    validate('json', TokenBody),
     async (c) => {
       const email = await inspectMagicLink(c.var.db, c.req.valid('json').token, c.var.clock.now());
       if (!email) throw new ApiError('unauthorized', 'Invalid or expired link');
@@ -118,8 +160,14 @@ export const anonymous = new Hono<AppEnv>()
   )
   .post(
     '/magic-link/exchange',
+    op({
+      id: 'core.auth.exchangeMagicLink',
+      stories: ['CR-03'],
+      description: '`{ token }` → 200 `{ ok }`; sets `rf_session`; single use, 15 minutes',
+      responses: {},
+    }),
     scoped(anonymousScope),
-    zValidator('json', TokenBody, onInvalid),
+    validate('json', TokenBody),
     async (c) => {
       const now = c.var.clock.now();
       const userId = await claimAuthToken(c.var.db, 'magic_link', c.req.valid('json').token, now);
@@ -128,14 +176,32 @@ export const anonymous = new Hono<AppEnv>()
       return c.json({ ok: true } as const, 200);
     },
   )
-  .post('/password-reset', zValidator('json', EmailLinkBody, onInvalid), async (c) => {
-    await sendLinkEmail('password_reset', c.req.valid('json'), c.var.clock.now());
-    return c.body(null, 202);
-  })
+  .post(
+    '/password-reset',
+    op({
+      id: 'core.auth.requestPasswordReset',
+      stories: ['CR-03'],
+      description:
+        '`{ email, locale? }`; 202, as for the magic link (unverified accounts included)',
+      responses: { 202: noBody },
+    }),
+    validate('json', EmailLinkBody),
+    async (c) => {
+      await sendLinkEmail('password_reset', c.req.valid('json'), c.var.clock.now());
+      return c.body(null, 202);
+    },
+  )
   .post(
     '/password-reset/confirm',
+    op({
+      id: 'core.auth.confirmPasswordReset',
+      stories: ['CR-03'],
+      description:
+        '`{ token, password }` → 200 `{ ok }`; sets the password, verifies the email, deletes every session of the user and signs this browser in; single use, 60 minutes',
+      responses: {},
+    }),
     scoped(anonymousScope),
-    zValidator('json', ResetConfirmBody, onInvalid),
+    validate('json', ResetConfirmBody),
     async (c) => {
       const { token, password } = c.req.valid('json');
       const now = c.var.clock.now();
