@@ -35,3 +35,9 @@ export const HtmlInputType = {
   search: 'search',
 } as const;
 export type HtmlInputType = ValueOf<typeof HtmlInputType>;
+
+/** `ConsoleMessage.type()` values the screenshot scripts look for. */
+export const ConsoleMessageType = {
+  error: 'error',
+} as const;
+export type ConsoleMessageType = ValueOf<typeof ConsoleMessageType>;

@@ -1,3 +1,4 @@
+export * from './cli.ts';
 export { isValueOf, type ValueOf, values } from './define.ts';
 export * from './dom.ts';
 export * from './emails.ts';
