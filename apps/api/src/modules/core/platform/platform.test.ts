@@ -6,7 +6,7 @@ import type {
   TenantList,
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
-import { TenantSortKey } from '@rampflow/shared/modules/core/values';
+import { TenantSortKey, TenantStatus } from '@rampflow/shared/modules/core/values';
 import {
   BadRequestReason,
   EntitlementSource,
@@ -64,7 +64,15 @@ describe('PL-01 create a tenant', () => {
     });
     expect(res.status).toBe(201);
     const created = (await res.json()) as TenantDetail;
-    expect(created).toMatchObject({ name, package: 'start' });
+    expect(created).toMatchObject({ name, package: 'start', status: TenantStatus.onboarding });
+    const [stored] = await ownerDb()
+      .select()
+      .from(org)
+      .where(eq(org.id, created.id as never));
+    expect(stored?.activatedAt).toBeNull();
+    expect((await list({ q: name })).items).toEqual([
+      expect.objectContaining({ id: created.id, status: TenantStatus.onboarding }),
+    ]);
     const portal = created.entitlements.find((e) => e.key === Feature.booking.carrier_portal);
     expect(portal).toMatchObject({ value: true, source: EntitlementSource.package });
     expect(created.entitlements.find((e) => e.key === Feature.safety.quiz)).toMatchObject({
@@ -317,14 +325,24 @@ describe('PL-03 platform defaults', () => {
   });
 });
 
-/** Tenants with the given names and packages, created one minute apart in list order. */
-async function seedTenants(rows: readonly { name: string; package: PackageId }[]) {
+/**
+ * Tenants with the given names and packages, created one minute apart in list order; `active`
+ * ones are activated at creation, the others are onboarding.
+ */
+async function seedTenants(
+  rows: readonly { name: string; package: PackageId; active?: boolean }[],
+) {
   const ids: TenantId[] = [];
   for (const [i, row] of rows.entries()) {
     const createdAt = new Date(WORLD_NOW.getTime() + i * 60_000);
     const [created] = await ownerDb()
       .insert(org)
-      .values({ kind: OrgKind.tenant, name: row.name, createdAt })
+      .values({
+        kind: OrgKind.tenant,
+        name: row.name,
+        createdAt,
+        activatedAt: row.active ? createdAt : null,
+      })
       .returning({ id: org.id });
     const tenantId = created?.id as string as TenantId;
     await ownerDb().insert(tenantSubscription).values({
@@ -356,9 +374,9 @@ describe('PL-04 tenant list', () => {
 
   beforeAll(async () => {
     await seedTenants([
-      { name: named('Acme Logistics'), package: PackageId.start },
+      { name: named('Acme Logistics'), package: PackageId.start, active: true },
       { name: named('ACME Freight'), package: PackageId.start },
-      { name: named('acme pro'), package: PackageId.pro },
+      { name: named('acme pro'), package: PackageId.pro, active: true },
       { name: named('Beta Freight'), package: PackageId.enterprise },
       { name: named('100% Cargo'), package: PackageId.start },
       { name: named('1000 Cargo'), package: PackageId.pro },
@@ -419,6 +437,41 @@ describe('PL-04 tenant list', () => {
     });
   });
 
+  it('filters by status: onboarding answers only tenants without an activation time', async () => {
+    const onboarding = await list({ q: `${search} acme`, status: TenantStatus.onboarding });
+    expect(onboarding.items.map((t) => [t.name, t.status])).toEqual([
+      [named('ACME Freight'), TenantStatus.onboarding],
+    ]);
+    const active = await list({ q: `${search} acme`, status: TenantStatus.active });
+    expect(active.items.map((t) => [t.name, t.status])).toEqual([
+      [named('Acme Logistics'), TenantStatus.active],
+      [named('acme pro'), TenantStatus.active],
+    ]);
+    const both = await list({
+      q: `${search} acme`,
+      status: `${TenantStatus.onboarding},${TenantStatus.active}`,
+    });
+    expect(both.total).toBe(3);
+  });
+
+  it('counts each status under the search and the package filter, ignoring the status selection', async () => {
+    const page = await list({ q: `${search} acme`, status: TenantStatus.onboarding });
+    expect(page.facets.status).toEqual({
+      [TenantStatus.onboarding]: 1,
+      [TenantStatus.active]: 2,
+    });
+    const start = await list({ q: `${search} acme`, package: PackageId.start });
+    expect(start.facets.status).toEqual({
+      [TenantStatus.onboarding]: 1,
+      [TenantStatus.active]: 1,
+    });
+    expect(page.facets.package).toEqual({
+      [PackageId.start]: 1,
+      [PackageId.pro]: 0,
+      [PackageId.enterprise]: 0,
+    });
+  });
+
   it('sorts by creation, newest first', async () => {
     const page = await list({
       q: search,
@@ -454,6 +507,7 @@ describe('PL-04 tenant list', () => {
     ['pageSize=7', ['pageSize']],
     ['sort=usage', ['sort']],
     ['package=gold', ['package', 0]],
+    ['status=closed', ['status', 0]],
     ['tab=all', ['tab']],
   ])('answers 422 for %s at its path', async (query, path) => {
     const res = await platform().get(`/api/platform/tenants?${query}`);

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { SignupInspect, SignupVerified } from '@rampflow/shared/modules/core/api.signup';
+import type { SignupInspect } from '@rampflow/shared/modules/core/api.signup';
 import { initialTaxIdStatus } from '@rampflow/shared/modules/core/tax-id';
 import { SignupStatus } from '@rampflow/shared/modules/core/values';
 import {
@@ -62,7 +62,7 @@ export async function verifySignup(
   tx: Tx,
   token: string,
   now: Date,
-): Promise<SignupVerified & { tenantId: TenantId; userId: UserId }> {
+): Promise<{ tenantId: TenantId; userId: UserId; possibleDuplicate: boolean }> {
   const row = await pendingSignup(tx, token, now);
   // The loser of a concurrent claim waits for the row lock, then matches nothing: always 401.
   const [claimed] = await tx

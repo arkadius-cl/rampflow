@@ -32,7 +32,12 @@
     "empty": "Brak klientów.",
     "created_at": "Utworzono",
     "no_match": "Brak pasujących klientów",
-    "search": "Szukaj klientów po nazwie"
+    "search": "Szukaj klientów po nazwie",
+    "status": "Status"
+  },
+  "tenant_status": {
+    "onboarding": "Wdrażanie",
+    "active": "Aktywny"
   },
   "packages": {
     "title": "Pakiety",

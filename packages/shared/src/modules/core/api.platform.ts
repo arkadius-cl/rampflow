@@ -6,7 +6,7 @@ import type { ModuleId } from '../../registry.ts';
 import type { EntitlementKind } from '../../values/entitlements.ts';
 import { SortOrder } from '../../values/list.ts';
 import { PackageId } from '../../values/packages.ts';
-import { TenantSortKey, type UsageKey } from './values.ts';
+import { TenantSortKey, TenantStatus, type UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
 
@@ -56,20 +56,28 @@ export interface TenantSummary {
   package: PackageId;
   /** ISO instant the tenant org was created. */
   createdAt: string;
+  /** Derived from the activation time (`tenantStatus`). */
+  status: TenantStatus;
   usage: TenantUsage;
 }
 
-/** `GET /tenants` (PL-04): search by name, filter by package, sort by name or creation. */
+/**
+ * `GET /tenants` (PL-04): search by name, filter by package and status, sort by name or
+ * creation.
+ */
 export const TenantListQuery = defineList({
   sort: TenantSortKey,
   defaultSort: TenantSortKey.name,
   defaultOrder: SortOrder.asc,
-  facets: { package: PackageId },
+  facets: { package: PackageId, status: TenantStatus },
 });
 
 export interface TenantList extends ListPage<TenantSummary> {
-  /** Per package, the tenants that match the search, ignoring the package filter. */
-  facets: { package: Record<PackageId, number> };
+  /**
+   * Per facet value, the tenants that match the search and the other facet's filter, ignoring
+   * the facet's own selection.
+   */
+  facets: { package: Record<PackageId, number>; status: Record<TenantStatus, number> };
 }
 
 export interface EntitlementView {

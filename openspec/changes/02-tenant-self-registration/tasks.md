@@ -37,9 +37,9 @@
 
 ## 5. Tenant status and the platform list
 
-- [ ] 5.1 Keep `activated_at` null in `createTenant` (`core/platform/tenants.ts`), add `status: TenantStatus` to `TenantSummary` and the facet `status: TenantStatus` to `TenantListQuery` in `packages/shared/src/modules/core/api.platform.ts`, and filter on `activated_at is null` / `is not null`; verify in `platform.test.ts` that a PL-01 tenant reads `onboarding`, the facet counts follow the search, and `status=onboarding` returns only tenants without activation.
-- [ ] 5.2 Add the Status column (text and icon) and the Status facet to `apps/web/src/routes/platform/tenants/index.tsx` with labels in `core/platform.json` (de, en, pl); verify by extending `e2e/core/PL-01.spec.ts` (the new tenant reads "Onboarding") and `e2e/core/PL-04.spec.ts` (filter by Onboarding, URL holds `status=onboarding`).
-- [ ] 5.3 Run `pnpm api:docs`; verify `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md` list the four signup routes and the `status` field, and `pnpm api:docs --check` passes.
+- [x] 5.1 Keep `activated_at` null in `createTenant` (`core/platform/tenants.ts`), add `status: TenantStatus` to `TenantSummary` and the facet `status: TenantStatus` to `TenantListQuery` in `packages/shared/src/modules/core/api.platform.ts`, and filter on `activated_at is null` / `is not null`; verify in `platform.test.ts` that a PL-01 tenant reads `onboarding`, the facet counts follow the search, and `status=onboarding` returns only tenants without activation.
+- [x] 5.2 Add the Status column (text and icon) and the Status facet to `apps/web/src/routes/platform/tenants/index.tsx` with labels in `core/platform.json` (de, en, pl); verify by extending `e2e/core/PL-01.spec.ts` (the new tenant reads "Onboarding") and `e2e/core/PL-04.spec.ts` (filter by Onboarding, URL holds `status=onboarding`).
+- [x] 5.3 Run `pnpm api:docs`; verify `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md` list the four signup routes and the `status` field, and `pnpm api:docs --check` passes.
 
 ## 6. VIES job
 

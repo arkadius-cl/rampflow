@@ -109,9 +109,10 @@ export const publicApi = new Hono<AppEnv>()
         await startSession(c, tx, result.userId, now);
         return result;
       });
-      return c.json(
-        { tenantId: verified.tenantId, possibleDuplicate: verified.possibleDuplicate },
-        200,
-      );
+      const body: SignupVerified = {
+        tenantId: verified.tenantId,
+        possibleDuplicate: verified.possibleDuplicate,
+      };
+      return c.json(body, 200);
     },
   );

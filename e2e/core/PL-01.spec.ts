@@ -37,6 +37,12 @@ test.describe('PL-01 Create a tenant', () => {
     await expect(page.getByText(adminEmail)).toBeVisible();
     await expectAccessible(page);
 
+    // A tenant the platform admin creates starts in onboarding.
+    await page.goto(`/platform/tenants?${new URLSearchParams({ q: name })}`);
+    await expect(page.getByTestId(`tenant-${tenantId}`).getByRole('cell').nth(2)).toHaveText(
+      'Onboarding',
+    );
+
     const joined = await acceptEmailedInvitation(browser, adminEmail, 'Ada Acme');
     await expect(joined).toHaveURL(new RegExp(`/t/${tenantId}`));
     await expect(joined.getByTestId('org-switcher')).toContainText(name);

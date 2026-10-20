@@ -4098,7 +4098,7 @@
       "get": {
         "operationId": "core.platform.listTenants",
         "summary": "List tenants",
-        "description": "One page of tenants: `{ items: [{ id, name, package, createdAt, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise } } }`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q` and `package`; `facets.package` counts per package the tenants matching `q`, ignoring `package`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`",
+        "description": "One page of tenants: `{ items: [{ id, name, package, createdAt, status, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise }, status: { onboarding, active } } }`. `status` is `onboarding` while the tenant has no activation time, else `active`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `status` by a comma-separated list of statuses, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q`, `package` and `status`; `facets.package` counts per package the tenants matching `q` and `status`, ignoring `package`, and `facets.status` per status those matching `q` and `package`, ignoring `status`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`",
         "tags": [
           "Platform administration"
         ],
@@ -4166,6 +4166,15 @@
               "type": "string"
             },
             "description": "Comma-separated: start, pro, enterprise"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: onboarding, active"
           }
         ],
         "responses": {
@@ -4202,7 +4211,7 @@
       "post": {
         "operationId": "core.platform.createTenant",
         "summary": "Create tenant",
-        "description": "`{ name, package, adminEmail }` → 201 tenant detail. Creates org, subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`",
+        "description": "`{ name, package, adminEmail }` → 201 tenant detail. Creates org (status `onboarding`), subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`",
         "tags": [
           "Platform administration"
         ],
@@ -5517,6 +5526,128 @@
         "x-party": "public",
         "x-stories": [
           "RG-01"
+        ],
+        "x-router": "modules/core/signup/routes.public.ts"
+      }
+    },
+    "/api/public/signups/inspect": {
+      "post": {
+        "operationId": "core.signup.inspectSignup",
+        "summary": "Inspect signup",
+        "description": "`{ token }` → `{ email, companyName, possibleDuplicate }` for the verify page, before the click. Does not use the link. `possibleDuplicate` is true when another tenant has an equivalent tax id or a member at the same non-free-mail domain; it names no tenant. 401 for an unknown, used, superseded or expired link. Service: `inspectSignup` in `verify.redeem.ts`",
+        "tags": [
+          "Auth, me and invitations"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              },
+              "example": {
+                "token": "examplexxxxxxxxxxxxx"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupInspect"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "RG-02",
+          "RG-04"
+        ],
+        "x-router": "modules/core/signup/routes.public.ts"
+      }
+    },
+    "/api/public/signups/verify": {
+      "post": {
+        "operationId": "core.signup.verifySignup",
+        "summary": "Verify signup",
+        "description": "`{ token }` → `{ tenantId, possibleDuplicate }`; in one transaction creates the tenant org (onboarding, the tax id with its initial status, `possible_duplicate`), its `start` subscription, the verified user with the chosen password and the only `tenant_admin` membership, then signs in, replacing any session. Single use, 24 hours: a used, superseded or expired link answers 401. An account with the email answers 409 `conflict` with `reason: account_exists` and the registration stays pending. Service: `verifySignup` in `verify.redeem.ts`",
+        "tags": [
+          "Auth, me and invitations"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              },
+              "example": {
+                "token": "examplexxxxxxxxxxxxx"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupVerified"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "RG-02",
+          "RG-04"
         ],
         "x-router": "modules/core/signup/routes.public.ts"
       }
@@ -24141,6 +24272,40 @@
           "parameters"
         ]
       },
+      "SignupInspect": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "possibleDuplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "companyName",
+          "possibleDuplicate"
+        ]
+      },
+      "SignupVerified": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "possibleDuplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tenantId",
+          "possibleDuplicate"
+        ]
+      },
       "SiteView": {
         "type": "object",
         "properties": {
@@ -24761,6 +24926,13 @@
           "createdAt": {
             "type": "string"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "onboarding"
+            ]
+          },
           "usage": {
             "$ref": "#/components/schemas/TenantUsage"
           }
@@ -24773,6 +24945,7 @@
           "name",
           "package",
           "createdAt",
+          "status",
           "usage"
         ]
       },
@@ -24800,10 +24973,26 @@
                   "pro",
                   "enterprise"
                 ]
+              },
+              "status": {
+                "type": "object",
+                "properties": {
+                  "active": {
+                    "type": "number"
+                  },
+                  "onboarding": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "active",
+                  "onboarding"
+                ]
               }
             },
             "required": [
-              "package"
+              "package",
+              "status"
             ]
           },
           "items": {
@@ -24850,6 +25039,13 @@
           "createdAt": {
             "type": "string"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "onboarding"
+            ]
+          },
           "usage": {
             "$ref": "#/components/schemas/TenantUsage"
           }
@@ -24859,6 +25055,7 @@
           "name",
           "package",
           "createdAt",
+          "status",
           "usage"
         ]
       },

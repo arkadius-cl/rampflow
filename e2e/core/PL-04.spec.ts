@@ -4,11 +4,11 @@ import {
   type TenantDetail,
   TenantListQuery,
 } from '../../packages/shared/src/modules/core/api.platform.ts';
-import { TenantSortKey } from '../../packages/shared/src/modules/core/values.ts';
+import { TenantSortKey, TenantStatus } from '../../packages/shared/src/modules/core/values.ts';
 import { SortOrder } from '../../packages/shared/src/values/list.ts';
 import { PackageId } from '../../packages/shared/src/values/packages.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { uniqueEmail } from '../support/db.ts';
+import { activateTenant, uniqueEmail } from '../support/db.ts';
 import { asPlatformAdmin, putOverride } from '../support/u3.ts';
 
 const PACKAGES = [PackageId.start, PackageId.pro, PackageId.enterprise] as const;
@@ -26,8 +26,8 @@ async function tabTo(page: Page, target: Locator) {
   await expect(target).toBeFocused();
 }
 
-/** The tenant list's one facet parameter. */
-const [FACET = ''] = Object.keys(TenantListQuery.spec.facets);
+/** The tenant list's facet parameters, in declaration order. */
+const [FACET = '', STATUS_FACET = ''] = Object.keys(TenantListQuery.spec.facets);
 
 const search = (page: Page) => new URL(page.url()).searchParams;
 
@@ -42,7 +42,8 @@ test.describe('PL-04 Usage', () => {
     // The world books three times for tenant A this month.
     await putOverride(request, w, w.A.tenantId, 'booking.max_bookings_per_month', 2);
     const prefix = `PL04 ${randomUUID().slice(0, 8)}`;
-    // 12 tenants created in name order; `${prefix} 02`, 05, 08 and 11 are Pro.
+    // 12 tenants created in name order; `${prefix} 02`, 05, 08 and 11 are Pro, the odd ones
+    // are active and the even ones still onboarding.
     for (let i = 1; i <= 12; i++) {
       const res = await request.post('/api/platform/tenants', {
         headers: asPlatformAdmin(w),
@@ -53,6 +54,7 @@ test.describe('PL-04 Usage', () => {
         },
       });
       expect(res.status(), await res.text()).toBe(201);
+      if (i % 2 === 1) await activateTenant(((await res.json()) as TenantDetail).id);
     }
     const tenantA = (await (
       await request.get(`/api/platform/tenants/${w.A.tenantId}`, { headers: asPlatformAdmin(w) })
@@ -63,6 +65,7 @@ test.describe('PL-04 Usage', () => {
     const rows = table.getByRole('row').filter({ has: page.getByRole('cell') });
     const searchbox = page.getByRole('searchbox', { name: 'Search' });
     const packageFilter = page.getByRole('button', { name: /^Package/ });
+    const statusFilter = page.getByRole('button', { name: /^Status/ });
     const range = (text: string) => page.getByText(text, { exact: true });
 
     // Usage meters of one tenant, found by its name.
@@ -71,14 +74,15 @@ test.describe('PL-04 Usage', () => {
     const cells = row.getByRole('cell');
     await expect(cells.nth(0)).toContainText('Tenant A');
     await expect(cells.nth(1)).toHaveText('Pro');
-    await expect(cells.nth(2)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
-    await expect(cells.nth(3)).toContainText('2 / 5');
-    await expect(cells.nth(3)).toContainText('40 %');
-    await expect(cells.nth(3)).not.toContainText('exceeded');
-    await expect(cells.nth(4)).toContainText('/ 60');
-    await expect(cells.nth(5)).toContainText('/ 75');
-    await expect(cells.nth(6)).toContainText('3 / 2');
-    await expect(cells.nth(6)).toContainText('150 %, soft limit exceeded');
+    await expect(cells.nth(2)).toHaveText('Onboarding');
+    await expect(cells.nth(3)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
+    await expect(cells.nth(4)).toContainText('2 / 5');
+    await expect(cells.nth(4)).toContainText('40 %');
+    await expect(cells.nth(4)).not.toContainText('exceeded');
+    await expect(cells.nth(5)).toContainText('/ 60');
+    await expect(cells.nth(6)).toContainText('/ 75');
+    await expect(cells.nth(7)).toContainText('3 / 2');
+    await expect(cells.nth(7)).toContainText('150 %, soft limit exceeded');
     await expect(
       row.getByRole('progressbar', { name: /Bookings this month: 150 percent/ }),
     ).toBeVisible();
@@ -121,6 +125,22 @@ test.describe('PL-04 Usage', () => {
       await expect(cell).toHaveText('Pro');
     await page.goBack();
     await expect.poll(() => search(page).has(FACET)).toBe(false);
+    await expect(range('1–12 of 12')).toBeVisible();
+
+    // The status filter: only tenants without an activation time, status as text in each row.
+    await statusFilter.click();
+    const onboarding = page.getByRole('option', { name: /^Onboarding/ });
+    await expect(onboarding).toContainText('6');
+    await expect(page.getByRole('option', { name: /^Active/ })).toContainText('6');
+    await onboarding.click();
+    await page.keyboard.press('Escape');
+    await expect.poll(() => search(page).get(STATUS_FACET)).toBe(TenantStatus.onboarding);
+    await expect(range('1–6 of 6')).toBeVisible();
+    for (const cell of await rows.locator('td:nth-child(3)').all())
+      await expect(cell).toHaveText('Onboarding');
+    await expect(rows.first()).toContainText(`${prefix} 02`);
+    await page.goBack();
+    await expect.poll(() => search(page).has(STATUS_FACET)).toBe(false);
     await expect(range('1–12 of 12')).toBeVisible();
 
     // Created, newest first.

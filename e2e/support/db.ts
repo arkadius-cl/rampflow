@@ -24,6 +24,13 @@ export async function setPassword(userId: string, password: string): Promise<voi
   ]);
 }
 
+/** Marks a tenant active since its creation, as the 02 backfill does for older tenants. */
+export async function activateTenant(tenantId: string): Promise<void> {
+  await db().query("update org set activated_at = created_at where id = $1 and kind = 'tenant'", [
+    tenantId,
+  ]);
+}
+
 export async function addMembership(
   userId: string,
   orgId: string,
