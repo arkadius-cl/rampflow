@@ -5,7 +5,7 @@ import type {
   UpdateResource,
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction, DockBookingKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { ConflictReason, ErrorCode, values } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, Feature, values } from '@rampflow/shared/values';
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { DockId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -19,7 +19,7 @@ type ResourceRow = typeof bookableResource.$inferSelect;
 
 /** Pools need `booking.pools` to be created or changed; existing pools keep offering (ADR-0004). */
 function requirePools(req: TenantRequest, kind: ResourceRow['kind']): void {
-  if (kind === ResourceKind.pool && !req.entitlements.features['booking.pools']) {
+  if (kind === ResourceKind.pool && !req.entitlements.features[Feature.booking.pools]) {
     throw new ApiError(ErrorCode.entitlement_required, 'booking.pools is off', {
       key: 'booking.pools',
     });

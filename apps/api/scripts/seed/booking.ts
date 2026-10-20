@@ -376,7 +376,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
           };
     const actor =
       as === SeedActor.system
-        ? ({ party: BookingParty.system, job: 'no_show' } as const)
+        ? ({ party: BookingParty.system, job: SystemActorName.no_show } as const)
         : ({ party: BookingParty.staff, userId: users[as] } as const);
     return { tx, tenantId, actor, access: await loadAccess(tx, scope, testClock(now)), now };
   };

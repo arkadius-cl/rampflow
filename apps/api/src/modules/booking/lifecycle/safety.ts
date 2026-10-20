@@ -1,7 +1,7 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
 import { acknowledgementStatus } from '@rampflow/shared/modules/safety/validity';
 import { AckStatus, InstructionSafety, SafetyStatus } from '@rampflow/shared/modules/safety/values';
-import { Setting } from '@rampflow/shared/values';
+import { Feature, Setting } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { BookingId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -21,7 +21,7 @@ export interface SafetyTarget {
 
 /** Whether `check_in` refuses a missing acknowledgement (YD-02, booking lifecycle `check_in`). */
 export async function safetyEnforced(access: Access, siteId: SiteId): Promise<boolean> {
-  if (!access.entitlements?.features['safety.gate_enforcement']) return false;
+  if (!access.entitlements?.features[Feature.safety.gate_enforcement]) return false;
   return (await access.setting(Setting.safety.require_for_checkin, siteId)).value;
 }
 

@@ -13,7 +13,14 @@ import {
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { ConflictReason, DriverLocale, ErrorCode, Limit, values } from '@rampflow/shared/values';
+import {
+  ConflictReason,
+  DriverLocale,
+  ErrorCode,
+  Feature,
+  Limit,
+  values,
+} from '@rampflow/shared/values';
 import { and, asc, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { SiteId, TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -38,7 +45,7 @@ const LOCALE_ORDER = new Map<string, number>(values(DriverLocale).map((l, i) => 
 const byLocale = (a: { locale: string }, b: { locale: string }) =>
   (LOCALE_ORDER.get(a.locale) ?? 99) - (LOCALE_ORDER.get(b.locale) ?? 99);
 
-const quizOn = (entitlements: Entitlements) => entitlements.features['safety.quiz'] === true;
+const quizOn = (entitlements: Entitlements) => entitlements.features[Feature.safety.quiz] === true;
 
 const invalidTransition = (status: VersionStatus) =>
   new ApiError(ErrorCode.conflict, `Version is ${status}`, {

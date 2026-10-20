@@ -6,7 +6,7 @@ import {
   CreatedParty,
   CreateMode,
 } from '@rampflow/shared/modules/booking/values';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, SystemActorName } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -96,7 +96,7 @@ describe('BK-08 no-show job', () => {
     expect(events.at(-1)).toMatchObject({
       type: BookingEventType.no_show,
       actorParty: 'system',
-      actorJob: 'no_show',
+      actorJob: SystemActorName.no_show,
       actorUserId: null,
     });
     const [mail, ...more] = await noShowMails(carrierUser.email);

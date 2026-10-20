@@ -9,7 +9,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { CarrierRole, OrgKind, ScopeParty, StaffLocale } from '@rampflow/shared/values';
+import { CarrierRole, DriverLocale, OrgKind, ScopeParty } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import type { CarrierId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Scope, Tx } from '../../src/db/scope.ts';
@@ -91,7 +91,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
         counterpartyName: 'Elektro Nord AG',
         loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: p.units }],
         vehicle: { type: VehicleType.semi_trailer, plate: p.plate, plateCountry: 'PL' },
-        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: StaffLocale.pl },
+        driver: { name: 'Tomasz Wiśniewski', phone: '+48 600 100 200', locale: DriverLocale.pl },
       }),
     });
     if (result.created) created++;

@@ -5,7 +5,7 @@ import {
   ResetConfirmBody,
   TokenBody,
 } from '@rampflow/shared/modules/core/api.auth';
-import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { AuthTokenKind, RateLimitBucket } from '@rampflow/shared/modules/core/values';
 import {
   EmailTemplate,
   ErrorCode,
@@ -38,8 +38,14 @@ import { claimAuthToken, issueAuthToken } from './tokens.ts';
 const DEFAULT_EMAIL_LOCALE = 'de';
 
 const LINK_EMAIL = {
-  magic_link: { template: EmailTemplate.core_magic_link, bucket: 'magic_link_request' },
-  password_reset: { template: EmailTemplate.core_password_reset, bucket: 'reset_request' },
+  magic_link: {
+    template: EmailTemplate.core_magic_link,
+    bucket: RateLimitBucket.magic_link_request,
+  },
+  password_reset: {
+    template: EmailTemplate.core_password_reset,
+    bucket: RateLimitBucket.reset_request,
+  },
 } as const;
 
 /** Whether one more link email to this address fits in 5 per hour; records it when it does. */

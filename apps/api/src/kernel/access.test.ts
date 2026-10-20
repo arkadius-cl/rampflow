@@ -147,7 +147,7 @@ describe('loadAccess', () => {
     const access = await withScope(tenantOf(w.B), (tx) =>
       loadAccess(tx, tenantOf(w.B), systemClock),
     );
-    expect(access.entitlements?.limits['core.max_sites']).toBeNull();
+    expect(access.entitlements?.limits[Limit.core.max_sites]).toBeNull();
     expect(access.entitlements?.sources['core.max_sites']).toBe('override');
     expect(
       await withScope(tenantOf(w.B), (tx) =>

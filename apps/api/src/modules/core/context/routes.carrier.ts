@@ -4,7 +4,7 @@ import {
   type CarrierContextTenant,
   logoPath,
 } from '@rampflow/shared/modules/core/api.context';
-import { ScopeParty } from '@rampflow/shared/values';
+import { Feature, ScopeParty } from '@rampflow/shared/values';
 import { asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { TenantId } from '../../../db/ids.ts';
@@ -63,9 +63,11 @@ export const carrier = new Hono<AppEnv>().get(
         id: link.id,
         name: link.name,
         linkStatus: link.status,
-        carrierPortal: Boolean(on?.modules.booking && on.features['booking.carrier_portal']),
+        carrierPortal: Boolean(on?.modules.booking && on.features[Feature.booking.carrier_portal]),
         logoUrl:
-          logo && on?.modules.brand && on.features['brand.logo'] ? logoPath(link.id, logo) : null,
+          logo && on?.modules.brand && on.features[Feature.brand.logo]
+            ? logoPath(link.id, logo)
+            : null,
       });
     }
 

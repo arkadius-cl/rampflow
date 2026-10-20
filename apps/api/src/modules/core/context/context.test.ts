@@ -5,7 +5,7 @@ import type {
   PlatformContext,
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
-import { PackageId, Role, SettingSource } from '@rampflow/shared/values';
+import { Feature, Limit, PackageId, Role, SettingSource } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -35,8 +35,8 @@ describe('GET /api/t/:orgId/context', () => {
     expect(ctx.org.id).toBe(w.A.tenantId);
     expect(ctx.role).toBe('dispatcher');
     expect(new Set(ctx.permissions)).toEqual(permissionsFor(catalog, Role.dispatcher));
-    expect(ctx.entitlements.limits['core.max_sites']).toBe(5);
-    expect(ctx.entitlements.features['safety.quiz']).toBe(true);
+    expect(ctx.entitlements.limits[Limit.core.max_sites]).toBe(5);
+    expect(ctx.entitlements.features[Feature.safety.quiz]).toBe(true);
     expect(ctx.sites.map((s) => s.id).sort()).toEqual(w.A.sites.map((s) => s.id).sort());
     const site = ctx.settings[w.A.sites[0].id];
     expect(site?.['booking.slot_grid_minutes']).toEqual({
@@ -53,7 +53,7 @@ describe('GET /api/t/:orgId/context', () => {
     const ctx = await json<TenantContext>(
       await as(app, w.B.users.tenant_admin).get(`/api/t/${w.B.tenantId}/context`),
     );
-    expect(ctx.entitlements.features['safety.quiz']).toBe(false);
+    expect(ctx.entitlements.features[Feature.safety.quiz]).toBe(false);
     const site = ctx.settings[w.B.sites[0].id] ?? {};
     expect(Object.keys(site)).not.toContain('safety.quiz_pass_percent');
     expect(Object.keys(site)).toContain('booking.horizon_days');

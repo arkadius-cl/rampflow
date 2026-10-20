@@ -5,7 +5,7 @@ import type {
   UpdateLoadType,
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction, DurationKind } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, Feature } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -62,7 +62,7 @@ export async function seedLoadTypes(tx: Tx, s: { id: SiteId; tenantId: TenantId 
 function requireDurationRules(req: TenantRequest, duration: LoadTypeDuration | undefined): void {
   if (
     duration?.kind === DurationKind.tiers &&
-    !req.entitlements.features['booking.duration_rules']
+    !req.entitlements.features[Feature.booking.duration_rules]
   ) {
     throw new ApiError(ErrorCode.entitlement_required, 'booking.duration_rules is off', {
       key: 'booking.duration_rules',

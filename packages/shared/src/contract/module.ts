@@ -63,7 +63,7 @@ export interface SettingDef<Z extends z.ZodType = z.ZodType, F extends string = 
 export type NavItem<P extends string = string, F extends string = string> =
   | {
       readonly id: string;
-      readonly area: 'tenant';
+      readonly area: typeof OrgKind.tenant;
       readonly to: string;
       readonly icon: string;
       readonly permission: P;

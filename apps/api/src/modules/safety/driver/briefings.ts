@@ -15,6 +15,7 @@ import {
   ConflictReason,
   DriverLocale,
   ErrorCode,
+  Feature,
   ScopeParty,
   Setting,
 } from '@rampflow/shared/values';
@@ -70,7 +71,8 @@ export async function driverVisit(c: Context<AppEnv>): Promise<DriverVisit> {
   return { ctx, channel: scope.channel, booking: row };
 }
 
-const quizOn = (v: DriverVisit) => v.ctx.access.entitlements?.features['safety.quiz'] === true;
+const quizOn = (v: DriverVisit) =>
+  v.ctx.access.entitlements?.features[Feature.safety.quiz] === true;
 
 /**
  * Redeems this phone's passes first (never on a gate device, whose next driver starts fresh),

@@ -3,6 +3,7 @@ import type { Entitlements } from '@rampflow/shared';
 import {
   EmailCategory,
   type EnqueueResult,
+  Feature,
   ScopeParty,
   SystemActorName,
 } from '@rampflow/shared/values';
@@ -83,7 +84,7 @@ export async function enqueueEmail<K extends TemplateId>(
   loadTemplate: TemplateLoader = loadTemplateFile,
 ): Promise<EnqueueResult> {
   const template = await loadTemplate(email.template);
-  if (template.category === EmailCategory.booking && !entitlements?.features['notify.email'])
+  if (template.category === EmailCategory.booking && !entitlements?.features[Feature.notify.email])
     return 'skipped';
   const result = await tx
     .insert(outboxMessage)

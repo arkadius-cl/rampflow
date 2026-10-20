@@ -40,7 +40,7 @@ export async function lockLoginKeys(tx: Tx, keys: LoginKeys, now: Date): Promise
 
 export async function recordLoginFailure(tx: Tx, keys: LoginKeys, now: Date): Promise<void> {
   await tx.insert(rateLimitEvent).values([
-    { bucket: 'login_ip', keyHash: keys.login_ip, at: now },
-    { bucket: 'login_failed', keyHash: keys.login_failed, at: now },
+    { bucket: RateLimitBucket.login_ip, keyHash: keys.login_ip, at: now },
+    { bucket: RateLimitBucket.login_failed, keyHash: keys.login_failed, at: now },
   ]);
 }

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Entitlements } from '@rampflow/shared';
 import { LOGO_MAX_BYTES, type LogoView, logoUrl } from '@rampflow/shared/modules/brand/api';
 import { LogoContentType } from '@rampflow/shared/modules/brand/values';
-import { ErrorCode, ZodIssueCode } from '@rampflow/shared/values';
+import { ErrorCode, Feature, ZodIssueCode } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import type { TenantId, UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -117,7 +117,7 @@ export async function currentLogoUrl(
   entitlements: Entitlements,
   origin: string,
 ): Promise<string | null> {
-  if (!entitlements.modules.brand || !entitlements.features['brand.logo']) return null;
+  if (!entitlements.modules.brand || !entitlements.features[Feature.brand.logo]) return null;
   const [row] = await tx
     .select({ sha256: tenantLogo.sha256 })
     .from(tenantLogo)

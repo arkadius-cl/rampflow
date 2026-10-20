@@ -4,6 +4,7 @@ import { notify } from '@rampflow/shared/modules/notify/manifest';
 import {
   EmailTemplate,
   EnqueueResult,
+  Feature,
   ScopeParty,
   Setting,
   StaffLocale,
@@ -24,7 +25,7 @@ import { booking } from '../../booking/schema.ts';
 const JOB = 'reminders';
 const HOUR = 3_600_000;
 /** The schema maximum of `notify.reminder_hours_before`: no reminder is due earlier. */
-const MAX_HOURS = notify.settings['notify.reminder_hours_before'].schema.maxValue ?? 72;
+const MAX_HOURS = notify.settings[Setting.notify.reminder_hours_before].schema.maxValue ?? 72;
 
 /** When the reminder of a booking is due. */
 const reminderDueAt = (startsAt: Date, hoursBefore: number) =>
@@ -54,7 +55,7 @@ async function sendReminders(tx: Tx, tenantId: TenantId, clock: Clock): Promise<
   };
   const access = await loadAccess(tx, scope, clock);
   const features = access.entitlements?.features;
-  if (!features?.['notify.reminders'] || !features['notify.email']) return { off: 1 };
+  if (!features?.[Feature.notify.reminders] || !features[Feature.notify.email]) return { off: 1 };
   const now = clock.now();
   const ctx: BookingContext = {
     tx,

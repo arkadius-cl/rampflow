@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PublicLinkInfo, PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
-import { ErrorCode, ScopeParty, Setting } from '@rampflow/shared/values';
+import { ErrorCode, Feature, ScopeParty, Setting } from '@rampflow/shared/values';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
 import { type Scope, type Tx, withScope } from '../../../db/scope.ts';
@@ -185,7 +185,7 @@ export async function openPublicLink(
 ): Promise<{ info: PublicLinkInfo; access: Access }> {
   const access = await loadAccess(tx, publicScope(link), clock);
   const enabled =
-    access.entitlements?.features['booking.public_link'] === true &&
+    access.entitlements?.features[Feature.booking.public_link] === true &&
     (await access.setting(Setting.booking.public_link_enabled, link.siteId)).value;
   const [found] = await tx
     .select({ name: site.name, city: site.city, country: site.country, active: site.active })
