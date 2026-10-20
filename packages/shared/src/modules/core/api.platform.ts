@@ -1,10 +1,12 @@
 import * as z from 'zod';
 import type { EntitlementSource } from '../../contract/entitlements.ts';
+import { defineList, type ListPage } from '../../contract/list.ts';
 import type { Limit } from '../../contract/module.ts';
 import type { ModuleId } from '../../registry.ts';
 import type { EntitlementKind } from '../../values/entitlements.ts';
+import { SortOrder } from '../../values/list.ts';
 import { PackageId } from '../../values/packages.ts';
-import type { UsageKey } from './values.ts';
+import { TenantSortKey, type UsageKey } from './values.ts';
 
 // Request schemas and response shapes of /api/platform (PL-01 to PL-04).
 
@@ -52,11 +54,22 @@ export interface TenantSummary {
   id: string;
   name: string;
   package: PackageId;
+  /** ISO instant the tenant org was created. */
+  createdAt: string;
   usage: TenantUsage;
 }
 
-export interface TenantList {
-  items: TenantSummary[];
+/** `GET /tenants` (PL-04): search by name, filter by package, sort by name or creation. */
+export const TenantListQuery = defineList({
+  sort: TenantSortKey,
+  defaultSort: TenantSortKey.name,
+  defaultOrder: SortOrder.asc,
+  facets: { package: PackageId },
+});
+
+export interface TenantList extends ListPage<TenantSummary> {
+  /** Per package, the tenants that match the search, ignoring the package filter. */
+  facets: { package: Record<PackageId, number> };
 }
 
 export interface EntitlementView {

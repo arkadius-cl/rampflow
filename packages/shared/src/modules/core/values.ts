@@ -40,6 +40,13 @@ export const UsageKey = {
 } as const satisfies Record<string, ImplementedLimitKey>;
 export type UsageKey = ValueOf<typeof UsageKey>;
 
+/** The columns the platform tenant list sorts by (PL-04). */
+export const TenantSortKey = {
+  name: 'name',
+  createdAt: 'createdAt',
+} as const;
+export type TenantSortKey = ValueOf<typeof TenantSortKey>;
+
 /** `auth_token.kind`: the tokens the core module emails to a user without a session. */
 export const AuthTokenKind = {
   magic_link: TokenPurpose.magic_link,

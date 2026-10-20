@@ -1,15 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CreateTenant, type TenantDetail } from '@rampflow/shared/modules/core/api.platform';
-import { UsageKey } from '@rampflow/shared/modules/core/values';
+import {
+  CreateTenant,
+  type TenantDetail,
+  TenantListQuery,
+  type TenantSummary,
+} from '@rampflow/shared/modules/core/api.platform';
+import { TenantSortKey, UsageKey } from '@rampflow/shared/modules/core/values';
 import { PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createColumnHelper } from '@tanstack/react-table';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-errors';
+import { DataTable, type dataTableFeatures } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { canonicalSearch, useListState } from '@/components/data-table/use-list-state';
 import { PageHeader } from '@/components/shells/office-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,28 +30,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { guard } from '@/lib/access';
 import { api, call } from '@/lib/api';
+import { useFormat } from '@/modules/core/format';
 import { Meter } from '@/modules/core/meter';
-import { platformKeys, tenantsQuery } from '@/modules/core/queries';
+import { platformKeys, tenantListQuery } from '@/modules/core/queries';
 
-// PL-01, PL-04: tenants with usage against their limits, and "Create tenant".
+// PL-01, PL-04: the tenant list with search by name, the package filter, sort by name or
+// creation and paging, all in the URL (ADR-0015); usage against limits; "Create tenant".
 
 export const Route = createFileRoute('/platform/tenants/')({
   beforeLoad: guard({ permission: Permission.core.manage_tenants }),
+  validateSearch: TenantListQuery.search,
+  search: { middlewares: [canonicalSearch(TenantListQuery)] },
   component: TenantsPage,
 });
 
@@ -57,69 +62,105 @@ function useUsageLabel() {
   return (key: UsageKey) => labels[key];
 }
 
+const column = createColumnHelper<typeof dataTableFeatures, TenantSummary>();
+
+function useColumns() {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const usageLabel = useUsageLabel();
+  return useMemo(
+    () =>
+      column.columns([
+        column.accessor(TenantSortKey.name, {
+          header: ({ column: c }) => (
+            <DataTableColumnHeader column={c} title={t(($) => $.platform.tenants.tenant)} />
+          ),
+          cell: ({ row }) => (
+            <Link
+              to="/platform/tenants/$tenantId"
+              params={{ tenantId: row.original.id }}
+              className="font-medium underline-offset-4 hover:underline"
+            >
+              {row.original.name}
+            </Link>
+          ),
+        }),
+        column.accessor('package', {
+          header: () => t(($) => $.platform.tenants.package),
+          cell: ({ row }) => (
+            <Badge variant="secondary">{t(($) => $.platform.packages[row.original.package])}</Badge>
+          ),
+        }),
+        column.accessor(TenantSortKey.createdAt, {
+          header: ({ column: c }) => (
+            <DataTableColumnHeader column={c} title={t(($) => $.platform.tenants.created_at)} />
+          ),
+          cell: ({ row }) => (
+            <span className="whitespace-nowrap tabular-nums">
+              {format.instant(row.original.createdAt)}
+            </span>
+          ),
+        }),
+        ...values(UsageKey).map((key) =>
+          column.display({
+            id: key,
+            header: () => usageLabel(key),
+            cell: ({ row }) => <Meter meter={row.original.usage[key]} label={usageLabel(key)} />,
+          }),
+        ),
+      ]),
+    [t, format, usageLabel],
+  );
+}
+
 function TenantsPage() {
   const { t } = useTranslation();
-  const tenants = useQuery(tenantsQuery);
-  const usageLabel = useUsageLabel();
+  const navigate = Route.useNavigate();
+  const controls = useListState(TenantListQuery, Route.useSearch(), (search, replace) =>
+    navigate({ to: '.', search, replace }),
+  );
+  const tenants = useQuery(tenantListQuery(controls.state));
+  const columns = useColumns();
   const [creating, setCreating] = useState(false);
+  const create = (
+    <Button size="sm" onClick={() => setCreating(true)}>
+      <PlusIcon /> {t(($) => $.platform.tenants.create)}
+    </Button>
+  );
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t(($) => $.platform.tenants.title)}
         description={t(($) => $.platform.tenants.description)}
-        actions={
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <PlusIcon /> {t(($) => $.platform.tenants.create)}
-          </Button>
-        }
+        actions={create}
       />
-      {tenants.data ? (
-        <div className="overflow-auto rounded-lg border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t(($) => $.platform.tenants.tenant)}</TableHead>
-                <TableHead>{t(($) => $.platform.tenants.package)}</TableHead>
-                {values(UsageKey).map((key) => (
-                  <TableHead key={key}>{usageLabel(key)}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tenants.data.items.map((tenant) => (
-                <TableRow key={tenant.id} data-testid={`tenant-${tenant.id}`}>
-                  <TableCell className="font-medium">
-                    <Link
-                      to="/platform/tenants/$tenantId"
-                      params={{ tenantId: tenant.id }}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {tenant.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {t(($) => $.platform.packages[tenant.package])}
-                    </Badge>
-                  </TableCell>
-                  {values(UsageKey).map((key) => (
-                    <TableCell key={key}>
-                      <Meter meter={tenant.usage[key]} label={usageLabel(key)} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {tenants.data.items.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">
-              {t(($) => $.platform.tenants.empty)}
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <Skeleton className="h-48" />
-      )}
+      <DataTable
+        controls={controls}
+        query={tenants}
+        columns={columns}
+        facets={{
+          package: {
+            title: t(($) => $.platform.tenants.package),
+            options: values(PackageId).map((id) => ({
+              value: id,
+              label: t(($) => $.platform.packages[id]),
+            })),
+          },
+        }}
+        label={t(($) => $.platform.tenants.title)}
+        searchPlaceholder={t(($) => $.platform.tenants.search)}
+        getRowId={(tenant) => tenant.id}
+        rowTestId={(tenant) => `tenant-${tenant.id}`}
+        empty={
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{t(($) => $.platform.tenants.empty)}</EmptyTitle>
+            </EmptyHeader>
+            <EmptyContent>{create}</EmptyContent>
+          </Empty>
+        }
+        noMatchTitle={t(($) => $.platform.tenants.no_match)}
+      />
       <CreateTenantDialog
         key={String(creating)}
         open={creating}
@@ -144,7 +185,7 @@ function CreateTenantDialog({ open, onClose }: { open: boolean; onClose: () => v
       queryClient.setQueryData(platformKeys.tenant(tenant.id), tenant);
       toast.success(t(($) => $.platform.tenants.created, { name: tenant.name }));
       await navigate({ to: '/platform/tenants/$tenantId', params: { tenantId: tenant.id } });
-      void queryClient.invalidateQueries({ queryKey: platformKeys.tenants(), exact: true });
+      void queryClient.invalidateQueries({ queryKey: platformKeys.tenantLists() });
     },
     onError: (e) => applyServerIssues(e, form.setError),
   });

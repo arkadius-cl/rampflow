@@ -4,7 +4,13 @@ import {
   type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
-import { EntitlementSource, PackageId, Permission, values } from '@rampflow/shared/values';
+import {
+  EntitlementSource,
+  ErrorCode,
+  PackageId,
+  Permission,
+  values,
+} from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
@@ -13,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type * as z from 'zod';
 import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-errors';
+import { NoAccess, RouteError } from '@/components/app-shell/route-states';
 import { PageHeader } from '@/components/shells/office-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -31,7 +38,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { TableCell } from '@/components/ui/table';
 import { guard } from '@/lib/access';
-import { api, call } from '@/lib/api';
+import { api, call, isFailure } from '@/lib/api';
 import {
   groupByModule,
   ModuleGroupTable,
@@ -48,6 +55,11 @@ import { platformKeys, tenantQuery } from '@/modules/core/queries';
 
 export const Route = createFileRoute('/platform/tenants/$tenantId')({
   beforeLoad: guard({ permission: Permission.core.manage_tenants }),
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(tenantQuery(params.tenantId)),
+  // Here rather than in the platform layout, so "no access" shows inside the shell.
+  errorComponent: (props) =>
+    isFailure(props.error, ErrorCode.not_found) ? <NoAccess /> : <RouteError {...props} />,
   component: TenantPage,
 });
 
@@ -110,7 +122,7 @@ function TenantForm({ tenant }: { tenant: TenantDetail }) {
       ),
     onSuccess: async (updated) => {
       queryClient.setQueryData(platformKeys.tenant(tenant.id), updated);
-      void queryClient.invalidateQueries({ queryKey: platformKeys.tenants(), exact: true });
+      void queryClient.invalidateQueries({ queryKey: platformKeys.tenantLists() });
       toast.success(t(($) => $.platform.tenant.saved));
     },
     onError: (e) => applyServerIssues(e, form.setError),
