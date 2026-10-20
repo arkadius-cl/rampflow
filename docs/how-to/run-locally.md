@@ -1,11 +1,11 @@
 ---
 title: Run rampflow locally
-description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps, open them from another device in the LAN, run the tests, check that tests do not depend on the real date, bootstrap a platform admin, and run several checkouts in parallel.
+description: Start Postgres and Mailpit, give the checkout its own ports and databases, set up and migrate the database, run the apps, open them from another device in the LAN, browse the API in Swagger and import it into Bruno or Postman, run the tests, check that tests do not depend on the real date, bootstrap a platform admin, and run several checkouts in parallel.
 type: how-to
 audience: [developer, agent]
-tags: [setup, dev, testing, database, mail, worktrees, lan]
+tags: [setup, dev, testing, database, mail, worktrees, lan, api, openapi, swagger]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-20
 related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
@@ -133,6 +133,32 @@ Over plain `http` on a LAN address the browser does not give the page a secure c
 - The Web Share sheet is not available.
 
 Test these three features on `localhost` or behind HTTPS.
+
+## Browse the API in Swagger
+
+The API describes itself in `apps/api/openapi.gen.json` ([ADR-0013](../decisions/ADR-0013-openapi-from-routes-and-typescript.md)). In development it serves the description in Swagger UI.
+
+1. Check that `.env` has `ENABLE_API_DOCS=1`. `.env.example` sets it, and `node scripts/checkout-env.mjs --write` adds it to an older `.env`. The API refuses to start with the flag and `NODE_ENV=production`.
+2. Start `pnpm dev` and sign in to the web app at `APP_ORIGIN` (or `http://localhost:5173`).
+3. Open `/api/docs` on the same address, for example `http://localhost:5173/api/docs`. Do not use the API port (`API_PORT`, 3000).
+4. To run a route, open it, choose **Try it out**, fill the path parameters and choose **Execute**. The `orgId` of a tenant is in the web app's URL (`/t/<orgId>/...`).
+
+Swagger UI must run on the web app's address, because there its requests behave like the web app's. The browser sends the `rf_session` cookie of that address, and the `Origin` header is an app origin, which every mutating request needs. On the API port both are missing, and requests answer 401 or 403.
+
+## Import the API into Bruno or Postman
+
+1. Import the description into the client:
+   - **Bruno**: import a collection, choose OpenAPI V3, and select `apps/api/openapi.gen.json`. Group the requests by tags.
+   - **Postman**: choose **Import** and select the same file. While `pnpm dev` runs, you can import `<APP_ORIGIN>/api/openapi.json` by URL instead.
+
+   Each section of [API routes](../reference/api-routes.md) becomes a folder, and each JSON body comes with an example.
+2. Set the variables. `appOrigin` is the web app's address, `http://localhost:5173` by default; `baseUrl` refers to it. Path parameters such as `orgId` are empty after the import. Set them per request, or write `{{orgId}}` into them and define an `orgId` variable.
+3. Set the collection auth to **No Auth**. Both clients import the session cookie as an API key header `rf_session`, which the API ignores. The session travels in the client's cookie jar instead.
+4. Add the collection header `Origin: {{appOrigin}}`. Every mutating request needs it, the sign-in included.
+5. Sign in. Run `POST /api/auth/login` with a seed account from [Set up the checkout](#set-up-the-checkout), for example `admin@acme.local` and `rampflow-demo`. The client stores the `rf_session` cookie and sends it with the following requests to the same address.
+6. For driver routes, run `POST /api/public/driver-session` with the token of a driver link (the part after `/d/`). The client then sends the `rf_driver` cookie with requests under `/api/driver`.
+
+Import again after `pnpm api:docs` changes the file. Neither client updates an imported collection by itself.
 
 ## Run the checks
 
