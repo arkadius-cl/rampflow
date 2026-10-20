@@ -37,7 +37,7 @@ Code SHALL refer to a member of a value set through the set (`BookingStatus.no_s
 #### Scenario: Literal argument
 
 - **WHEN** a developer writes `requirePermission('booking.view')` or `{ channel: 'link' }` where the parameter's type is a value-set type
-- **THEN** `pnpm values:check` fails, names the file, line and the value set (`Permission.booking.view`, `AckChannel.link`)
+- **THEN** `pnpm values:check` fails, names the file, line and the value set (`Permission.booking.view`, `DriverChannel.link`)
 
 #### Scenario: Automatic fix
 

@@ -29,17 +29,17 @@ Every key of a module lives in its manifest. Open `packages/shared/src/modules/s
 
 ```ts
   entitlements: {
-    'safety.briefings': { kind: 'feature' },
-    'safety.validity': { kind: 'feature' },
-    'safety.quiz': { kind: 'feature' },
-    'safety.gate_enforcement': { kind: 'feature' },
-    'safety.register': { kind: 'feature' },
-    'safety.max_briefing_templates': { kind: 'limit' },
-    'safety.media': { kind: 'feature', reserved: true },
+    'safety.briefings': { kind: EntitlementKind.feature },
+    'safety.validity': { kind: EntitlementKind.feature },
+    'safety.quiz': { kind: EntitlementKind.feature },
+    'safety.gate_enforcement': { kind: EntitlementKind.feature },
+    'safety.register': { kind: EntitlementKind.feature },
+    'safety.max_briefing_templates': { kind: EntitlementKind.limit },
+    'safety.media': { kind: EntitlementKind.feature, reserved: true },
   },
 ```
 
-`kind: 'feature'` makes it a boolean. The compiler now knows `safety.register` as an `ImplementedFeatureKey`.
+`EntitlementKind.feature` makes it a boolean. The compiler now knows `safety.register` as an `ImplementedFeatureKey`.
 
 Run the contract tests of the shared package:
 
@@ -116,7 +116,7 @@ In the same manifest, find the nav item `acknowledgements` and add the entitleme
 ```ts
     {
       id: 'acknowledgements',
-      area: 'tenant',
+      area: OrgKind.tenant,
       to: '/t/$orgId/safety/acknowledgements',
       icon: 'clipboard-check',
       permission: 'safety.view_register',
@@ -124,7 +124,7 @@ In the same manifest, find the nav item `acknowledgements` and add the entitleme
     },
 ```
 
-The compiler checks the key. Misspell it as `'safety.registr'` and run `pnpm --filter @rampflow/shared typecheck`:
+Inside a manifest, keys stay strings: the manifest declares them, and `Permission`, `Feature` and `Setting` in `@rampflow/shared/values` are built from it ([ADR-0019](../decisions/ADR-0019-central-value-sets.md)). Everywhere else the new key is `Feature.safety.register`. The compiler checks the key. Misspell it as `'safety.registr'` and run `pnpm --filter @rampflow/shared typecheck`:
 
 ```text
 error TS2820: Type '"safety.registr"' is not assignable to type 'ImplementedFeatureIn<...>'. Did you mean '"safety.register"'?
@@ -148,14 +148,14 @@ It prints a line that starts with `wrote docs/INDEX.md`. Run `git diff docs/refe
 
 ## Write the route case first
 
-Every guarded route has a route case that the test harness runs from all sides: foreign tenant, rival carrier, foreign site, missing permission, entitlement off. Open `apps/api/src/modules/safety/register/route-cases.ts` and declare the entitlement on the search route:
+Every guarded route has a route case that the test harness runs from all sides: foreign tenant, rival carrier, foreign site, missing permission, entitlement off. Open `apps/api/src/modules/safety/register/route-cases.ts` and declare the entitlement on the search route. Add `Feature` to the file's import from `@rampflow/shared/values`:
 
 ```ts
   {
     ...base,
-    method: 'POST',
+    method: HttpMethod.POST,
     path: '/api/t/:orgId/safety/acknowledgements/search',
-    entitlement: 'safety.register',
+    entitlement: Feature.safety.register,
   },
 ```
 
@@ -178,7 +178,7 @@ The harness turned the entitlement off for the test tenant and still got the reg
 
 ## Gate the API route
 
-Open `apps/api/src/modules/safety/register/routes.tenant.ts`. Import `requireEntitlement` next to `requirePermission`, and add it to the search route after the permission check:
+Open `apps/api/src/modules/safety/register/routes.tenant.ts`. Import `requireEntitlement` next to `requirePermission` and `Feature` from `@rampflow/shared/values`, and add the guard to the search route after the permission check:
 
 ```ts
 import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
@@ -189,8 +189,8 @@ import { requireEntitlement, requirePermission } from '../../../kernel/access.ts
     '/acknowledgements/search',
     op({ id: 'safety.register.searchAcknowledgements', ... }),
     view,
-    requireEntitlement('safety.register'),
-    validate('json', RegisterSearchBody),
+    requireEntitlement(Feature.safety.register),
+    validate(ValidationTarget.json, RegisterSearchBody),
 ```
 
 The `op()` call stays first and unchanged. The API description reads the entitlement from the guard, so the description text does not need to mention it.

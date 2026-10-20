@@ -180,7 +180,7 @@ Index `(bucket, key_hash, at)`. RLS: none.
 | `user_id` | uuid | no | FK `app_user` on delete cascade |
 | `org_id` | uuid | no | |
 | `org_kind` | text | no | FK `(org_id, org_kind) → org(id, kind)` on delete cascade |
-| `role` | text | no | one of `ROLES` |
+| `role` | text | no | one of `Role` (`packages/shared/src/values/roles.ts`) |
 | `created_by` | uuid | yes | FK `app_user` |
 
 - Unique `(user_id, org_id)`: one role per membership.
@@ -334,7 +334,7 @@ RLS: none.
 |---|---|---|---|
 | `id` | uuid | no | |
 | `tenant_id` | uuid | yes | null for account emails |
-| `template` | text | no | `<module>.<name>` |
+| `template` | text | no | `<module>.<name>`; check: one of `EmailTemplate` (`packages/shared/src/values/emails.ts`) |
 | `to_email` | citext | no | **PD** |
 | `locale` | text | no | staff or driver locale |
 | `payload` | jsonb | no | **PD** possible |
@@ -484,7 +484,7 @@ Append-only.
 | `tenant_id`, `site_id` | uuid | no | |
 | `booking_id` | uuid | no | FK `booking` on delete cascade; index `(booking_id, at)` |
 | `carrier_id` | uuid | yes | |
-| `type` | text | no | event type |
+| `type` | text | no | event type; check: one of `BookingEventType` |
 | `from_status`, `to_status` | text | yes | |
 | `at` | timestamptz | no | |
 | `actor_party` | text | no | `carrier`, `tenant`, `driver`, `system` |
@@ -590,7 +590,7 @@ As built (U6a): the request schema `AvisInput` in `packages/shared/src/modules/a
 | `booking_id` | uuid | no | FK `avis` on delete cascade |
 | `tenant_id`, `site_id` | uuid | no | |
 | `carrier_id` | uuid | yes | |
-| `type` | text | no | `REFERENCE_TYPES` |
+| `type` | text | no | one of `ReferenceType` (`packages/shared/src/modules/avis/values.ts`) |
 | `value` | text | no | 1 to 35 characters |
 | `value_norm` | text | no | uppercase, trimmed; index `(tenant_id, value_norm)` for YD-01 search and `avis.unique_references` |
 
@@ -691,7 +691,7 @@ Indexes `(tenant_id, completed_at)`, `(tenant_id, lower(driver_name))`. RLS: `te
 | `acknowledgement_id` | uuid | no | FK `safety_acknowledgement` |
 | `tenant_id`, `site_id` | uuid | no | |
 | `via` | text | no | `completed`, `pass`, `gate_lookup` |
-| `linked_by_party` | text | no | |
+| `linked_by_party` | text | no | check: one of `ActorParty` |
 | `linked_by_user_id` | uuid | yes | |
 
 RLS: `tenant-private` site-scoped; `driver` insert, select and update where `booking_id = app.booking_id()` (the update lets `link_acknowledgement` relink a repeated briefing; U5).

@@ -169,3 +169,16 @@ Each step ends green and is its own commit (AGENTS.md). Old and new exports coex
 2. Land the generated migration with the change.
 
 To roll back, revert the change. The checks drop with the migration's revert.
+
+## Implementation notes
+
+Where the implementation differs from the decisions above, and why:
+
+- **D3:** the key trees split at every dot, not only the first, so `Setting.privacy.retention.visit_days` is a path.
+- **D4:** `ConflictReason` has 20 members. The other values counted as 32 were turn-away reasons, test values and reasons of other codes; those got `BadRequestReason`, `UnauthorizedReason` and `ForbiddenReason`. `AckChannel` merged into `DriverChannel` and `OrgParty` into `OrgKind`, because their values and meaning were identical (the shared value-set test rejects equal sets).
+- **D5:** `oneOf` accepts `/^[a-z0-9_.-]+$/`, because email template ids contain dashes (`booking.no-show`). `db-regen` accepts change names with a numeric prefix.
+- **D6:** the plugin leaves free text alone (a value with a capital or a space, and `''`), and the `as const` array rule fires only on arrays of plain strings, so query keys pass. `reason` is not on the member list; typed reasons are left to `values:check`.
+- **D7:** each package runs in its own process (about 23 s for the repo). `values:check` also reports `X.member` where `X` does not cover the union the member is checked against, and `--fix` moves it to the covering set. Literals in the files a key tree is built from (the manifests) are not reported. Unions of property names (`keyof T`, react-hook-form paths) are not value sets and are not reported.
+- **Re-exports:** sets are imported only from their `values.ts`; the old modules no longer re-export them.
+- **Response aliases:** a response type that names a set keeps an alias `type X = Extract<XSet, string>` next to it (`DriverChannel`, `InstructionSafety`, `EntitlementSource`, `SettingSource`), because the API description converter names a component only for a pure type alias.
+
