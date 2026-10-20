@@ -6,6 +6,7 @@ import {
   contextOf,
   isConstAssertion,
   isLibraryAnnotation,
+  isPropertyNames,
   isValuePosition,
 } from './context.ts';
 import { dependencies } from './imports.ts';
@@ -200,7 +201,10 @@ function judge(
   const union = [...new Set(parts.map((t) => (t as ts.StringLiteralType).value))].sort();
   if (!union.includes(literal)) return undefined;
   if (!isOurs(root, checker, context, union, sets)) return undefined;
-  return resolve(sets, literal, union, context.alias?.name);
+  const verdict = resolve(sets, literal, union, context.alias?.name);
+  // Field names are not a set, unless the object is keyed by one (`keyof Record<BookingStatus, _>`).
+  if (verdict.kind === 'create' && isPropertyNames(checker, context, union)) return undefined;
+  return verdict;
 }
 
 /**

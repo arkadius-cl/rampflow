@@ -10,6 +10,8 @@ export interface Context {
   generic: boolean;
   /** The parameter, property, variable or signature the literal must satisfy, when one is found. */
   anchor: ts.Node | undefined;
+  /** The contextual types before their unions are split into `parts`. */
+  whole: readonly ts.Type[];
 }
 
 type Literal = ts.StringLiteral | ts.NoSubstitutionTemplateLiteral;
@@ -112,7 +114,53 @@ function of(types: ts.Type[], anchor: ts.Node | undefined): Context {
   const alias = same ? first?.aliasSymbol : undefined;
   const generic = Boolean(same && first?.aliasTypeArguments?.length);
   const parts = types.flatMap((t) => (t.isUnion() ? t.types : [t]));
-  return { parts, alias, generic, anchor };
+  return { parts, alias, generic, anchor, whole: types };
+}
+
+/**
+ * True when `union` is the property names of an object type rather than values: `keyof T`, or a
+ * generic applied to `T` whose members are `T`'s property paths, such as react-hook-form's
+ * `Path<T>`. The literal names a field; the field's value is what a value set would hold.
+ */
+export function isPropertyNames(
+  checker: ts.TypeChecker,
+  context: Context,
+  union: readonly string[],
+): boolean {
+  const pathsOf = (argument: ts.Type) =>
+    Boolean(argument.flags & ts.TypeFlags.Object) &&
+    union.every((path) => hasPath(checker, argument, path));
+  // The checker drops `keyof` once the object type is resolved, so the annotation is read too.
+  const annotation =
+    context.anchor && 'type' in context.anchor ? (context.anchor.type as ts.Node) : undefined;
+  if (annotation && ts.isTypeOperatorNode(annotation)) {
+    return annotation.operator === ts.SyntaxKind.KeyOfKeyword;
+  }
+  if (annotation && ts.isTypeReferenceNode(annotation) && annotation.typeArguments) {
+    if (annotation.typeArguments.some((a) => pathsOf(checker.getTypeFromTypeNode(a)))) return true;
+  }
+  return context.whole.some((type) => {
+    const origin = (type as { origin?: ts.Type }).origin;
+    if (type.flags & ts.TypeFlags.Index || (origin && origin.flags & ts.TypeFlags.Index)) {
+      return true;
+    }
+    return (type.aliasTypeArguments ?? []).some(pathsOf);
+  });
+}
+
+function hasPath(checker: ts.TypeChecker, type: ts.Type, path: string): boolean {
+  let current = type;
+  for (const name of path.split('.')) {
+    const property = checker.getPropertyOfType(current, name);
+    const next = property
+      ? checker.getTypeOfSymbol(property)
+      : /^\d+$/.test(name)
+        ? checker.getIndexTypeOfType(current, ts.IndexKind.Number)
+        : undefined;
+    if (!next) return false;
+    current = checker.getNonNullableType(next);
+  }
+  return true;
 }
 
 /**
