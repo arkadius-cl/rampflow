@@ -1,4 +1,5 @@
 import type { BoardView, BookingSummary } from '@rampflow/shared/modules/booking/api.staff';
+import { BadgeSize } from '@rampflow/shared/values';
 import { useTranslation } from 'react-i18next';
 import { SiteTime } from '@/components/site-time';
 import { Button } from '@/components/ui/button';
@@ -79,12 +80,12 @@ export function BookingList({
                 <TableCell>{resourceName(b.resourceId)}</TableCell>
                 <TableCell className="text-right tabular-nums">{b.loadUnits}</TableCell>
                 <TableCell>
-                  <BookingStatusBadge status={b.status} size="sm" />
+                  <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
                 </TableCell>
                 <TableCell className="pr-4">
                   <span className="flex flex-wrap gap-1">
                     {flagsOf(b).map((f) => (
-                      <BookingFlagBadge key={f} flag={f} size="sm" />
+                      <BookingFlagBadge key={f} flag={f} size={BadgeSize.sm} />
                     ))}
                   </span>
                 </TableCell>

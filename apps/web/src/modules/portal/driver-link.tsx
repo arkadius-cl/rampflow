@@ -1,9 +1,8 @@
-import { DRIVER_LOCALES } from '@rampflow/shared';
 import type {
   PortalBookingView,
   PortalDriverLink,
 } from '@rampflow/shared/modules/booking/api.portal';
-import { DriverLocale } from '@rampflow/shared/values';
+import { DriverLocale, isValueOf, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CopyIcon, MailIcon, RefreshCwIcon, Share2Icon } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
@@ -94,9 +93,7 @@ function LinkActions({
   const languageName = new Intl.DisplayNames([uiLocale], { type: 'language' });
   const initial: DriverLocale =
     booking.avis?.driver.locale ??
-    ((DRIVER_LOCALES as readonly string[]).includes(uiLocale)
-      ? (uiLocale as DriverLocale)
-      : DriverLocale.en);
+    (isValueOf(DriverLocale, uiLocale) ? (uiLocale as DriverLocale) : DriverLocale.en);
   const [draft, setDraft] = useState<Draft>(
     () => drafts.get(booking.id) ?? { email: '', locale: initial },
   );
@@ -185,7 +182,7 @@ function LinkActions({
             value={locale}
             onChange={(e) => setDraft({ ...draft, locale: e.target.value as DriverLocale })}
           >
-            {DRIVER_LOCALES.map((l) => (
+            {values(DriverLocale).map((l) => (
               <NativeSelectOption key={l} value={l}>
                 {languageName.of(l)}
               </NativeSelectOption>

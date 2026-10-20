@@ -1,18 +1,14 @@
-import {
-  type Avis,
-  AvisInput,
-  LOAD_UNIT_TYPES,
-  type LoadUnitType,
-} from '@rampflow/shared/modules/avis/avis';
-import { ReferenceType } from '@rampflow/shared/modules/avis/values';
+import { type Avis, AvisInput } from '@rampflow/shared/modules/avis/avis';
+import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
 import type {
   CreateCarrierBooking,
   PortalBookingView,
   PortalLoadType,
   PortalSite,
 } from '@rampflow/shared/modules/booking/api.portal';
-import { CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
+import { BookingWizardStep, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
+import { BadgeSize, StepState, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, ChevronRightIcon, WarehouseIcon } from 'lucide-react';
@@ -77,8 +73,8 @@ import { useDayStrip } from './use-offers';
 // without references and driver, and opens on the time step, so a returning carrier books in a
 // few clicks. A lost race (409 with offers) reopens the time step with the refreshed starts.
 
-export const STEPS = ['where', 'when', 'avis', 'done'] as const;
-export type Step = (typeof STEPS)[number];
+export const STEPS = values(BookingWizardStep);
+export type Step = BookingWizardStep;
 
 export interface WizardSearch {
   step: Step;
@@ -146,7 +142,7 @@ export function BookingWizard({
         plateSeen: null,
       }),
     );
-    go({ step: 'when', from: search.from });
+    go({ step: BookingWizardStep.when, from: search.from });
   }, [prefill.data, search.from, form, go]);
 
   const sites = useQuery({
@@ -195,7 +191,7 @@ export function BookingWizard({
       queryClient.setQueryData(portalBookingQuery(orgId, booking.id).queryKey, booking);
       await queryClient.invalidateQueries({ queryKey: [...portalKey(orgId), 'list'] });
       setClientRequestId(randomId());
-      go({ step: 'done', booking: booking.id });
+      go({ step: BookingWizardStep.done, booking: booking.id });
     },
     onError: (e) => {
       if (request && refreshOffers(e, request)) {
@@ -203,7 +199,7 @@ export function BookingWizard({
         // A new attempt is a new request; the old id names no booking.
         setClientRequestId(randomId());
         toast.error(t(($) => $.portal.wizard.taken));
-        go({ ...search, step: 'when' });
+        go({ ...search, step: BookingWizardStep.when });
         return;
       }
       if (applyAvisIssues(e, form)) return;
@@ -211,10 +207,11 @@ export function BookingWizard({
     },
   });
   if (tenants.length === 0) return <NoTenants orgId={orgId} />;
-  if (search.step === 'done')
+  if (search.step === BookingWizardStep.done)
     return <Done orgId={orgId} bookingId={search.booking ?? ''} go={go} />;
   // A reload in the middle loses the form; start over where nothing is chosen yet.
-  const step: Step = search.step !== 'where' && !request ? 'where' : search.step;
+  const step: Step =
+    search.step !== BookingWizardStep.where && !request ? BookingWizardStep.where : search.step;
 
   const pick = (next: Partial<Selection>) => {
     setSelection((s) => ({ ...s, ...next }));
@@ -240,7 +237,7 @@ export function BookingWizard({
     <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_17rem]">
       <Stepper current={step} />
       <div className="min-w-0">
-        {step === 'where' ? (
+        {step === BookingWizardStep.where ? (
           <WhereStep
             orgId={orgId}
             tenants={tenants}
@@ -251,15 +248,15 @@ export function BookingWizard({
             form={form}
             durationMinutes={duration}
             canContinue={request !== null}
-            onNext={() => go({ ...search, step: 'when' })}
+            onNext={() => go({ ...search, step: BookingWizardStep.when })}
           />
         ) : null}
-        {step === 'when' && site ? (
+        {step === BookingWizardStep.when && site ? (
           <StepCard
             title={t(($) => $.portal.wizard.when.title)}
             description={t(($) => $.portal.wizard.when.description)}
-            onBack={() => go({ ...search, step: 'where' })}
-            onNext={() => go({ ...search, step: 'avis' })}
+            onBack={() => go({ ...search, step: BookingWizardStep.where })}
+            onNext={() => go({ ...search, step: BookingWizardStep.avis })}
             canContinue={startsAt !== null}
           >
             <PortalSlotPicker
@@ -285,7 +282,7 @@ export function BookingWizard({
             </p>
           </StepCard>
         ) : null}
-        {step === 'avis' && site && loadType ? (
+        {step === BookingWizardStep.avis && site && loadType ? (
           <form
             noValidate
             onSubmit={form.handleSubmit((avis) => create.mutate(avis))}
@@ -294,7 +291,7 @@ export function BookingWizard({
             <StepCard
               title={t(($) => $.portal.wizard.avis.title)}
               description={t(($) => $.portal.wizard.avis.description)}
-              onBack={() => go({ ...search, step: 'when' })}
+              onBack={() => go({ ...search, step: BookingWizardStep.when })}
               submit={
                 <Button type="submit" disabled={create.isPending || startsAt === null}>
                   {create.isPending ? <Spinner /> : null}
@@ -318,26 +315,30 @@ function Stepper({ current }: { current: Step }) {
   return (
     <ol className="flex gap-2 lg:flex-col" aria-label={t(($) => $.portal.wizard.steps)}>
       {STEPS.map((s, i) => {
-        const state = i < index ? 'done' : i === index ? 'current' : 'todo';
+        const state: StepState =
+          i < index ? StepState.done : i === index ? StepState.current : StepState.todo;
         return (
           <li
             key={s}
             className="flex items-start gap-3"
-            aria-current={state === 'current' ? 'step' : undefined}
+            aria-current={state === StepState.current ? 'step' : undefined}
           >
             <span
               className={cn(
                 'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-                state === 'done' && 'border-tone-success bg-tone-success text-white',
-                state === 'current' && 'border-primary bg-primary text-primary-foreground',
-                state === 'todo' && 'text-muted-foreground',
+                state === StepState.done && 'border-tone-success bg-tone-success text-white',
+                state === StepState.current && 'border-primary bg-primary text-primary-foreground',
+                state === StepState.todo && 'text-muted-foreground',
               )}
             >
-              {state === 'done' ? <CheckIcon className="size-3.5" aria-hidden /> : i + 1}
+              {state === StepState.done ? <CheckIcon className="size-3.5" aria-hidden /> : i + 1}
             </span>
             <div className="hidden leading-tight lg:block">
               <div
-                className={cn('text-sm font-medium', state === 'todo' && 'text-muted-foreground')}
+                className={cn(
+                  'text-sm font-medium',
+                  state === StepState.todo && 'text-muted-foreground',
+                )}
               >
                 {t(($) => $.portal.wizard[s].step)}
               </div>
@@ -541,7 +542,7 @@ function WhereStep({
                   value={field.value}
                   onChange={(e) => field.onChange(e.target.value as LoadUnitType)}
                 >
-                  {LOAD_UNIT_TYPES.map((u) => (
+                  {values(LoadUnitType).map((u) => (
                     <NativeSelectOption key={u} value={u}>
                       {tAvis(($) => $.avis.loadUnitType[u])}
                     </NativeSelectOption>
@@ -656,7 +657,7 @@ function Done({
             >
               {b.code}
             </div>
-            <BookingStatusBadge status={b.status} size="lg" />
+            <BookingStatusBadge status={b.status} size={BadgeSize.lg} />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">{t(($) => $.portal.done.title)}</h2>
@@ -683,7 +684,11 @@ function Done({
               </dd>
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => go({ step: 'when', from: b.id })}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => go({ step: BookingWizardStep.when, from: b.id })}
+              >
                 {t(($) => $.portal.actions.book_again)}
               </Button>
               <Link

@@ -10,3 +10,11 @@ export const TokenPurpose = {
   driver: 'driver',
 } as const;
 export type TokenPurpose = ValueOf<typeof TokenPurpose>;
+
+/** How far the one-time exchange of an emailed token has come in the browser. */
+export const TokenExchangeStatus = {
+  pending: 'pending',
+  done: 'done',
+  failed: 'failed',
+} as const;
+export type TokenExchangeStatus = ValueOf<typeof TokenExchangeStatus>;

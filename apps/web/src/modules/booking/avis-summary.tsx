@@ -5,13 +5,7 @@ import { useLocale } from '@/lib/i18n';
 
 // The stored avis, read-only, on the booking page (AV-01). Empty values show a dash.
 
-export function AvisSummary({
-  avis,
-  direction,
-}: {
-  avis: AvisView | null;
-  direction: 'inbound' | 'outbound';
-}) {
+export function AvisSummary({ avis, direction }: { avis: AvisView | null; direction: Direction }) {
   const { t } = useTranslation('booking');
   const { t: tAvis } = useTranslation('avis');
   const locale = useLocale();

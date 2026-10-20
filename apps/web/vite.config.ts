@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 import path from 'node:path';
+import { ViteCommand } from '@rampflow/shared/values';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
@@ -18,7 +19,7 @@ const allowedHosts = devHost && !isIP(devHost) ? [devHost] : [];
 const PROD_ROUTE_TREE = './node_modules/.tmp/routeTree.prod.gen.ts';
 
 export default defineConfig(({ command }) => {
-  const production = command === 'build';
+  const production = command === ViteCommand.build;
   return {
     plugins: [
       tanstackRouter({

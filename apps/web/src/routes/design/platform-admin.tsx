@@ -27,7 +27,7 @@ export const Route = createFileRoute('/design/platform-admin')({
 interface Usage {
   id: string;
   name: string;
-  pkg: 'start' | 'pro' | 'enterprise';
+  pkg: PackageId;
   sites: [number, number | null];
   docks: [number, number | null];
   users: [number, number | null];

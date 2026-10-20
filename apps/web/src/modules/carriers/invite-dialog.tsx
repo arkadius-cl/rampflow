@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { STAFF_LOCALES } from '@rampflow/shared';
 import {
   CarrierInvitationBody,
   type CarrierInvitationView,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MailPlusIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -131,7 +131,7 @@ export function InviteCarrierDialog({ orgId }: { orgId: string }) {
                     onBlur={field.onBlur}
                     className="w-full"
                   >
-                    {STAFF_LOCALES.map((l) => (
+                    {values(StaffLocale).map((l) => (
                       <NativeSelectOption key={l} value={l}>
                         {languageName(l)}
                       </NativeSelectOption>

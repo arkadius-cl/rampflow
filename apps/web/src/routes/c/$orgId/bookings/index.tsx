@@ -1,8 +1,12 @@
 import type { PortalBookingSummary } from '@rampflow/shared/modules/booking/api.portal';
-import { BOOKING_STATUSES } from '@rampflow/shared/modules/booking/lifecycle';
-import { BookingStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
+import {
+  BookingStatus,
+  BookingWizardStep,
+  CarrierBookingsTab,
+  RegistrationStatus,
+} from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeSize, Permission, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -60,10 +64,10 @@ const text = (v: unknown) => (typeof v === 'string' && v.length > 0 ? v : undefi
 
 export const Route = createFileRoute('/c/$orgId/bookings/')({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    tab: TABS.includes(s.tab as Tab) ? (s.tab as Tab) : 'upcoming',
+    tab: TABS.includes(s.tab as Tab) ? (s.tab as Tab) : CarrierBookingsTab.upcoming,
     tenant: text(s.tenant),
     site: text(s.site),
-    status: BOOKING_STATUSES.includes(s.status as BookingStatus)
+    status: values(BookingStatus).includes(s.status as BookingStatus)
       ? (s.status as BookingStatus)
       : undefined,
     from: localDateSchema.safeParse(s.from).data,
@@ -80,9 +84,9 @@ function filtersOf(s: Search): BookingFilters {
   const today = todayHere();
   const base = { tenantId: s.tenant, siteId: s.site, status: s.status };
   const range =
-    s.tab === 'today'
+    s.tab === CarrierBookingsTab.today
       ? { from: today, to: today, order: 'asc' as const }
-      : s.tab === 'past'
+      : s.tab === CarrierBookingsTab.past
         ? { when: 'past' as const, order: 'desc' as const }
         : { when: 'upcoming' as const, order: 'asc' as const };
   return { ...base, ...range, ...(s.from ? { from: s.from } : {}), ...(s.to ? { to: s.to } : {}) };
@@ -118,7 +122,7 @@ function BookingsPage() {
             <Link
               to="/c/$orgId/book"
               params={{ orgId }}
-              search={{ step: 'where' }}
+              search={{ step: BookingWizardStep.where }}
               className={buttonVariants()}
             >
               <PlusIcon /> {t(($) => $.portal.list.new)}
@@ -191,11 +195,13 @@ function BookingsPage() {
             onChange={(e) => set({ status: (e.target.value || undefined) as BookingStatus })}
           >
             <NativeSelectOption value="">{t(($) => $.portal.list.any_status)}</NativeSelectOption>
-            {BOOKING_STATUSES.filter((s) => s !== BookingStatus.requested).map((s) => (
-              <NativeSelectOption key={s} value={s}>
-                {t(($) => $.lifecycle.status[s])}
-              </NativeSelectOption>
-            ))}
+            {values(BookingStatus)
+              .filter((s) => s !== BookingStatus.requested)
+              .map((s) => (
+                <NativeSelectOption key={s} value={s}>
+                  {t(($) => $.lifecycle.status[s])}
+                </NativeSelectOption>
+              ))}
           </NativeSelect>
         </Field>
         <Field className="w-40">
@@ -256,7 +262,7 @@ function BookingsPage() {
               <Link
                 to="/c/$orgId/book"
                 params={{ orgId }}
-                search={{ step: 'where' }}
+                search={{ step: BookingWizardStep.where }}
                 className={buttonVariants({ variant: 'outline' })}
               >
                 <PlusIcon /> {t(($) => $.portal.list.new)}
@@ -338,7 +344,7 @@ function Row({
         ) : null}
       </TableCell>
       <TableCell>
-        <BookingStatusBadge status={b.status} size="sm" />
+        <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
       </TableCell>
       <TableCell className="whitespace-nowrap tabular-nums">
         <span className="sr-only">{t(($) => $.portal.list.gate_in)} </span>

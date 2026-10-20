@@ -54,7 +54,7 @@ export interface Visit {
   plate: string;
   /** Slot start in minutes from now. */
   start: number;
-  status?: 'confirmed' | 'checked_in' | 'called' | 'at_dock' | 'loading' | 'done';
+  status?: LoadStatus;
   /** Check-in in minutes from now, for on-site states. */
   checkedIn?: number;
   dockId?: string;

@@ -1,7 +1,8 @@
 import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import type { DriverBookingView } from '@rampflow/shared/modules/driver/api';
-import { DriverChannel } from '@rampflow/shared/modules/driver/values';
+import { DriverChannel, DriverScreen } from '@rampflow/shared/modules/driver/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import { DriverBadgeSize } from '@rampflow/shared/values';
 import {
   BellRingIcon,
   CircleCheckIcon,
@@ -21,7 +22,6 @@ import { SiteTime, SiteTimeRange } from '@/components/site-time';
 import { BookingStatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/lib/i18n';
-import type { HomeScreen } from '@/lib/session';
 import { dateAt, dayAt, siteTimeLabel } from '@/lib/time';
 
 // The home screens of the driver flow (UX concept, "Driver PWA"): booking, waiting, called,
@@ -29,17 +29,17 @@ import { dateAt, dayAt, siteTimeLabel } from '@/lib/time';
 
 type View = DriverBookingView;
 
-export function Home({ screen, view }: { screen: HomeScreen; view: View }) {
+export function Home({ screen, view }: { screen: DriverScreen; view: View }) {
   switch (screen) {
-    case 'booking':
+    case DriverScreen.booking:
       return <BookingScreen view={view} />;
-    case 'waiting':
+    case DriverScreen.waiting:
       return <WaitingScreen view={view} />;
-    case 'called':
+    case DriverScreen.called:
       return <CalledScreen view={view} />;
-    case 'done':
+    case DriverScreen.done:
       return <DoneScreen view={view} />;
-    case 'closed':
+    case DriverScreen.closed:
       return <ClosedScreen view={view} />;
   }
 }
@@ -199,7 +199,7 @@ function WaitingScreen({ view }: { view: View }) {
         </div>
         <h1 className="text-3xl font-semibold">{t(($) => $.app.waiting.title)}</h1>
         <p className="text-lg text-muted-foreground">{t(($) => $.app.waiting.body)}</p>
-        <BookingStatusBadge status={booking.status} size="xl" />
+        <BookingStatusBadge status={booking.status} size={DriverBadgeSize.xl} />
         {booking.checkedInAt ? (
           <dl className="mt-2 grid w-full grid-cols-2 gap-3 text-left text-sm">
             <div className="rounded-lg bg-muted p-3">
@@ -299,7 +299,7 @@ function ClosedScreen({ view }: { view: View }) {
   return (
     <>
       <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border bg-card p-6 text-center">
-        <BookingStatusBadge status={status} size="xl" />
+        <BookingStatusBadge status={status} size={DriverBadgeSize.xl} />
         <h1 className="text-xl font-semibold">{text}</h1>
       </section>
       {status === BookingStatus.departed ? <LinkExpiry view={view} /> : <CallSite view={view} />}

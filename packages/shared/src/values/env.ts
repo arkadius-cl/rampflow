@@ -6,3 +6,10 @@ export const NodeEnv = {
   production: 'production',
 } as const;
 export type NodeEnv = ValueOf<typeof NodeEnv>;
+
+/** Vite's `command`: the dev server, or a production build. */
+export const ViteCommand = {
+  serve: 'serve',
+  build: 'build',
+} as const;
+export type ViteCommand = ValueOf<typeof ViteCommand>;

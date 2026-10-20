@@ -4,7 +4,7 @@ import type {
   CarrierInvitationInspect,
 } from '@rampflow/shared/modules/booking/api.carriers';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -51,8 +51,10 @@ function CarrierInvitePage() {
       api.public['carrier-invitations'].inspect.$post({ json: { token: token ?? '' } }),
     ),
   );
-  if (!token || inspect.status === 'failed') {
-    const known = inspect.status === 'failed' && !isFailure(inspect.error, ErrorCode.unauthorized);
+  if (!token || inspect.status === TokenExchangeStatus.failed) {
+    const known =
+      inspect.status === TokenExchangeStatus.failed &&
+      !isFailure(inspect.error, ErrorCode.unauthorized);
     return (
       <AuthLayout title={t(($) => $.carriers.accept.title)}>
         <div className="flex flex-col gap-4">
@@ -70,7 +72,7 @@ function CarrierInvitePage() {
       </AuthLayout>
     );
   }
-  if (inspect.status === 'pending') {
+  if (inspect.status === TokenExchangeStatus.pending) {
     return (
       <AuthLayout title={t(($) => $.carriers.accept.title)}>
         <div role="status" className="flex items-center gap-3 text-sm text-muted-foreground">

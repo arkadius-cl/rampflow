@@ -1,4 +1,5 @@
 import type { KpiReport, ReportFilter, VisitPage } from '@rampflow/shared/modules/report/api';
+import { ReportExport } from '@rampflow/shared/modules/report/values';
 import { OrgKind } from '@rampflow/shared/values';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
@@ -62,8 +63,8 @@ export async function saveDownload(res: Response, fallback: string): Promise<voi
   URL.revokeObjectURL(url);
 }
 
-export async function downloadCsv(orgId: string, kind: 'kpis' | 'visits', f: ReportFilter) {
-  const route = kind === 'kpis' ? reports()['kpis.csv'] : reports()['visits.csv'];
+export async function downloadCsv(orgId: string, kind: ReportExport, f: ReportFilter) {
+  const route = kind === ReportExport.kpis ? reports()['kpis.csv'] : reports()['visits.csv'];
   const res = await route.$get({ param: { orgId }, query: filterQuery(f) });
   await saveDownload(res as unknown as Response, `${kind}.csv`);
 }

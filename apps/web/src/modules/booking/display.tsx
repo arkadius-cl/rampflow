@@ -1,15 +1,9 @@
 import type { BookingSafety } from '@rampflow/shared/modules/booking/api.staff';
 import type { BookingStatus } from '@rampflow/shared/modules/booking/lifecycle';
-import { Punctuality } from '@rampflow/shared/modules/booking/values';
+import { BookingFlag, Punctuality } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
-import { StaffLocale } from '@rampflow/shared/values';
-import {
-  FootprintsIcon,
-  HourglassIcon,
-  ShieldIcon,
-  TriangleAlertIcon,
-  ZapIcon,
-} from 'lucide-react';
+import { BadgeTone, StaffLocale, values } from '@rampflow/shared/values';
+import { FootprintsIcon, ShieldIcon, TriangleAlertIcon, ZapIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   BOOKING_STATUS,
@@ -27,16 +21,11 @@ import { useLocale } from '@/lib/i18n';
 type BadgeProps = Omit<StatusBadgeProps, 'meta'>;
 type Look = Omit<StatusMeta, 'label'>;
 
-const STATUS_LOOK: Record<BookingStatus, Look> = {
-  requested: { icon: HourglassIcon, tone: 'planned' },
-  ...BOOKING_STATUS,
-};
-
 export function BookingStatusBadge({ status, ...props }: { status: BookingStatus } & BadgeProps) {
   const { t } = useTranslation('booking');
   return (
     <StatusBadge
-      meta={{ ...STATUS_LOOK[status], label: t(($) => $.lifecycle.status[status]) }}
+      meta={{ ...BOOKING_STATUS[status], label: t(($) => $.lifecycle.status[status]) }}
       {...props}
     />
   );
@@ -45,7 +34,7 @@ export function BookingStatusBadge({ status, ...props }: { status: BookingStatus
 const SAFETY_LOOK: Record<BookingSafety['status'], Look> = {
   valid: SAFETY_STATUS.valid,
   missing: SAFETY_STATUS.missing,
-  not_required: { icon: ShieldIcon, tone: 'neutral' },
+  not_required: { icon: ShieldIcon, tone: BadgeTone.neutral },
 };
 
 export function BookingSafetyBadge({
@@ -84,17 +73,15 @@ export function PunctualityBadge({
   );
 }
 
-export type BookingFlag = 'forced' | 'walkIn' | 'overCapacity';
-
 const FLAG_LOOK: Record<BookingFlag, Look> = {
-  forced: { icon: ZapIcon, tone: 'onsite' },
-  walkIn: { icon: FootprintsIcon, tone: 'neutral' },
-  overCapacity: { icon: TriangleAlertIcon, tone: 'danger' },
+  forced: { icon: ZapIcon, tone: BadgeTone.onsite },
+  walkIn: { icon: FootprintsIcon, tone: BadgeTone.neutral },
+  overCapacity: { icon: TriangleAlertIcon, tone: BadgeTone.danger },
 };
 
 /** The flags a booking carries, in display order. */
 export const flagsOf = (b: { forced: boolean; walkIn: boolean; overCapacity?: boolean }) =>
-  (['overCapacity', 'forced', 'walkIn'] as const).filter((f) => b[f] === true);
+  values(BookingFlag).filter((f) => b[f] === true);
 
 export function BookingFlagBadge({ flag, ...props }: { flag: BookingFlag } & BadgeProps) {
   const { t } = useTranslation('booking');

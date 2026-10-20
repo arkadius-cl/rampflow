@@ -1,6 +1,6 @@
 import type { RegisterFilter, RegisterItem } from '@rampflow/shared/modules/safety/api.register';
-import { ACK_STATUSES } from '@rampflow/shared/modules/safety/validity';
-import { Permission } from '@rampflow/shared/values';
+import { AckStatus } from '@rampflow/shared/modules/safety/values';
+import { BadgeSize, Permission, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ClipboardCheckIcon, DownloadIcon, SearchIcon } from 'lucide-react';
@@ -174,7 +174,10 @@ function RegisterPage() {
           any={t(($) => $.register.screen.filters.all_statuses)}
           value={filters.status}
           onChange={(status) => set({ status })}
-          choices={ACK_STATUSES.map((s) => ({ value: s, label: t(($) => $.register.status[s]) }))}
+          choices={values(AckStatus).map((s) => ({
+            value: s,
+            label: t(($) => $.register.status[s]),
+          }))}
         />
       </div>
 
@@ -305,7 +308,7 @@ function RegisterRow({ item }: { item: RegisterItem }) {
         {item.score === null ? '' : t(($) => $.register.screen.score, { score: item.score })}
       </TableCell>
       <TableCell>
-        <AckStatusBadge status={item.status} size="sm" />
+        <AckStatusBadge status={item.status} size={BadgeSize.sm} />
       </TableCell>
       <TableCell className="pr-4 whitespace-nowrap">
         {item.expiresAt ? (

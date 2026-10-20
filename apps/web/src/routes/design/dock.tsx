@@ -1,5 +1,6 @@
 import { BookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { DockStatus, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   BellRingIcon,
@@ -188,7 +189,7 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
             <span className="font-mono">{booking.plate}</span> · {booking.loadUnits} units
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <BookingStatusBadge status={booking.status} size="md" />
+            <BookingStatusBadge status={booking.status} size={BadgeSize.md} />
             {since ? (
               <span className="text-xs text-muted-foreground">
                 since <SiteTime time={since} zone={site?.zoneLabel ?? ''} />

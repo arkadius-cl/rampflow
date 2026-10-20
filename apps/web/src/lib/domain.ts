@@ -1,33 +1,13 @@
-// UI-side domain vocabulary for the design prototype. The implementation
-// replaces these with the exports of @rampflow/shared once they exist.
+import type {
+  BookingStatus,
+  Direction,
+  Punctuality,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import type { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import type { BriefingState } from '@rampflow/shared/modules/safety/values';
 
-export const BOOKING_STATUSES = [
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
-  'departed',
-  'cancelled',
-  'no_show',
-  'turned_away',
-] as const;
-export type BookingStatus = (typeof BOOKING_STATUSES)[number];
-
-export type SafetyStatus = 'valid' | 'missing' | 'expired' | 'invalidated';
-export type Punctuality = 'early' | 'on_time' | 'late';
-export type Direction = 'inbound' | 'outbound';
-export type ResourceKind = 'pool' | 'single';
-export type DockStatus = 'active' | 'maintenance' | 'inactive';
-export type DoorType = 'dock_leveler' | 'ground_level' | 'side_loading' | 'yard_open';
-export type TemperatureZone = 'ambient' | 'chilled' | 'frozen';
-
-export type SettingSource = 'default' | 'platform' | 'tenant' | 'site';
-
-export type EntitlementState = 'on' | 'off' | 'upsell';
-
-export type DriverStep = 'booking' | 'briefing' | 'quiz' | 'waiting' | 'called' | 'done';
+// Data shapes of the design prototype (`/design`). Their value sets come from @rampflow/shared.
 
 export interface Site {
   id: string;
@@ -88,7 +68,7 @@ export interface Booking {
   start: string;
   end: string;
   status: BookingStatus;
-  safety: SafetyStatus;
+  safety: BriefingState;
   punctuality?: Punctuality;
   overCapacity?: boolean;
   references: string[];

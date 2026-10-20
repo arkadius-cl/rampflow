@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type EntitlementSource, PACKAGE_IDS, type PackageId } from '@rampflow/shared';
+import type { EntitlementSource } from '@rampflow/shared';
 import {
   InviteTenantAdmin,
   type TenantDetail,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
-import { Permission } from '@rampflow/shared/values';
+import { PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
@@ -154,7 +154,7 @@ function TenantForm({ tenant }: { tenant: TenantDetail }) {
                   value={field.value}
                   onChange={(e) => field.onChange(e.target.value as PackageId)}
                 >
-                  {PACKAGE_IDS.map((id) => (
+                  {values(PackageId).map((id) => (
                     <NativeSelectOption key={id} value={id}>
                       {t(($) => $.platform.packages[id])}
                     </NativeSelectOption>

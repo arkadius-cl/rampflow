@@ -1,24 +1,19 @@
+import type { SettingKey, SettingValue } from '@rampflow/shared';
 import {
-  DRIVER_LOCALES,
-  type DriverLocale,
-  type SettingKey,
-  type SettingValue,
-} from '@rampflow/shared';
-import {
-  ADR_CLASSES,
   type Avis,
   AvisInput,
   type AvisRules,
   type AvisView,
-  LOAD_UNIT_TYPES,
-  PACKING_GROUPS,
-  VEHICLE_TYPES,
-  type VehicleType,
 } from '@rampflow/shared/modules/avis/avis';
-import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
-import { LoadUnitType } from '@rampflow/shared/modules/avis/values';
+import {
+  AdrClass,
+  LoadUnitType,
+  PackingGroup,
+  ReferenceType,
+  VehicleType,
+} from '@rampflow/shared/modules/avis/values';
 import { Direction } from '@rampflow/shared/modules/booking/values';
-import { ErrorCode, Setting } from '@rampflow/shared/values';
+import { DriverLocale, ErrorCode, Setting, values, YesNo } from '@rampflow/shared/values';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useId } from 'react';
 import {
@@ -56,17 +51,13 @@ import { cn } from '@/lib/utils';
 // holds what inputs hold (strings); `toAvisInput` turns it into the API's AvisInput, and the
 // resolver validates with the shared zod schema, so form paths equal API paths below `avis`.
 
-type ReferenceType = (typeof REFERENCE_TYPES)[number];
-type AdrClass = (typeof ADR_CLASSES)[number];
-type PackingGroup = (typeof PACKING_GROUPS)[number];
-
 export interface AvisFormValues {
   references: { type: ReferenceType; value: string }[];
   counterpartyName: string;
   loadUnits: { type: LoadUnitType; quantity: string; label: string; stackable?: boolean }[];
   palletPositions: string;
   grossWeightKg: string;
-  palletExchange: '' | 'yes' | 'no';
+  palletExchange: YesNo | '';
   vehicle: { type: VehicleType | ''; plate: string; plateCountry: string; trailerPlate: string };
   driver: { name: string; phone: string; locale: DriverLocale | '' };
   dangerousGoods: {
@@ -99,7 +90,7 @@ const emptyDangerousGoodsItem = (): AvisFormValues['dangerousGoods']['items'][nu
 
 export function emptyAvis(): AvisFormValues {
   return {
-    references: [{ type: 'purchase_order', value: '' }],
+    references: [{ type: ReferenceType.purchase_order, value: '' }],
     counterpartyName: '',
     loadUnits: [{ type: LoadUnitType.eur_pallet, quantity: '', label: '' }],
     palletPositions: '',
@@ -127,7 +118,7 @@ export function avisFormValues(avis: AvisView | null): AvisFormValues {
     })),
     palletPositions: text(avis.palletPositions),
     grossWeightKg: text(avis.grossWeightKg),
-    palletExchange: avis.palletExchange === null ? '' : avis.palletExchange ? 'yes' : 'no',
+    palletExchange: avis.palletExchange === null ? '' : avis.palletExchange ? YesNo.yes : YesNo.no,
     vehicle: {
       type: avis.vehicle.type ?? '',
       plate: text(avis.vehicle.plate),
@@ -168,7 +159,7 @@ export function toAvisInput(v: AvisFormValues): AvisInput {
     })),
     palletPositions: numberOrNull(v.palletPositions),
     grossWeightKg: numberOrNull(v.grossWeightKg),
-    palletExchange: v.palletExchange === '' ? null : v.palletExchange === 'yes',
+    palletExchange: v.palletExchange === '' ? null : v.palletExchange === YesNo.yes,
     vehicle: {
       type: v.vehicle.type === '' ? null : v.vehicle.type,
       plate: orNull(v.vehicle.plate),
@@ -305,7 +296,7 @@ export function AvisFields({
   disabled,
 }: {
   form: UseFormReturn<AvisFormValues, unknown, Avis>;
-  direction: 'inbound' | 'outbound';
+  direction: Direction;
   /** Which fields the site requires on top of the schema (AV-01 settings). */
   rules: AvisRules;
   disabled?: boolean;
@@ -390,7 +381,7 @@ export function AvisFields({
                     disabled={disabled}
                     aria-label={t(($) => $.plan.avis.reference_type, { n: i + 1 })}
                   >
-                    {REFERENCE_TYPES.map((type) => (
+                    {values(ReferenceType).map((type) => (
                       <NativeSelectOption key={type} value={type}>
                         {tAvis(($) => $.avis.referenceType[type])}
                       </NativeSelectOption>
@@ -434,7 +425,7 @@ export function AvisFields({
           size="sm"
           className="w-fit"
           disabled={disabled || references.fields.length >= 20}
-          onClick={() => references.append({ type: 'delivery_note', value: '' })}
+          onClick={() => references.append({ type: ReferenceType.delivery_note, value: '' })}
         >
           <PlusIcon />
           {t(($) => $.plan.avis.add_reference)}
@@ -466,7 +457,7 @@ export function AvisFields({
                     disabled={disabled}
                     aria-label={t(($) => $.plan.avis.unit_type, { n: i + 1 })}
                   >
-                    {LOAD_UNIT_TYPES.map((type) => (
+                    {values(LoadUnitType).map((type) => (
                       <NativeSelectOption key={type} value={type}>
                         {tAvis(($) => $.avis.loadUnitType[type])}
                       </NativeSelectOption>
@@ -598,7 +589,7 @@ export function AvisFields({
                   disabled={disabled}
                 >
                   <NativeSelectOption value="">{t(($) => $.plan.avis.unknown)}</NativeSelectOption>
-                  {VEHICLE_TYPES.map((type) => (
+                  {values(VehicleType).map((type) => (
                     <NativeSelectOption key={type} value={type}>
                       {tAvis(($) => $.avis.vehicleType[type])}
                     </NativeSelectOption>
@@ -664,7 +655,7 @@ export function AvisFields({
                   disabled={disabled}
                 >
                   <NativeSelectOption value="">{t(($) => $.plan.avis.unknown)}</NativeSelectOption>
-                  {DRIVER_LOCALES.map((code) => (
+                  {values(DriverLocale).map((code) => (
                     <NativeSelectOption key={code} value={code}>
                       {languageName.of(code) ?? code}
                     </NativeSelectOption>
@@ -724,7 +715,7 @@ export function AvisFields({
                         aria-invalid={fieldState.invalid}
                       >
                         <NativeSelectOption value="" />
-                        {ADR_CLASSES.map((c) => (
+                        {values(AdrClass).map((c) => (
                           <NativeSelectOption key={c} value={c}>
                             {c}
                           </NativeSelectOption>
@@ -749,7 +740,7 @@ export function AvisFields({
                         disabled={disabled}
                       >
                         <NativeSelectOption value="" />
-                        {PACKING_GROUPS.map((g) => (
+                        {values(PackingGroup).map((g) => (
                           <NativeSelectOption key={g} value={g}>
                             {g}
                           </NativeSelectOption>

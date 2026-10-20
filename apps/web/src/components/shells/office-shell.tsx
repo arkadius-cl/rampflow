@@ -1,3 +1,4 @@
+import { EntitlementState } from '@rampflow/shared/modules/core/values';
 import type { OrgKind } from '@rampflow/shared/values';
 import { useNavigate } from '@tanstack/react-router';
 import { BuildingIcon, CheckIcon, ChevronsUpDownIcon, LockIcon, SearchIcon } from 'lucide-react';
@@ -39,7 +40,6 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { EntitlementState } from '@/lib/domain';
 import { cn } from '@/lib/utils';
 
 export interface Membership {
@@ -127,7 +127,7 @@ export function OfficeShell({
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items
-                    .filter((item) => item.entitlement !== 'off')
+                    .filter((item) => item.entitlement !== EntitlementState.off)
                     .map((item) => (
                       <NavEntry key={item.href + item.label} item={item} />
                     ))}
@@ -243,7 +243,7 @@ function UserButton({
 function NavEntry({ item }: { item: NavItem }) {
   const { t } = useTranslation();
   const Icon = item.icon;
-  if (item.entitlement === 'upsell') {
+  if (item.entitlement === EntitlementState.upsell) {
     return (
       <SidebarMenuItem>
         <Tooltip>

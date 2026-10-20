@@ -1,3 +1,4 @@
+import type { SettingSource } from '@rampflow/shared/contract/settings';
 import {
   Building2Icon,
   CodeIcon,
@@ -8,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import type { SettingSource } from '@/lib/domain';
 import { cn } from '@/lib/utils';
 
 export const SETTING_SOURCE_ICON: Record<SettingSource, LucideIcon> = {

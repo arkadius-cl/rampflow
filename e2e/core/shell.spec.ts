@@ -46,7 +46,7 @@ test.describe('Org picker and area shell', () => {
     await expect(page.getByText('No access')).toBeVisible();
   });
 
-  const areas: { key: string; area: 'tenant' | 'carrier' | 'platform' }[] = [
+  const areas: { key: string; area: OrgKind }[] = [
     { key: 'tenant_admin', area: OrgKind.tenant },
     { key: 'dispatcher', area: OrgKind.tenant },
     { key: 'gate_operator', area: OrgKind.tenant },

@@ -1,6 +1,6 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeTone, Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CircleCheckIcon, HourglassIcon, PauseCircleIcon, WarehouseIcon } from 'lucide-react';
@@ -115,12 +115,12 @@ function WarehouseRow({ orgId, tenant }: { orgId: string; tenant: LinkedTenant }
                 link.status === CarrierLinkStatus.active
                   ? {
                       icon: CircleCheckIcon,
-                      tone: 'success',
+                      tone: BadgeTone.success,
                       label: t(($) => $.carriers.tenants.can_book),
                     }
                   : {
                       icon: PauseCircleIcon,
-                      tone: 'neutral',
+                      tone: BadgeTone.neutral,
                       label: t(($) => $.carriers.tenants.paused),
                     }
               }

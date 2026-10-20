@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { templateContent } from '../../apps/api/src/modules/safety/template/platform.ts';
 import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
+import { DeviceClass } from '../../packages/shared/src/values/ui.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { linkIn } from '../support/mailpit.ts';
@@ -267,7 +268,7 @@ test.describe('Core loop', () => {
         await expectAccessible(page);
       });
 
-      const gate = await timeline.actor('tablet');
+      const gate = await timeline.actor(DeviceClass.tablet);
       const gateRow = () => gate.page.getByTestId('gate-row').filter({ hasText: code });
       await test.step('4. the gate finds the booking; check-in waits for the briefing', async () => {
         const page = gate.page;
@@ -288,7 +289,7 @@ test.describe('Core loop', () => {
         await dialog.getByRole('button', { name: 'Cancel' }).click();
       });
 
-      driver = await timeline.actor('phone');
+      driver = await timeline.actor(DeviceClass.phone);
       await test.step('5. the driver opens the link, fails the quiz once, passes and acknowledges', async () => {
         const page = driver.page;
         const mail = await emailMatching(email.driver, new RegExp(code));
@@ -323,7 +324,7 @@ test.describe('Core loop', () => {
           timeout: 20_000,
         });
 
-        const dock = await timeline.actor('tablet');
+        const dock = await timeline.actor(DeviceClass.tablet);
         await openEmailedLink(dock, email.dock, '/invite#');
         await acceptWithNewAccount(dock.page, 'Dirk Dock');
         await expect(dock.page).toHaveURL(new RegExp(`/t/${tenantId}`));

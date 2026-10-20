@@ -1,3 +1,4 @@
+import { InputKind } from '@rampflow/shared/values';
 import type { FieldError } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import type { Resources } from '@/lib/i18n-resources.gen';
@@ -18,12 +19,12 @@ const CUSTOM: Readonly<Record<string, Validation>> = {
   'Upper bounds ascend and only the last tier is open': 'tiers',
 };
 
-function validationOf(error: FieldError, kind: 'text' | 'number'): Validation {
+function validationOf(error: FieldError, kind: InputKind): Validation {
   switch (error.type) {
     case 'too_small':
-      return kind === 'text' ? 'required' : 'too_small';
+      return kind === InputKind.text ? 'required' : 'too_small';
     case 'too_big':
-      return kind === 'text' ? 'too_long' : 'too_big';
+      return kind === InputKind.text ? 'too_long' : 'too_big';
     case 'invalid_type':
       return 'required';
     case 'invalid_format':
@@ -40,7 +41,7 @@ function validationOf(error: FieldError, kind: 'text' | 'number'): Validation {
 /** `message(fieldState.error)` for text fields, `message(error, 'number')` for numbers. */
 export function useIssueText() {
   const { t } = useTranslation();
-  return (error: FieldError | undefined, kind: 'text' | 'number' = 'text') =>
+  return (error: FieldError | undefined, kind: InputKind = InputKind.text) =>
     error ? t(($) => $.sites.validation[validationOf(error, kind)]) : undefined;
 }
 

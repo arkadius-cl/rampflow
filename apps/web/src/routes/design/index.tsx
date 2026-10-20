@@ -1,20 +1,21 @@
+import { PrototypeDriverStep } from '@rampflow/shared/modules/driver/values';
+import { DeviceClass } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { MonitorIcon, SmartphoneIcon, TabletIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { DriverStep } from '@/lib/domain';
 
 export const Route = createFileRoute('/design/')({
   component: DesignIndex,
 });
 
-type Device = 'desktop' | 'tablet' | 'phone';
+type Device = DeviceClass;
 
 const deviceIcon = { desktop: MonitorIcon, tablet: TabletIcon, phone: SmartphoneIcon };
 
 type Screen = {
   to: string;
-  step?: DriverStep;
+  step?: PrototypeDriverStep;
   title: string;
   stories: string;
   device: Device;
@@ -26,104 +27,104 @@ const screens: Screen[] = [
     to: '/design/plan-board',
     title: 'Dispatcher plan board',
     stories: 'BK-01, BK-02, BK-03, MD-03',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Dispatcher',
   },
   {
     to: '/design/booking-wizard',
     title: 'Carrier booking wizard',
     stories: 'BK-04, AV-01, BK-06, CR-06',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Carrier',
   },
   {
     to: '/design/carrier-bookings',
     title: 'Carrier bookings across tenants',
     stories: 'CR-05, BK-05, CR-06',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Carrier',
   },
   {
     to: '/design/gate',
     title: 'Gate: expected trucks and check-in',
     stories: 'YD-01, YD-02, YD-03, YD-04, YD-05',
-    device: 'tablet',
+    device: DeviceClass.tablet,
     role: 'Gate operator',
   },
   {
     to: '/design/dock',
     title: 'Dock overview and call-to-dock',
     stories: 'YD-06, YD-07, YD-08',
-    device: 'tablet',
+    device: DeviceClass.tablet,
     role: 'Dock operator',
   },
   {
     to: '/design/driver',
-    step: 'booking',
+    step: PrototypeDriverStep.booking,
     title: 'Driver: booking',
     stories: 'DR-01, DR-02',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/driver',
-    step: 'briefing',
+    step: PrototypeDriverStep.briefing,
     title: 'Driver: safety briefing',
     stories: 'SF-04',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/driver',
-    step: 'quiz',
+    step: PrototypeDriverStep.quiz,
     title: 'Driver: quiz',
     stories: 'SF-02, SF-04',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/driver',
-    step: 'waiting',
+    step: PrototypeDriverStep.waiting,
     title: 'Driver: waiting',
     stories: 'DR-03',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/driver',
-    step: 'called',
+    step: PrototypeDriverStep.called,
     title: 'Driver: called to dock',
     stories: 'DR-03',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/driver',
-    step: 'done',
+    step: PrototypeDriverStep.done,
     title: 'Driver: done',
     stories: 'YD-05',
-    device: 'phone',
+    device: DeviceClass.phone,
     role: 'Driver',
   },
   {
     to: '/design/master-data',
     title: 'Tenant admin: sites, halls, docks, pools',
     stories: 'MD-01, MD-02, MD-03',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Tenant admin',
   },
   {
     to: '/design/settings',
     title: 'Tenant admin: settings with inheritance',
     stories: 'TN-02, PL-02',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Tenant admin',
   },
   {
     to: '/design/platform-admin',
     title: 'Platform admin: tenant, package, overrides',
     stories: 'PL-01, PL-02, PL-04',
-    device: 'desktop',
+    device: DeviceClass.desktop,
     role: 'Platform admin',
   },
 ];

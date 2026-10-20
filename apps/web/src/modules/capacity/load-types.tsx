@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  DIRECTIONS,
   LoadTypeDuration,
   type LoadTypeView,
   PutLoadTypeResources,
@@ -9,7 +8,7 @@ import {
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
-import { Feature, StaffLocale } from '@rampflow/shared/values';
+import { Feature, InputKind, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { LockIcon, PencilIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -364,7 +363,7 @@ function LoadTypeFormView({
             />
             <InputGroupAddon align="inline-end">{unit}</InputGroupAddon>
           </InputGroup>
-          <FieldError>{message(fieldState.error, 'number')}</FieldError>
+          <FieldError>{message(fieldState.error, InputKind.number)}</FieldError>
         </Field>
       )}
     />
@@ -412,7 +411,7 @@ function LoadTypeFormView({
                 onValueChange={(v) => (v[0] ? field.onChange(v[0]) : null)}
                 aria-label={t(($) => $.capacity.load_types.fields.direction)}
               >
-                {DIRECTIONS.map((d) => (
+                {values(Direction).map((d) => (
                   <ToggleGroupItem key={d} value={d}>
                     {t(($) => $.capacity.directions[d])}
                   </ToggleGroupItem>

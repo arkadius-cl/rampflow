@@ -1,3 +1,4 @@
+import { EntitlementState } from '@rampflow/shared/modules/core/values';
 import { OrgKind } from '@rampflow/shared/values';
 import {
   Building2Icon,
@@ -82,7 +83,7 @@ export function tenantNav(active: string): NavGroup[] {
           label: 'Carrier scorecard',
           icon: GaugeIcon,
           href: '#',
-          entitlement: 'upsell',
+          entitlement: EntitlementState.upsell,
           upsellHint: 'Carrier scorecards are not in the MVP packages yet',
         },
       ],
@@ -127,7 +128,7 @@ export function platformNav(active: string): NavGroup[] {
         { label: 'Platform defaults', icon: Settings2Icon, href: '#' },
         { label: 'Usage', icon: LayersIcon, href: '#' },
         { label: 'Jobs', icon: ClipboardListIcon, href: '#' },
-        { label: 'API keys', icon: KeyRoundIcon, href: '#', entitlement: 'off' },
+        { label: 'API keys', icon: KeyRoundIcon, href: '#', entitlement: EntitlementState.off },
       ],
     },
   ];

@@ -7,3 +7,11 @@ export function values<const T extends Readonly<Record<string, string>>>(
 ): readonly [ValueOf<T>, ...ValueOf<T>[]] {
   return Object.values(set) as unknown as readonly [ValueOf<T>, ...ValueOf<T>[]];
 }
+
+/** True when `value` is a member of `set`, for input typed wider than the set (a toggle's string). */
+export function isValueOf<const T extends Readonly<Record<string, string>>>(
+  set: T,
+  value: unknown,
+): value is ValueOf<T> {
+  return (Object.values(set) as unknown[]).includes(value);
+}

@@ -53,3 +53,25 @@ export const InstructionSafety = {
   missing: SafetyStatus.missing,
 } as const;
 export type InstructionSafety = ValueOf<typeof InstructionSafety>;
+
+/**
+ * What a briefing badge in the design prototype shows for a driver: the visit's safety status, or
+ * why the driver's acknowledgement no longer covers it.
+ */
+export const BriefingState = {
+  valid: SafetyStatus.valid,
+  missing: SafetyStatus.missing,
+  expired: AckStatus.expired,
+  outdated: AckStatus.outdated,
+} as const;
+export type BriefingState = ValueOf<typeof BriefingState>;
+
+/** The steps of the driver's safety briefing (SF-01, DR-02). */
+export const BriefingStep = {
+  loading: 'loading',
+  error: 'error',
+  rules: 'rules',
+  quiz: 'quiz',
+  confirm: 'confirm',
+} as const;
+export type BriefingStep = ValueOf<typeof BriefingStep>;

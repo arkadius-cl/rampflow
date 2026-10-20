@@ -1,16 +1,14 @@
-import { Direction, Punctuality, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
-import { InstructionSafety } from '@rampflow/shared/modules/safety/values';
-import { SettingScope } from '@rampflow/shared/values';
-import type {
-  BookableResource,
-  Booking,
+import type { SettingSource } from '@rampflow/shared/contract/settings';
+import {
   BookingStatus,
-  Dock,
-  Hall,
-  SettingSource,
-  Site,
-} from '@/lib/domain';
+  Direction,
+  Punctuality,
+  ResourceKind,
+} from '@rampflow/shared/modules/booking/values';
+import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { BriefingState, InstructionSafety } from '@rampflow/shared/modules/safety/values';
+import { SettingScope } from '@rampflow/shared/values';
+import type { BookableResource, Booking, Dock, Hall, Site } from '@/lib/domain';
 
 export const TODAY = '2026-10-19';
 export const NOW = '10:42';
@@ -188,7 +186,7 @@ function booking(
     tenantId: 'acme',
     siteId: 'site-hh',
     references: ['PO-48812'],
-    timeline: [{ status: 'confirmed', at: '2026-10-14 09:12' }],
+    timeline: [{ status: BookingStatus.confirmed, at: '2026-10-14 09:12' }],
     ...partial,
   };
 }
@@ -206,17 +204,17 @@ export const bookings: Booking[] = [
     loadUnits: 33,
     start: '06:30',
     end: '08:00',
-    status: 'departed',
+    status: BookingStatus.departed,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.on_time,
     timeline: [
-      { status: 'confirmed', at: '2026-10-12 14:02', actor: 'carrier' },
-      { status: 'checked_in', at: '06:21', actor: 'Gate: M. Weber' },
-      { status: 'called', at: '06:28', actor: 'Dock: T. Arslan' },
-      { status: 'at_dock', at: '06:34' },
-      { status: 'loading', at: '06:36' },
-      { status: 'done', at: '07:41' },
-      { status: 'departed', at: '07:52', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.confirmed, at: '2026-10-12 14:02', actor: 'carrier' },
+      { status: BookingStatus.checked_in, at: '06:21', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.called, at: '06:28', actor: 'Dock: T. Arslan' },
+      { status: BookingStatus.at_dock, at: '06:34' },
+      { status: BookingStatus.loading, at: '06:36' },
+      { status: BookingStatus.done, at: '07:41' },
+      { status: BookingStatus.departed, at: '07:52', actor: 'Gate: M. Weber' },
     ],
   }),
   booking({
@@ -231,16 +229,16 @@ export const bookings: Booking[] = [
     loadUnits: 26,
     start: '09:00',
     end: '10:00',
-    status: 'loading',
+    status: BookingStatus.loading,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.early,
     driverPhone: '+370 612 34567',
     timeline: [
-      { status: 'confirmed', at: '2026-10-15 08:40', actor: 'carrier' },
-      { status: 'checked_in', at: '08:36', actor: 'Gate: M. Weber' },
-      { status: 'called', at: '08:58', actor: 'Dock: T. Arslan' },
-      { status: 'at_dock', at: '09:03' },
-      { status: 'loading', at: '09:05' },
+      { status: BookingStatus.confirmed, at: '2026-10-15 08:40', actor: 'carrier' },
+      { status: BookingStatus.checked_in, at: '08:36', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.called, at: '08:58', actor: 'Dock: T. Arslan' },
+      { status: BookingStatus.at_dock, at: '09:03' },
+      { status: BookingStatus.loading, at: '09:05' },
     ],
   }),
   booking({
@@ -255,15 +253,15 @@ export const bookings: Booking[] = [
     loadUnits: 18,
     start: '09:30',
     end: '10:30',
-    status: 'at_dock',
+    status: BookingStatus.at_dock,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.late,
     driverPhone: '+49 171 5550123',
     timeline: [
-      { status: 'confirmed', at: '2026-10-16 11:20', actor: 'Dispatcher: A. Lenz' },
-      { status: 'checked_in', at: '09:49', actor: 'Gate: M. Weber' },
-      { status: 'called', at: '10:02', actor: 'Dock: T. Arslan' },
-      { status: 'at_dock', at: '10:09' },
+      { status: BookingStatus.confirmed, at: '2026-10-16 11:20', actor: 'Dispatcher: A. Lenz' },
+      { status: BookingStatus.checked_in, at: '09:49', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.called, at: '10:02', actor: 'Dock: T. Arslan' },
+      { status: BookingStatus.at_dock, at: '10:09' },
     ],
   }),
   booking({
@@ -277,13 +275,13 @@ export const bookings: Booking[] = [
     loadUnits: 20,
     start: '10:30',
     end: '11:30',
-    status: 'checked_in',
+    status: BookingStatus.checked_in,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.on_time,
     driverPhone: '+48 601 222 333',
     timeline: [
-      { status: 'confirmed', at: '2026-10-17 07:55', actor: 'carrier' },
-      { status: 'checked_in', at: '10:18', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.confirmed, at: '2026-10-17 07:55', actor: 'carrier' },
+      { status: BookingStatus.checked_in, at: '10:18', actor: 'Gate: M. Weber' },
     ],
   }),
   booking({
@@ -297,9 +295,9 @@ export const bookings: Booking[] = [
     loadUnits: 40,
     start: '10:30',
     end: '12:00',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.missing,
-    timeline: [{ status: 'confirmed', at: '2026-10-18 16:30', actor: 'carrier' }],
+    timeline: [{ status: BookingStatus.confirmed, at: '2026-10-18 16:30', actor: 'carrier' }],
   }),
   booking({
     id: 'b6',
@@ -311,7 +309,7 @@ export const bookings: Booking[] = [
     loadUnits: 12,
     start: '11:00',
     end: '11:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
     overCapacity: true,
   }),
@@ -326,8 +324,8 @@ export const bookings: Booking[] = [
     loadUnits: 28,
     start: '13:00',
     end: '14:00',
-    status: 'confirmed',
-    safety: 'expired',
+    status: BookingStatus.confirmed,
+    safety: BriefingState.expired,
   }),
   booking({
     id: 'b8',
@@ -339,7 +337,7 @@ export const bookings: Booking[] = [
     loadUnits: 8,
     start: '14:30',
     end: '15:00',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
   }),
   booking({
@@ -354,16 +352,16 @@ export const bookings: Booking[] = [
     loadUnits: 30,
     start: '08:00',
     end: '09:30',
-    status: 'done',
+    status: BookingStatus.done,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.on_time,
     timeline: [
-      { status: 'confirmed', at: '2026-10-13 10:10', actor: 'carrier' },
-      { status: 'checked_in', at: '07:52' },
-      { status: 'called', at: '07:58' },
-      { status: 'at_dock', at: '08:04' },
-      { status: 'loading', at: '08:06' },
-      { status: 'done', at: '09:21' },
+      { status: BookingStatus.confirmed, at: '2026-10-13 10:10', actor: 'carrier' },
+      { status: BookingStatus.checked_in, at: '07:52' },
+      { status: BookingStatus.called, at: '07:58' },
+      { status: BookingStatus.at_dock, at: '08:04' },
+      { status: BookingStatus.loading, at: '08:06' },
+      { status: BookingStatus.done, at: '09:21' },
     ],
   }),
   booking({
@@ -378,14 +376,14 @@ export const bookings: Booking[] = [
     loadUnits: 24,
     start: '10:00',
     end: '11:00',
-    status: 'called',
+    status: BookingStatus.called,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.on_time,
     driverPhone: '+370 699 11223',
     timeline: [
-      { status: 'confirmed', at: '2026-10-15 09:00', actor: 'carrier' },
-      { status: 'checked_in', at: '09:47', actor: 'Gate: M. Weber' },
-      { status: 'called', at: '10:38', actor: 'Dock: T. Arslan' },
+      { status: BookingStatus.confirmed, at: '2026-10-15 09:00', actor: 'carrier' },
+      { status: BookingStatus.checked_in, at: '09:47', actor: 'Gate: M. Weber' },
+      { status: BookingStatus.called, at: '10:38', actor: 'Dock: T. Arslan' },
     ],
   }),
   booking({
@@ -398,7 +396,7 @@ export const bookings: Booking[] = [
     loadUnits: 16,
     start: '11:30',
     end: '12:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
   }),
   booking({
@@ -411,7 +409,7 @@ export const bookings: Booking[] = [
     loadUnits: 33,
     start: '14:00',
     end: '15:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.missing,
   }),
   booking({
@@ -426,11 +424,11 @@ export const bookings: Booking[] = [
     loadUnits: 22,
     start: '07:30',
     end: '09:00',
-    status: 'no_show',
+    status: BookingStatus.no_show,
     safety: InstructionSafety.valid,
     timeline: [
-      { status: 'confirmed', at: '2026-10-11 12:00', actor: 'carrier' },
-      { status: 'no_show', at: '08:30', actor: 'system' },
+      { status: BookingStatus.confirmed, at: '2026-10-11 12:00', actor: 'carrier' },
+      { status: BookingStatus.no_show, at: '08:30', actor: 'system' },
     ],
   }),
   booking({
@@ -444,7 +442,7 @@ export const bookings: Booking[] = [
     loadUnits: 18,
     start: '11:00',
     end: '12:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
   }),
   booking({
@@ -459,11 +457,11 @@ export const bookings: Booking[] = [
     loadUnits: 10,
     start: '09:00',
     end: '10:30',
-    status: 'cancelled',
+    status: BookingStatus.cancelled,
     safety: InstructionSafety.valid,
     timeline: [
-      { status: 'confirmed', at: '2026-10-10 15:45', actor: 'carrier' },
-      { status: 'cancelled', at: '2026-10-18 17:02', actor: 'carrier' },
+      { status: BookingStatus.confirmed, at: '2026-10-10 15:45', actor: 'carrier' },
+      { status: BookingStatus.cancelled, at: '2026-10-18 17:02', actor: 'carrier' },
     ],
   }),
   booking({
@@ -478,18 +476,18 @@ export const bookings: Booking[] = [
     loadUnits: 6,
     start: '13:30',
     end: '15:00',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
   }),
 ];
 
 export const ACTIVE_STATUSES: BookingStatus[] = [
-  'confirmed',
-  'checked_in',
-  'called',
-  'at_dock',
-  'loading',
-  'done',
+  BookingStatus.confirmed,
+  BookingStatus.checked_in,
+  BookingStatus.called,
+  BookingStatus.at_dock,
+  BookingStatus.loading,
+  BookingStatus.done,
 ];
 
 /** Bookings the carrier "Trans-Pol" sees across its linked tenants (CR-05). */
@@ -509,7 +507,7 @@ export const carrierBookings: Booking[] = [
     loadUnits: 24,
     start: '14:00',
     end: '15:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.missing,
   }),
   booking({
@@ -524,7 +522,7 @@ export const carrierBookings: Booking[] = [
     loadUnits: 30,
     start: '09:00',
     end: '10:30',
-    status: 'confirmed',
+    status: BookingStatus.confirmed,
     safety: InstructionSafety.valid,
   }),
   booking({
@@ -540,7 +538,7 @@ export const carrierBookings: Booking[] = [
     loadUnits: 33,
     start: '07:00',
     end: '08:30',
-    status: 'departed',
+    status: BookingStatus.departed,
     safety: InstructionSafety.valid,
     punctuality: Punctuality.late,
   }),

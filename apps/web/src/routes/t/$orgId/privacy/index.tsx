@@ -5,7 +5,7 @@ import {
   type SubjectMatches,
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
-import { EmailCategory, Permission } from '@rampflow/shared/values';
+import { BadgeSize, EmailCategory, Permission } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { DownloadIcon, EraserIcon, SearchIcon, UserSearchIcon } from 'lucide-react';
@@ -269,7 +269,7 @@ function Results({ matches }: { matches: SubjectMatches }) {
                         {b.status === BookingStatus.requested ? null : (
                           <BookingStatusBadge
                             status={b.status}
-                            size="sm"
+                            size={BadgeSize.sm}
                             label={t(($) => $.lifecycle.status[b.status], {
                               ns: EmailCategory.booking,
                             })}

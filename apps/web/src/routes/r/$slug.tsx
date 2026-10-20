@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   type PublicLinkInfo,
-  REGISTRATION_COUNTRIES,
   RegistrationBody,
 } from '@rampflow/shared/modules/booking/api.carriers';
+import { RegistrationCountry } from '@rampflow/shared/modules/booking/values';
+import { values } from '@rampflow/shared/values';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CircleAlertIcon, MailCheckIcon, MapPinIcon } from 'lucide-react';
@@ -109,7 +110,7 @@ function RegistrationFormView({
   const countryName = useCountryName();
   const countries = useMemo(
     () =>
-      [...REGISTRATION_COUNTRIES]
+      [...values(RegistrationCountry)]
         .map((code) => ({ code, name: countryName(code) }))
         .sort((a, b) => a.name.localeCompare(b.name, locale)),
     [countryName, locale],

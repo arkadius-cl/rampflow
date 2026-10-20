@@ -13,3 +13,16 @@ export const VisibilityState = {
   hidden: 'hidden',
 } as const;
 export type VisibilityState = ValueOf<typeof VisibilityState>;
+
+/** `DOMException.name` values the UI handles. */
+export const DomExceptionName = {
+  AbortError: 'AbortError',
+} as const;
+export type DomExceptionName = ValueOf<typeof DomExceptionName>;
+
+/** `Intl.DisplayNames` types the UI uses. */
+export const DisplayNamesType = {
+  language: 'language',
+  region: 'region',
+} as const;
+export type DisplayNamesType = ValueOf<typeof DisplayNamesType>;

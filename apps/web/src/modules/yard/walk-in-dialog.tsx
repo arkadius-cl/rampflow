@@ -1,12 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LOAD_UNIT_TYPES, phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
-import { REFERENCE_TYPES } from '@rampflow/shared/modules/avis/manifest';
+import { phoneSchema, plateSchema } from '@rampflow/shared/modules/avis/avis';
 import { LoadUnitType, ReferenceType } from '@rampflow/shared/modules/avis/values';
-import { TURN_AWAY_REASONS } from '@rampflow/shared/modules/booking/lifecycle';
 import { TurnAwayReason } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { WalkInBody } from '@rampflow/shared/modules/yard/api';
-import { ErrorCode } from '@rampflow/shared/values';
+import { ErrorCode, values } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { LogInIcon, OctagonXIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -42,11 +40,11 @@ const WalkInForm = z
     carrierName: z.string().trim().min(1).max(120),
     loadTypeId: z.uuid(),
     plateSeen: plateSchema,
-    reason: z.union([z.literal(''), z.enum(TURN_AWAY_REASONS)]),
-    referenceType: z.enum(REFERENCE_TYPES),
+    reason: z.union([z.literal(''), z.enum(TurnAwayReason)]),
+    referenceType: z.enum(ReferenceType),
     referenceValue: z.string().trim().max(35),
     counterpartyName: z.string().trim().max(120),
-    loadUnitType: z.enum(LOAD_UNIT_TYPES),
+    loadUnitType: z.enum(LoadUnitType),
     quantity: z.string().regex(/^\d{0,4}$/),
     driverName: z.string().trim().max(120),
     driverPhone: optional(phoneSchema),
@@ -272,7 +270,10 @@ export function WalkInDialog({
             {select(
               'referenceType',
               t(($) => $.gate.walk_in.reference_type),
-              REFERENCE_TYPES.map((r) => ({ value: r, label: ta(($) => $.avis.referenceType[r]) })),
+              values(ReferenceType).map((r) => ({
+                value: r,
+                label: ta(($) => $.avis.referenceType[r]),
+              })),
             )}
             {text(
               'referenceValue',
@@ -281,7 +282,10 @@ export function WalkInDialog({
             {select(
               'loadUnitType',
               ta(($) => $.avis.field.loadUnits),
-              LOAD_UNIT_TYPES.map((u) => ({ value: u, label: ta(($) => $.avis.loadUnitType[u]) })),
+              values(LoadUnitType).map((u) => ({
+                value: u,
+                label: ta(($) => $.avis.loadUnitType[u]),
+              })),
             )}
             {text(
               'quantity',
@@ -305,7 +309,7 @@ export function WalkInDialog({
                 t(($) => $.gate.check_in.turn_away_title),
                 [
                   { value: '', label: t(($) => $.gate.check_in.choose_reason) },
-                  ...TURN_AWAY_REASONS.map((r) => ({
+                  ...values(TurnAwayReason).map((r) => ({
                     value: r,
                     label: tb(($) => $.lifecycle.turnAwayReason[r]),
                   })),

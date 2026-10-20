@@ -1,5 +1,5 @@
-import { STAFF_LOCALES, type StaffLocale } from '@rampflow/shared';
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
+import { StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { LanguagesIcon, LogOutIcon } from 'lucide-react';
@@ -71,7 +71,7 @@ function LanguageItems({ onChange }: { onChange: (l: StaffLocale) => void }) {
       value={locale}
       onValueChange={(value) => (isStaffLocale(value) ? onChange(value) : undefined)}
     >
-      {STAFF_LOCALES.map((l) => (
+      {values(StaffLocale).map((l) => (
         <DropdownMenuRadioItem key={l} value={l} lang={l}>
           {LANGUAGE_NAME[l]}
         </DropdownMenuRadioItem>

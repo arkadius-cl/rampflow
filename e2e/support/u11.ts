@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { CreatedParty, Punctuality } from '../../packages/shared/src/modules/booking/values.ts';
+import type { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import type { WorldSide } from './auth.ts';
 
 // Report fixtures (U11), written as the owner: the ten visits of the reference fixture in
@@ -21,10 +22,10 @@ const at = (hhmm: string) => new Date(`${REFERENCE_DAY}T${hhmm}:00+01:00`);
 
 interface Visit {
   start: string;
-  party: 'carrier' | 'staff';
+  party: CreatedParty;
   status: string;
   walkIn?: boolean;
-  punctuality?: 'early' | 'on_time' | 'late';
+  punctuality?: Punctuality;
   checkedIn?: string;
   called?: string;
   atDock?: string;
@@ -193,7 +194,7 @@ export async function seedReferenceVisits(side: WorldSide): Promise<string[]> {
 }
 
 /** Sets the UI and CSV language of a user. */
-export async function setLocale(userId: string, locale: 'de' | 'en' | 'pl'): Promise<void> {
+export async function setLocale(userId: string, locale: StaffLocale): Promise<void> {
   await db().query('update app_user set locale = $1 where id = $2', [locale, userId]);
 }
 

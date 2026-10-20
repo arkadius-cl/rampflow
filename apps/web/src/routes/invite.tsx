@@ -4,7 +4,8 @@ import {
   type InvitationInspectResponse,
   Password,
 } from '@rampflow/shared/modules/core/api.auth';
-import { ErrorCode } from '@rampflow/shared/values';
+import { SignInMode } from '@rampflow/shared/modules/core/values';
+import { ErrorCode, TokenExchangeStatus } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { CircleAlertIcon, MailIcon } from 'lucide-react';
@@ -49,8 +50,10 @@ function InvitePage() {
     ),
   );
 
-  if (!token || inspect.status === 'failed') {
-    const expired = inspect.status === 'failed' && isFailure(inspect.error, ErrorCode.unauthorized);
+  if (!token || inspect.status === TokenExchangeStatus.failed) {
+    const expired =
+      inspect.status === TokenExchangeStatus.failed &&
+      isFailure(inspect.error, ErrorCode.unauthorized);
     return (
       <AuthLayout title={t(($) => $.auth.invite.title)}>
         <div className="flex flex-col gap-4">
@@ -70,7 +73,7 @@ function InvitePage() {
       </AuthLayout>
     );
   }
-  if (inspect.status === 'pending') {
+  if (inspect.status === TokenExchangeStatus.pending) {
     return (
       <AuthLayout title={t(($) => $.auth.invite.title)}>
         <div role="status" className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -309,7 +312,7 @@ function SignInToAccept({ email, onSignedIn }: { email: string; onSignedIn: () =
         </Button>
         <Link
           to="/login"
-          search={{ mode: 'reset' }}
+          search={{ mode: SignInMode.reset }}
           target="_blank"
           className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
         >

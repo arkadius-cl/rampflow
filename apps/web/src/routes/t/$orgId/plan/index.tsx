@@ -1,3 +1,4 @@
+import { PlanView } from '@rampflow/shared/modules/booking/values';
 import {
   addDays,
   type LocalDate,
@@ -5,7 +6,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeSize, isValueOf, Permission } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -55,7 +56,7 @@ import { boardQuery, bookingListQuery } from '@/modules/booking/queries';
 const PlanSearch = z.object({
   site: z.uuid().optional().catch(undefined),
   date: localDateSchema.optional().catch(undefined),
-  view: z.enum(['board', 'list']).optional().catch(undefined),
+  view: z.enum(PlanView).optional().catch(undefined),
   booking: z.uuid().optional().catch(undefined),
   new: z.literal(1).optional().catch(undefined),
 });
@@ -106,7 +107,7 @@ function PlanPage() {
   const zone = site.timeZone as TimeZone;
   const today = siteDay(now, zone);
   const date = search.date ?? today;
-  const view = search.view ?? 'board';
+  const view = search.view ?? PlanView.board;
   const set = (patch: Partial<PlanSearch>, replace = false) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace });
 
@@ -135,7 +136,7 @@ function PlanPage() {
           value={[view]}
           onValueChange={(v) => {
             const next = v[0];
-            if (next === 'board' || next === 'list') set({ view: next });
+            if (isValueOf(PlanView, next)) set({ view: next });
           }}
           variant="outline"
           size="sm"
@@ -172,7 +173,7 @@ function PlanPage() {
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-          {view === 'board' ? (
+          {view === PlanView.board ? (
             <BoardView
               orgId={orgId}
               siteId={site.id}
@@ -294,7 +295,7 @@ function Legend() {
     <ul className="hidden items-center gap-1 2xl:flex" aria-label={t(($) => $.plan.toolbar.legend)}>
       {shown.map((s) => (
         <li key={s}>
-          <BookingStatusBadge status={s} size="sm" />
+          <BookingStatusBadge status={s} size={BadgeSize.sm} />
         </li>
       ))}
     </ul>

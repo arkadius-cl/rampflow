@@ -31,3 +31,19 @@ export const LocaleSet = {
   driver: 'driver',
 } as const;
 export type LocaleSet = ValueOf<typeof LocaleSet>;
+
+/** The parts of a derived catalog entry (`nav.json`, `entitlements.json`, `settings.json`). */
+export const LabelPart = {
+  label: 'label',
+  description: 'description',
+} as const;
+export type LabelPart = ValueOf<typeof LabelPart>;
+
+/** The catalog part files `pnpm i18n:derive` writes from the manifests, in the order it writes them. */
+export const DerivedPart = {
+  module: 'module',
+  nav: 'nav',
+  entitlements: 'entitlements',
+  settings: 'settings',
+} as const;
+export type DerivedPart = ValueOf<typeof DerivedPart>;

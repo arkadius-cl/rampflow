@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  CLOSURE_KINDS,
   type ClosureView,
   CreateClosure,
   type ResourceView,
 } from '@rampflow/shared/modules/booking/api.capacity';
 import { ClosureKind, ClosureSource } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
+import { values } from '@rampflow/shared/values';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CalendarOffIcon, PlusIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
@@ -335,7 +335,7 @@ function ClosureDialog({
                       {t(($) => $.capacity.closures.columns.kind)}
                     </FieldLabel>
                     <NativeSelect id="closure-kind" className="w-full" {...field}>
-                      {CLOSURE_KINDS.map((k) => (
+                      {values(ClosureKind).map((k) => (
                         <NativeSelectOption key={k} value={k}>
                           {t(($) => $.capacity.closures.kinds[k])}
                         </NativeSelectOption>

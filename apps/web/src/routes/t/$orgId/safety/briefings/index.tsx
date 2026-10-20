@@ -1,6 +1,6 @@
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { Permission } from '@rampflow/shared/values';
+import { BadgeSize, EditMode, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { EllipsisIcon, PlusIcon, ShieldCheckIcon } from 'lucide-react';
@@ -73,7 +73,7 @@ function BriefingsPage() {
         title={t(($) => $.briefings.title)}
         description={t(($) => $.briefings.description)}
         actions={
-          <Button size="sm" disabled={full} onClick={() => setDialog({ kind: 'create' })}>
+          <Button size="sm" disabled={full} onClick={() => setDialog({ kind: EditMode.create })}>
             <PlusIcon /> {t(($) => $.briefings.new)}
           </Button>
         }
@@ -117,7 +117,7 @@ function BriefingsPage() {
             <EmptyDescription>{t(($) => $.briefings.empty.description)}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button disabled={full} onClick={() => setDialog({ kind: 'create' })}>
+            <Button disabled={full} onClick={() => setDialog({ kind: EditMode.create })}>
               <PlusIcon /> {t(($) => $.briefings.new)}
             </Button>
           </EmptyContent>
@@ -144,7 +144,7 @@ function BriefingsPage() {
                   instruction={instruction}
                   siteNames={new Map(sites.map((s) => [s.id, s.name]))}
                   canRestore={!full}
-                  onEdit={() => setDialog({ kind: 'edit', instruction })}
+                  onEdit={() => setDialog({ kind: EditMode.edit, instruction })}
                 />
               ))}
             </TableBody>
@@ -154,14 +154,14 @@ function BriefingsPage() {
 
       {dialog ? (
         <InstructionDialog
-          key={dialog.kind === 'edit' ? dialog.instruction.id : 'new'}
+          key={dialog.kind === EditMode.edit ? dialog.instruction.id : 'new'}
           orgId={orgId}
           sites={sites}
-          instruction={dialog.kind === 'edit' ? dialog.instruction : undefined}
+          instruction={dialog.kind === EditMode.edit ? dialog.instruction : undefined}
           open
           onOpenChange={(open) => (open ? undefined : setDialog(null))}
           onSaved={(saved) => {
-            if (dialog.kind === 'create') {
+            if (dialog.kind === EditMode.create) {
               void navigate({
                 to: '/t/$orgId/safety/briefings/$instructionId',
                 params: { orgId, instructionId: saved.id },
@@ -237,7 +237,7 @@ function InstructionRow({
           <span className="inline-flex items-center gap-2">
             <VersionStatusBadge
               status={VersionStatus.published}
-              size="sm"
+              size={BadgeSize.sm}
               label={t(($) => $.briefings.version, { version: instruction.published.version })}
             />
             <span className="text-xs text-muted-foreground">
@@ -254,7 +254,7 @@ function InstructionRow({
         {instruction.draft ? (
           <VersionStatusBadge
             status={VersionStatus.draft}
-            size="sm"
+            size={BadgeSize.sm}
             label={t(($) => $.briefings.draft_open, { version: instruction.draft.version })}
           />
         ) : null}

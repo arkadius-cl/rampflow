@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Password } from '@rampflow/shared/modules/core/api.auth';
+import { SignInMode } from '@rampflow/shared/modules/core/values';
 import { ErrorCode } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -38,7 +39,7 @@ function InvalidLink() {
         <AlertTitle>{t(($) => $.auth.link_invalid.title)}</AlertTitle>
         <AlertDescription>{t(($) => $.auth.link_invalid.reset)}</AlertDescription>
       </Alert>
-      <Link to="/login" search={{ mode: 'reset' }} className={buttonVariants()}>
+      <Link to="/login" search={{ mode: SignInMode.reset }} className={buttonVariants()}>
         {t(($) => $.auth.reset.request_submit)}
       </Link>
     </div>

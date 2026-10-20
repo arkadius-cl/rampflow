@@ -4,7 +4,7 @@ import {
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { Feature, Permission } from '@rampflow/shared/values';
+import { BadgeSize, Feature, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeftIcon, FilePlusIcon, LockIcon, SendIcon, TriangleAlertIcon } from 'lucide-react';
@@ -216,7 +216,7 @@ function VersionNav({
             <span className="font-medium">
               {t(($) => $.editor.version, { version: v.version })}
             </span>
-            <VersionStatusBadge status={v.status} size="sm" />
+            <VersionStatusBadge status={v.status} size={BadgeSize.sm} />
           </span>
           {v.publishedAt ? (
             <span className="text-xs text-muted-foreground">
@@ -274,7 +274,7 @@ function LanguageNav({
         >
           <span lang={c.locale}>{languageName(c.locale)}</span>
           <span className="flex items-center gap-2">
-            <TranslationBadge state={c.translation} size="sm" />
+            <TranslationBadge state={c.translation} size={BadgeSize.sm} />
             {has(Feature.safety.quiz) ? (
               <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                 {t(($) => $.editor.questions_count, { n: c.questions.length })}
@@ -311,7 +311,7 @@ function VersionContent({
           <span className="text-muted-foreground">
             {t(($) => $.editor.version, { version: version.version })}
           </span>
-          <TranslationBadge state={content.translation} size="sm" />
+          <TranslationBadge state={content.translation} size={BadgeSize.sm} />
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
