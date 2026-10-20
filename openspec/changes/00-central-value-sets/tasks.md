@@ -51,4 +51,4 @@
 
 ## 9. Integration
 
-- [ ] 9.1 On a clean checkout, run `pnpm verify`, `pnpm test:e2e` and `scripts/test-at-date.sh +40d`. Verify all are green, that `openapi.gen.json` is byte-identical to `main` before this change, and that `pnpm values:check` reports zero findings and zero ignores.
+- [x] 9.1 On a clean checkout, run `pnpm verify`, `pnpm test:e2e` and `scripts/test-at-date.sh +40d`. Verify all are green, that `openapi.gen.json` is byte-identical to `main` before this change, and that `pnpm values:check` reports zero findings and zero ignores.
