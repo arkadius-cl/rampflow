@@ -93,6 +93,16 @@ Alternatives: compute status, admin and activity in TypeScript after loading all
 
 02 fills `org.country` from the registration form, and its tax id rules force the tax id to match it. Tenants created through PL-01 have no country, so `UpdateTenant` gains `country: z.enum(EU_COUNTRIES).nullable()`. The Overview form edits it next to name and package. The country is the tenant's legal seat. 05 hands it to Stripe for tax.
 
+The country must stay consistent with the stored tax id, by the same rule the registration enforces (02, `checkTaxId(type, value, country)`):
+- A tenant without a tax id may change or clear its country freely.
+- A tenant with a tax id may change the country only to one that `checkTaxId` accepts for the stored type and value. For example, a W-IdNr or `de_stn` only with `DE`, `pl_nip` only with `PL`, and an `eu_vat` only with the country of its prefix. Otherwise `updateTenant` answers 409 `conflict` with reason `tax_id_country`, and nothing changes.
+- Clearing the country of a tenant with a tax id answers the same 409.
+- The tax id and its check status stay untouched in every case.
+
+This is 409 and not 422, because the rule needs the stored row (api-routes.md, "Validation"). Editing the tax id itself is out of scope for 04. A move of the legal seat to another country therefore means a new tax id, which a later change handles together with the re-check of its status. The form shows the 409 at the country field with `core:errors.conflict.tax_id_country`.
+
+Alternative: change the country and reset the tax id status to `unverified`. Rejected: the stored id would then contradict its own country, the record would be one that the registration rejects, and 05 would send it to Stripe.
+
 Alternative: the country of the first site. Rejected for these reasons:
 - Onboarding tenants have no site, and they are exactly the tenants the admin filters most.
 - Sites can be in several countries.
@@ -167,7 +177,13 @@ apps/web/src/routes/platform/tenants/$tenantId/
 - `admins: { name, email }[]`;
 - `onboarding: OnboardingProgress | null` (03's type), set only while the status is `onboarding`.
 
-The possible-duplicate link navigates to `/platform/tenants` with `toQuery({ q: taxId.value })`, or `q: '@' + domain` without a tax id.
+The possible-duplicate link navigates to `/platform/tenants` with `toQuery({ duplicateOf: tenantId })`. A text search on the tax id would miss two kinds of matches that 02's detection finds: an equivalent id in another form (`pl_nip` `N` and `eu_vat` `PLN`, a W-IdNr and its `eu_vat`) and a shared admin email domain with different tax ids. So the list uses the detection itself:
+
+- 02's `core/signup/duplicates.redeem.ts` is split. `duplicateMatch(identity)` builds the SQL condition over `org` from one identity `{ taxIdType, taxIdValue, emailDomains }`: the `taxIdEquivalents`, the W-IdNr prefix rule and the domain rule with the free-mail list. `possibleDuplicate` (02) keeps calling it with the registration's identity.
+- `TenantListQuery` gains `duplicateOf: TenantId` (optional, not a facet). `listTenants` reads that tenant's identity (its tax id, and the email domains of its `tenant_admin` members) and filters `org.id = $duplicateOf or duplicateMatch(identity)`, combined with the other filters as usual. The platform party already reads `org`, `membership` and `app_user`, so no scope switch is needed.
+- The list shows the filter as a removable chip "Matching <tenant name>" next to the search. An unknown or non-tenant `duplicateOf` gives an empty list, not an error, like any filter that matches nothing.
+
+This also finds matches that appeared after the registration, which is what support needs when it follows the flag.
 
 Alternative: keep one detail page with cards. Rejected by the product owner's decision 2 and ADR-0015.
 
@@ -188,7 +204,7 @@ The commands live in `core/platform/suspension.ts`:
   - `tenant` scope with a user actor, and `carrier_at_tenant` → `throw new ApiError('tenant_suspended')` (403).
   - `driver` → `throw new ApiError('unauthorized')` (401).
   - Platform, user, carrier (cross-tenant), token and anonymous scopes have no `tenantStatus` and pass.
-- **Public links.** `openPublicLink` already loads `Access` for the public scope. It answers 404 when the status is `suspended`, next to its existing feature and site checks. Registration verification goes through `assertLinkOpen` → `openPublicLink`, so it is covered too. Logos stay served: they carry no data and appear in old emails.
+- **Public links.** `openPublicLink` already loads `Access` for the public scope. It answers 404 when the status is `suspended`, next to its existing feature and site checks. Registration verification goes through `assertLinkOpen` → `openPublicLink` as well, but `verifyRegistration` (`booking/registration/verify.redeem.ts`) deliberately turns that `not_found` into 401 `unauthorized`, like any invalid or expired link. It throws before redeeming, so the registration stays pending and verifies after reactivation. The spec follows this mapping (404 for the link and the form, 401 for verification) instead of changing the service. The link page and the verify page already handle exactly these two answers. Logos stay served: they carry no data and appear in old emails.
 - **Carrier context.** `core/context/routes.carrier.ts` already calls `loadAccess` per linked tenant. `CarrierContextTenant` gains `suspended: boolean`, and `carrierPortal` is `false` when suspended. The booking wizard filters on `carrierPortal`. The warehouse list (`routes/c/$orgId/tenants/`) shows "Temporarily unavailable" with an icon.
 - **Jobs.** `forEachTenant(ctx, job, step, { suspended: 'skip' | 'include' })`, with `'skip'` as the default, lists tenants with `suspended_at is null` under the system scope (which reads `org`). `retention.ts` passes `'include'`. Reminders, no-show and holiday import use the default. The outbox drains as before.
 

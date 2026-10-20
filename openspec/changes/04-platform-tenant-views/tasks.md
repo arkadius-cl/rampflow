@@ -39,6 +39,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
 - [ ] 3.2 In `packages/shared/src/modules/core/api.platform.ts`:
   - extend `TenantListQuery`: sort keys `status`, `package`, `country`, `lastActivityAt`; facets `country` (02's EU-27 list plus `none`) and `flag` (`TENANT_FLAGS`);
   - add `suspended` to the status facet through `TENANT_STATUSES`;
+  - add the optional `duplicateOf` (tenant id) to `TenantListQuery` (design decision 6);
   - extend `TenantSummary` with `country`, `taxId`, `admin`, `lastActivityAt` and `possibleDuplicate`, and `TenantList.facets` with the new facets.
 
   Verify `pnpm typecheck` passes.
@@ -58,6 +59,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - package with country;
   - both flags;
   - search `de 123 456`, a second admin's email, an invited admin's email;
+  - `duplicateOf` (after splitting `duplicateMatch(identity)` out of 02's `core/signup/duplicates.redeem.ts`, with 02's duplicate tests still green): same tax id, `pl_nip` against its `eu_vat` form, a shared admin domain with different tax ids, and a shared free-mail domain that does not match;
   - admin email of the first admin and of an open invitation;
   - last activity "never" and its sort last in both directions;
   - 422 for `status=paused`.
@@ -89,7 +91,10 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - a detail of an onboarding tenant carries 03's steps;
   - an active tenant has `onboarding: null`;
   - `PATCH { country: 'Germany' }` answers 422 at `["country"]`;
-  - `country: null` clears it.
+  - `country: null` clears it for a tenant without a tax id;
+  - for a tenant with `eu_vat` `DE123456789`, `country: 'AT'` and `country: null` answer 409 `conflict` with reason `tax_id_country` and change nothing, and `country: 'DE'` saves with the tax id and its status unchanged (design decision 2).
+
+  Add the reason `tax_id_country` to `packages/i18n/locales/{de,en,pl}/core/errors.json` (`conflict.tax_id_country`), and to the 409 reasons in `docs/reference/api-routes.md` if 02 has not added it there yet. Verify `packages/i18n/src/catalogs.test.ts` passes.
 - [ ] 5.2 Create `apps/api/src/modules/core/platform/tenant-reads.ts` with `siteList` and `onboardingOf` under `asScope` as the tenant with `systemActor('platform_read')` (design decision 4). Add the file to the `asScope` and `system.ts` allowances in `biome.json`. Verify `pnpm lint` passes, and that importing `asScope` in another platform file still fails lint.
 - [ ] 5.3 Add `PlatformSiteListQuery`, `PlatformSiteList` and `GET /api/platform/tenants/:tenantId/sites` (op `core.platform.listTenantSites`, story PL-06), with a route case in `core/platform/route-cases.ts`. Verify with `platform.test.ts` (new file `tenant-hub.test.ts` if `platform.test.ts` grows past one story):
   - 2 halls and 8 active, 1 maintenance and 1 inactive docks count 2 and 9;
@@ -120,7 +125,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - onboarding steps or activation time;
   - usage meters;
   - tax id with type, status and check time;
-  - flags, with the "Show matching tenants" link built by `TenantListQuery.toQuery`;
+  - flags, with the "Show matching tenants" link built by `TenantListQuery.toQuery({ duplicateOf })`, and the removable "Matching <tenant name>" chip on the list;
   - admins and open admin invitations;
   - country, created and last activity;
   - `TenantForm` with the country `NativeSelect`.
@@ -169,7 +174,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - the carrier's cross-tenant booking list still lists the booking;
   - a driver booking poll 401, then 200 after reactivation;
   - platform routes work on the suspended tenant.
-- [ ] 7.5 Make `openPublicLink` (`booking/registration/public-links.ts`) answer 404 for a suspended tenant. Verify in the registration tests that the link info and a registration verification answer 404 while suspended and work after reactivation.
+- [ ] 7.5 Make `openPublicLink` (`booking/registration/public-links.ts`) answer 404 for a suspended tenant. Leave the `not_found` → 401 mapping in `verifyRegistration` (`booking/registration/verify.redeem.ts`) unchanged. Verify in `registration.test.ts`: while suspended, `GET /api/public/links/:slug` and `POST /api/public/links/:slug/registrations` answer 404; `POST /api/public/registrations/verify` for a registration sent before the suspension answers 401, creates no carrier org, user or link, and leaves the registration pending; after reactivation, all three work and the same verification succeeds.
 - [ ] 7.6 Add `suspended` to `CarrierContextTenant` (`api.context.ts`), and set `carrierPortal: false` for suspended tenants in `core/context/routes.carrier.ts`. Verify with `context.test.ts`.
 - [ ] 7.7 Give `forEachTenant` (`kernel/jobs.ts`) the option `{ suspended: 'skip' | 'include' }` with default `skip`, and pass `include` in `privacy/jobs/retention.ts`. Verify:
   - in `reminders.test.ts`, no reminder for a booking of a suspended tenant;

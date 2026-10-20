@@ -126,8 +126,8 @@ Alternative: an own check-digit table for 27 states. Rejected: about 27 algorith
 `inspectSignup` and `verifySignup` in `core/signup/verify.redeem.ts`. The page first calls inspect and shows email, company and, when flagged, the duplicate hint; only the click calls verify (login CSRF, as for magic links in ADR-0003). `verifySignup`:
 
 1. Select the row by `token_hash` with `status = 'pending_email' and expires_at > now`; none: 401 `unauthorized`.
-2. `accountByEmail(email)`; found: 409 `conflict` with reason `account_exists`, nothing claimed.
-3. Claim: `update tenant_signup set status = 'verified', verified_at = $now, password_hash = null where id = $id and token_hash = $h and status = 'pending_email' and expires_at > $now returning id`. No row: 401. A concurrent second claim waits for the row lock and then matches nothing.
+2. Claim: `update tenant_signup set status = 'verified', verified_at = $now, password_hash = null where id = $id and token_hash = $h and status = 'pending_email' and expires_at > $now returning id`. No row: 401. A concurrent second claim waits for the row lock and then matches nothing, so the loser of a race always answers 401, whatever the winner created.
+3. `accountByEmail(email)`; found: throw 409 `conflict` with reason `account_exists`. The transaction rolls back, including the claim, so the registration stays pending. The account check comes after the claim on purpose: before it, a second request could read the pending row, then see the account the first request just committed, and answer 409 instead of 401.
 4. `possibleDuplicate(tx, row)` (decision 10).
 5. Insert `app_user` (id generated in the app, `email_verified_at = now`, the hash read in step 1, names, salutation, locale) with `on conflict do nothing`; no row: 409 `account_exists` (another flow created the email in between) and the transaction rolls back.
 6. Insert `org` (kind `tenant`, name, country, normalized tax id, `initialTaxIdStatus`, `possible_duplicate`, `activated_at` null) and `tenant_subscription` (`start`, `updated_by` the new user).

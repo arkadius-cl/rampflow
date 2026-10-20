@@ -65,6 +65,10 @@ The resource of every dock SHALL be linked to at least one active load type. A m
 - **WHEN** the admin deactivates the only active load type linked to a pool with docks
 - **THEN** the response is 409 with reason `dock_without_load_type` and the load type stays active
 
+#### Scenario: Concurrent deactivation of the last two load types
+- **WHEN** a pool with docks is linked to exactly two active load types and two requests deactivate one each at the same time
+- **THEN** one request answers 200, the other 409 with reason `dock_without_load_type`, and the pool keeps one active load type
+
 #### Scenario: Joining a default pool without load types
 - **WHEN** a new dock joins a default pool that has no active load type
 - **THEN** the pool is linked to every load type of the site in the same transaction

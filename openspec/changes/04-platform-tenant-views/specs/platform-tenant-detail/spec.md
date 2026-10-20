@@ -51,11 +51,23 @@ The Overview SHALL show:
 - **THEN** the Overview shows the id, the type "EU VAT", the label "Unverified" with the check time, and the flag "Tax id unverified"
 
 ### Requirement: A possible duplicate links to the matching tenants
-When a tenant is flagged as a possible duplicate, the Overview SHALL link to the tenant list searched by the tenant's tax id, or by its admin email domain when it has no tax id. The other tenants with the same identity can then be found from one click.
+When a tenant is flagged as a possible duplicate, the Overview SHALL link to the tenant list, filtered to the tenant itself and every tenant that the duplicate detection of the registration would match against it: the same or an equivalent tax id, or a shared non-free-mail admin email domain. The filter SHALL show as a removable chip and SHALL live in the URL.
 
-#### Scenario: Follow the duplicate link
+#### Scenario: Same tax id
 - **WHEN** the admin selects "Show matching tenants" on a flagged tenant with tax id `DE123456789`
-- **THEN** the tenant list opens with the search `DE123456789` and shows both tenants that use this tax id
+- **THEN** the tenant list shows both tenants that use this tax id and no other
+
+#### Scenario: Equivalent tax id in another form
+- **WHEN** the flagged tenant has `pl_nip` `5260250274` and another tenant has `eu_vat` `PL5260250274`
+- **THEN** the link lists both tenants
+
+#### Scenario: Shared admin domain, different tax ids
+- **WHEN** the flagged tenant and another tenant have different tax ids, and both have a tenant admin with an `@acme-logistik.de` email
+- **THEN** the link lists both tenants
+
+#### Scenario: Free-mail domain does not match
+- **WHEN** the flagged tenant's only admin uses a `gmail.com` address and another tenant's admin does too, with different tax ids
+- **THEN** the link lists only the flagged tenant itself
 
 ### Requirement: The Overview edits name, country and package
 The Overview SHALL hold a form for the tenant's name, country and package. The country SHALL be one of the EU-27 country codes a tenant can register with, or empty. An invalid value SHALL answer 422 with the zod path, shown at the field.
@@ -65,8 +77,16 @@ The Overview SHALL hold a form for the tenant's name, country and package. The c
 - **THEN** the API answers 422 with an issue at `["country"]` and nothing changes
 
 #### Scenario: Clear the country
-- **WHEN** the admin saves the form with an empty country
+- **WHEN** the admin saves the form with an empty country for a tenant without a tax id
 - **THEN** the tenant shows "Not set" in the list
+
+#### Scenario: Country that does not fit the tax id
+- **WHEN** the admin changes the country of a tenant with the `eu_vat` id `DE123456789` to `AT`, or clears it
+- **THEN** the API answers 409 `conflict` with reason `tax_id_country`, the form shows the reason at the country field, and country, tax id and its check status are unchanged
+
+#### Scenario: Country that fits the tax id
+- **WHEN** the admin sets the country of a tenant with the `eu_vat` id `DE123456789` from empty to `DE`
+- **THEN** the change is saved and the tax id and its check status are unchanged
 
 ### Requirement: The Members tab lists members and open invitations
 The Members tab SHALL be a data table with one row per member and per open invitation. Columns: name, email, role, state, email verified, last activity, and member since or invited at. States: Member, Disabled, Invited, Invitation expired. It SHALL search name and email, filter by role and state, and sort by name, email, role, last activity and since. All of these run on the server and live in the URL, as for every data table. The tab is read-only. Its rows link nowhere, because the platform does not manage a tenant's members and has no view of them.

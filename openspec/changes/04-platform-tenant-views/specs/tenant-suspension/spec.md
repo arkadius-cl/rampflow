@@ -82,11 +82,19 @@ While a tenant is suspended, every driver request for a booking of that tenant S
 - **THEN** the same link shows the booking again
 
 ### Requirement: Public booking links of a suspended tenant answer not found
-While a tenant is suspended, its public booking links, including registrations made through them and their email verification, SHALL answer 404 `not_found`. A visitor cannot tell this from an unknown link. The links SHALL stay unrevoked and work again after reactivation.
+While a tenant is suspended, its public booking links and registrations sent through them SHALL answer 404 `not_found`, so a visitor cannot tell the link from an unknown one. The email verification of such a registration SHALL answer 401 `unauthorized`, as for an expired link, and SHALL leave the registration pending. The links SHALL stay unrevoked and work again after reactivation.
 
 #### Scenario: Visitor opens the link
 - **WHEN** a visitor opens `/r/<slug>` of suspended tenant A
 - **THEN** the page shows that the link is not available, as for an unknown slug
+
+#### Scenario: Verification while suspended
+- **WHEN** a carrier registered through tenant A's link before the suspension and clicks the verification link while A is suspended
+- **THEN** `POST /api/public/registrations/verify` answers 401, no carrier org, user or link is created, and the registration stays pending
+
+#### Scenario: Verification after reactivation
+- **WHEN** tenant A is reactivated before that verification link expires and the carrier clicks it again
+- **THEN** the verification succeeds
 
 ### Requirement: The platform keeps full access to a suspended tenant
 Suspension SHALL NOT restrict the platform party. The platform admin SHALL read the tenant's hub, change its package and overrides, invite admins and add notes while it is suspended.
