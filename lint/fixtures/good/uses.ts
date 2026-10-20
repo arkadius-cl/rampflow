@@ -35,3 +35,8 @@ export const card = { title: 'Gate 1', label: t('yard.gate'), status: BookingSta
 
 console.log('booking loaded');
 t('booking.status.no_show');
+
+// A query key mixes strings with variables; it is not a value set.
+export const queryKey = (orgId: string) => ['tenant', orgId, 'staff'] as const;
+// `reason` is free text in most bodies; typed reasons are left to `pnpm values:check`.
+export const cancelled = { reason: 'Ware nicht fertig' };

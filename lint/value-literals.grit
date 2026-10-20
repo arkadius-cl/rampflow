@@ -50,12 +50,14 @@ or {
     $argument <: some string_literal(),
     register_diagnostic(span=$schema, message="Use the central value set member (`z.literal(X.member)` with `X` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },
+  // Only lists of plain strings: a query key such as `['tenant', orgId] as const` is not a set.
   `[$elements] as const` as $list where {
     $elements <: some string_literal(),
+    not $elements <: some not string_literal(),
     register_diagnostic(span=$list, message="Define the value set once as a self-keyed object in a `values.ts` and use it (`X`, `values(X)` or `X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
   },
   JsPropertyObjectMember(name=$name, value=$value) as $member where {
-    $name <: r"['\"]?(?:kind|status|type|as|reason|role|code|party|state|source|channel|mode|direction|via|tab|view|step)['\"]?",
+    $name <: r"['\"]?(?:kind|status|type|as|role|code|party|state|source|channel|mode|direction|via|tab|view|step)['\"]?",
     $value <: string_literal(),
     not $member <: within `$_ as const`,
     register_diagnostic(span=$member, message="Use the central value set member for this field (`X.member` from `@rampflow/shared/...`); see AGENTS.md, Value sets.")
