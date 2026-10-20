@@ -23,6 +23,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { ApiFailure } from '@/lib/api';
+import { randomId } from '@/lib/utils';
 import { loadTypesQuery, useYardMutation, yardApi } from './queries';
 import { useLoadTypeName } from './truck-parts';
 
@@ -123,7 +124,7 @@ export function WalkInDialog({
   );
   const [safetyMissing, setSafetyMissing] = useState(false);
   // One id per dialog: a retry after a lost answer returns the first walk-in, not a second.
-  const [requestId] = useState(() => crypto.randomUUID());
+  const [requestId] = useState(() => randomId());
   const form = useForm<WalkInFormInput, unknown, WalkInFormOutput>({
     resolver: zodResolver(WalkInForm),
     defaultValues: {

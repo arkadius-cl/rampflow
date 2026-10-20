@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import { deleteCookie, setCookie } from 'hono/cookie';
+import { env } from '../../../kernel/env.ts';
 import { DRIVER_COOKIE } from '../../../kernel/scopes.ts';
 
 // ADR-0008, "Exchange and session": the cookie holds the link token, out of the URL and out of
@@ -7,7 +8,8 @@ import { DRIVER_COOKIE } from '../../../kernel/scopes.ts';
 
 const OPTIONS = {
   httpOnly: true,
-  secure: true,
+  // Secure everywhere but development, so the PWA works on a phone at the LAN dev origin.
+  secure: env.NODE_ENV !== 'development',
   sameSite: 'Strict',
   path: '/api/driver',
 } as const;

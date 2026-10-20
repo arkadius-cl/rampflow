@@ -45,6 +45,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { api, call } from '@/lib/api';
+import { randomId } from '@/lib/utils';
 import { Pictogram, useLanguageName, usePictogramName } from './display';
 import { safetyKey } from './queries';
 
@@ -58,7 +59,7 @@ type Output = z.output<typeof ContentBody>;
 const toForm = ({ locale: _locale, contentHash: _hash, ...body }: Content): ContentInput => body;
 
 const newQuestion = () => ({
-  id: crypto.randomUUID(),
+  id: randomId(),
   prompt: '',
   options: ['', ''],
   correct: 0,
