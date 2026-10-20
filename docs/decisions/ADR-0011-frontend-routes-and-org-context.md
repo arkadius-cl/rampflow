@@ -5,13 +5,13 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, frontend, routing, tenancy, entitlements, ux]
 status: stable
-updated: 2026-10-19
-related: [docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md]
+updated: 2026-10-20
+related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md]
 ---
 
 # ADR-0011: Frontend route structure per area with the active org in the URL
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. Amended by [ADR-0015](ADR-0015-data-tables-and-entity-views.md) on 2026-10-20: entity views, detail tabs as child routes, and list state in the URL. The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
 
 ## Context
 
@@ -46,6 +46,13 @@ One user can hold several memberships: a dispatcher at two tenants, or a carrier
 
 This table is the only route map. Every screen has a nav item (rendered by `navFor` from the manifests) or names the screen it is reached from. A screen that fits neither does not ship. "nav `booking.plan`" names the manifest item `plan` of module `booking`.
 
+From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
+
+- Every entity with its own id that users manage on its own has a view at `<list path>/$<entity>Id`, and list rows link to it. Rows edited only inside their parent's view (hours, closures, overrides, setting values, invitations, duration rules) need none.
+- A detail view's tabs are child routes `<detail path>/<tab>`; the first tab is the index route. Tabs that switch between lists on one page stay search params.
+- An unknown or foreign id shows the area's "no access" page inside the shell.
+- A data-table list keeps its search, facets, sort and page in the search params listed in its row.
+
 **Sign-in and token pages** (no shell). Tokens travel only in the URL fragment, never in the path or the query, so they stay out of request lines, logs, history and `Referer` ([ADR-0003](ADR-0003-authentication-self-built-sessions.md)). The page reads `location.hash`, removes it with `history.replaceState`, then posts the token.
 
 | Path | Screen | Stories | Reached from | Unit |
@@ -63,7 +70,7 @@ This table is the only route map. Every screen has a nav item (rendered by `navF
 
 | Path | Screen | Stories | Nav item or reached from | Unit |
 |---|---|---|---|---|
-| `/platform/tenants` | Tenants with usage meters against limits | PL-01, PL-04 | nav `core.tenants` | U3 |
+| `/platform/tenants?q=&package=&sort=&order=&page=&pageSize=` | Tenants with usage meters against limits: search by name, package filter, sort by name or creation, paging | PL-01, PL-04 | nav `core.tenants` | U3 |
 | `/platform/tenants/$tenantId` | Package and overrides | PL-02 | row of the tenant list | U3 |
 | `/platform/packages` | Packages, read-only | PL-02 | nav `core.packages` | U3 |
 | `/platform/settings` | Platform defaults | PL-03 | nav `core.platform_settings` | U3 |

@@ -62,7 +62,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - Unknown or reserved keys return 400.
    - A route whose entitlement is off returns 403 `entitlement_required` with the key, and its navigation item is hidden.
 3. **PL-03 Platform defaults.** The admin edits every setting with platform scope. Invalid values return 422 with the zod issue path. Tenants with an override keep it.
-4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing.
+4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing. The platform admin searches tenants by name, filters by package, sorts by name or creation date and pages through the list; the list's state is in the URL ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)).
 
 ### Tenant admin
 
