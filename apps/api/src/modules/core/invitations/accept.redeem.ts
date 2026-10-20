@@ -120,7 +120,8 @@ async function signedInAs(tx: Tx, userId: UserId | null, email: string): Promise
   return me && me.email.toLowerCase() === email.toLowerCase() ? userId : null;
 }
 
-const missing = (path: 'name' | 'password') => ({
+/** The request fields a new account needs; a zod issue names them as its path. */
+const missing = (path: keyof Pick<InvitationAcceptBody, 'name' | 'password'>) => ({
   path: [path],
   code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
@@ -135,7 +136,6 @@ async function createAccount(
 ): Promise<UserId | null> {
   const { name, password } = input;
   if (!name || !password) {
-    // values-check-ignore: a request field name, the path of a zod issue
     const issues = [...(name ? [] : [missing('name')]), ...(password ? [] : [missing('password')])];
     throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', { issues });
   }

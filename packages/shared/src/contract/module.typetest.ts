@@ -88,9 +88,9 @@ export const carrierNavEntitlement = defineModule({
       area: OrgKind.carrier,
       to: '/',
       icon: 'x',
-      permission: 'demo.view', // values-check-ignore: a test manifest names its own keys
+      permission: 'demo.view',
       // @ts-expect-error carriers have no package, so carrier nav cannot require an entitlement
-      entitlement: 'demo.on', // values-check-ignore: a test manifest names its own keys
+      entitlement: 'demo.on',
     },
   ],
 });

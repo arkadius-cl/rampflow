@@ -49,6 +49,8 @@ export interface CheckResult {
 
 const VALUE_FILES = ['packages/shared/src/values/*.ts', 'packages/shared/src/modules/*/values.ts'];
 const IGNORE = /values-check-ignore:\s*(.*)$/;
+/** The manifest constructor of `packages/shared/src/contract/module.ts`. */
+const defineModuleName = 'defineModule';
 
 export function valueFiles(root: string): string[] {
   return VALUE_FILES.flatMap((pattern) => globSync(pattern, { cwd: root }))
@@ -173,9 +175,11 @@ function scan(
       const context = contextOf(checker, node);
       const verdict = context && judge(root, checker, context, node.text, sets);
       // A manifest declares the keys that `Permission` is derived from; it keeps its literals.
+      // A key with no set inside `defineModule(...)` is the manifest declaring it, as in a typetest.
       const defines =
-        verdict?.kind === VerdictKind.set &&
-        dependencies(program, verdict.set.file).has(source.fileName);
+        (verdict?.kind === VerdictKind.set &&
+          dependencies(program, verdict.set.file).has(source.fileName)) ||
+        (verdict?.kind === VerdictKind.create && insideManifest(node));
       if (verdict && !defines) {
         const start = node.getStart(source);
         const { line, character } = source.getLineAndCharacterOfPosition(start);
@@ -246,6 +250,16 @@ function misplacedMember(
     return;
   }
   return { value: type.value, verdict };
+}
+
+/** True inside the argument of a `defineModule(...)` call, where keys are declared, not used. */
+function insideManifest(node: ts.Node): boolean {
+  for (let at = node.parent; at; at = at.parent) {
+    if (ts.isCallExpression(at) && ts.isIdentifier(at.expression)) {
+      if (at.expression.text === defineModuleName) return true;
+    }
+  }
+  return false;
 }
 
 /** The verdict for a literal whose contextual type is a union of string literals from our source. */

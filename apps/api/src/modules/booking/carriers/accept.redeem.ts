@@ -53,7 +53,8 @@ export async function inspectCarrierInvitation(
   };
 }
 
-const missing = (path: 'name' | 'password') => ({
+/** The request fields a new account needs; a zod issue names them as its path. */
+const missing = (path: keyof Pick<CarrierInvitationAcceptBody, 'name' | 'password'>) => ({
   path: [path],
   code: ZodIssueCode.invalid_type,
   message: `${path} is required for a new account`,
@@ -81,8 +82,8 @@ export async function acceptCarrierInvitation(
       const { name, password } = input;
       if (!name || !password) {
         const issues = [
-          ...(name ? [] : [missing('name')]), // values-check-ignore: a request field name, the path of a zod issue
-          ...(password ? [] : [missing('password')]), // values-check-ignore: a request field name, the path of a zod issue
+          ...(name ? [] : [missing('name')]),
+          ...(password ? [] : [missing('password')]),
         ];
         throw new ApiError(ErrorCode.validation_failed, 'Name and password are required', {
           issues,
