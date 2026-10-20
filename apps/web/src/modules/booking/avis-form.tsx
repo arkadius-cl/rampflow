@@ -345,7 +345,7 @@ export function AvisFields({
     o: {
       description?: string;
       mono?: boolean;
-      inputMode?: 'decimal' | 'numeric' | 'tel';
+      inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
       className?: string;
     } = {},
   ) => (

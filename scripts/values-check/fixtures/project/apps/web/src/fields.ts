@@ -1,5 +1,5 @@
 import type { BookingStatus } from '@rampflow/shared/modules/booking/values';
-import { type Path, setError } from 'fake-form';
+import { type Attributes, type Path, setError } from 'fake-form';
 
 interface SheetForm {
   startsAt: string;
@@ -48,4 +48,16 @@ type MessageKey = keyof Catalog['validation'];
 
 export function aliasOfKeyOf(): MessageKey {
   return 'too_long'; // → silent
+}
+
+interface Element {
+  id: string;
+}
+
+function input(o: { inputMode?: Attributes<Element>['inputMode'] }): string {
+  return o.inputMode ?? '';
+}
+
+export function libraryProperty(): string {
+  return input({ inputMode: 'decimal' }); // → silent
 }

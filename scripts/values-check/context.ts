@@ -96,7 +96,17 @@ export function isLibraryAnnotation(
   if (!annotation || !ts.isTypeNode(annotation)) return false;
   const origin = (node: ts.TypeNode): boolean => {
     if (ts.isParenthesizedTypeNode(node)) return origin(node.type);
-    if (ts.isIndexedAccessTypeNode(node)) return origin(node.objectType);
+    if (ts.isIndexedAccessTypeNode(node)) {
+      // `React.HTMLAttributes<T>['inputMode']`: the property's own declaration decides.
+      const index = node.indexType;
+      if (ts.isLiteralTypeNode(index) && ts.isStringLiteral(index.literal)) {
+        const object = checker.getTypeFromTypeNode(node.objectType);
+        const property = checker.getPropertyOfType(object, index.literal.text);
+        const declaration = property?.valueDeclaration ?? property?.declarations?.[0];
+        if (declaration && isLibrary(declaration.getSourceFile().fileName)) return true;
+      }
+      return origin(node.objectType);
+    }
     if (ts.isTypeOperatorNode(node)) return origin(node.type);
     if (ts.isUnionTypeNode(node)) return node.types.every(origin);
     if (!ts.isTypeReferenceNode(node) || node.typeArguments?.length) return false;
