@@ -1,7 +1,9 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   BoardQuery,
+  type BoardView,
   BookingListQuery,
+  type BookingPage,
+  type BookingView,
   CancelBooking,
   CarrierOptionsQuery,
   CreateStaffBooking,
@@ -14,9 +16,10 @@ import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type SiteId } from '../../../db/ids.ts';
 import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
+import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { activeDriverLink, driverLinkUrl } from '../../driver/access.ts';
 import { bookingContext } from '../lifecycle/context.ts';
 import { createBooking } from '../lifecycle/create.ts';
@@ -46,8 +49,15 @@ async function driverLink(c: Context<AppEnv>, bookingId: BookingId) {
 export const tenant = new Hono<AppEnv>()
   .get(
     '/board',
+    op({
+      id: 'booking.staff.getBoard',
+      stories: ['BK-01'],
+      description:
+        '`?siteId&date`; columns per resource with `slots` (`capacity`, `booked` per grid slot) and `bookings` with `overCapacity`; polled every 15 s',
+      responses: { 200: type<BoardView>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('query', BoardQuery, onInvalid),
+    validate('query', BoardQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const q = c.req.valid('query');
@@ -61,8 +71,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/',
+    op({
+      id: 'booking.staff.listBookings',
+      stories: ['BK-01'],
+      description:
+        '`?siteId&date&status&limit&cursor`; list view with the same summaries, by start',
+      responses: { 200: type<BookingPage>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('query', BookingListQuery, onInvalid),
+    validate('query', BookingListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       return c.json(
@@ -73,8 +90,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/carrier-options',
+    op({
+      id: 'booking.staff.listCarrierOptions',
+      stories: ['BK-02'],
+      description: '`?q=`; actively linked carriers `{ items: [{ id, name }] }`',
+      responses: {},
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('query', CarrierOptionsQuery, onInvalid),
+    validate('query', CarrierOptionsQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const items = await carrierOptions(ctx.tx, ctx.tenantId, c.req.valid('query').q);
@@ -83,15 +106,27 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/:bookingId',
+    op({
+      id: 'booking.staff.getBooking',
+      stories: ['BK-01', 'BK-03'],
+      description: 'booking, avis, safety status',
+      responses: { 200: type<BookingView>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => c.json(await view(c, c.req.valid('param').bookingId), 200),
   )
   .get(
     '/:bookingId/events',
+    op({
+      id: 'booking.staff.listBookingEvents',
+      stories: ['YD-08'],
+      description: '`?limit&cursor`, oldest first; `actor` only with `booking.view_actors`',
+      responses: {},
+    }),
     requirePermission('booking.view'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('query', EventListQuery, onInvalid),
+    validate('param', BookingParam),
+    validate('query', EventListQuery),
     async (c) => {
       const ctx = bookingContext(c);
       const page = await loadBookingEvents(
@@ -105,8 +140,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/',
+    op({
+      id: 'booking.staff.createBooking',
+      stories: ['BK-02', 'AV-01'],
+      description:
+        'Needs `booking.force` when `force` is set. `{ clientRequestId, siteId, resourceId?, loadTypeId, startsAt, carrier: { id } | { name }, avis, force?, forceReason? }`; 201, or 200 with the first booking for a repeated `clientRequestId`; `forceReason` required with `force`',
+      responses: { 200: type<BookingView>(), 201: type<BookingView>() },
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('json', CreateStaffBooking, onInvalid),
+    validate('json', CreateStaffBooking),
     async (c) => {
       const body = c.req.valid('json');
       const result = await createBooking(bookingContext(c), {
@@ -125,9 +167,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .patch(
     '/:bookingId',
+    op({
+      id: 'booking.staff.updateBooking',
+      stories: ['BK-03'],
+      description:
+        'Needs `booking.force` when `force` is set. Reschedule `{ startsAt, resourceId?, version, force?, forceReason? }`; moves the driver link expiry to the new start plus 7 days',
+      responses: { 200: type<BookingView>() },
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', RescheduleBooking, onInvalid),
+    validate('param', BookingParam),
+    validate('json', RescheduleBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
@@ -143,10 +192,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .put(
     '/:bookingId/avis',
+    op({
+      id: 'booking.staff.putAvis',
+      stories: ['AV-02'],
+      description: '`{ avis, version }`; from `checked_in` on, no capacity check',
+      responses: { 200: type<BookingView>() },
+    }),
     requirePermission('booking.staff_book'),
     requireEntitlement('avis.basic'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', PutAvis, onInvalid),
+    validate('param', BookingParam),
+    validate('json', PutAvis),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
@@ -160,9 +215,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/:bookingId/cancel',
+    op({
+      id: 'booking.staff.cancelBooking',
+      stories: ['BK-03'],
+      description: '`{ reason? }` (send `{}` without one)',
+      responses: { 200: type<BookingView>() },
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CancelBooking, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CancelBooking),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const reason = c.req.valid('json').reason ?? null;
@@ -172,14 +233,26 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/:bookingId/driver-link',
+    op({
+      id: 'booking.staff.getDriverLink',
+      stories: ['CR-06'],
+      description: '`{ url, expiresAt }`; 404 once the link is revoked',
+      responses: {},
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => c.json(await driverLink(c, c.req.valid('param').bookingId), 200),
   )
   .post(
     '/:bookingId/driver-link',
+    op({
+      id: 'booking.staff.regenerateDriverLink',
+      stories: ['CR-06'],
+      description: 'regenerate; answers the new `{ url, expiresAt }`',
+      responses: {},
+    }),
     requirePermission('booking.staff_book'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, { type: 'regenerate_driver_link' });
@@ -188,10 +261,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/:bookingId/driver-link/email',
+    op({
+      id: 'booking.staff.emailDriverLink',
+      stories: ['CR-06'],
+      description: '`{ email, locale }`; 202',
+      responses: { 202: noBody },
+    }),
     requirePermission('booking.staff_book'),
     requireEntitlement('notify.email'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', SendDriverLink, onInvalid),
+    validate('param', BookingParam),
+    validate('json', SendDriverLink),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, {

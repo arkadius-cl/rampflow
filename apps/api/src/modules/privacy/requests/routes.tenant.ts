@@ -1,9 +1,14 @@
-import { zValidator } from '@hono/zod-validator';
-import { EraseRequest, SubjectQuery } from '@rampflow/shared/modules/privacy/api';
+import {
+  EraseRequest,
+  type EraseResult,
+  type SubjectMatches,
+  SubjectQuery,
+} from '@rampflow/shared/modules/privacy/api';
 import { type Context, Hono } from 'hono';
 import { requirePermission } from '../../../kernel/access.ts';
+import { op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { tenantRequest } from '../../core/sites/tenant.ts';
 import { eraseSubject, exportSubject, findSubject, type SubjectContext } from './subjects.ts';
 
@@ -28,19 +33,53 @@ async function subjectContext(c: Context<AppEnv>): Promise<SubjectContext> {
  * out of logs (API conventions, "Requests").
  */
 export const tenant = new Hono<AppEnv>()
-  .post('/search', manage, zValidator('json', SubjectQuery, onInvalid), async (c) => {
-    return c.json(await findSubject(await subjectContext(c), c.req.valid('json')), 200);
-  })
-  .post('/export', manage, zValidator('json', SubjectQuery, onInvalid), async (c) => {
-    const ctx = await subjectContext(c);
-    const body = await exportSubject(ctx, c.req.valid('json'));
-    c.header(
-      'Content-Disposition',
-      `attachment; filename="privacy-export-${ctx.now.toISOString().slice(0, 10)}.json"`,
-    );
-    return c.json(body, 200);
-  })
-  .post('/erase', manage, zValidator('json', EraseRequest, onInvalid), async (c) => {
-    const { confirm: _, ...subject } = c.req.valid('json');
-    return c.json(await eraseSubject(await subjectContext(c), subject), 200);
-  });
+  .post(
+    '/search',
+    op({
+      id: 'privacy.requests.searchSubject',
+      stories: ['TN-06'],
+      description: '`{ name?, phone?, plate? }`; matching bookings and acknowledgements',
+      responses: { 200: type<SubjectMatches>() },
+    }),
+    manage,
+    validate('json', SubjectQuery),
+    async (c) => {
+      return c.json(await findSubject(await subjectContext(c), c.req.valid('json')), 200);
+    },
+  )
+  .post(
+    '/export',
+    op({
+      id: 'privacy.requests.exportSubject',
+      stories: ['TN-06'],
+      description: 'The body of `POST /privacy/search`; JSON download',
+      responses: {},
+    }),
+    manage,
+    validate('json', SubjectQuery),
+    async (c) => {
+      const ctx = await subjectContext(c);
+      const body = await exportSubject(ctx, c.req.valid('json'));
+      c.header(
+        'Content-Disposition',
+        `attachment; filename="privacy-export-${ctx.now.toISOString().slice(0, 10)}.json"`,
+      );
+      return c.json(body, 200);
+    },
+  )
+  .post(
+    '/erase',
+    op({
+      id: 'privacy.requests.eraseSubject',
+      stories: ['TN-06'],
+      description:
+        'The body of `POST /privacy/search` plus `{ confirm: true }`; pseudonymizes bookings, restricts acknowledgements under retention',
+      responses: { 200: type<EraseResult>() },
+    }),
+    manage,
+    validate('json', EraseRequest),
+    async (c) => {
+      const { confirm: _, ...subject } = c.req.valid('json');
+      return c.json(await eraseSubject(await subjectContext(c), subject), 200);
+    },
+  );

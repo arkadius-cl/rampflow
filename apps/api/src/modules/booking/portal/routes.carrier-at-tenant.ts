@@ -1,10 +1,11 @@
-import { zValidator } from '@hono/zod-validator';
 import type { Offers } from '@rampflow/shared/modules/booking/api.capacity';
 import {
   CarrierCancel,
   CarrierReschedule,
   CreateCarrierBooking,
   PortalAvailabilityQuery,
+  type PortalBookingView,
+  type PortalDriverLink,
   PortalLoadTypesQuery,
   type PortalOffers,
 } from '@rampflow/shared/modules/booking/api.portal';
@@ -13,9 +14,10 @@ import { type Context, Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
 import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
+import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { offersFor } from '../capacity/offers.ts';
 import { assertActiveLink } from '../carriers/links.ts';
 import { bookingContext } from '../lifecycle/context.ts';
@@ -76,16 +78,36 @@ const portal = requireEntitlement('booking.carrier_portal');
 
 /** Mounted at `/api/c/:orgId/at/:tenantId` by modules/index.ts. */
 export const carrierAtTenant = new Hono<AppEnv>()
-  .get('/sites', book, portal, activeLink, async (c) => {
-    const { tenantId } = atTenant(c);
-    return c.json({ items: await carrierSites(c.var.db, c.var.access, tenantId) }, 200);
-  })
   .get(
-    '/load-types',
+    '/sites',
+    op({
+      id: 'booking.portal.listSites',
+      stories: ['BK-04'],
+      description:
+        '`{ items }`: active sites with address, phone, `timeZone`, `cutoffMinutes`, `leadMinutes`, `horizonDays` and `avisRules`',
+      responses: {},
+    }),
     book,
     portal,
     activeLink,
-    zValidator('query', PortalLoadTypesQuery, onInvalid),
+    async (c) => {
+      const { tenantId } = atTenant(c);
+      return c.json({ items: await carrierSites(c.var.db, c.var.access, tenantId) }, 200);
+    },
+  )
+  .get(
+    '/load-types',
+    op({
+      id: 'booking.portal.listLoadTypes',
+      stories: ['BK-04'],
+      description:
+        '`?siteId=`; active, carrier-bookable only: `{ items: [{ id, name, direction }] }`',
+      responses: {},
+    }),
+    book,
+    portal,
+    activeLink,
+    validate('query', PortalLoadTypesQuery),
     async (c) => {
       const { tenantId } = atTenant(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -95,10 +117,17 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .get(
     '/availability',
+    op({
+      id: 'booking.portal.getAvailability',
+      stories: ['BK-04'],
+      description:
+        '`?siteId&loadTypeId&date&loadUnits`; `PortalOffers` with lead time and horizon applied; 404 for a load type carriers cannot book',
+      responses: { 200: type<PortalOffers>() },
+    }),
     book,
     portal,
     activeLink,
-    zValidator('query', PortalAvailabilityQuery, onInvalid),
+    validate('query', PortalAvailabilityQuery),
     async (c) => {
       const { tenantId } = atTenant(c);
       const q = c.req.valid('query');
@@ -126,10 +155,17 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings',
+    op({
+      id: 'booking.portal.createBooking',
+      stories: ['BK-04', 'AV-01'],
+      description:
+        '`{ clientRequestId, siteId, loadTypeId, startsAt, avis }`; 201 `PortalBookingView`, 200 for a repeated `clientRequestId`; 409 with `offers` when the last unit went elsewhere',
+      responses: { 200: type<PortalBookingView>(), 201: type<PortalBookingView>() },
+    }),
     book,
     portal,
     activeLink,
-    zValidator('json', CreateCarrierBooking, onInvalid),
+    validate('json', CreateCarrierBooking),
     async (c) => {
       const body = c.req.valid('json');
       const result = await withCarrierOffers(() =>
@@ -147,11 +183,17 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .patch(
     '/bookings/:bookingId',
+    op({
+      id: 'booking.portal.updateBooking',
+      stories: ['BK-05'],
+      description: '`{ startsAt, version }`; before the cutoff, else 409 `cutoff_passed`',
+      responses: { 200: type<PortalBookingView>() },
+    }),
     book,
     portal,
     activeLink,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CarrierReschedule, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CarrierReschedule),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
@@ -167,10 +209,16 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/cancel',
+    op({
+      id: 'booking.portal.cancelBooking',
+      stories: ['BK-05'],
+      description: '`{ reason? }`; before the cutoff; revokes the driver link',
+      responses: { 200: type<PortalBookingView>() },
+    }),
     book,
     portal,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CarrierCancel, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CarrierCancel),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const reason = c.req.valid('json').reason ?? null;
@@ -180,11 +228,18 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .put(
     '/bookings/:bookingId/avis',
+    op({
+      id: 'booking.portal.putAvis',
+      stories: ['AV-02'],
+      description:
+        '`{ avis, version }`; before the cutoff; 409 when the new duration does not fit, and the avis stays',
+      responses: { 200: type<PortalBookingView>() },
+    }),
     book,
     requireEntitlement('avis.basic'),
     activeLink,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', PutAvis, onInvalid),
+    validate('param', BookingParam),
+    validate('json', PutAvis),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       const body = c.req.valid('json');
@@ -200,9 +255,15 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/driver-link',
+    op({
+      id: 'booking.portal.regenerateDriverLink',
+      stories: ['CR-06'],
+      description: 'regenerate; `{ url, expiresAt }`',
+      responses: { 200: type<PortalDriverLink>() },
+    }),
     book,
     activeLink,
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, { type: 'regenerate_driver_link' });
@@ -211,11 +272,17 @@ export const carrierAtTenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/driver-link/email',
+    op({
+      id: 'booking.portal.emailDriverLink',
+      stories: ['CR-06'],
+      description: '`{ email, locale }` with one of the 12 driver locales; 202',
+      responses: { 202: noBody },
+    }),
     book,
     requireEntitlement('notify.email'),
     activeLink,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', SendDriverLink, onInvalid),
+    validate('param', BookingParam),
+    validate('json', SendDriverLink),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await transitionBooking(bookingContext(c), bookingId, {

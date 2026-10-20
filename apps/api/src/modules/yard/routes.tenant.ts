@@ -1,26 +1,31 @@
-import { zValidator } from '@hono/zod-validator';
 import type { CommandInput } from '@rampflow/shared/modules/booking/lifecycle';
 import {
+  type BriefingSession,
   CallBody,
   CandidatesBody,
   CheckInBody,
   CompleteBody,
   DepartBody,
   DockBody,
+  type DocksView,
   ExpectedQuery,
+  type ExpectedView,
   LinkAcknowledgementBody,
+  type OnSiteView,
   SearchBody,
   SiteQuery,
   TurnAwayBody,
   WalkInBody,
+  type YardTruck,
 } from '@rampflow/shared/modules/yard/api';
 import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, type DockId, idSchema, type SiteId } from '../../db/ids.ts';
 import { requireEntitlement, requireModule, requirePermission } from '../../kernel/access.ts';
+import { op, type } from '../../kernel/describe.ts';
 import type { AppEnv } from '../../kernel/env.ts';
-import { onInvalid } from '../../kernel/validate.ts';
+import { validate } from '../../kernel/validate.ts';
 import { type BookingContext, bookingContext } from '../booking/lifecycle/context.ts';
 import { createBooking } from '../booking/lifecycle/create.ts';
 import { transitionBooking } from '../booking/lifecycle/transition.ts';
@@ -63,22 +68,63 @@ const dockWork = [requirePermission('yard.dock'), requireEntitlement('yard.call_
 
 /** Mounted at `/api/t/:orgId/yard` with `withModule('yard')` (YD-01 to YD-08, BK-02 walk-in). */
 export const tenant = new Hono<AppEnv>()
-  .get('/expected', gate, zValidator('query', ExpectedQuery, onInvalid), async (c) => {
-    const q = c.req.valid('query');
-    return c.json(await expectedTrucks(yardScope(c, q.siteId), q.date), 200);
-  })
-  .post('/search', gate, zValidator('json', SearchBody, onInvalid), async (c) => {
-    const body = c.req.valid('json');
-    return c.json({ items: await searchTrucks(yardScope(c, body.siteId), body.q) }, 200);
-  })
-  .get('/on-site', gate, zValidator('query', SiteQuery, onInvalid), async (c) =>
-    c.json(await onSiteTrucks(yardScope(c, c.req.valid('query').siteId)), 200),
+  .get(
+    '/expected',
+    op({
+      id: 'yard.gate.listExpected',
+      stories: ['YD-01'],
+      description:
+        "`?siteId&date?` (`date` defaults to today at the site); `{ siteId, date, timeZone, items }` by start: the day's bookings except cancelled and requested ones, plus no-shows whose `no_show_at` falls on that day. Before check-in, `punctuality` is what a check-in now would record",
+      responses: { 200: type<ExpectedView>() },
+    }),
+    gate,
+    validate('query', ExpectedQuery),
+    async (c) => {
+      const q = c.req.valid('query');
+      return c.json(await expectedTrucks(yardScope(c, q.siteId), q.date), 200);
+    },
+  )
+  .post(
+    '/search',
+    op({
+      id: 'yard.gate.searchTrucks',
+      stories: ['YD-01'],
+      description:
+        "`{ siteId, q }` (2 to 120 characters); exact booking code (case and surrounding whitespace ignored, so scanner input works), plate announced or seen (normalized), exact reference, or part of the carrier name; active visits and today's no-shows, nearest start first, at most 20",
+      responses: {},
+    }),
+    gate,
+    validate('json', SearchBody),
+    async (c) => {
+      const body = c.req.valid('json');
+      return c.json({ items: await searchTrucks(yardScope(c, body.siteId), body.q) }, 200);
+    },
+  )
+  .get(
+    '/on-site',
+    op({
+      id: 'yard.gate.listOnSite',
+      stories: ['YD-04'],
+      description:
+        '`?siteId`; trucks in `checked_in` to `done`, whatever day they were booked for, by gate-in; each with `onSiteMinutes`, `waitMinutes` (from `max(checked_in_at, starts_at)` to the first dock timestamp, or to now) and `standgeld` (`onSiteMinutes` above `yard.standgeld_flag_minutes`)',
+      responses: { 200: type<OnSiteView>() },
+    }),
+    gate,
+    validate('query', SiteQuery),
+    async (c) => c.json(await onSiteTrucks(yardScope(c, c.req.valid('query').siteId)), 200),
   )
   .post(
     '/bookings/:bookingId/check-in',
+    op({
+      id: 'yard.gate.checkIn',
+      stories: ['YD-02'],
+      description:
+        "`{ plateSeen? }`; 409 `safety_missing` under enforcement; the truck shows `safety.status = 'missing'` as a warning otherwise",
+      responses: { 200: type<YardTruck>() },
+    }),
     gate,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CheckInBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CheckInBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'check_in',
@@ -87,9 +133,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/turn-away',
+    op({
+      id: 'yard.gate.turnAway',
+      stories: ['YD-02'],
+      description:
+        '`{ reason }` from the turn-away list; from `confirmed`, `no_show` or `checked_in`',
+      responses: { 200: type<YardTruck>() },
+    }),
     gate,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', TurnAwayBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', TurnAwayBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'turn_away',
@@ -98,9 +151,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/depart',
+    op({
+      id: 'yard.gate.depart',
+      stories: ['YD-05'],
+      description: '`{ reason? }`; 422 without a reason before `done`',
+      responses: { 200: type<YardTruck>() },
+    }),
     gate,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', DepartBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', DepartBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'depart',
@@ -109,9 +168,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/walk-ins',
+    op({
+      id: 'yard.gate.createWalkIn',
+      stories: ['YD-03'],
+      description:
+        "`{ clientRequestId, siteId, resourceId?, loadTypeId, carrier: { id } | { name }, plateSeen, outcome: 'check_in', avis }` or `{ ..., outcome: 'turn_away', avis?, reason }`. Starts at the grid slot containing now; never 409 for hours or capacity. 201 with `{ truck, safety }`: the truck in `checked_in` or `turned_away`, or in `confirmed` with `safety: 'missing'` when enforcement blocks the check-in; 200 with the first booking for a repeated `clientRequestId`. 422 on `loadTypeId` when no active resource takes the load type",
+      responses: {},
+    }),
     gate,
     requirePermission('booking.walk_in'),
-    zValidator('json', WalkInBody, onInvalid),
+    validate('json', WalkInBody),
     async (c) => {
       const body = c.req.valid('json');
       const ctx = bookingContext(c);
@@ -136,10 +202,17 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/acknowledgement-candidates',
+    op({
+      id: 'yard.gate.findAcknowledgementCandidates',
+      stories: ['YD-02'],
+      description:
+        "`{ name }` (part of the driver name, at least 2 characters); `{ items }` of the tenant's acknowledgements of instructions that apply to the site and would be valid for this visit, newest first, at most 20; 409 `invalid_transition` once the visit cannot take a briefing",
+      responses: {},
+    }),
     gate,
     requireModule('safety'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CandidatesBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CandidatesBody),
     async (c) => {
       const items = await acknowledgementCandidates(
         bookingContext(c),
@@ -151,10 +224,17 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/acknowledgements',
+    op({
+      id: 'yard.gate.linkAcknowledgement',
+      stories: ['YD-02'],
+      description:
+        "`{ acknowledgementId }`; `link_acknowledgement` with `via: 'gate_lookup'`; 409 `acknowledgement_invalid`",
+      responses: { 200: type<YardTruck>() },
+    }),
     gate,
     requireModule('safety'),
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', LinkAcknowledgementBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', LinkAcknowledgementBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'link_acknowledgement',
@@ -164,22 +244,46 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/briefing-session',
+    op({
+      id: 'yard.gate.startBriefingSession',
+      stories: ['YD-02'],
+      description:
+        'no body; issues a 30-minute `staff` driver access and returns `{ url, expiresAt }`',
+      responses: { 200: type<BriefingSession>() },
+    }),
     gate,
     requireModule('safety'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const ctx = bookingContext(c);
       return c.json(await briefingSession(ctx, c.req.valid('param').bookingId, userOf(ctx)), 200);
     },
   )
-  .get('/docks', ...callToDock, zValidator('query', SiteQuery, onInvalid), async (c) =>
-    c.json(await docksView(yardScope(c, c.req.valid('query').siteId)), 200),
+  .get(
+    '/docks',
+    op({
+      id: 'yard.dock.listDocks',
+      stories: ['YD-06'],
+      description:
+        '`?siteId`; `{ halls: [{ id, name, docks: [{ id, code, status, temperatureZone, adrAllowed, resourceId, occupant }] }], queue }`; inactive docks left out, maintenance docks kept; the queue holds `checked_in` trucks by slot start, with waits',
+      responses: { 200: type<DocksView>() },
+    }),
+    ...callToDock,
+    validate('query', SiteQuery),
+    async (c) => c.json(await docksView(yardScope(c, c.req.valid('query').siteId)), 200),
   )
   .post(
     '/bookings/:bookingId/call',
+    op({
+      id: 'yard.dock.callToDock',
+      stories: ['YD-07'],
+      description:
+        '`{ dockId }`; `{ truck, outsideResource }`; 409 `dock_occupied`, 409 `dock_inactive`; from `called` a reassignment',
+      responses: {},
+    }),
     ...callToDock,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CallBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CallBody),
     async (c) => {
       const ctx = bookingContext(c);
       const { bookingId } = c.req.valid('param');
@@ -202,15 +306,27 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/uncall',
+    op({
+      id: 'yard.dock.uncall',
+      stories: ['YD-07'],
+      description: 'back to `checked_in`; frees the dock',
+      responses: { 200: type<YardTruck>() },
+    }),
     ...callToDock,
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     (c) => command(c, c.req.valid('param').bookingId, { type: 'uncall' }),
   )
   .post(
     '/bookings/:bookingId/dock',
+    op({
+      id: 'yard.dock.arriveAtDock',
+      stories: ['YD-08'],
+      description: '`{ dockId? }`; 422 without a dock when none is assigned',
+      responses: { 200: type<YardTruck>() },
+    }),
     ...dockWork,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', DockBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', DockBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'dock',
@@ -219,9 +335,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/loading',
+    op({
+      id: 'yard.dock.startLoading',
+      stories: ['YD-08'],
+      description: '`{ dockId? }`, as `dock`',
+      responses: { 200: type<YardTruck>() },
+    }),
     ...dockWork,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', DockBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', DockBody),
     (c) =>
       command(c, c.req.valid('param').bookingId, {
         type: 'start_loading',
@@ -230,9 +352,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/bookings/:bookingId/complete',
+    op({
+      id: 'yard.dock.complete',
+      stories: ['YD-08'],
+      description: '`{ actualLoadUnits, discrepancyNote? }`',
+      responses: { 200: type<YardTruck>() },
+    }),
     ...dockWork,
-    zValidator('param', BookingParam, onInvalid),
-    zValidator('json', CompleteBody, onInvalid),
+    validate('param', BookingParam),
+    validate('json', CompleteBody),
     (c) => {
       const body = c.req.valid('json');
       return command(c, c.req.valid('param').bookingId, {

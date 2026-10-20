@@ -1,15 +1,18 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   PortalBookingListQuery,
+  type PortalBookingPage,
+  type PortalBookingView,
   type PortalDriverLink,
+  type PortalRebook,
 } from '@rampflow/shared/modules/booking/api.portal';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type TenantId } from '../../../db/ids.ts';
 import { loadAccess, requirePermission } from '../../../kernel/access.ts';
+import { op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { activeDriverLink, driverLinkUrl } from '../../driver/access.ts';
 import { listPortalBookings, loadPortalBooking, rebookOf, requireOwnBooking } from './read.ts';
 
@@ -35,8 +38,15 @@ export async function portalDriverLink(
 export const carrier = new Hono<AppEnv>()
   .get(
     '/',
+    op({
+      id: 'booking.portal.listBookings',
+      stories: ['CR-05'],
+      description:
+        "all tenants; `?tenantId&siteId&from&to&status&when&order&limit&cursor`; `from` and `to` are site-local dates of each booking's start; `when=upcoming` keeps trucks on site and requested or confirmed bookings starting today or later in site time, `when=past` keeps the rest (every final booking, and pending ones from earlier days); `order` is `asc` (default, by start) or `desc` (the past, newest first); `{ items: PortalBookingSummary[], nextCursor }`",
+      responses: { 200: type<PortalBookingPage>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('query', PortalBookingListQuery, onInvalid),
+    validate('query', PortalBookingListQuery),
     async (c) => {
       const page = await listPortalBookings(
         c.var.db,
@@ -49,8 +59,14 @@ export const carrier = new Hono<AppEnv>()
   )
   .get(
     '/:bookingId',
+    op({
+      id: 'booking.portal.getBooking',
+      stories: ['CR-05'],
+      description: '`PortalBookingView`',
+      responses: { 200: type<PortalBookingView>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const scope = carrierOf(c);
       const { db, clock } = c.var;
@@ -69,8 +85,14 @@ export const carrier = new Hono<AppEnv>()
   )
   .get(
     '/:bookingId/driver-link',
+    op({
+      id: 'booking.portal.getDriverLink',
+      stories: ['CR-06'],
+      description: '`{ url, expiresAt }`; 404 without an active link',
+      responses: { 200: type<PortalDriverLink>() },
+    }),
     requirePermission('booking.book'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       await requireOwnBooking(c.var.db, carrierOf(c).carrierId, bookingId);
@@ -79,8 +101,15 @@ export const carrier = new Hono<AppEnv>()
   )
   .get(
     '/:bookingId/rebook',
+    op({
+      id: 'booking.portal.getRebook',
+      stories: ['BK-06'],
+      description:
+        '`{ tenantId, siteId, loadTypeId, avis }`: the avis without references and driver; no date',
+      responses: { 200: type<PortalRebook>() },
+    }),
     requirePermission('booking.book'),
-    zValidator('param', BookingParam, onInvalid),
+    validate('param', BookingParam),
     async (c) => {
       const { bookingId } = c.req.valid('param');
       return c.json(await rebookOf(c.var.db, carrierOf(c).carrierId, bookingId), 200);

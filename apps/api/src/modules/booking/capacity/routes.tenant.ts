@@ -1,14 +1,17 @@
-import { zValidator } from '@hono/zod-validator';
 import {
   AvailabilityQuery,
   ClosureQuery,
+  type ClosureView,
   CreateClosure,
   CreateLoadType,
   CreateResource,
   DockBooking,
+  type LoadTypeView,
+  type Offers,
   PutHours,
   PutLoadTypeResources,
   PutResourceDocks,
+  type ResourceView,
   SiteQuery,
   UpdateLoadType,
   UpdateResource,
@@ -17,8 +20,9 @@ import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type SiteId } from '../../../db/ids.ts';
 import { requirePermission } from '../../../kernel/access.ts';
+import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { requireSite } from '../../core/sites/sites.ts';
 import { tenantRequest } from '../../core/sites/tenant.ts';
 import type { LoadTypeId, ResourceId } from '../schema.resources.ts';
@@ -49,8 +53,14 @@ const ResourceListQuery = z.object({ siteId: z.uuid().optional() });
 export const tenant = new Hono<AppEnv>()
   .get(
     '/resources',
+    op({
+      id: 'booking.capacity.listResources',
+      stories: ['MD-03'],
+      description: 'optional `?siteId=`',
+      responses: {},
+    }),
     requirePermission('booking.view'),
-    zValidator('query', ResourceListQuery, onInvalid),
+    validate('query', ResourceListQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId | undefined;
@@ -59,15 +69,28 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/resources',
+    op({
+      id: 'booking.capacity.createResource',
+      stories: ['MD-03'],
+      description:
+        'Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`',
+      responses: { 201: type<ResourceView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('json', CreateResource, onInvalid),
+    validate('json', CreateResource),
     async (c) => c.json(await createResource(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .patch(
     '/resources/:resourceId',
+    op({
+      id: 'booking.capacity.updateResource',
+      stories: ['MD-03'],
+      description: 'Needs `booking.pools` for pools. Never cancels bookings',
+      responses: { 200: type<ResourceView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', ResourceParam, onInvalid),
-    zValidator('json', UpdateResource, onInvalid),
+    validate('param', ResourceParam),
+    validate('json', UpdateResource),
     async (c) => {
       const id = c.req.valid('param').resourceId;
       return c.json(await updateResource(c.var.db, tenantRequest(c), id, c.req.valid('json')), 200);
@@ -75,9 +98,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .put(
     '/resources/:resourceId/docks',
+    op({
+      id: 'booking.capacity.setResourceDocks',
+      stories: ['MD-03'],
+      description:
+        'Needs `booking.pools` for pools. `{ dockIds }`; 409 `dock_in_resource` with `dockIds`',
+      responses: { 200: type<ResourceView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', ResourceParam, onInvalid),
-    zValidator('json', PutResourceDocks, onInvalid),
+    validate('param', ResourceParam),
+    validate('json', PutResourceDocks),
     async (c) => {
       const id = c.req.valid('param').resourceId;
       const { dockIds } = c.req.valid('json');
@@ -86,9 +116,16 @@ export const tenant = new Hono<AppEnv>()
   )
   .put(
     '/docks/:dockId/booking',
+    op({
+      id: 'booking.capacity.setDockBooking',
+      stories: ['MD-03'],
+      description:
+        "Needs `booking.pools` when a pool is left or joined. `{ as: 'none' } | { as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }` (null for `none`); a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions; idempotent",
+      responses: {},
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', DockParam, onInvalid),
-    zValidator('json', DockBooking, onInvalid),
+    validate('param', DockParam),
+    validate('json', DockBooking),
     async (c) => {
       const { dockId } = c.req.valid('param');
       const resource = await bookDock(c.var.db, tenantRequest(c), dockId, c.req.valid('json'));
@@ -97,8 +134,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/hours',
+    op({
+      id: 'booking.capacity.listHours',
+      stories: ['MD-04'],
+      description: '`?siteId=`',
+      responses: {},
+    }),
     requirePermission('booking.view'),
-    zValidator('query', SiteQuery, onInvalid),
+    validate('query', SiteQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -107,8 +150,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .put(
     '/hours',
+    op({
+      id: 'booking.capacity.setHours',
+      stories: ['MD-04'],
+      description: '`{ siteId, resourceId: uuid | null, rows: [{ weekday, opens, closes }] }`',
+      responses: {},
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('json', PutHours, onInvalid),
+    validate('json', PutHours),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       return c.json({ items: await putHours(c.var.db, tenantId, c.req.valid('json')) }, 200);
@@ -116,8 +165,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/closures',
+    op({
+      id: 'booking.capacity.listClosures',
+      stories: ['MD-04'],
+      description: '`?siteId=&from=&to=`',
+      responses: {},
+    }),
     requirePermission('booking.view'),
-    zValidator('query', ClosureQuery, onInvalid),
+    validate('query', ClosureQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const q = c.req.valid('query');
@@ -127,14 +182,27 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/closures',
+    op({
+      id: 'booking.capacity.createClosure',
+      stories: ['MD-04'],
+      description: 'Adds a closure to a site or resource.',
+      responses: { 201: type<ClosureView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('json', CreateClosure, onInvalid),
+    validate('json', CreateClosure),
     async (c) => c.json(await createClosure(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .delete(
     '/closures/:closureId',
+    op({
+      id: 'booking.capacity.deleteClosure',
+      stories: ['MD-04'],
+      description:
+        'manual closures only, a holiday answers 409 `holiday_closure`; an unknown id answers 404',
+      responses: { 204: noBody },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', ClosureParam, onInvalid),
+    validate('param', ClosureParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       await deleteClosure(c.var.db, tenantId, c.req.valid('param').closureId);
@@ -143,8 +211,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/closures/:closureId/reopen',
+    op({
+      id: 'booking.capacity.reopenClosure',
+      stories: ['MD-04'],
+      description: 'holiday closures, a manual one answers 409 `manual_closure`; idempotent',
+      responses: { 200: type<ClosureView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', ClosureParam, onInvalid),
+    validate('param', ClosureParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const id = c.req.valid('param').closureId;
@@ -153,8 +227,14 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/load-types',
+    op({
+      id: 'booking.capacity.listLoadTypes',
+      stories: ['MD-05'],
+      description: '`?siteId=`',
+      responses: {},
+    }),
     requirePermission('booking.view'),
-    zValidator('query', SiteQuery, onInvalid),
+    validate('query', SiteQuery),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const siteId = c.req.valid('query').siteId as SiteId;
@@ -163,15 +243,27 @@ export const tenant = new Hono<AppEnv>()
   )
   .post(
     '/load-types',
+    op({
+      id: 'booking.capacity.createLoadType',
+      stories: ['MD-05'],
+      description: 'Needs `booking.duration_rules` for tiers. Adds a load type.',
+      responses: { 201: type<LoadTypeView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('json', CreateLoadType, onInvalid),
+    validate('json', CreateLoadType),
     async (c) => c.json(await createLoadType(c.var.db, tenantRequest(c), c.req.valid('json')), 201),
   )
   .patch(
     '/load-types/:loadTypeId',
+    op({
+      id: 'booking.capacity.updateLoadType',
+      stories: ['MD-05'],
+      description: 'Needs `booking.duration_rules` for tiers. Updates a load type.',
+      responses: { 200: type<LoadTypeView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', LoadTypeParam, onInvalid),
-    zValidator('json', UpdateLoadType, onInvalid),
+    validate('param', LoadTypeParam),
+    validate('json', UpdateLoadType),
     async (c) => {
       const id = c.req.valid('param').loadTypeId;
       return c.json(await updateLoadType(c.var.db, tenantRequest(c), id, c.req.valid('json')), 200);
@@ -179,9 +271,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .put(
     '/load-types/:loadTypeId/resources',
+    op({
+      id: 'booking.capacity.setLoadTypeResources',
+      stories: ['MD-05'],
+      description: 'Sets the resources that take a load type.',
+      responses: { 200: type<LoadTypeView>() },
+    }),
     requirePermission('booking.manage_resources'),
-    zValidator('param', LoadTypeParam, onInvalid),
-    zValidator('json', PutLoadTypeResources, onInvalid),
+    validate('param', LoadTypeParam),
+    validate('json', PutLoadTypeResources),
     async (c) => {
       const { tenantId } = tenantRequest(c);
       const id = c.req.valid('param').loadTypeId;
@@ -191,8 +289,15 @@ export const tenant = new Hono<AppEnv>()
   )
   .get(
     '/availability',
+    op({
+      id: 'booking.capacity.getAvailability',
+      stories: ['MD-04', 'BK-02'],
+      description:
+        '`?siteId&date&loadTypeId&loadUnits&resourceId?`; offered starts per resource and their union (`Offers` in `api.capacity.ts`), staff view without lead time and horizon',
+      responses: { 200: type<Offers>() },
+    }),
     requirePermission('booking.view'),
-    zValidator('query', AvailabilityQuery, onInvalid),
+    validate('query', AvailabilityQuery),
     async (c) => {
       const req = tenantRequest(c);
       const q = c.req.valid('query');

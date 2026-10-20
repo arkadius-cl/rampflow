@@ -18,7 +18,7 @@ type ValidationResult =
  * A bad path parameter is an unknown id, so it answers 404; a bad query or body answers 422 with
  * the zod issue paths.
  */
-export function onInvalid(result: ValidationResult): void {
+function onInvalid(result: ValidationResult): void {
   if (result.success) return;
   if (result.target === 'param') throw new ApiError('not_found');
   const issues = result.error.issues.map(({ path, code, message }) => ({

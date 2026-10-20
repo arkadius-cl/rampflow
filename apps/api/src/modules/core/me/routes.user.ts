@@ -1,13 +1,13 @@
-import { zValidator } from '@hono/zod-validator';
 import type { Role } from '@rampflow/shared';
 import { MePatchBody, type MeResponse } from '@rampflow/shared/modules/core/api.auth';
 import { asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { UserId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
+import { op } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
-import { onInvalid } from '../../../kernel/validate.ts';
+import { validate } from '../../../kernel/validate.ts';
 import { appUser, membership, org } from '../schema.ts';
 
 // Mounted at /api/me under the user scope: the signed-in user, no org chosen (ADR-0002).
@@ -43,12 +43,32 @@ const userOf = (scope: AppEnv['Variables']['scope']): UserId => {
 };
 
 export const user = new Hono<AppEnv>()
-  .get('/', async (c) => c.json(await me(c.var.db, userOf(c.var.scope)), 200))
-  .patch('/', zValidator('json', MePatchBody, onInvalid), async (c) => {
-    const userId = userOf(c.var.scope);
-    const patch = c.req.valid('json');
-    if (Object.keys(patch).length > 0) {
-      await c.var.db.update(appUser).set(patch).where(eq(appUser.id, userId));
-    }
-    return c.json(await me(c.var.db, userId), 200);
-  });
+  .get(
+    '/',
+    op({
+      id: 'core.me.getMe',
+      stories: [],
+      description:
+        '`{ user, memberships }` for the org picker ([Module contract](module-contract.md#context-endpoints))',
+      responses: {},
+    }),
+    async (c) => c.json(await me(c.var.db, userOf(c.var.scope)), 200),
+  )
+  .patch(
+    '/',
+    op({
+      id: 'core.me.updateMe',
+      stories: [],
+      description: '`{ name?, locale? }`; answers like GET',
+      responses: {},
+    }),
+    validate('json', MePatchBody),
+    async (c) => {
+      const userId = userOf(c.var.scope);
+      const patch = c.req.valid('json');
+      if (Object.keys(patch).length > 0) {
+        await c.var.db.update(appUser).set(patch).where(eq(appUser.id, userId));
+      }
+      return c.json(await me(c.var.db, userId), 200);
+    },
+  );
