@@ -3,11 +3,7 @@ import type {
   BoardView,
   BookingSummary,
 } from '@rampflow/shared/modules/booking/api.staff';
-import {
-  BookingStatus,
-  FinalBookingStatus,
-  ResourceKind,
-} from '@rampflow/shared/modules/booking/values';
+import { FinalBookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { BadgeSize, isValueOf } from '@rampflow/shared/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -316,8 +312,7 @@ function BookingCard({
 }) {
   const { t } = useTranslation('booking');
   const siteTime = useSiteTime();
-  const tone =
-    booking.status === BookingStatus.requested ? 'planned' : BOOKING_STATUS[booking.status].tone;
+  const tone = BOOKING_STATUS[booking.status].tone;
   const compact = style.height < 60;
   const slot = `${siteTime(booking.startsAt, timeZone).time}–${siteTime(booking.endsAt, timeZone).time}`;
   return (
