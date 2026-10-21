@@ -49,7 +49,8 @@
     "other_profile": "inny profil",
     "other_hall": "inna hala",
     "hall_pool": "Pula hali",
-    "profile": "Profil rampy"
+    "profile": "Profil rampy",
+    "stays_in_hall_pool": "należy do tej puli hali; aby ją wyjąć, przenieś ją do innej puli lub ustaw rezerwację osobną"
   },
   "hours": {
     "title": "Godziny tygodniowe",
@@ -67,7 +68,8 @@
     "midnight_hint": "Wpisz 24:00, aby mieć otwarte do północy. Nocna zmiana to dwa okna: 22:00 do 24:00 i następnego dnia 00:00 do 06:00.",
     "save": "Zapisz godziny",
     "saved": "Zapisano godziny",
-    "none_open": "Dodaj co najmniej jedno okno czasowe."
+    "none_open": "Dodaj co najmniej jedno okno czasowe.",
+    "too_many": "Maksymalnie 70 okien w tygodniu. Usuń część z nich."
   },
   "closures": {
     "title": "Zamknięcia i święta",

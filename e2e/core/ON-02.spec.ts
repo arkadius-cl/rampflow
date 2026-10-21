@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { TenantStatus } from '../../packages/shared/src/modules/core/values.ts';
 import { HttpMethod } from '../../packages/shared/src/values/http.ts';
-import { signInByApi } from '../support/auth.ts';
+import { expectAccessible, signInByApi } from '../support/auth.ts';
 import { createOnboardingTenant } from '../support/db.ts';
 import { apiCall, newSiteBody } from '../support/u4.ts';
 
@@ -35,6 +35,7 @@ test.describe('ON-02 Activation by the first dock', () => {
       'href',
       `/t/${t.tenantId}/onboarding`,
     );
+    await expectAccessible(page);
     await page.evaluate(() => {
       (globalThis as unknown as { loadedOnce: boolean }).loadedOnce = true;
     });
@@ -59,5 +60,6 @@ test.describe('ON-02 Activation by the first dock', () => {
     await expect(page.getByText(/^Active since /)).toHaveText(
       /Active since \w+ \d{1,2}, \d{4},\s*\d{2}:\d{2}/,
     );
+    await expectAccessible(page);
   });
 });

@@ -49,6 +49,12 @@ test.describe('MD-03 Bookable resources', () => {
     await expect(page.getByText('Outbound saved')).toBeVisible();
     await expect(bookedAs('D-01').locator('option:checked')).toHaveText('Pool Outbound');
     await expect(bookedAs('D-02').locator('option:checked')).toHaveText('Pool Hall 1');
+
+    // A hall pool keeps its docks until they move elsewhere.
+    await page.getByLabel('Resource').selectOption({ label: 'Pool Hall 1' });
+    await expect(member('D-02')).toBeChecked();
+    await expect(member('D-02')).toBeDisabled();
+    await expect(page.getByText('belongs to this hall pool', { exact: false })).toBeVisible();
   });
 
   test('a dock whose profile changed meanwhile is refused with the profile text', async ({

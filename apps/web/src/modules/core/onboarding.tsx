@@ -30,6 +30,7 @@ import { useLocale } from '@/lib/i18n';
 import { siteTime, viewerTimeZone } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { capacityQueries } from '@/modules/capacity/queries';
+import { zoneNames } from '@/modules/capacity/time';
 import { WeekHoursList } from '@/modules/capacity/week-windows';
 import { onboardingQuery } from './queries';
 
@@ -129,14 +130,22 @@ function StepItem({ orgId, step }: { orgId: string; step: OnboardingStepState })
 /** The weekly hours of the site the site step found, with a link to its hours tab. */
 function SiteHours({ orgId, siteId }: { orgId: string; siteId: string }) {
   const { t } = useTranslation();
+  const locale = useLocale();
   const { can } = useAccess();
+  const site = useQuery(tenantContextQuery(orgId)).data?.sites.find((s) => s.id === siteId);
   const hours = useQuery({
     ...capacityQueries.hours(orgId, siteId),
     enabled: can(Permission.booking.view),
   }).data;
-  if (!hours) return null;
+  if (!hours || !site) return null;
   return (
     <div className="ml-14 flex flex-col gap-2">
+      <p className="text-sm text-muted-foreground">
+        {t(($) => $.onboarding.hours_of, {
+          site: site.name,
+          zone: `${site.timeZone} (${zoneNames(site.timeZone, locale)})`,
+        })}
+      </p>
       <WeekHoursList
         rows={hours.items.filter((r) => r.resourceId === null)}
         label={t(($) => $.onboarding.hours)}

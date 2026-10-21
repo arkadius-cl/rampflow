@@ -47,6 +47,8 @@ test.describe('ON-03 Gating during onboarding', () => {
 
     await page.goto(`/t/${t.tenantId}/plan`);
     await expect(page.getByRole('button', { name: 'New booking' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Walk-in now' })).toBeDisabled();
+    await expect(page.getByRole('link', { name: 'Walk-in now' })).toHaveCount(0);
     await expect(
       page.getByText('Bookings and walk-ins open once the first dock exists.'),
     ).toBeVisible();

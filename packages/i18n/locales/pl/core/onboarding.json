@@ -41,5 +41,6 @@
     "bookings": "Rezerwacje i przyjęcia bez rezerwacji będą dostępne po utworzeniu pierwszej rampy.",
     "walk_in": "Przyjęcia bez rezerwacji będą dostępne po utworzeniu pierwszej rampy.",
     "link": "Dokończ konfigurację"
-  }
+  },
+  "hours_of": "Godziny otwarcia: {{site}}, czas lokalny w strefie {{zone}}:"
 }

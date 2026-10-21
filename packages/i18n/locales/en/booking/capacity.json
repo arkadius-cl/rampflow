@@ -49,7 +49,8 @@
     "other_profile": "other profile",
     "other_hall": "other hall",
     "hall_pool": "Hall pool",
-    "profile": "Dock profile"
+    "profile": "Dock profile",
+    "stays_in_hall_pool": "belongs to this hall pool; to take it out, move it into another pool or book it on its own"
   },
   "hours": {
     "title": "Weekly hours",
@@ -67,7 +68,8 @@
     "midnight_hint": "Write 24:00 to stay open until midnight. A night shift is two windows: 22:00 to 24:00 and 00:00 to 06:00 the next day.",
     "save": "Save hours",
     "saved": "Hours saved",
-    "none_open": "Add at least one window."
+    "none_open": "Add at least one window.",
+    "too_many": "At most 70 windows a week. Remove some windows."
   },
   "closures": {
     "title": "Closures and public holidays",

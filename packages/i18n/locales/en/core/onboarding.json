@@ -41,5 +41,6 @@
     "bookings": "Bookings and walk-ins open once the first dock exists.",
     "walk_in": "Walk-ins open once the first dock exists.",
     "link": "Finish setup"
-  }
+  },
+  "hours_of": "Opening hours of {{site}}, wall-clock times in {{zone}}:"
 }

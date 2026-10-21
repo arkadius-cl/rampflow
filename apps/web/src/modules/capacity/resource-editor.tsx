@@ -239,7 +239,11 @@ function ResourceDetails({
       toast.success(t(($) => $.capacity.resources.saved, { name: r.name }));
       if (!resource) onCreated(r.id);
     },
-    onError: (e) => applyServerIssues(e, form.setError),
+    // The name and caps may have saved before the members failed: show what the server holds.
+    onError: async (e) => {
+      applyServerIssues(e, form.setError);
+      await refresh();
+    },
   });
 
   const holderOf = (dockId: string) =>
@@ -380,7 +384,12 @@ function ResourceDetails({
                     {[...docks].sort(byCode).map((d) => {
                       const checked = field.value.includes(d.id);
                       const elsewhere = holderOf(d.id);
-                      const reason = checked ? null : unfit(d);
+                      // A hall pool is where its docks live; they leave by moving elsewhere.
+                      const home =
+                        checked && resource?.hallId && saved.dockIds.includes(d.id)
+                          ? t(($) => $.capacity.resources.stays_in_hall_pool)
+                          : null;
+                      const reason = home ?? (checked ? null : unfit(d));
                       return (
                         <div
                           key={d.id}

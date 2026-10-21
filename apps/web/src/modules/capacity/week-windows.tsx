@@ -1,4 +1,5 @@
 import type { HoursRow } from '@rampflow/shared/time/weekly-hours';
+import { ZodIssueCode } from '@rampflow/shared/values';
 import { PlusIcon, XIcon } from 'lucide-react';
 import {
   type Control,
@@ -141,7 +142,13 @@ export function WeekWindowsField<T extends FieldValues>({
           );
         })}
       </div>
-      {listError ? <FieldErrorText>{t(($) => $.capacity.hours.none_open)}</FieldErrorText> : null}
+      {listError ? (
+        <FieldErrorText>
+          {listError.type === ZodIssueCode.too_big
+            ? t(($) => $.capacity.hours.too_many)
+            : t(($) => $.capacity.hours.none_open)}
+        </FieldErrorText>
+      ) : null}
       <p className="text-xs text-muted-foreground">{t(($) => $.capacity.hours.midnight_hint)}</p>
     </div>
   );

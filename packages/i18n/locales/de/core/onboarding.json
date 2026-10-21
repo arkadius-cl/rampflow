@@ -41,5 +41,6 @@
     "bookings": "Buchungen und Anlieferungen ohne Buchung sind möglich, sobald die erste Rampe existiert.",
     "walk_in": "Anlieferungen ohne Buchung sind möglich, sobald die erste Rampe existiert.",
     "link": "Einrichtung abschließen"
-  }
+  },
+  "hours_of": "Öffnungszeiten von {{site}}, Ortszeit in {{zone}}:"
 }

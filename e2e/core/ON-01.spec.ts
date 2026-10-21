@@ -35,6 +35,11 @@ test.describe('ON-01 Onboarding checklist', () => {
     await page.goto(`/t/${t.tenantId}/onboarding`);
     await expect(page.getByText('1 of 3 steps done')).toBeVisible();
     await expect(step('Create a site')).toContainText('Done');
+    await expect(
+      page.getByText(
+        /^Opening hours of Bremerhaven, wall-clock times in Europe\/Berlin \(CET\/CEST\)/,
+      ),
+    ).toBeVisible();
     const hours = page.getByRole('definition');
     await expect(hours.first()).toHaveText('06:00–14:00');
     await expect(hours.last()).toHaveText('Closed');
