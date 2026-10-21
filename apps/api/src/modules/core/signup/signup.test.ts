@@ -143,6 +143,14 @@ describe('RG-01 a new email', () => {
     expect((await register(email, { extra: { locale: StaffLocale.pl } })).status).toBe(202);
     expect((await mailsTo(email)).map((m) => m.locale)).toEqual([StaffLocale.pl]);
   });
+
+  it('makes the page language the language of the verified account', async () => {
+    const email = signupEmail('pl-verify');
+    expect((await register(email, { extra: { locale: StaffLocale.pl } })).status).toBe(202);
+    const [row] = await rowsOf(email);
+    expect((await verify(deriveToken(TokenPurpose.signup, row?.id ?? ''))).status).toBe(200);
+    expect((await usersWith(email)).map((u) => u.locale)).toEqual([StaffLocale.pl]);
+  });
 });
 
 describe('RG-03 a known email', () => {

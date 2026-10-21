@@ -238,6 +238,24 @@ describe('CR-01 accept a carrier invitation', () => {
     expect(row?.acceptedAt).toBeNull();
   });
 
+  it('makes the page language the language of the new account', async () => {
+    const inv = await carrierInvitationFor(ownerDb(), {
+      tenantId: w.A.tenantId,
+      invitedBy: w.A.users.dispatcher.id,
+    });
+    const res = await anon.post('/api/public/carrier-invitations/accept', {
+      body: {
+        token: inv.token,
+        name: 'Piotr Nowak',
+        password: 'carrier password 2026',
+        locale: StaffLocale.pl,
+      },
+    });
+    expect(res.status).toBe(200);
+    const users = await ownerDb().select().from(appUser).where(eq(appUser.email, inv.email));
+    expect(users.map((u) => u.locale)).toEqual([StaffLocale.pl]);
+  });
+
   it('works once, also for the invitee signed in by the first acceptance', async () => {
     const inv = await carrierInvitationFor(ownerDb(), {
       tenantId: w.A.tenantId,
