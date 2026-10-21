@@ -3,13 +3,13 @@ import { PrototypeScreen, Setting, SettingSource } from '@rampflow/shared/values
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
 import { UpsellHint } from '@/components/entitlement-gate';
-import { SettingField } from '@/components/settings-field';
 import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SettingField } from '@/modules/core/settings-field';
 import { type SettingRow, SWITCH_OFF, SWITCH_ON, siteSettings } from './-mock';
 import { dispatcherUser, memberships, startTenantMembership, tenantNav } from './-nav';
 

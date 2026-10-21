@@ -15,7 +15,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Controller, type FieldErrors, type Resolver, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SettingField, SettingOrigin } from '@/components/settings-field';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiFailure } from '@/lib/api';
+import { SettingField, SettingOrigin } from '@/modules/core/settings-field';
 import { useFormat } from './format';
 import { controlOf, settingDef } from './setting-control';
 import { SettingInput, useSettingMessage, useValueText } from './setting-input';
