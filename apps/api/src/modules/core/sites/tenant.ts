@@ -1,7 +1,9 @@
 import type { Entitlements } from '@rampflow/shared';
-import type { ConflictReason } from '@rampflow/shared/values';
+import { ProfileForeignKey, ResourceDockConstraint } from '@rampflow/shared/modules/booking/values';
 import {
+  ConflictReason,
   ErrorCode,
+  isValueOf,
   ScopeParty,
   SqlState,
   TenantActorKind,
@@ -48,6 +50,27 @@ export function conflictOnUnique(e: unknown, constraint: string, reason: Conflic
     throw new ApiError(ErrorCode.conflict, `Conflict: ${reason}`, { reason });
   }
   throw e;
+}
+
+/** Rethrows a violation of a profile key as 409 `conflict` with `profile_mismatch`. */
+export function conflictOnProfile(e: unknown): never {
+  const pg = pgError(e);
+  if (pg?.code === SqlState.foreign_key_violation && isValueOf(ProfileForeignKey, pg.constraint)) {
+    throw new ApiError(ErrorCode.conflict, 'The dock profile differs from the resource', {
+      reason: ConflictReason.profile_mismatch,
+    });
+  }
+  throw e;
+}
+
+/** A membership insert: the dock taken meanwhile (primary key) or a profile changed meanwhile. */
+export function conflictOnMembership(e: unknown): never {
+  if (pgError(e)?.code === SqlState.foreign_key_violation) return conflictOnProfile(e);
+  return conflictOnUnique(
+    e,
+    ResourceDockConstraint.resource_dock_pkey,
+    ConflictReason.dock_in_resource,
+  );
 }
 
 /** 422 with one zod-shaped issue, for rules that need stored data. */

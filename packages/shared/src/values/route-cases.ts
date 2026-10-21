@@ -49,6 +49,7 @@ export const RouteCaseCheck = {
   site: 'site',
   permission: 'permission',
   entitlement: 'entitlement',
+  onboarding: 'onboarding',
 } as const;
 export type RouteCaseCheck = ValueOf<typeof RouteCaseCheck>;
 

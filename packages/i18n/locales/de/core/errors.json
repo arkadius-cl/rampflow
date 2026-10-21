@@ -6,6 +6,7 @@
   "not_found": "Das gibt es nicht oder es ist für Sie nicht sichtbar.",
   "conflict": {
     "default": "Das widerspricht einer zwischenzeitlichen Änderung. Laden Sie neu und versuchen Sie es erneut.",
+    "docks": "Rampen: {{codes}}",
     "capacity_full": "Diese Zeit ist ausgebucht. Wählen Sie eine andere.",
     "daily_cap_reached": "Dieser Tag ist ausgebucht. Wählen Sie einen anderen Tag.",
     "closed": "Der Standort ist zu dieser Zeit geschlossen.",
@@ -27,10 +28,14 @@
     "dock_inactive": "Diese Rampe ist nicht aktiv.",
     "not_due": "Dieser Schritt ist noch nicht fällig.",
     "quiz_not_passed": "Das Quiz wurde nicht bestanden. Bitte die Regeln erneut lesen und wiederholen.",
-    "account_exists": "Für diese E-Mail-Adresse gibt es bereits ein Konto. Bitte melden Sie sich an."
+    "account_exists": "Für diese E-Mail-Adresse gibt es bereits ein Konto. Bitte melden Sie sich an.",
+    "profile_mismatch": "Diese Rampen haben eine andere Torart, Temperaturzone oder ADR-Einstellung als der Pool. Ein Pool enthält nur Rampen eines Profils.",
+    "dock_without_load_type": "Diese Rampen wären für keine Ladungsart mehr buchbar. Verknüpfen Sie zuerst eine andere aktive Ladungsart mit ihrem Pool.",
+    "dock_needs_resource": "Diese Rampen gehören zum Hallenpool und können nirgendwo anders hin. Verschieben Sie sie in einen anderen Pool oder buchen Sie sie als Einzelrampen."
   },
   "limit_reached": "Das Limit Ihres Pakets ist erreicht.",
   "validation_failed": "Einige Felder brauchen Ihre Aufmerksamkeit.",
   "rate_limited": "Zu viele Versuche. Warten Sie kurz und versuchen Sie es erneut.",
-  "internal_error": "Bei uns ist etwas schiefgelaufen. Versuchen Sie es erneut."
+  "internal_error": "Bei uns ist etwas schiefgelaufen. Versuchen Sie es erneut.",
+  "onboarding_incomplete": "Schließen Sie zuerst die Einrichtung ab: Legen Sie einen Standort, eine Halle und eine Rampe an. Diese Aktion ist möglich, sobald die erste Rampe existiert."
 }

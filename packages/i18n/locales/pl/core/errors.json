@@ -6,6 +6,7 @@
   "not_found": "To nie istnieje lub nie jest dla Ciebie widoczne.",
   "conflict": {
     "default": "To koliduje ze zmianą wprowadzoną w międzyczasie. Odśwież i spróbuj ponownie.",
+    "docks": "Rampy: {{codes}}",
     "capacity_full": "Ten termin jest zajęty. Wybierz inny.",
     "daily_cap_reached": "Ten dzień jest w pełni zarezerwowany. Wybierz inny dzień.",
     "closed": "Lokalizacja jest wtedy zamknięta.",
@@ -27,10 +28,14 @@
     "dock_inactive": "Ta rampa nie jest aktywna.",
     "not_due": "Ten krok nie jest jeszcze wymagalny.",
     "quiz_not_passed": "Test nie został zaliczony. Przeczytaj zasady ponownie i spróbuj jeszcze raz.",
-    "account_exists": "Konto z tym adresem e-mail już istnieje. Zaloguj się."
+    "account_exists": "Konto z tym adresem e-mail już istnieje. Zaloguj się.",
+    "profile_mismatch": "Te rampy mają inny typ bramy, strefę temperatury lub ustawienie ADR niż pula. Pula obejmuje tylko rampy jednego profilu.",
+    "dock_without_load_type": "Tych ramp nie dałoby się już zarezerwować dla żadnego typu ładunku. Najpierw powiąż z ich pulą inny aktywny typ ładunku.",
+    "dock_needs_resource": "Te rampy należą do puli hali i nie mają innego miejsca. Przenieś je do innej puli albo rezerwuj je jako pojedyncze rampy."
   },
   "limit_reached": "Osiągnięto limit Twojego pakietu.",
   "validation_failed": "Niektóre pola wymagają poprawy.",
   "rate_limited": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
-  "internal_error": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie."
+  "internal_error": "Coś poszło nie tak po naszej stronie. Spróbuj ponownie.",
+  "onboarding_incomplete": "Najpierw dokończ konfigurację: dodaj lokalizację, halę i rampę. Ta akcja będzie dostępna, gdy powstanie pierwsza rampa."
 }

@@ -24,6 +24,7 @@ import type core_entitlements from '@rampflow/i18n/locales/en/core/entitlements.
 import type core_errors from '@rampflow/i18n/locales/en/core/errors.json';
 import type core_module from '@rampflow/i18n/locales/en/core/module.json';
 import type core_nav from '@rampflow/i18n/locales/en/core/nav.json';
+import type core_onboarding from '@rampflow/i18n/locales/en/core/onboarding.json';
 import type core_platform from '@rampflow/i18n/locales/en/core/platform.json';
 import type core_settings from '@rampflow/i18n/locales/en/core/settings.json';
 import type core_settings_ui from '@rampflow/i18n/locales/en/core/settings-ui.json';
@@ -100,6 +101,7 @@ export interface Resources {
     errors: typeof core_errors;
     module: typeof core_module;
     nav: typeof core_nav;
+    onboarding: typeof core_onboarding;
     platform: typeof core_platform;
     settings: typeof core_settings;
     'settings-ui': typeof core_settings_ui;

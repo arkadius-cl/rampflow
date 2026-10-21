@@ -1,0 +1,46 @@
+{
+  "title": "Unternehmen einrichten",
+  "description": "Drei Schritte, bis Spediteure buchen können: ein Standort mit Öffnungszeiten, eine Halle und eine Rampe. Mit der ersten Rampe wird Ihr Unternehmen aktiv.",
+  "progress": "{{done}} von {{total}} Schritten erledigt",
+  "state": {
+    "done": "Erledigt",
+    "open": "Offen"
+  },
+  "steps": {
+    "site": {
+      "title": "Standort anlegen",
+      "description": "Adresse, Zeitzone, Region und wöchentliche Öffnungszeiten."
+    },
+    "hall": {
+      "title": "Halle hinzufügen",
+      "description": "Hallen fassen die Rampen eines Standorts zusammen."
+    },
+    "dock": {
+      "title": "Rampe hinzufügen",
+      "description": "Mit der ersten Rampe wird Ihr Unternehmen aktiv, und Spediteure und Buchungen werden freigeschaltet."
+    }
+  },
+  "needs_site": "Legen Sie zuerst einen Standort an.",
+  "hours": "Öffnungszeiten des Standorts",
+  "edit_hours": "Öffnungszeiten bearbeiten",
+  "active": {
+    "title": "Ihr Unternehmen ist eingerichtet",
+    "since": "Aktiv seit {{date}},",
+    "next": "Nächste Schritte",
+    "invite_carriers": "Spediteure einladen",
+    "public_link": "Öffentlichen Buchungslink erstellen",
+    "staff": "Mitarbeitende einladen"
+  },
+  "notice": {
+    "text": "Ihr Unternehmen wird noch eingerichtet. Spediteure und Buchungen werden mit der ersten Rampe freigeschaltet.",
+    "link": "Checkliste öffnen"
+  },
+  "gate": {
+    "carriers": "Spediteure können eingeladen werden, sobald die erste Rampe existiert.",
+    "links": "Öffentliche Links sind möglich, sobald die erste Rampe existiert.",
+    "bookings": "Buchungen und Anlieferungen ohne Buchung sind möglich, sobald die erste Rampe existiert.",
+    "walk_in": "Anlieferungen ohne Buchung sind möglich, sobald die erste Rampe existiert.",
+    "link": "Einrichtung abschließen"
+  },
+  "hours_of": "Öffnungszeiten von {{site}}, Ortszeit in {{zone}}:"
+}

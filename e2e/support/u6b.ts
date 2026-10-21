@@ -85,13 +85,15 @@ export async function planSite(
   );
   const singleId = randomUUID();
   await db().query(
-    `insert into bookable_resource (id, tenant_id, site_id, kind, name, directions, sort)
-     values ($1, $2, $3, 'single', 'Reefer A-05', '{inbound,outbound}', 1)`,
+    `insert into bookable_resource (id, tenant_id, site_id, kind, name, directions, sort,
+       temperature_zone)
+     values ($1, $2, $3, 'single', 'Reefer A-05', '{inbound,outbound}', 1, 'chilled')`,
     [singleId, side.tenantId, site.id],
   );
   await db().query(
-    `insert into resource_dock (dock_id, resource_id, resource_kind, site_id, tenant_id)
-     values ($1, $2, 'single', $3, $4)`,
+    `insert into resource_dock (dock_id, resource_id, resource_kind, site_id, tenant_id,
+       temperature_zone)
+     values ($1, $2, 'single', $3, $4, 'chilled')`,
     [singleDockId, singleId, site.id, side.tenantId],
   );
   for (const resourceId of [poolId, singleId]) {

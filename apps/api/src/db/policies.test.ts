@@ -20,6 +20,7 @@ import { type World, world } from '../../test/world.ts';
 import { bookableResource } from '../modules/booking/schema.resources.ts';
 import { booking, bookingEvent } from '../modules/booking/schema.ts';
 import { invitation, membership, org, tenantSubscription } from '../modules/core/schema.ts';
+import { SIGNUP_COMPANY } from '../modules/core/signup/fixtures.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
 import { hashToken, type OrgId, type TenantId } from './ids.ts';
 import { asScope, type Scope, withScope } from './scope.ts';
@@ -194,7 +195,7 @@ describe('tenant creation by a signup token', () => {
   const tenantRow = (activatedAt: Date | null) => ({
     id: randomUUID() as TenantId,
     kind: OrgKind.tenant,
-    name: 'Nordhafen Kühllogistik GmbH',
+    name: SIGNUP_COMPANY,
     activatedAt,
   });
 

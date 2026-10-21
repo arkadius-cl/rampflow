@@ -1,3 +1,4 @@
+import { hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import {
   AccountCredential,
@@ -18,6 +19,7 @@ const site = {
   subdivision: 'DE-BY',
   timeZone: 'Europe/Berlin',
   defaultLocale: 'de',
+  hours: hoursTemplateRows.one_shift,
 };
 
 export const cases = defineRouteCases([

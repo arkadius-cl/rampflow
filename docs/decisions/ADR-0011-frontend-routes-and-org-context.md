@@ -11,7 +11,7 @@ related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/explanat
 
 # ADR-0011: Frontend route structure per area with the active org in the URL
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. Amended by [ADR-0015](ADR-0015-data-tables-and-entity-views.md) on 2026-10-20: entity views, detail tabs as child routes, and list state in the URL. The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. Amended by [ADR-0015](ADR-0015-data-tables-and-entity-views.md) on 2026-10-20: entity views, detail tabs as child routes, and list state in the URL. Updated 2026-10-21 by change 03: the onboarding checklist, the tenant home redirect while a tenant is in onboarding, and `?new=1` on the site list. The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
 
 ## Context
 
@@ -41,6 +41,7 @@ One user can hold several memberships: a dispatcher at two tenants, or a carrier
 
 - `/` lists the user's memberships from `/api/me` and redirects when there is exactly one. The last used org is remembered in `localStorage`.
 - Each area has a layout route (`platform/route.tsx`, `t/$orgId/route.tsx`, `c/$orgId/route.tsx`) owning the shell, the org switcher and the error boundary.
+- `/t/$orgId` is the tenant home (`t/$orgId/index.tsx`). While the tenant's `status` is `onboarding` and the user holds `core.manage_sites`, it redirects with `replace` to `/t/$orgId/onboarding` (ON-01). Otherwise it renders `AreaHome`, which redirects to the first navigation item, as the platform and carrier homes do.
 
 ### Route map
 
@@ -84,7 +85,8 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 | `/t/$orgId/plan?site=&date=&view=board\|list&booking=<id>&new=1` | Plan board with detail panel (`booking`) and the staff booking sheet (`new`) | BK-01, BK-02, BK-03, MD-03 | nav `booking.plan` | U6b |
 | `/t/$orgId/bookings/$bookingId` | Booking detail: avis edit, driver link, event log | BK-03, AV-02, CR-06, YD-08 | "Open" in the plan board's detail panel; gate and dock rows | U6b |
 | `/t/$orgId/reports?site=&from=&to=` | KPIs and CSV export | RP-01, RP-02 | nav `report.reports` | U11 |
-| `/t/$orgId/sites` | Sites with usage against limits | MD-01 | nav `core.sites` | U4 |
+| `/t/$orgId/onboarding` | Onboarding checklist: site with opening hours, hall, dock, each with its state and a link to its master data screen; after activation every step done, the activation time and next links | ON-01 to ON-03 | tenant home while onboarding; onboarding notice | 03 |
+| `/t/$orgId/sites?new=1` | Sites with usage against limits; `new` opens the "New site" form | MD-01, ON-01 | nav `core.sites`; site step of the onboarding checklist (`new=1`) | U4, 03 |
 | `/t/$orgId/sites/$siteId` | Halls, docks and the pool editor in three panes | MD-01, MD-02, MD-03 | row of the site list | U4 |
 | `/t/$orgId/sites/$siteId/hours` | Weekly hours, closures and holidays | MD-04 | tab on the site page | U4 |
 | `/t/$orgId/sites/$siteId/load-types` | Load types and duration rules | MD-05 | tab on the site page | U4 |
@@ -128,9 +130,10 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 ### Context and gating
 
 - The tenant layout's `beforeLoad` fetches `GET /api/t/:orgId/context` through `queryClient.ensureQueryData`:
-  `{ org, role, permissions, entitlements, sites, settings }`. `settings` holds the resolved, available settings per site the user may see. The carrier and platform layouts fetch their own context (`permissions`, `org`, and for carriers the linked tenants with their `booking.carrier_portal` state).
+  `{ org, status, role, permissions, entitlements, sites, settings }`. `status` is `onboarding` until the tenant's first dock exists, then `active` (ON-02). `settings` holds the resolved, available settings per site the user may see. The carrier and platform layouts fetch their own context (`permissions`, `org`, and for carriers the linked tenants with their `booking.carrier_portal` state).
 - A 404 from the context request (not a member, or no such org) renders the "no access" page, never a redirect that reveals whether the org exists.
-- `apps/web/src/lib/access.ts` exports `guard({ permission?, entitlement? })` for a route's `beforeLoad`, and `useAccess()` with `can(permission)` and `has(feature)` for actions. Route files call `guard` with the same keys their API routes require.
+- `apps/web/src/lib/access.ts` exports `guard({ permission?, entitlement? })` for a route's `beforeLoad`, `useAccess()` with `can(permission)` and `has(feature)` for actions, and `useTenantStatus()` for the tenant's `status`.
+- While the status is `onboarding`, the office and station layouts show the onboarding notice, with a link to the checklist for users with `core.manage_sites`. `OnboardingGate` disables the actions whose API routes answer 409 `onboarding_incomplete` and shows the reason next to them (ON-03). Route files call `guard` with the same keys their API routes require.
 - The sidebar is `navFor(catalog, { area, permissions, entitlements })` from `@rampflow/shared`. Labels come from `<module>:nav.<id>`; icons are lucide names rendered through `lucide-react`'s dynamic icon.
 - The UI only hides. Every API route enforces the same permission and entitlement ([Module contract](../reference/module-contract.md)).
 - Query keys start with `[area, orgId, ...]`, so switching org never shows cached data of another org.

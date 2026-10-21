@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [ux, design, booking, yard, safety, settings, entitlements, i18n, accessibility]
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 related: [docs/explanation/mvp-scope.md, docs/explanation/domain-glossary.md, docs/explanation/research/market-and-features.md]
 ---
 
@@ -47,7 +47,8 @@ Navigation per role, as rendered by `navFor` from the manifests:
 | Gate: expected trucks, check-in dialog, walk-in, turn away | YD-01, YD-02, YD-03, YD-04, YD-05 | tablet | `/t/$orgId/gate?site=` | `/design/gate` |
 | Dock overview, queue, call dialog, progress | YD-06, YD-07, YD-08 | tablet | `/t/$orgId/docks?site=` | `/design/dock` |
 | Driver: booking, briefing, quiz, waiting, called, done | DR-01, DR-02, DR-03, SF-04 | phone | `/d#<token>`, then states of `/d` | `/design/driver?step=` |
-| Sites, halls, docks and pool editor | MD-01, MD-02, MD-03 | desktop | `/t/$orgId/sites`, `/t/$orgId/sites/$siteId` | `/design/master-data` |
+| Onboarding checklist | ON-01, ON-02, ON-03 | desktop | `/t/$orgId/onboarding` | none |
+| Sites, halls, docks and pool editor | MD-01, MD-02, MD-03 | desktop | `/t/$orgId/sites` ("New site" form at `?new=1`), `/t/$orgId/sites/$siteId` | `/design/master-data` |
 | Settings with inheritance | TN-02, PL-03 | desktop | `/t/$orgId/settings`, `/platform/settings` | `/design/settings` |
 | Platform tenants, usage, overrides | PL-01, PL-02, PL-04 | desktop | `/platform/tenants`, `/platform/tenants/$tenantId` | `/design/platform-admin` |
 | Not prototyped: hours and closures (MD-04), load types (MD-05), booking detail (BK-03, AV-02), staff (TN-01), carriers (TN-03, TN-04), warehouses (CR-02), safety authoring and register (SF-01, SF-02, SF-03), reports (RP-01, RP-02), logo (TN-05), privacy requests (TN-06), sign-in and token pages (CR-01, CR-03) | | desktop | see the route map | They reuse the office shell, `SettingField`, tables and forms shown here. |
@@ -134,9 +135,25 @@ The call dialog shows all docks as large buttons: free member docks of the pool 
 - **Done.** Green check, "Loading done. Please drive to the gate." and the link expiry notice.
 - Invalid, expired or revoked token: one neutral screen "This link is no longer valid. Ask your dispatcher for a new one." with no further detail.
 
+### Onboarding checklist (ON-01 to ON-03)
+
+A tenant in onboarding has no dock yet, so nothing can be booked. The checklist at `/t/$orgId/onboarding` is the tenant home of a member with `core.manage_sites` until the first dock exists. Its title is "Set up your company", followed by "{done} of {total} steps done" and three steps: "Create a site", "Add a hall" and "Add a dock". Each step shows its state as an icon and the word "Done" or "Open", never by colour alone.
+
+The checklist has no forms. An open step is a link to the master data screen that does the work: "Create a site" opens the "New site" form on the site list, and the other two open the site page. A hall or dock step without a site says "Create a site first." A done site step lists the site's weekly hours in its zone, with "Edit opening hours" linking to the hours tab, so the admin sees the template they confirmed. After the first dock, the page says "Your company is set up", gives the activation date in site time, and links to "Invite carriers", "Create a public booking link" and "Invite staff" as the member's permissions allow.
+
+While the tenant is in onboarding, every office screen shows a notice: "Your company is still being set up. Carriers and bookings open once the first dock exists." For a member with `core.manage_sites`, it ends with "Open the setup checklist". The notice reads the tenant status from the context query, so it disappears without a reload once the dock dialog saves the first dock.
+
+The actions that need a dock stay visible but disabled: "Invite carrier", "Create link" on the public links tab, "New booking" and "Walk-in now" on the plan board, and "Walk-in" at the gate. A disabled button gets no hover or focus, so the reason never hides in a tooltip. A line with a lock icon next to the button says why, for example "Carriers can be invited once the first dock exists.", and adds "Finish setup" for a member with `core.manage_sites`. On the gate screen that link has a 44 px target.
+
 ### Sites, halls, docks and pools (MD-01 to MD-03)
 
-Three panes: site list with usage meters against package limits, halls as cards with a dock table (code, door, zone, ADR, status, "Booked as"), and the pool editor (name, direction toggles, parallel slots, daily cap, member docks). Docks already in another resource are disabled with "in Outbound", which is the 409 rule shown before the user hits it. A warning line states that lowering capacity never cancels bookings and how many would show as over capacity.
+Three panes: site list with usage meters against package limits, halls as cards with a dock table (code, door, zone, ADR, status, "Booked as"), and the pool editor (name, direction toggles, parallel slots, daily cap, member docks). A warning line states that lowering capacity never cancels bookings and how many would show as over capacity.
+
+The "New site" form has an "Opening hours" section, because a site without hours offers no slot. It offers three choices: "One shift" (Monday to Friday, 06:00 to 14:00, preselected), "Two shifts" (Monday to Friday, 06:00 to 22:00) and "Custom". The week below shows the chosen template read-only. "Custom" makes the same week editor as the hours tab editable, starting from the template chosen last, with several windows a day.
+
+Every dock is in exactly one resource, so "Booked as" offers "Single dock" and the site's pools, never an empty choice. A pool of another profile, or the hall pool of another hall, stays in the list but disabled, with its reason in the option text ("Pool Versand: other dock profile"). The dock dialog shows "Bookable for" read-only: the pool or "Single dock", and the dock's active load types with a link to the load types tab. When the admin changes the door type, temperature zone or ADR flag of a pooled dock, the dialog says before saving that the dock moves to the pool for its new profile.
+
+The pool editor moves docks rather than refusing them. The member list says "Checking a dock moves it here from its current pool or single booking", and each dock held elsewhere carries "moves from Wareneingang" or "booked on its own, moves here". Docks of another profile, or of another hall for a hall pool, are disabled with "other profile" or "other hall". In a hall pool, its own docks cannot be unchecked. They leave by moving into another pool or by being booked on their own. The editor shows the pool's dock profile and a "Hall pool" badge for a default pool.
 
 ### Settings with inheritance (TN-02)
 

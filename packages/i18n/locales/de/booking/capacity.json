@@ -6,11 +6,12 @@
   "booked_as": {
     "column": "Gebucht als",
     "label": "Gebucht als, Rampe {{code}}",
-    "none": "Nicht buchbar",
     "single": "Einzelrampe",
     "pool": "Pool {{name}}",
     "pool_inactive": "Pool {{name}} (inaktiv)",
-    "saved": "Rampe {{code}} geändert"
+    "saved": "Rampe {{code}} geändert",
+    "pool_other_profile": "Pool {{name}}: anderes Rampenprofil",
+    "pool_other_hall": "Pool {{name}}: Hallenpool einer anderen Halle"
   },
   "resources": {
     "title": "Buchbare Ressourcen",
@@ -32,18 +33,24 @@
       "daily_unit": "pro Tag",
       "daily_hint": "Leer: kein Tageslimit.",
       "members": "Rampen im Pool",
-      "members_hint": "Rampen in einem anderen Pool oder einzeln gebuchte Rampen sind nicht wählbar. Ändern Sie sie in ihrer Spalte „Gebucht als“.",
+      "members_hint": "Eine angehakte Rampe wechselt aus ihrem bisherigen Pool oder ihrer Einzelbuchung hierher. Ein Pool enthält Rampen eines Profils, ein Hallenpool nur Rampen seiner Halle.",
       "active": "Buchbar"
     },
-    "in_pool": "in {{name}}",
-    "is_single": "Einzelrampe",
     "no_capacity": "bringt keine Kapazität, solange nicht aktiv",
     "members_required": "Wählen Sie mindestens eine Rampe.",
     "lowering": "Weniger Kapazität storniert nie Buchungen. Buchungen über der neuen Kapazität erscheinen im Plan als „über Kapazität“.",
     "discard": "Verwerfen",
     "save": "Speichern",
     "create": "Pool anlegen",
-    "saved": "{{name}} gespeichert"
+    "saved": "{{name}} gespeichert",
+    "adr": "ADR",
+    "moves_from": "wechselt aus {{name}}",
+    "moves_from_single": "einzeln buchbar, wechselt hierher",
+    "other_profile": "anderes Profil",
+    "other_hall": "andere Halle",
+    "hall_pool": "Hallenpool",
+    "profile": "Rampenprofil",
+    "stays_in_hall_pool": "gehört zu diesem Hallenpool; zum Herausnehmen in einen anderen Pool verschieben oder einzeln buchbar machen"
   },
   "hours": {
     "title": "Wöchentliche Öffnungszeiten",
@@ -60,7 +67,9 @@
     "add_window_on": "Ein Zeitfenster am {{day}} hinzufügen",
     "midnight_hint": "Schreiben Sie 24:00, um bis Mitternacht offen zu haben. Eine Nachtschicht sind zwei Fenster: 22:00 bis 24:00 und am Folgetag 00:00 bis 06:00.",
     "save": "Zeiten speichern",
-    "saved": "Öffnungszeiten gespeichert"
+    "saved": "Öffnungszeiten gespeichert",
+    "none_open": "Mindestens ein Zeitfenster eintragen.",
+    "too_many": "Höchstens 70 Zeitfenster pro Woche. Entfernen Sie einige."
   },
   "closures": {
     "title": "Schließungen und Feiertage",

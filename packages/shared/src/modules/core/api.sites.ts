@@ -1,7 +1,14 @@
 import * as z from 'zod';
-import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
+import { type LocalTime, type TimeZone, timeZoneSchema } from '../../time/index.ts';
+import { type HoursRow, WeeklyHours } from '../../time/weekly-hours.ts';
 import { StaffLocale } from '../../values/locales.ts';
-import { DockStatus, DoorType, type SiteCountry, TemperatureZone } from './values.ts';
+import {
+  DockStatus,
+  DoorType,
+  type PresetHoursTemplate,
+  type SiteCountry,
+  TemperatureZone,
+} from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
 
@@ -37,8 +44,24 @@ const subdivisionIssue = {
   path: ['subdivision'],
 };
 
-export const CreateSite = z.object(siteFields).refine(subdivisionInCountry, subdivisionIssue);
+/** A new site brings its weekly hours, so it offers slots once it has a dock (MD-01). */
+export const CreateSite = z
+  .object({ ...siteFields, hours: WeeklyHours.min(1) })
+  .refine(subdivisionInCountry, subdivisionIssue);
 export type CreateSite = z.infer<typeof CreateSite>;
+
+const weekdays = (from: number, to: number, opens: string, closes: string): HoursRow[] =>
+  Array.from({ length: to - from + 1 }, (_, i) => ({
+    weekday: from + i,
+    opens: opens as LocalTime,
+    closes: closes as LocalTime,
+  }));
+
+/** The rows each preset of the site form fills in. */
+export const hoursTemplateRows = {
+  one_shift: weekdays(1, 5, '06:00', '14:00'),
+  two_shifts: weekdays(1, 5, '06:00', '22:00'),
+} as const satisfies Record<PresetHoursTemplate, HoursRow[]>;
 
 /** A subdivision change is checked against the stored country by the API. */
 export const UpdateSite = z

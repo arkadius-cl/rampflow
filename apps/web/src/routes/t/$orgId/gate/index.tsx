@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { guard, useAccess } from '@/lib/access';
 import { cn } from '@/lib/utils';
+import { OnboardingGate } from '@/modules/core/onboarding';
 import { CallDialog } from '@/modules/yard/call-dialog';
 import { CheckInDialog } from '@/modules/yard/check-in-dialog';
 import { CheckOutDialog } from '@/modules/yard/check-out-dialog';
@@ -88,6 +89,7 @@ function GateScreen() {
 
 function Gate({ siteId }: { siteId: string }) {
   const { t } = useTranslation('yard');
+  const { t: tc } = useTranslation();
   const { orgId } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -203,15 +205,19 @@ function Gate({ siteId }: { siteId: string }) {
             ))}
           </TabsList>
         </Tabs>
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-12"
-          disabled={!online}
-          onClick={() => setSearch({ walkin: 1 })}
-        >
-          <TruckIcon /> {t(($) => $.gate.action.walk_in)}
-        </Button>
+        <OnboardingGate reason={tc(($) => $.onboarding.gate.walk_in)} touch>
+          {(blocked) => (
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-12"
+              disabled={!online || blocked}
+              onClick={() => setSearch({ walkin: 1 })}
+            >
+              <TruckIcon /> {t(($) => $.gate.action.walk_in)}
+            </Button>
+          )}
+        </OnboardingGate>
       </div>
 
       {!online ? (

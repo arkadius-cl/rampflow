@@ -93,7 +93,13 @@
       "zone": "Temperature zone",
       "status": "Status",
       "adr": "Dangerous goods (ADR) allowed"
-    }
+    },
+    "bookable_for": "Bookable for",
+    "in_pool": "Pool {{name}}",
+    "single": "Single dock",
+    "no_load_types": "No active load type",
+    "edit_load_types": "Edit load types",
+    "moves_on_save": "Saving moves this dock to the pool for its new profile."
   },
   "door_types": {
     "dock_leveler": "Dock leveler",
@@ -126,5 +132,20 @@
     "range_order": "The start comes before the end.",
     "tiers": "Upper limits ascend, and only the last tier is open.",
     "country_admitted": "The platform admits no sites in this country."
+  },
+  "hours": {
+    "legend": "Opening hours",
+    "description": "No start time is offered outside these hours. You can change them later under Hours and closures.",
+    "preview": "Hours of the template",
+    "templates": {
+      "one_shift": "One shift",
+      "two_shifts": "Two shifts",
+      "custom": "Custom"
+    },
+    "template_hints": {
+      "one_shift": "Monday to Friday, 06:00 to 14:00",
+      "two_shifts": "Monday to Friday, 06:00 to 22:00",
+      "custom": "Several windows a day, for example with a lunch break"
+    }
   }
 }

@@ -80,10 +80,13 @@ function useNow(everyMs: number): Date {
 export function StationShell({
   access,
   me,
+  notice,
   children,
 }: {
   access: Extract<AreaAccess, { area: 'tenant' }>;
   me: MeResponse;
+  /** A band under the header, for example the onboarding notice. */
+  notice?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -167,6 +170,7 @@ export function StationShell({
       operator={me.user.name}
       userMenu={userMenu}
       online={online}
+      notice={notice}
     >
       {children}
     </TabletShell>

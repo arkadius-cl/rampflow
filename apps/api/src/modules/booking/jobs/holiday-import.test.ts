@@ -1,5 +1,5 @@
 import { ClosureKind } from '@rampflow/shared/modules/booking/values';
-import { SubdivisionCode } from '@rampflow/shared/modules/core/api.sites';
+import { hoursTemplateRows, SubdivisionCode } from '@rampflow/shared/modules/core/api.sites';
 import { SiteCountry } from '@rampflow/shared/modules/core/values';
 import { values } from '@rampflow/shared/values';
 import Holidays from 'date-holidays';
@@ -33,6 +33,7 @@ beforeAll(async () => {
       subdivision: 'DE-BY',
       timeZone: 'Europe/Berlin',
       defaultLocale: 'de',
+      hours: hoursTemplateRows.one_shift,
     },
   });
   siteId = ((await res.json()) as { id: SiteId }).id;

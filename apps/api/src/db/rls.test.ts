@@ -10,7 +10,7 @@ import {
   TenantActorKind,
   TenantRole,
 } from '@rampflow/shared/values';
-import { getTableColumns, getTableName, sql } from 'drizzle-orm';
+import { eq, getTableColumns, getTableName, sql } from 'drizzle-orm';
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb, unscoped } from '../../test/db.ts';
@@ -27,7 +27,7 @@ import * as driverSchema from '../modules/driver/schema.ts';
 import * as notifySchema from '../modules/notify/schema.ts';
 import * as privacySchema from '../modules/privacy/schema.ts';
 import * as safetySchema from '../modules/safety/schema.ts';
-import { hashToken } from './ids.ts';
+import { hashToken, type TenantId } from './ids.ts';
 import { type Scope, withScope } from './scope.ts';
 
 // The party matrix (ADR-0002, data model "Policy classes"). For every party, every table with
@@ -508,4 +508,45 @@ describe('party matrix: each party reads exactly the rows its policies allow', (
       expect(mismatches).toEqual([]);
     });
   }
+});
+
+describe('tenant activation (ON-02)', () => {
+  const asTenant = (tenantId: TenantId): Scope => ({
+    party: ScopeParty.tenant,
+    tenantId,
+    siteIds: 'all',
+    actor: {
+      kind: TenantActorKind.user,
+      userId: w.A.users.tenant_admin.id,
+      role: TenantRole.tenant_admin,
+    },
+  });
+  const activate = (scope: Scope, tenantId: TenantId, at: Date) =>
+    withScope(scope, (tx) =>
+      tx
+        .update(coreSchema.org)
+        .set({ activatedAt: at })
+        .where(eq(coreSchema.org.id, tenantId))
+        .returning({ id: coreSchema.org.id }),
+    );
+
+  it('lets a tenant set its own activation time once, and no other org', async () => {
+    const [fresh] = await ownerDb()
+      .insert(coreSchema.org)
+      .values({ kind: OrgKind.tenant, name: 'Activation test GmbH' })
+      .returning({ id: coreSchema.org.id });
+    const tenantId = fresh?.id as TenantId;
+    const first = new Date('2026-10-19T08:00:00Z');
+
+    expect(await activate(asTenant(w.B.tenantId), tenantId, first)).toEqual([]);
+    expect(await activate(asTenant(tenantId), tenantId, first)).toEqual([{ id: tenantId }]);
+    expect(await activate(asTenant(tenantId), tenantId, new Date('2026-10-20T08:00:00Z'))).toEqual(
+      [],
+    );
+    const [row] = await ownerDb()
+      .select({ activatedAt: coreSchema.org.activatedAt })
+      .from(coreSchema.org)
+      .where(eq(coreSchema.org.id, tenantId));
+    expect(row?.activatedAt).toEqual(first);
+  });
 });

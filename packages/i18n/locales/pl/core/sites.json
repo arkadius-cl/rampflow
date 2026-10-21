@@ -93,7 +93,13 @@
       "zone": "Strefa temperaturowa",
       "status": "Status",
       "adr": "Towary niebezpieczne (ADR) dozwolone"
-    }
+    },
+    "bookable_for": "Do rezerwacji dla",
+    "in_pool": "Pula {{name}}",
+    "single": "Pojedyncza rampa",
+    "no_load_types": "Brak aktywnego rodzaju ładunku",
+    "edit_load_types": "Edytuj rodzaje ładunku",
+    "moves_on_save": "Po zapisaniu rampa przejdzie do puli dla swojego nowego profilu."
   },
   "door_types": {
     "dock_leveler": "Pomost przeładunkowy",
@@ -126,5 +132,20 @@
     "range_order": "Początek musi być przed końcem.",
     "tiers": "Górne granice rosną, a tylko ostatni próg jest otwarty.",
     "country_admitted": "Platforma nie dopuszcza lokalizacji w tym kraju."
+  },
+  "hours": {
+    "legend": "Godziny otwarcia",
+    "description": "Poza tymi godzinami nie są oferowane terminy. Możesz je później zmienić w sekcji „Godziny otwarcia i zamknięcia”.",
+    "preview": "Godziny szablonu",
+    "templates": {
+      "one_shift": "Jedna zmiana",
+      "two_shifts": "Dwie zmiany",
+      "custom": "Własne"
+    },
+    "template_hints": {
+      "one_shift": "Od poniedziałku do piątku, 06:00–14:00",
+      "two_shifts": "Od poniedziałku do piątku, 06:00–22:00",
+      "custom": "Kilka okien dziennie, na przykład z przerwą obiadową"
+    }
   }
 }

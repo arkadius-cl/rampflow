@@ -39,3 +39,11 @@ export function linkIn(text: string, path: string): string {
   if (!match) throw new Error(`No ${path} link in:\n${text}`);
   return match[0];
 }
+
+/** No email to `to` after two outbox ticks, for actions that must send nothing. */
+export async function expectNoEmailTo(to: string): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 11_000));
+  const res = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
+  const body = (await res.json()) as { messages: Summary[] };
+  expect(body.messages, `emails to ${to}`).toHaveLength(0);
+}

@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { hashPassword } from '../../apps/api/src/modules/core/auth/password.ts';
-import type { OrgKind } from '../../packages/shared/src/values/roles.ts';
+import { PackageId } from '../../packages/shared/src/values/packages.ts';
+import { OrgKind, TenantRole } from '../../packages/shared/src/values/roles.ts';
 
 // Direct fixtures as the owner role (MIGRATION_DATABASE_URL), past RLS, for what no U2 screen
 // creates yet: passwords on seeded users, invitations (U3 creates them through its screens).
@@ -128,4 +129,38 @@ export async function tenantFacts(tenantId: string) {
     tax_id_value: string | null;
   }>('select possible_duplicate, activated_at, tax_id_value from org where id = $1', [tenantId]);
   return rows[0];
+}
+
+export interface PasswordUser {
+  id: string;
+  email: string;
+  password: string;
+}
+
+export interface OnboardingTenant {
+  tenantId: string;
+  users: Record<TenantRole, PasswordUser>;
+}
+
+/**
+ * A tenant in onboarding (ON-01 to ON-03), as a platform admin or a self-registration leaves it:
+ * on Pro, no site, hall or dock, `activated_at` null, with one user per tenant role.
+ */
+export async function createOnboardingTenant(): Promise<OnboardingTenant> {
+  const { rows } = await db().query<{ id: string }>(
+    'insert into org (kind, name) values ($1, $2) returning id',
+    [OrgKind.tenant, `Onboarding ${randomBytes(3).toString('hex')}`],
+  );
+  const tenantId = rows[0]?.id as string;
+  const users = {} as Record<TenantRole, PasswordUser>;
+  for (const role of Object.values(TenantRole)) {
+    const account = await createAccount(uniqueEmail(role), 'onboarding-e2e-pass', `E2E ${role}`);
+    await addMembership(account.id, tenantId, OrgKind.tenant, role);
+    users[role] = account;
+  }
+  await db().query(
+    'insert into tenant_subscription (tenant_id, package, updated_by) values ($1, $2, $3)',
+    [tenantId, PackageId.pro, users.tenant_admin.id],
+  );
+  return { tenantId, users };
 }

@@ -50,6 +50,7 @@ import { Route as TOrgIdBrandIndexRouteImport } from './routes/t/$orgId/brand/in
 import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
 import { Route as TOrgIdDocksIndexRouteImport } from './routes/t/$orgId/docks/index'
 import { Route as TOrgIdGateIndexRouteImport } from './routes/t/$orgId/gate/index'
+import { Route as TOrgIdOnboardingIndexRouteImport } from './routes/t/$orgId/onboarding/index'
 import { Route as TOrgIdPlanIndexRouteImport } from './routes/t/$orgId/plan/index'
 import { Route as TOrgIdPrivacyIndexRouteImport } from './routes/t/$orgId/privacy/index'
 import { Route as TOrgIdReportsIndexRouteImport } from './routes/t/$orgId/reports/index'
@@ -269,6 +270,11 @@ const TOrgIdGateIndexRoute = TOrgIdGateIndexRouteImport.update({
   path: '/gate/',
   getParentRoute: () => TOrgIdRouteRoute,
 } as any)
+const TOrgIdOnboardingIndexRoute = TOrgIdOnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => TOrgIdRouteRoute,
+} as any)
 const TOrgIdPlanIndexRoute = TOrgIdPlanIndexRouteImport.update({
   id: '/plan/',
   path: '/plan/',
@@ -383,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/onboarding/': typeof TOrgIdOnboardingIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/onboarding': typeof TOrgIdOnboardingIndexRoute
   '/t/$orgId/plan': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports': typeof TOrgIdReportsIndexRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
   '/t/$orgId/gate/': typeof TOrgIdGateIndexRoute
+  '/t/$orgId/onboarding/': typeof TOrgIdOnboardingIndexRoute
   '/t/$orgId/plan/': typeof TOrgIdPlanIndexRoute
   '/t/$orgId/privacy/': typeof TOrgIdPrivacyIndexRoute
   '/t/$orgId/reports/': typeof TOrgIdReportsIndexRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
+    | '/t/$orgId/onboarding/'
     | '/t/$orgId/plan/'
     | '/t/$orgId/privacy/'
     | '/t/$orgId/reports/'
@@ -600,6 +610,7 @@ export interface FileRouteTypes {
     | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
     | '/t/$orgId/gate'
+    | '/t/$orgId/onboarding'
     | '/t/$orgId/plan'
     | '/t/$orgId/privacy'
     | '/t/$orgId/reports'
@@ -656,6 +667,7 @@ export interface FileRouteTypes {
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
     | '/t/$orgId/gate/'
+    | '/t/$orgId/onboarding/'
     | '/t/$orgId/plan/'
     | '/t/$orgId/privacy/'
     | '/t/$orgId/reports/'
@@ -975,6 +987,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TOrgIdGateIndexRouteImport
       parentRoute: typeof TOrgIdRouteRoute
     }
+    '/t/$orgId/onboarding/': {
+      id: '/t/$orgId/onboarding/'
+      path: '/onboarding'
+      fullPath: '/t/$orgId/onboarding/'
+      preLoaderRoute: typeof TOrgIdOnboardingIndexRouteImport
+      parentRoute: typeof TOrgIdRouteRoute
+    }
     '/t/$orgId/plan/': {
       id: '/t/$orgId/plan/'
       path: '/plan'
@@ -1168,6 +1187,7 @@ interface TOrgIdRouteRouteChildren {
   TOrgIdCarriersIndexRoute: typeof TOrgIdCarriersIndexRoute
   TOrgIdDocksIndexRoute: typeof TOrgIdDocksIndexRoute
   TOrgIdGateIndexRoute: typeof TOrgIdGateIndexRoute
+  TOrgIdOnboardingIndexRoute: typeof TOrgIdOnboardingIndexRoute
   TOrgIdPlanIndexRoute: typeof TOrgIdPlanIndexRoute
   TOrgIdPrivacyIndexRoute: typeof TOrgIdPrivacyIndexRoute
   TOrgIdReportsIndexRoute: typeof TOrgIdReportsIndexRoute
@@ -1187,6 +1207,7 @@ const TOrgIdRouteRouteChildren: TOrgIdRouteRouteChildren = {
   TOrgIdCarriersIndexRoute: TOrgIdCarriersIndexRoute,
   TOrgIdDocksIndexRoute: TOrgIdDocksIndexRoute,
   TOrgIdGateIndexRoute: TOrgIdGateIndexRoute,
+  TOrgIdOnboardingIndexRoute: TOrgIdOnboardingIndexRoute,
   TOrgIdPlanIndexRoute: TOrgIdPlanIndexRoute,
   TOrgIdPrivacyIndexRoute: TOrgIdPrivacyIndexRoute,
   TOrgIdReportsIndexRoute: TOrgIdReportsIndexRoute,

@@ -24,7 +24,12 @@ export const tenant = new Hono<AppEnv>().get(
   }),
   async (c) => {
     const { scope, access, db } = c.var;
-    if (scope.party !== ScopeParty.tenant || !access.role || !access.entitlements) {
+    if (
+      scope.party !== ScopeParty.tenant ||
+      !access.role ||
+      !access.entitlements ||
+      !access.tenantStatus
+    ) {
       throw new Error('context runs under a tenant user scope');
     }
     const { entitlements } = access;
@@ -46,6 +51,7 @@ export const tenant = new Hono<AppEnv>().get(
     }
     const body: TenantContext = {
       org: { id: scope.tenantId, name: named?.name ?? '' },
+      status: access.tenantStatus,
       role: access.role as Role,
       permissions: [...access.permissions],
       entitlements,

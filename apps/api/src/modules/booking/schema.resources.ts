@@ -3,8 +3,10 @@ import {
   ClosureKind,
   ClosureSource,
   Direction,
+  ProfileForeignKey,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
+import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { ColumnMode, PolicyReader, values } from '@rampflow/shared/values';
 import { sql } from 'drizzle-orm';
 import {
@@ -37,12 +39,26 @@ import {
   type UserId,
 } from '../../db/ids.ts';
 import { tenantPolicies } from '../../db/rls.ts';
-import { dock, siteForeignKey } from '../core/schema.ts';
+import { dock, hall, siteForeignKey } from '../core/schema.ts';
 
 export type ResourceId = Id<'resource'>;
 export type LoadTypeId = Id<'load_type'>;
 
 export type { LoadTypeDuration };
+
+/**
+ * The physical profile a resource and each of its memberships carry (ADR-0017). The defaults
+ * only let the migration add the columns; every writer passes the dock's profile.
+ */
+const profileColumns = () => ({
+  doorType: text('door_type', { enum: values(DoorType) })
+    .notNull()
+    .default(DoorType.dock_leveler),
+  temperatureZone: text('temperature_zone', { enum: values(TemperatureZone) })
+    .notNull()
+    .default(TemperatureZone.ambient),
+  adrAllowed: boolean('adr_allowed').notNull().default(false),
+});
 
 /** A single dock or a pool of docks that bookings are planned on (MD-03). */
 export const bookableResource = pgTable(
@@ -60,12 +76,38 @@ export const bookableResource = pgTable(
     dailyCap: integer('daily_cap'),
     sort: integer('sort').notNull().default(0),
     active: boolean('active').notNull().default(true),
+    ...profileColumns(),
+    /** Set on the default pool of this hall for its profile; null on manual pools and singles. */
+    hallId: uuid('hall_id'),
     createdAt: createdAt(),
   },
   (t) => [
     siteForeignKey(t),
+    foreignKey({
+      name: 'bookable_resource_hall_fk',
+      columns: [t.hallId, t.siteId],
+      foreignColumns: [hall.id, hall.siteId],
+    }),
     unique('bookable_resource_id_kind_key').on(t.id, t.kind),
     unique('bookable_resource_id_site_key').on(t.id, t.siteId),
+    unique('bookable_resource_id_profile_key').on(
+      t.id,
+      t.doorType,
+      t.temperatureZone,
+      t.adrAllowed,
+    ),
+    uniqueIndex('bookable_resource_default_pool_key')
+      .on(t.hallId, t.doorType, t.temperatureZone, t.adrAllowed)
+      .where(sql`${t.hallId} is not null`),
+    check('bookable_resource_door_type_check', oneOf(t.doorType, values(DoorType))),
+    check(
+      'bookable_resource_temperature_zone_check',
+      oneOf(t.temperatureZone, values(TemperatureZone)),
+    ),
+    check(
+      'bookable_resource_hall_check',
+      sql`${t.hallId} is null or ${oneOf(t.kind, [ResourceKind.pool])}`,
+    ),
     index('bookable_resource_tenant_id_idx').on(t.tenantId),
     index('bookable_resource_site_id_idx').on(t.siteId),
     check('bookable_resource_kind_check', oneOf(t.kind, values(ResourceKind))),
@@ -93,12 +135,29 @@ export const resourceDock = pgTable(
     resourceKind: text('resource_kind', { enum: values(ResourceKind) }).notNull(),
     siteId: uuid('site_id').$type<SiteId>().notNull(),
     tenantId: uuid('tenant_id').$type<TenantId>().notNull(),
+    ...profileColumns(),
   },
   (t) => [
     foreignKey({
       columns: [t.resourceId, t.resourceKind],
       foreignColumns: [bookableResource.id, bookableResource.kind],
     }).onDelete('cascade'),
+    // A pool holds docks of one profile, and a pooled dock cannot change its own (ADR-0017).
+    foreignKey({
+      name: ProfileForeignKey.resource_dock_dock_profile_fk,
+      columns: [t.dockId, t.doorType, t.temperatureZone, t.adrAllowed],
+      foreignColumns: [dock.id, dock.doorType, dock.temperatureZone, dock.adrAllowed],
+    }),
+    foreignKey({
+      name: ProfileForeignKey.resource_dock_resource_profile_fk,
+      columns: [t.resourceId, t.doorType, t.temperatureZone, t.adrAllowed],
+      foreignColumns: [
+        bookableResource.id,
+        bookableResource.doorType,
+        bookableResource.temperatureZone,
+        bookableResource.adrAllowed,
+      ],
+    }),
     foreignKey({ columns: [t.dockId, t.siteId], foreignColumns: [dock.id, dock.siteId] }),
     foreignKey({
       columns: [t.resourceId, t.siteId],

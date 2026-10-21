@@ -19,6 +19,8 @@ import {
   loadTypeResource,
   type ResourceId,
 } from '../schema.resources.ts';
+import { lockSiteCapacity } from './lock.ts';
+import { assertBookable } from './placement.ts';
 
 type LoadTypeRow = typeof loadType.$inferSelect;
 
@@ -186,17 +188,19 @@ export async function updateLoadType(
   input: UpdateLoadType,
 ): Promise<LoadTypeView> {
   requireDurationRules(req, input.duration);
-  await requireLoadType(tx, req.tenantId, id);
+  await lockSiteCapacity(tx, (await requireLoadType(tx, req.tenantId, id)).siteId);
   const [row] = await tx
     .update(loadType)
     .set(input)
     .where(and(eq(loadType.tenantId, req.tenantId), eq(loadType.id, id)))
     .returning();
   if (!row) throw new ApiError(ErrorCode.not_found);
-  const links = await resourceIdsOf(tx, req.tenantId, [id]);
-  return view(row, links.get(id) ?? []);
+  const linked = (await resourceIdsOf(tx, req.tenantId, [id])).get(id) ?? [];
+  if (input.active === false) await assertBookable(tx, req.tenantId, linked as ResourceId[]);
+  return view(row, linked);
 }
 
+/** Resources the load type no longer serves must keep another active one (ADR-0017). */
 export async function putLoadTypeResources(
   tx: Tx,
   tenantId: TenantId,
@@ -204,6 +208,10 @@ export async function putLoadTypeResources(
   resourceIds: readonly string[],
 ): Promise<LoadTypeView> {
   const lt = await requireLoadType(tx, tenantId, id);
+  await lockSiteCapacity(tx, lt.siteId);
+  const before = (await resourceIdsOf(tx, tenantId, [id])).get(id) ?? [];
   await setResources(tx, lt, resourceIds);
+  const kept = new Set(resourceIds);
+  await assertBookable(tx, tenantId, before.filter((r) => !kept.has(r)) as ResourceId[]);
   return view(lt, [...resourceIds]);
 }

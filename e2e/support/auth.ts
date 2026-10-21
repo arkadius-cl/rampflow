@@ -67,6 +67,18 @@ export async function signInAs(context: BrowserContext, user: WorldUser): Promis
   ]);
 }
 
+/** Signs a browser or API context in with a password through POST /api/auth/login. */
+export async function signInByApi(
+  request: APIRequestContext,
+  user: { email: string; password: string },
+): Promise<void> {
+  const res = await request.post('/api/auth/login', {
+    data: { email: user.email, password: user.password },
+    headers: { Origin: APP_ORIGIN },
+  });
+  expect(res.status(), await res.text()).toBe(200);
+}
+
 /** Signs in through the /login form. */
 export async function signInWithPassword(page: Page, email: string, password: string) {
   await page.goto('/login');

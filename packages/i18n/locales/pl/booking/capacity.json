@@ -6,11 +6,12 @@
   "booked_as": {
     "column": "Rezerwowana jako",
     "label": "Rezerwowana jako, rampa {{code}}",
-    "none": "Nie do rezerwacji",
     "single": "Pojedyncza rampa",
     "pool": "Pula {{name}}",
     "pool_inactive": "Pula {{name}} (nieaktywna)",
-    "saved": "Zmieniono rampę {{code}}"
+    "saved": "Zmieniono rampę {{code}}",
+    "pool_other_profile": "Pula {{name}}: inny profil rampy",
+    "pool_other_hall": "Pula {{name}}: pula innej hali"
   },
   "resources": {
     "title": "Zasoby do rezerwacji",
@@ -32,18 +33,24 @@
       "daily_unit": "dziennie",
       "daily_hint": "Puste: bez limitu dziennego.",
       "members": "Rampy w puli",
-      "members_hint": "Rampy z innej puli lub rezerwowane osobno nie są do wyboru. Zmień je w ich kolumnie „Rezerwowana jako”.",
+      "members_hint": "Zaznaczona rampa przechodzi tutaj ze swojej dotychczasowej puli lub rezerwacji osobnej. Pula obejmuje rampy jednego profilu, pula hali tylko rampy swojej hali.",
       "active": "Do rezerwacji"
     },
-    "in_pool": "w {{name}}",
-    "is_single": "pojedyncza rampa",
     "no_capacity": "nie daje pojemności, dopóki nie jest aktywna",
     "members_required": "Wybierz co najmniej jedną rampę.",
     "lowering": "Zmniejszenie pojemności nigdy nie anuluje rezerwacji. Rezerwacje ponad nową pojemność są oznaczone w planie jako „ponad pojemność”.",
     "discard": "Odrzuć",
     "save": "Zapisz",
     "create": "Utwórz pulę",
-    "saved": "Zapisano {{name}}"
+    "saved": "Zapisano {{name}}",
+    "adr": "ADR",
+    "moves_from": "przechodzi z {{name}}",
+    "moves_from_single": "rezerwowana osobno, przechodzi tutaj",
+    "other_profile": "inny profil",
+    "other_hall": "inna hala",
+    "hall_pool": "Pula hali",
+    "profile": "Profil rampy",
+    "stays_in_hall_pool": "należy do tej puli hali; aby ją wyjąć, przenieś ją do innej puli lub ustaw rezerwację osobną"
   },
   "hours": {
     "title": "Godziny tygodniowe",
@@ -60,7 +67,9 @@
     "add_window_on": "Dodaj okno: {{day}}",
     "midnight_hint": "Wpisz 24:00, aby mieć otwarte do północy. Nocna zmiana to dwa okna: 22:00 do 24:00 i następnego dnia 00:00 do 06:00.",
     "save": "Zapisz godziny",
-    "saved": "Zapisano godziny"
+    "saved": "Zapisano godziny",
+    "none_open": "Dodaj co najmniej jedno okno czasowe.",
+    "too_many": "Maksymalnie 70 okien w tygodniu. Usuń część z nich."
   },
   "closures": {
     "title": "Zamknięcia i święta",

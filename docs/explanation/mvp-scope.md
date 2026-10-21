@@ -17,7 +17,7 @@ rampflow lets small and mid-sized warehouse operators replace phone, email and E
 
 ## Core loop
 
-1. The tenant admin sets up master data (MD-01 to MD-05) and invites carriers (TN-03, TN-04).
+1. The tenant admin follows the onboarding checklist to a site with hours, a hall and the first dock, which activates the tenant (ON-01, ON-02). The admin then completes the master data (MD-01 to MD-05) and invites carriers (TN-03, TN-04).
 2. A carrier books a slot with the avis (BK-04, AV-01) and shares the driver link (CR-06).
 3. The driver opens the link and completes the safety briefing (DR-01, SF-04).
 4. The gate operator checks the truck in (YD-02).
@@ -92,10 +92,23 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 6. **TN-06 Data subject requests.** The admin finds drivers by name, phone or plate.
    - Export returns JSON of matching bookings and acknowledgements.
    - Erase pseudonymizes matching bookings with the retention job's function. Acknowledgements under retention become restricted, not deleted.
+<<<<<<< HEAD
 7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone and default locale. Country and subdivision are chosen from lists; the country must be one the platform admits (`core.site_countries`), otherwise 422. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
+=======
+7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone, default locale and weekly opening hours. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
+   - Creating a site requires at least one weekly window. Without hours, or with overlapping windows, the request returns 422 and no site exists.
+   - The "New site" form offers three templates: "One shift" (Monday to Friday 06:00 to 14:00, preselected), "Two shifts" (Monday to Friday 06:00 to 22:00) and "Custom" (several windows a day, for example with a lunch break).
+>>>>>>> feat/03-tenant-onboarding
 8. **MD-02 Halls and docks.** A dock belongs to a hall and has a code unique per site, door type, temperature zone, ADR flag and status (`active`, `maintenance`, `inactive`). `core.max_docks` counts active and maintenance docks.
-9. **MD-03 Bookable resources.** The admin groups docks into pools (name, directions, optional capacity cap, optional daily cap) or marks a dock single.
-   - Adding a dock that already belongs to a resource returns 409.
+   - A new dock joins the default pool of its hall and profile (door type, temperature zone, ADR flag) in the same transaction. If that pool does not exist yet, the system creates it, named after the hall plus every attribute that differs from the standard profile, for example "Halle 2 · Tiefkühl", and links it to every load type of the site.
+   - Without `booking.pools`, a new dock becomes a single resource instead.
+   - Changing a pooled dock's profile moves it to the default pool of its new profile.
+   - The dock dialog shows "Bookable for" read-only: the dock's pool or "Single dock", and the names of its active load types.
+9. **MD-03 Bookable resources.** The admin groups docks into pools (name, directions, optional capacity cap, optional daily cap) or books a dock as single. A dock belongs to exactly one bookable resource, whatever its status. To take a dock out of service, the admin sets its status.
+   - A pool holds docks of one profile only. A dock of another profile returns 409 `conflict` with reason `profile_mismatch`.
+   - Putting a dock into a pool, creating a pool with it, or booking it as single moves it out of its current resource in one transaction. A dock removed from a pool returns to the default pool of its hall and profile.
+   - The system never splits pools. The admin splits a default pool by hand, by creating a pool from some of its docks. A default pool takes docks of its own hall only. A manual pool may span the halls of a site.
+   - The resource of every dock has at least one active load type. A write that would break the rule returns 409 `conflict` with reason `dock_without_load_type`. Removing a dock from its own default pool returns 409 `conflict` with reason `dock_needs_resource`.
    - Pools need `booking.pools`.
    - Reducing capacity never cancels bookings. The plan board marks affected bookings "over capacity".
 10. **MD-04 Hours and closures.** Weekly hours per site, optional narrower hours per resource, and closures or blocks on a site or resource.
@@ -110,6 +123,18 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
     - `safety.max_briefing_templates` limits the instruction count.
 13. **SF-02 Quiz.** With `safety.quiz`, each locale has multiple-choice questions with one correct answer. Publishing needs 3 to 5 questions per published locale.
 14. **SF-03 Acknowledgement register.** Staff list and export (CSV) acknowledgements by site, carrier, driver name, version and expiry.
+15. **ON-01 Onboarding checklist.** A tenant is in onboarding until its first dock exists. The checklist at `/t/$orgId/onboarding` shows three steps with their state as icon and text: "Create a site", "Add a hall" and "Add a dock".
+    - While the tenant is in onboarding, the tenant home sends a member with `core.manage_sites` to the checklist. Other members, and every member of an active tenant, get the tenant home.
+    - Each open step links to the existing master data screen. "Create a site" opens the "New site" form, and the other two open the site page. The checklist has no forms of its own.
+    - A done site step shows the site's weekly hours with a link to its hours tab.
+    - Once every step is done, the checklist says since when the company is active and links to inviting carriers, the public booking link and staff.
+16. **ON-02 Activation.** The transaction that creates the tenant's first dock sets the tenant's activation time from the request clock. `GET /api/t/:orgId/context` returns `status`: `onboarding` or `active`.
+    - A site and a hall without a dock leave the tenant in onboarding. A failed dock creation activates nothing.
+    - Activation is one-way. More docks, inactive or maintenance docks, and inactive sites leave the tenant active with its first activation time.
+17. **ON-03 Blocked until the first dock.** During onboarding, carrier invitations, public link creation and regeneration, staff bookings, walk-ins and carrier bookings return 409 `onboarding_incomplete` and write nothing. A missing permission or entitlement still returns 403 first.
+    - Sites, halls, docks, pools, hours, closures, load types, settings, the logo and staff invitations work as for an active tenant.
+    - Every office screen shows a notice that carriers and bookings open once the first dock exists. For a member with `core.manage_sites`, it links to the checklist. The notice disappears without a reload once the tenant is active.
+    - The web disables "Invite carrier", "Create link", "New booking", "Walk-in now" and the gate's "Walk-in", and shows the reason next to each.
 
 ### Dispatcher
 
@@ -281,7 +306,7 @@ Scopes are P (platform), T (tenant) and S (site). Resolution runs site, tenant, 
 
 | Question | Decision | Source |
 |---|---|---|
-| Pools and single docks? | One `bookable_resource`, kind `pool` or `single`. A dock belongs to at most one, and pooled docks are never booked directly. | Ruling 1; narrows domain §2 |
+| Pools and single docks? | One `bookable_resource`, kind `pool` or `single`. A dock belongs to exactly one, a pool holds docks of one profile, and pooled docks are never booked directly. | Ruling 1, ADR-0017; narrows domain §2 |
 | Physical occupancy? | Checked at assignment, one truck per dock in `called`, `at_dock` or `loading`. Capacity counts planned slots only. | Ruling 1; tech §7 |
 | Booking and visit as two aggregates? | One state machine on the booking. Walk-ins are staff bookings. | Glossary over domain §3 |
 | Booking without an account? | No. Invitation or public link, then an account with magic link. | Ruling 2; market MUST 5 disagrees |

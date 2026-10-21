@@ -1,5 +1,6 @@
 import type { Entitlements, PermissionKey, Role, SettingKey, SettingSource } from '../../index.ts';
 import type { CarrierLinkStatus } from '../booking/values.ts';
+import type { TenantStatus } from './values.ts';
 
 // Bodies of the three context endpoints (module contract, "Context endpoints"). The layouts of
 // apps/web fetch them once per org and gate routes, navigation and actions from them.
@@ -22,6 +23,8 @@ export interface ContextSetting {
 
 export interface TenantContext {
   org: OrgRef;
+  /** `onboarding` until the first dock exists, then `active` for good (ON-02). */
+  status: TenantStatus;
   role: Role;
   permissions: PermissionKey[];
   entitlements: Entitlements;

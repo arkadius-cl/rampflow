@@ -29,6 +29,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Spinner } from '@/components/ui/spinner';
 import { api, call } from '@/lib/api';
 import { useLocale } from '@/lib/i18n';
+import { OnboardingGate } from '@/modules/core/onboarding';
 import { carrierKeys } from './queries';
 
 type InviteForm = z.input<typeof CarrierInvitationBody>;
@@ -40,6 +41,7 @@ const languageName = (locale: string) =>
 /** TN-03: invite a carrier company by name and email. */
 export function InviteCarrierDialog({ orgId }: { orgId: string }) {
   const { t } = useTranslation('booking');
+  const { t: tc } = useTranslation();
   const message = useFieldMessage();
   const locale = useLocale();
   const queryClient = useQueryClient();
@@ -62,10 +64,14 @@ export function InviteCarrierDialog({ orgId }: { orgId: string }) {
   });
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>
-        <MailPlusIcon />
-        {t(($) => $.carriers.invite.action)}
-      </DialogTrigger>
+      <OnboardingGate reason={tc(($) => $.onboarding.gate.carriers)}>
+        {(blocked) => (
+          <DialogTrigger render={<Button size="sm" />} disabled={blocked}>
+            <MailPlusIcon />
+            {t(($) => $.carriers.invite.action)}
+          </DialogTrigger>
+        )}
+      </OnboardingGate>
       <DialogContent>
         <form
           noValidate

@@ -2,12 +2,13 @@ import {
   ClosureKind,
   ClosureSource,
   Direction,
-  DockBookingKind,
   DurationKind,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
+import { hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
+import { TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { LocalDate } from '@rampflow/shared/time';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, Feature } from '@rampflow/shared/values';
 import { eq, inArray } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -15,11 +16,22 @@ import { as } from '../../../../test/http.ts';
 import { type World, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
 import { type DockId, wrapJson } from '../../../db/ids.ts';
+import type { Tx } from '../../../db/scope.ts';
 import { testClock } from '../../../kernel/clock.ts';
+import { ApiError } from '../../../kernel/errors.ts';
 import { entitlementOverride } from '../../core/schema.ts';
+import type { TenantRequest } from '../../core/sites/tenant.ts';
+import type { LoadTypeId } from '../schema.resources.ts';
 import { booking } from '../schema.ts';
-import { asTenantAdmin, capacitySite, placeBooking } from './fixtures.ts';
+import {
+  asTenantAdmin,
+  asTenantRequest,
+  capacitySite,
+  placeBooking,
+  serviceSite,
+} from './fixtures.ts';
 import { loadDayTimeline } from './load.ts';
+import { putLoadTypeResources, updateLoadType } from './load-types.ts';
 import { isOverCapacity } from './timeline.ts';
 
 const app = createApp({ clock: testClock(new Date('2026-10-19T08:00:00Z')) });
@@ -45,7 +57,7 @@ const switchOff = (side: World['A'], key: string) =>
     });
 
 describe('MD-03 bookable resources', () => {
-  it('answers 409 dock_in_resource for a dock that already belongs to a resource', async () => {
+  it('moves a dock out of its single into a new pool instead of answering 409', async () => {
     const s = w.A.sites[0];
     const first = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
@@ -57,6 +69,9 @@ describe('MD-03 bookable resources', () => {
       },
     });
     expect(first.status).toBe(201);
+    const tor = (await first.json()) as { id: string; loadTypeIds: string[] };
+    // A dock in no resource brings the site's load types (ADR-0017).
+    expect(tor.loadTypeIds).toEqual([s.loadTypeId]);
     const second = await admin(w.A).post(`${capacity(w.A)}/resources`, {
       body: {
         siteId: s.id,
@@ -66,15 +81,17 @@ describe('MD-03 bookable resources', () => {
         dockIds: [...s.dockIds],
       },
     });
-    expect(second.status).toBe(409);
-    expect(await error(second)).toMatchObject({
-      code: ErrorCode.conflict,
-      details: { reason: ConflictReason.dock_in_resource, dockIds: [s.dockIds[0]] },
+    expect(second.status).toBe(201);
+    expect(await second.json()).toMatchObject({
+      dockIds: [...s.dockIds].sort(),
+      loadTypeIds: [s.loadTypeId],
+      hallId: null,
     });
-    const put = await admin(w.A).put(`${capacity(w.A)}/resources/${s.resourceId}/docks`, {
-      body: { dockIds: [s.dockIds[0]] },
-    });
-    expect(put.status).toBe(409);
+    const list = await admin(w.A).get(`${capacity(w.A)}/resources?siteId=${s.id}`);
+    const { items } = (await list.json()) as {
+      items: { id: string; active: boolean; dockIds: string[] }[];
+    };
+    expect(items.find((r) => r.id === tor.id)).toMatchObject({ active: false, dockIds: [] });
   });
 
   it('holds exactly one dock in a single resource and only docks of its own site', async () => {
@@ -220,7 +237,7 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
     const s = await capacitySite(w.A.tenantId, { docks: 2, hours: [[1, '06:00', '08:00']] });
     const [d1, d2] = s.dockIds as [DockId, DockId];
 
-    const toSingle = await book(d1, { as: DockBookingKind.single, directions: ['outbound'] });
+    const toSingle = await book(d1, { as: ResourceKind.single, directions: ['outbound'] });
     expect(toSingle.status).toBe(200);
     const single = (await resourceOf(toSingle))?.id as string;
     expect(await holders(s.siteId)).toEqual({
@@ -228,35 +245,31 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
       [single]: { active: true, dockIds: [d1] },
     });
 
-    expect((await book(d1, { as: DockBookingKind.pool, resourceId: s.resourceId })).status).toBe(
-      200,
-    );
+    expect((await book(d1, { as: ResourceKind.pool, resourceId: s.resourceId })).status).toBe(200);
     expect(await holders(s.siteId)).toEqual({
       [s.resourceId]: { active: true, dockIds: [d1, d2].sort() },
       [single]: { active: false, dockIds: [] },
     });
 
-    const again = (await (await book(d1, { as: DockBookingKind.single })).json()) as {
+    const again = (await (await book(d1, { as: ResourceKind.single })).json()) as {
       resource: { id: string; directions: string[] };
     };
     expect(again.resource).toMatchObject({ id: single, directions: ['outbound'] });
 
-    const none = await book(d1, { as: DockBookingKind.none });
-    expect(await resourceOf(none)).toBeNull();
     expect(await holders(s.siteId)).toEqual({
       [s.resourceId]: { active: true, dockIds: [d2] },
-      [single]: { active: false, dockIds: [] },
+      [single]: { active: true, dockIds: [d1] },
     });
   });
 
   it('keeps both docks when two admins move docks into the same pool at once', async () => {
     const s = await capacitySite(w.A.tenantId, { docks: 3, hours: [] });
     const [d1, d2, d3] = s.dockIds as [DockId, DockId, DockId];
-    await book(d2, { as: DockBookingKind.none });
-    await book(d3, { as: DockBookingKind.none });
+    await book(d2, { as: ResourceKind.single });
+    await book(d3, { as: ResourceKind.single });
     const both = await Promise.all([
-      book(d2, { as: DockBookingKind.pool, resourceId: s.resourceId }),
-      book(d3, { as: DockBookingKind.pool, resourceId: s.resourceId }),
+      book(d2, { as: ResourceKind.pool, resourceId: s.resourceId }),
+      book(d3, { as: ResourceKind.pool, resourceId: s.resourceId }),
     ]);
     expect(both.map((r) => r.status)).toEqual([200, 200]);
     expect((await holders(s.siteId))[s.resourceId]?.dockIds).toEqual([d1, d2, d3].sort());
@@ -267,16 +280,306 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
     const other = await capacitySite(w.A.tenantId, { docks: 2, hours: [] });
     const [d1, d2] = s.dockIds as [DockId, DockId];
     const single = await resourceOf(
-      await book(d2, { as: DockBookingKind.single, directions: ['inbound'] }),
+      await book(d2, { as: ResourceKind.single, directions: ['inbound'] }),
     );
     for (const resourceId of [other.resourceId, single?.id]) {
-      const res = await book(d1, { as: DockBookingKind.pool, resourceId });
+      const res = await book(d1, { as: ResourceKind.pool, resourceId });
       expect(res.status).toBe(422);
       expect((await error(res)).details?.issues).toEqual([
         expect.objectContaining({ path: ['resourceId'] }),
       ]);
     }
   });
+});
+
+describe('MD-03 without booking.pools no dock leaves a pool (ADR-0017)', () => {
+  // Its own world: switching pools off would change world A for the other tests.
+  let own: World;
+  beforeAll(async () => {
+    own = await world();
+  });
+  const api = (path: string) => `/api/t/${own.A.tenantId}/capacity${path}`;
+  const memberships = async (siteId: string) =>
+    Object.fromEntries(
+      (
+        (await (await admin(own.A).get(api(`/resources?siteId=${siteId}`))).json()) as {
+          items: { id: string; dockIds: string[] }[];
+        }
+      ).items.map((r) => [r.id, r.dockIds]),
+    );
+
+  it("answers 403 for a single or a single's docks taken out of a pool", async () => {
+    const s = await serviceSite(own.A, [
+      { code: 'T01', hall: 'Halle 1' },
+      { code: 'T02', hall: 'Halle 1' },
+      { code: 'T03', hall: 'Halle 2' },
+    ]);
+    const booked = await admin(own.A).put(api(`/docks/${s.docks.T03}/booking`), {
+      body: { as: ResourceKind.single },
+    });
+    const single = ((await booked.json()) as { resource: { id: string } }).resource.id;
+    await switchOff(own.A, Feature.booking.pools);
+    const before = await memberships(s.siteId);
+
+    const created = await admin(own.A).post(api('/resources'), {
+      body: {
+        siteId: s.siteId,
+        kind: ResourceKind.single,
+        name: 'T01',
+        directions: [Direction.inbound],
+        dockIds: [s.docks.T01],
+      },
+    });
+    expect(created.status).toBe(403);
+    expect(await error(created)).toMatchObject({ code: ErrorCode.entitlement_required });
+    const replaced = await admin(own.A).put(api(`/resources/${single}/docks`), {
+      body: { dockIds: [s.docks.T01] },
+    });
+    expect(replaced.status).toBe(403);
+    expect(await memberships(s.siteId)).toEqual(before);
+  });
+
+  it("replaces a single's dock, giving the removed dock a single of its own", async () => {
+    const s = await serviceSite(
+      own.A,
+      [
+        { code: 'S01', hall: 'Halle 1' },
+        { code: 'S02', hall: 'Halle 1' },
+      ],
+      { pools: false },
+    );
+    const byDock = async () =>
+      Object.entries(await memberships(s.siteId)).flatMap(([id, docks]) =>
+        docks.map((d) => [d, id] as const),
+      );
+    const s01 = (await byDock()).find(([d]) => d === s.docks.S01)?.[1] as string;
+    const res = await admin(own.A).put(api(`/resources/${s01}/docks`), {
+      body: { dockIds: [s.docks.S02] },
+    });
+    expect(res.status).toBe(200);
+    const after = await byDock();
+    expect(after.map(([d]) => d).sort()).toEqual([s.docks.S01, s.docks.S02].sort());
+    expect(Object.fromEntries(after)[s.docks.S02 as string]).toBe(s01);
+    expect(Object.fromEntries(after)[s.docks.S01 as string]).not.toBe(s01);
+  });
+});
+
+describe('MD-03 pools hold docks of one profile and every dock has a resource (ADR-0017)', () => {
+  const hamburg = () =>
+    serviceSite(w.A, [
+      ...['T01', 'T02', 'T03', 'T04', 'T05'].map((code) => ({ code, hall: 'Halle 1' })),
+      ...['T06', 'T07', 'T08'].map((code) => ({ code, hall: 'Halle 2' })),
+      { code: 'T09', hall: 'Halle 2', temperatureZone: TemperatureZone.frozen },
+    ]);
+  type View = {
+    id: string;
+    name: string;
+    hallId: string | null;
+    temperatureZone: string;
+    dockIds: string[];
+    loadTypeIds: string[];
+  };
+  const list = async (siteId: string) =>
+    (
+      (await (await admin(w.A).get(`${capacity(w.A)}/resources?siteId=${siteId}`)).json()) as {
+        items: View[];
+      }
+    ).items;
+  const holderOf = async (siteId: string, dockId: string | undefined) =>
+    (await list(siteId)).find((r) => r.dockIds.includes(dockId as string));
+  const named = async (siteId: string, name: string) =>
+    (await list(siteId)).find((r) => r.name === name) as View;
+  const book = (dockId: string | undefined, body: unknown) =>
+    admin(w.A).put(`${capacity(w.A)}/docks/${dockId}/booking`, { body });
+  const newPool = (siteId: string, name: string, dockIds: (string | undefined)[]) =>
+    admin(w.A).post(`${capacity(w.A)}/resources`, {
+      body: { siteId, kind: ResourceKind.pool, name, directions: ['inbound'], dockIds },
+    });
+  const setDocks = (resourceId: string, dockIds: (string | undefined)[]) =>
+    admin(w.A).put(`${capacity(w.A)}/resources/${resourceId}/docks`, { body: { dockIds } });
+
+  it('lists the profile and hall of the pool holding the frozen dock', async () => {
+    const s = await hamburg();
+    expect(await holderOf(s.siteId, s.docks.T09)).toMatchObject({
+      temperatureZone: TemperatureZone.frozen,
+      hallId: s.halls['Halle 2'],
+    });
+  });
+
+  it('answers 409 profile_mismatch for a frozen dock booked into an ambient pool', async () => {
+    const s = await hamburg();
+    const before = await holderOf(s.siteId, s.docks.T09);
+    const res = await book(s.docks.T09, {
+      as: ResourceKind.pool,
+      resourceId: (await named(s.siteId, 'Halle 2')).id,
+    });
+    expect(res.status).toBe(409);
+    expect(await error(res)).toMatchObject({
+      code: ErrorCode.conflict,
+      details: { reason: ConflictReason.profile_mismatch, dockIds: [s.docks.T09] },
+    });
+    expect((await holderOf(s.siteId, s.docks.T09))?.id).toBe(before?.id);
+  });
+
+  it('answers 422 at ["as"] for "none" and keeps the dock in its resource', async () => {
+    const s = await hamburg();
+    // `none` is no longer a member of ResourceKind.
+    const res = await book(s.docks.T01, { as: 'none' satisfies string });
+    expect(res.status).toBe(422);
+    expect((await error(res)).details?.issues).toEqual([expect.objectContaining({ path: ['as'] })]);
+    expect((await holderOf(s.siteId, s.docks.T01))?.name).toBe('Halle 1');
+  });
+
+  it('splits inbound docks off a hall pool, sends a removed dock home, and keeps the last', async () => {
+    const s = await hamburg();
+    const halle1 = await named(s.siteId, 'Halle 1');
+    const split = await newPool(s.siteId, 'Wareneingang', [
+      s.docks.T01,
+      s.docks.T02,
+      s.docks.T03,
+      s.docks.T04,
+    ]);
+    expect(split.status).toBe(201);
+    const wareneingang = (await split.json()) as View;
+    expect(wareneingang).toMatchObject({ hallId: null, loadTypeIds: halle1.loadTypeIds });
+    expect((await named(s.siteId, 'Halle 1')).dockIds).toEqual([s.docks.T05]);
+
+    const shrink = await setDocks(wareneingang.id, [s.docks.T01, s.docks.T02, s.docks.T03]);
+    expect(shrink.status).toBe(200);
+    expect((await named(s.siteId, 'Halle 1')).dockIds).toEqual([s.docks.T04, s.docks.T05].sort());
+
+    const own = await setDocks(halle1.id, [s.docks.T04]);
+    expect(own.status).toBe(409);
+    expect(await error(own)).toMatchObject({
+      details: { reason: ConflictReason.dock_needs_resource, dockIds: [s.docks.T05] },
+    });
+    expect((await named(s.siteId, 'Halle 1')).dockIds).toEqual([s.docks.T04, s.docks.T05].sort());
+  });
+
+  it('answers 409 profile_mismatch for a new pool of mixed profiles', async () => {
+    const s = await hamburg();
+    const res = await newPool(s.siteId, 'Gemischt', [s.docks.T07, s.docks.T09]);
+    expect(res.status).toBe(409);
+    expect(await error(res)).toMatchObject({
+      details: { reason: ConflictReason.profile_mismatch, dockIds: [s.docks.T09] },
+    });
+    expect((await named(s.siteId, 'Halle 2')).dockIds).toContain(s.docks.T07);
+  });
+
+  it('keeps a default pool to its hall, while a manual pool spans halls', async () => {
+    const s = await hamburg();
+    const res = await book(s.docks.T06, {
+      as: ResourceKind.pool,
+      resourceId: (await named(s.siteId, 'Halle 1')).id,
+    });
+    expect(res.status).toBe(422);
+    expect((await error(res)).details?.issues).toEqual([
+      expect.objectContaining({ path: ['resourceId'] }),
+    ]);
+    expect((await holderOf(s.siteId, s.docks.T06))?.name).toBe('Halle 2');
+    const halle1 = await named(s.siteId, 'Halle 1');
+    const into = await setDocks(halle1.id, [...halle1.dockIds, s.docks.T06]);
+    expect(into.status).toBe(422);
+    expect((await error(into)).details?.issues).toEqual([
+      expect.objectContaining({ path: ['dockIds', 5] }),
+    ]);
+
+    const express = await newPool(s.siteId, 'Express', [s.docks.T05, s.docks.T08]);
+    expect(express.status).toBe(201);
+    expect(((await express.json()) as View).dockIds).toEqual([s.docks.T05, s.docks.T08].sort());
+  });
+});
+
+describe('MD-05 every dock stays bookable for an active load type (ADR-0017)', () => {
+  const loadTypes = () => `${capacity(w.A)}/load-types`;
+  type LoadType = { id: string; active: boolean; resourceIds: string[] };
+  const typesOf = async (siteId: string) =>
+    (
+      (await (await admin(w.A).get(`${loadTypes()}?siteId=${siteId}`)).json()) as {
+        items: LoadType[];
+      }
+    ).items;
+  const unlink = (id: string) =>
+    admin(w.A).put(`${loadTypes()}/${id}/resources`, { body: { resourceIds: [] } });
+  const deactivate = (id: string) =>
+    admin(w.A).patch(`${loadTypes()}/${id}`, { body: { active: false } });
+  /** A hall pool with two docks, linked to the first `keep` of the site's three load types. */
+  async function poolWith(keep: number) {
+    const s = await serviceSite(w.A, [
+      { code: 'T01', hall: 'Halle 1' },
+      { code: 'T02', hall: 'Halle 1' },
+    ]);
+    const types = await typesOf(s.siteId);
+    for (const lt of types.slice(keep)) expect((await unlink(lt.id)).status).toBe(200);
+    const pool = types[0]?.resourceIds[0] as string;
+    return { ...s, pool, kept: types.slice(0, keep).map((lt) => lt.id) };
+  }
+  const stranded = (s: { docks: Record<string, string> }) => ({
+    code: ErrorCode.conflict,
+    details: {
+      reason: ConflictReason.dock_without_load_type,
+      dockIds: [s.docks.T01, s.docks.T02].sort(),
+    },
+  });
+
+  it('answers 409 for unlinking the last load type and keeps the link', async () => {
+    const s = await poolWith(1);
+    const res = await unlink(s.kept[0] as string);
+    expect(res.status).toBe(409);
+    expect(await error(res)).toMatchObject(stranded(s));
+    expect((await typesOf(s.siteId)).find((lt) => lt.id === s.kept[0])?.resourceIds).toEqual([
+      s.pool,
+    ]);
+  });
+
+  it('answers 409 for deactivating the last load type and keeps it active', async () => {
+    const s = await poolWith(1);
+    const res = await deactivate(s.kept[0] as string);
+    expect(res.status).toBe(409);
+    expect(await error(res)).toMatchObject(stranded(s));
+    expect((await typesOf(s.siteId)).find((lt) => lt.id === s.kept[0])?.active).toBe(true);
+  });
+
+  /**
+   * Two transactions on two connections: the second starts once the first has written and
+   * commits 300 ms later, so without the site lock both would pass their checks.
+   */
+  async function race(write: (tx: Tx, req: TenantRequest, id: LoadTypeId) => Promise<unknown>) {
+    const s = await poolWith(2);
+    const [first, second] = s.kept as [LoadTypeId, LoadTypeId];
+    let wrote = () => {};
+    const written = new Promise<void>((resolve) => {
+      wrote = resolve;
+    });
+    const outcome = (p: Promise<unknown>) =>
+      p.then(
+        () => 200,
+        (e: unknown) => (e instanceof ApiError ? e.details?.reason : e),
+      );
+    const a = outcome(
+      asTenantRequest(w.A, async (tx, req) => {
+        try {
+          await write(tx, req, first);
+        } finally {
+          wrote();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }),
+    );
+    await written;
+    const b = outcome(asTenantRequest(w.A, (tx, req) => write(tx, req, second)));
+    expect([await a, await b]).toEqual([200, ConflictReason.dock_without_load_type]);
+    const serving = (await typesOf(s.siteId)).filter(
+      (lt) => lt.active && lt.resourceIds.includes(s.pool),
+    );
+    expect(serving.map((lt) => lt.id)).toEqual([second]);
+  }
+
+  it('lets only one of two concurrent deactivations of the last two load types pass', () =>
+    race((tx, req, id) => updateLoadType(tx, req, id, { active: false })));
+
+  it('lets only one of two concurrent unlinks of the last two load types pass', () =>
+    race((tx, req, id) => putLoadTypeResources(tx, req.tenantId, id, [])));
 });
 
 describe('MD-04 hours and closures', () => {
@@ -314,6 +617,14 @@ describe('MD-04 hours and closures', () => {
       ]),
     );
     expect(items).toHaveLength(3);
+
+    const cleared = await put(s.resourceId, []);
+    expect(cleared.status).toBe(200);
+    const after = await admin(w.B).get(`${capacity(w.B)}/hours?siteId=${s.id}`);
+    expect(((await after.json()) as { items: { resourceId: string | null }[] }).items).toEqual([
+      expect.objectContaining({ resourceId: null }),
+      expect.objectContaining({ resourceId: null }),
+    ]);
   });
 
   it('deletes manual closures, reopens holidays, and refuses the other way round', async () => {
@@ -338,6 +649,7 @@ describe('MD-04 hours and closures', () => {
         subdivision: 'DE-BY',
         timeZone: 'Europe/Berlin',
         defaultLocale: 'de',
+        hours: hoursTemplateRows.one_shift,
       },
     });
     const holidaySite = (await holidayRes.json()) as { id: string };

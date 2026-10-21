@@ -12,6 +12,8 @@ export const ErrorCode = {
   validation_failed: 'validation_failed',
   rate_limited: 'rate_limited',
   internal_error: 'internal_error',
+  /** The tenant has no dock yet; carrier-facing and booking actions wait (ON-03). */
+  onboarding_incomplete: 'onboarding_incomplete',
 } as const;
 export type ErrorCode = ValueOf<typeof ErrorCode>;
 
@@ -38,6 +40,12 @@ export const ConflictReason = {
   quiz_incomplete: 'quiz_incomplete',
   quiz_not_passed: 'quiz_not_passed',
   account_exists: 'account_exists',
+  /** A dock's door type, temperature zone or ADR flag differs from its resource's (ADR-0017). */
+  profile_mismatch: 'profile_mismatch',
+  /** The write would leave docks in a resource without an active load type. */
+  dock_without_load_type: 'dock_without_load_type',
+  /** Docks removed from their own default pool have nowhere to go. */
+  dock_needs_resource: 'dock_needs_resource',
 } as const;
 export type ConflictReason = ValueOf<typeof ConflictReason>;
 

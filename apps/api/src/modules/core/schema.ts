@@ -135,6 +135,14 @@ export const org = pgTable(
       sql`${carrierIs(t.id)} or ${linkedTenant(t.id)} or exists (select 1 from carrier_registration r where r.carrier_id = (select app.carrier_id()) and r.tenant_id = ${t.id})`,
     ),
     allow(ScopeParty.system, PolicyCommand.select, always),
+    // The first dock activates the tenant once and for good (ON-02); the policy dies with it.
+    allow(
+      ScopeParty.tenant,
+      PolicyCommand.update,
+      sql`${tenantIs(t.id)} and ${t.activatedAt} is null`,
+      sql`${tenantIs(t.id)} and ${t.activatedAt} is not null`,
+      'activate',
+    ),
     // A carrier company comes into existence on invitation acceptance or registration (CR-01, CR-02),
     // an onboarding tenant on a verified self-registration (RG-02).
     allow(ScopeParty.user, PolicyCommand.insert, sql`${t.kind} = 'carrier'`),
@@ -528,6 +536,7 @@ export const dock = pgTable(
     foreignKey({ columns: [t.hallId, t.siteId], foreignColumns: [hall.id, hall.siteId] }),
     unique('dock_site_code_key').on(t.siteId, t.code),
     unique('dock_id_site_key').on(t.id, t.siteId),
+    unique('dock_id_profile_key').on(t.id, t.doorType, t.temperatureZone, t.adrAllowed),
     index('dock_tenant_id_idx').on(t.tenantId),
     index('dock_hall_id_idx').on(t.hallId),
     check('dock_code_length', sql`char_length(${t.code}) between 1 and 16`),

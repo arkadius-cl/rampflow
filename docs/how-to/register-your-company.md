@@ -54,6 +54,6 @@ If the page says **You already have an account**, someone created an account wit
 ## 5. What happens next
 
 - Your company exists on the Start package, and you are its administrator. rampflow signs you in and opens your company's home page.
-- The company starts in the status **Onboarding**. Set it up next: invite your staff, configure settings and upload your logo, as [Onboard a tenant](onboard-a-tenant.md) describes from step 5.
+- The company starts in the status **Onboarding** and opens on its setup checklist: a site, a hall and a dock. The first dock makes it **Active**, as [Onboard a tenant](onboard-a-tenant.md) describes in step 5. Then invite your staff, configure settings and upload your logo (steps 6 to 8).
 - An EU VAT number is confirmed against the European Commission's VIES service in the background. While VIES is not reachable, nothing waits for it. A German tax number or W-IdNr and a Polish NIP are checked for format only.
 - For a larger package, contact the platform operator.

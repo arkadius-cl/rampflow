@@ -17,7 +17,11 @@ import { ErrorCode, Feature, Permission, StoryId, ValidationTarget } from '@ramp
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, idSchema, type SiteId } from '../../../db/ids.ts';
-import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
+import {
+  requireActiveTenant,
+  requireEntitlement,
+  requirePermission,
+} from '../../../kernel/access.ts';
 import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -150,6 +154,7 @@ export const tenant = new Hono<AppEnv>()
       responses: { 200: type<BookingView>(), 201: type<BookingView>() },
     }),
     requirePermission(Permission.booking.staff_book),
+    requireActiveTenant(),
     validate(ValidationTarget.json, CreateStaffBooking),
     async (c) => {
       const body = c.req.valid('json');

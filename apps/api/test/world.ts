@@ -296,7 +296,13 @@ async function side(
   const carrierId = uid<CarrierId>();
   const rivalCarrierId = uid<CarrierId>();
   await o.insert(org).values([
-    { id: tenantId as string as OrgId, kind: OrgKind.tenant, name: `Tenant ${label} ${suffix()}` },
+    {
+      id: tenantId as string as OrgId,
+      kind: OrgKind.tenant,
+      name: `Tenant ${label} ${suffix()}`,
+      // The world's tenants have docks, so they are past onboarding (ON-02).
+      activatedAt: WORLD_NOW,
+    },
     {
       id: carrierId as string as OrgId,
       kind: OrgKind.carrier,
@@ -389,5 +395,30 @@ export async function world(
     platformAdmin,
     A: await side(o, 'A', options.packages?.A ?? PackageId.pro, platformAdmin.id),
     B: await side(o, 'B', options.packages?.B ?? PackageId.pro, platformAdmin.id),
+  };
+}
+
+export interface OnboardingTenant {
+  tenantId: TenantId;
+  users: Record<'tenant_admin' | 'dispatcher' | 'gate_operator', WorldUser>;
+}
+
+/** A tenant in onboarding (ON-01): no site, no hall, no dock, `activated_at` null. */
+export async function onboardingTenant(pkg: PackageId = PackageId.pro): Promise<OnboardingTenant> {
+  const o = ownerDb();
+  const platformAdmin = await user(o, await platformOrg(o), OrgKind.platform, Role.platform_admin);
+  const tenantId = uid<TenantId>();
+  const t = tenantId as string as OrgId;
+  await o.insert(org).values({ id: t, kind: OrgKind.tenant, name: `Onboarding ${suffix()}` });
+  await o
+    .insert(tenantSubscription)
+    .values({ tenantId, package: pkg, updatedBy: platformAdmin.id });
+  return {
+    tenantId,
+    users: {
+      tenant_admin: await user(o, t, OrgKind.tenant, Role.tenant_admin),
+      dispatcher: await user(o, t, OrgKind.tenant, Role.dispatcher),
+      gate_operator: await user(o, t, OrgKind.tenant, Role.gate_operator),
+    },
   };
 }

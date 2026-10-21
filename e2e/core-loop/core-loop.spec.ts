@@ -21,6 +21,7 @@ const ZONE = 'Europe/Berlin';
 /** The en quiz of the platform template the admin publishes unchanged. */
 const QUIZ = templateContent(DriverLocale.en, { quiz: true }).questions;
 const SITE = 'Lager Garching';
+const WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 /** The booking horizon the walk-through pins at the site, as the settings field shows it. */
 const HORIZON_DAYS = '30';
 
@@ -114,6 +115,16 @@ test.describe('Core loop', () => {
         await sheet.getByLabel('Postal code').fill('85748');
         await sheet.getByLabel('City').fill('Garching');
         await sheet.getByLabel('Time zone').selectOption(ZONE);
+        // Open around the clock: "Custom" starts from the one-shift weekdays, the weekend is closed.
+        await sheet.getByRole('radio', { name: 'Custom' }).click();
+        for (const weekday of WEEK) {
+          if ((await sheet.getByLabel(`${weekday} opens`).count()) === 0) {
+            await sheet.getByRole('button', { name: `Add a window on ${weekday}` }).click();
+          }
+          await sheet.getByLabel(`${weekday} opens`).fill('00:00');
+          await sheet.getByLabel(`${weekday} closes`).fill('24:00');
+        }
+        await expectAccessible(page);
         await sheet.getByRole('button', { name: 'Create site' }).click();
         await expect(page.getByRole('heading', { name: SITE })).toBeVisible();
         siteId = /\/sites\/([0-9a-f-]+)/.exec(page.url())?.[1] as string;
@@ -139,21 +150,10 @@ test.describe('Core loop', () => {
         await expectAccessible(page);
 
         await page.getByRole('link', { name: 'Hours and closures' }).click();
-        for (const weekday of [
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-          'Sunday',
-        ]) {
-          await page.getByRole('button', { name: `Add a window on ${weekday}` }).click();
-          await page.getByLabel(`${weekday} opens`).fill('00:00');
-          await page.getByLabel(`${weekday} closes`).fill('24:00');
+        for (const weekday of WEEK) {
+          await expect(page.getByLabel(`${weekday} opens`)).toHaveValue('00:00');
+          await expect(page.getByLabel(`${weekday} closes`)).toHaveValue('24:00');
         }
-        await page.getByRole('button', { name: 'Save hours' }).click();
-        await expect(page.getByText('Hours saved')).toBeVisible();
         await expectAccessible(page);
 
         await page.getByRole('link', { name: 'Load types' }).click();

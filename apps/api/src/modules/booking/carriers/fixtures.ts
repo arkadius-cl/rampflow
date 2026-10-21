@@ -108,3 +108,12 @@ export async function openLinkFor(
   });
   return slug;
 }
+
+/** The tenant's public link rows by slug, for tests that assert a route changed none. */
+export function publicLinksOf(db: OwnerDb, tenantId: TenantId) {
+  return db
+    .select()
+    .from(publicLink)
+    .where(eq(publicLink.tenantId, tenantId))
+    .orderBy(publicLink.slug);
+}

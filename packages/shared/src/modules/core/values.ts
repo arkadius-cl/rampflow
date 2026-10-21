@@ -297,3 +297,32 @@ export const SignupStatus = {
   superseded: 'superseded',
 } as const;
 export type SignupStatus = ValueOf<typeof SignupStatus>;
+
+/** The opening hours a new site starts from (MD-01); `custom` means rows the admin entered. */
+export const HoursTemplate = {
+  one_shift: 'one_shift',
+  two_shifts: 'two_shifts',
+  custom: 'custom',
+} as const;
+export type HoursTemplate = ValueOf<typeof HoursTemplate>;
+
+/** The templates with fixed rows, `hoursTemplateRows` in `api.sites.ts`. */
+export const PresetHoursTemplate = {
+  one_shift: HoursTemplate.one_shift,
+  two_shifts: HoursTemplate.two_shifts,
+} as const;
+export type PresetHoursTemplate = ValueOf<typeof PresetHoursTemplate>;
+
+/** The checklist steps of a tenant in onboarding, in order (ON-01). */
+export const OnboardingStep = {
+  site: 'site',
+  hall: 'hall',
+  dock: 'dock',
+} as const;
+export type OnboardingStep = ValueOf<typeof OnboardingStep>;
+
+/** What a route case expects from a tenant in onboarding (ON-03): the route answers 409. */
+export const OnboardingCase = {
+  blocked: 'blocked',
+} as const;
+export type OnboardingCase = ValueOf<typeof OnboardingCase>;

@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ResourceView } from '@rampflow/shared/modules/booking/api.capacity';
+import type { LoadTypeView, ResourceView } from '@rampflow/shared/modules/booking/api.capacity';
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import {
   CreateDock,
   CreateHall,
@@ -9,8 +10,16 @@ import {
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { values } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
-import { PencilIcon, PlusIcon, WrenchIcon } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
+import { Link } from '@tanstack/react-router';
+import {
+  LayersIcon,
+  PencilIcon,
+  PlusIcon,
+  SquareIcon,
+  TriangleAlertIcon,
+  WrenchIcon,
+} from 'lucide-react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type * as z from 'zod';
@@ -48,7 +57,8 @@ import {
 } from '@/components/ui/table';
 import { api, call } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { BookedAsLabel, BookedAsSelect } from './booked-as';
+import { useLoadTypeName } from '@/modules/booking/display';
+import { BookedAsLabel, BookedAsSelect, sameProfile } from './booked-as';
 import { useIssueText } from './form';
 import { useRefreshMasterData } from './queries';
 
@@ -245,18 +255,26 @@ export function HallDialog({
 
 type DockValues = z.input<typeof CreateDock>;
 
-/** Creates a dock in a hall, or edits one (MD-02). */
+/**
+ * Creates a dock in a hall, or edits one (MD-02). An existing dock shows what it is bookable for:
+ * its resource and that resource's active load types, when the user may see them.
+ */
 export function DockDialog({
   orgId,
   siteId,
   halls,
   edit,
+  holderOf,
+  loadTypes,
   onOpenChange,
 }: {
   orgId: string;
   siteId: string;
   halls: HallView[];
   edit: DockEdit | null;
+  holderOf: (dock: DockView) => ResourceView | undefined;
+  /** The site's load types; `undefined` without `booking.view`. */
+  loadTypes: LoadTypeView[] | undefined;
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
@@ -302,6 +320,14 @@ export function DockDialog({
     },
     onError: (e) => applyServerIssues(e, form.setError),
   });
+  const holder = existing ? holderOf(existing) : undefined;
+  const [doorType, temperatureZone, adrAllowed] = useWatch({
+    control: form.control,
+    name: ['doorType', 'temperatureZone', 'adrAllowed'],
+  });
+  const moves =
+    holder?.kind === ResourceKind.pool &&
+    !sameProfile(holder, { doorType, temperatureZone, adrAllowed: adrAllowed ?? false });
   const select = (
     name: keyof Pick<DockValues, 'hallId' | 'doorType' | 'temperatureZone' | 'status'>,
     label: string,
@@ -391,6 +417,18 @@ export function DockDialog({
               )}
             />
             <p className="text-xs text-muted-foreground">{t(($) => $.sites.docks.status_hint)}</p>
+            {moves ? (
+              <p
+                role="status"
+                className="flex items-start gap-2 rounded-md border border-tone-onsite-border bg-tone-onsite-bg px-3 py-2 text-xs text-tone-onsite"
+              >
+                <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                {t(($) => $.sites.docks.moves_on_save)}
+              </p>
+            ) : null}
+            {holder && loadTypes ? (
+              <BookableFor orgId={orgId} siteId={siteId} holder={holder} loadTypes={loadTypes} />
+            ) : null}
           </FieldGroup>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -404,5 +442,51 @@ export function DockDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** MD-02: the dock's resource and the names of its active load types, read-only. */
+function BookableFor({
+  orgId,
+  siteId,
+  holder,
+  loadTypes,
+}: {
+  orgId: string;
+  siteId: string;
+  holder: ResourceView;
+  loadTypes: LoadTypeView[];
+}) {
+  const { t } = useTranslation();
+  const loadTypeName = useLoadTypeName();
+  const names = loadTypes
+    .filter((l) => l.active && holder.loadTypeIds.includes(l.id))
+    .map((l) => loadTypeName(l.name));
+  const Icon = holder.kind === ResourceKind.pool ? LayersIcon : SquareIcon;
+  return (
+    <section
+      aria-labelledby="dock-bookable-for"
+      className="flex flex-col gap-1.5 rounded-md border bg-muted/40 px-3 py-2 text-sm"
+    >
+      <h3 id="dock-bookable-for" className="font-medium">
+        {t(($) => $.sites.docks.bookable_for)}
+      </h3>
+      <p className="inline-flex items-center gap-1.5">
+        <Icon className="size-3.5 text-muted-foreground" aria-hidden />
+        {holder.kind === ResourceKind.pool
+          ? t(($) => $.sites.docks.in_pool, { name: holder.name })
+          : t(($) => $.sites.docks.single)}
+      </p>
+      <p className={cn(names.length === 0 && 'text-muted-foreground')}>
+        {names.length > 0 ? names.join(', ') : t(($) => $.sites.docks.no_load_types)}
+      </p>
+      <Link
+        to="/t/$orgId/sites/$siteId/load-types"
+        params={{ orgId, siteId }}
+        className="w-fit text-sm underline underline-offset-4"
+      >
+        {t(($) => $.sites.docks.edit_load_types)}
+      </Link>
+    </section>
   );
 }

@@ -17,6 +17,8 @@ import {
   type SettingKey,
   type SettingValue,
 } from '@rampflow/shared';
+import { tenantStatus } from '@rampflow/shared/modules/core/tenant-status';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import {
   DescribedKind,
   ErrorCode,
@@ -29,9 +31,14 @@ import {
 import { eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import type { SiteId, TenantId } from '../db/ids.ts';
+import type { OrgId, SiteId, TenantId } from '../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../db/scope.ts';
-import { entitlementOverride, settingValue, tenantSubscription } from '../modules/core/schema.ts';
+import {
+  entitlementOverride,
+  org,
+  settingValue,
+  tenantSubscription,
+} from '../modules/core/schema.ts';
 import type { Clock } from './clock.ts';
 import { register } from './describe.ts';
 import type { AppEnv } from './env.ts';
@@ -45,6 +52,8 @@ export interface Access {
   permissions: ReadonlySet<PermissionKey>;
   /** The acting tenant's; `null` for carrier (cross-tenant), platform and tenant-less scopes. */
   entitlements: Entitlements | null;
+  /** The acting tenant's (ON-02); `null` outside the tenant and carrier-at-tenant parties. */
+  tenantStatus: TenantStatus | null;
   setting<K extends SettingKey>(
     key: K,
     siteId: SiteId | null,
@@ -147,6 +156,18 @@ function entitlementsOf(tx: Tx, scope: Scope, tenantId: TenantId, now: Date) {
   return asScope(tx, asTenant, (inner) => loadEntitlements(inner, tenantId, now));
 }
 
+/** Both parties may select the tenant's org row; the others never gate on its status. */
+async function tenantStatusOf(tx: Tx, scope: Scope): Promise<TenantStatus | null> {
+  if (scope.party !== ScopeParty.tenant && scope.party !== ScopeParty.carrier_at_tenant) {
+    return null;
+  }
+  const [row] = await tx
+    .select({ activatedAt: org.activatedAt })
+    .from(org)
+    .where(eq(org.id, scope.tenantId as string as OrgId));
+  return row ? tenantStatus(row) : null;
+}
+
 export async function loadAccess(tx: Tx, scope: Scope, clock: Clock): Promise<Access> {
   const role = roleOf(scope);
   const tenantId = tenantOf(scope);
@@ -154,6 +175,7 @@ export async function loadAccess(tx: Tx, scope: Scope, clock: Clock): Promise<Ac
     role,
     permissions: role ? catalogPermissions(role) : NO_PERMISSIONS,
     entitlements: tenantId ? await entitlementsOf(tx, scope, tenantId, clock.now()) : null,
+    tenantStatus: await tenantStatusOf(tx, scope),
     setting: settingLoader(tx, tenantId),
   };
 }
@@ -203,6 +225,20 @@ export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandle
     kind: DescribedKind.guard,
     guard: { kind: GuardKind.entitlement, key },
   });
+}
+
+/**
+ * 409 `onboarding_incomplete` until the tenant's first dock exists (ON-03). Goes after the
+ * permission and entitlement guards, so a missing right still answers 403.
+ */
+export function requireActiveTenant(): MiddlewareHandler<AppEnv> {
+  const guard = createMiddleware<AppEnv>(async (c, next) => {
+    if (c.var.access.tenantStatus !== TenantStatus.active) {
+      throw new ApiError(ErrorCode.onboarding_incomplete);
+    }
+    await next();
+  });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.active_tenant } });
 }
 
 /** Mounts a router of a module that can be off. Needs a non-root prefix. */

@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
+import { TemperatureZone } from '../../packages/shared/src/modules/core/values.ts';
+import { HttpMethod } from '../../packages/shared/src/values/http.ts';
+import { APP_ORIGIN, expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { overrideEntitlement, poolWorldDocks, siteOf } from '../support/u4.ts';
 
 test.describe('MD-03 Bookable resources', () => {
-  test('a dock is in one pool or a single dock: moving it updates both views', async ({
+  test('a dock is in exactly one resource: moving it updates both views', async ({
     page,
     context,
     request,
@@ -16,31 +18,77 @@ test.describe('MD-03 Bookable resources', () => {
     const member = (code: string) => page.getByRole('checkbox', { name: code, exact: true });
     await expect(page.getByLabel('Resource')).toHaveValue(siteOf(w.A).resourceId);
     await expect(member('D-01')).toBeChecked();
+    await expect(bookedAs('D-01').getByRole('option', { name: 'Not bookable' })).toHaveCount(0);
     await expectAccessible(page);
 
     await bookedAs('D-01').selectOption({ label: 'Single dock' });
     await expect(page.getByText('Dock D-01 updated')).toBeVisible();
     await expect(bookedAs('D-01')).toHaveValue('single');
-    await expect(member('D-01')).toBeDisabled();
-    await expect(page.getByText('single dock', { exact: true })).toBeVisible();
+    await expect(member('D-01')).not.toBeChecked();
+    await expect(page.getByText('booked on its own, moves here')).toBeVisible();
 
     await bookedAs('D-01').selectOption({ label: 'Pool Ramp pool' });
     await expect(member('D-01')).toBeChecked();
-    await expect(member('D-01')).toBeEnabled();
 
-    // A new pool takes only free docks: D-02 is released first, then joins "Outbound".
-    await bookedAs('D-02').selectOption({ label: 'Not bookable' });
-    await expect(bookedAs('D-02')).toHaveValue('none');
+    // A new pool takes docks from where they are: D-02 moves out of "Ramp pool".
     await page.getByRole('button', { name: 'New pool' }).click();
     await page.getByLabel('Name', { exact: true }).fill('Outbound');
     await page.getByRole('button', { name: 'Outbound', exact: true }).click();
     await page.getByRole('button', { name: 'Inbound', exact: true }).click();
-    await expect(member('D-01')).toBeDisabled();
+    await expect(page.getByText('moves from Ramp pool')).toHaveCount(2);
     await member('D-02').check();
     await page.getByRole('button', { name: 'Create pool' }).click();
     await expect(page.getByText('Outbound saved')).toBeVisible();
-    await expect(bookedAs('D-02')).toHaveValue(/^pool:/);
     await expect(bookedAs('D-02').locator('option:checked')).toHaveText('Pool Outbound');
+    await expect(bookedAs('D-01').locator('option:checked')).toHaveText('Pool Ramp pool');
+
+    // A dock taken out of a manual pool goes back to the pool of its hall.
+    await member('D-01').check();
+    await member('D-02').uncheck();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Outbound saved')).toBeVisible();
+    await expect(bookedAs('D-01').locator('option:checked')).toHaveText('Pool Outbound');
+    await expect(bookedAs('D-02').locator('option:checked')).toHaveText('Pool Hall 1');
+
+    // A hall pool keeps its docks until they move elsewhere.
+    await page.getByLabel('Resource').selectOption({ label: 'Pool Hall 1' });
+    await expect(member('D-02')).toBeChecked();
+    await expect(member('D-02')).toBeDisabled();
+    await expect(page.getByText('belongs to this hall pool', { exact: false })).toBeVisible();
+  });
+
+  test('a dock whose profile changed meanwhile is refused with the profile text and the dock code', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    const s = siteOf(w.A);
+    await signInAs(context, w.A.users.tenant_admin);
+    await poolWorldDocks(context, w);
+    await page.goto(`/t/${w.A.tenantId}/sites/${s.id}`);
+    const member = (code: string) => page.getByRole('checkbox', { name: code, exact: true });
+    await page.getByRole('button', { name: 'New pool' }).click();
+    await page.getByLabel('Name', { exact: true }).fill('Express');
+    await member('D-01').check();
+    await member('D-02').check();
+
+    // Another admin makes D-01 frozen while this form is open.
+    const changed = await context.request.fetch(
+      `/api/t/${w.A.tenantId}/sites/${s.id}/docks/${s.dockIds[0]}`,
+      {
+        method: HttpMethod.PATCH,
+        data: { temperatureZone: TemperatureZone.frozen },
+        headers: { Origin: APP_ORIGIN },
+      },
+    );
+    expect(changed.ok()).toBe(true);
+
+    await page.getByRole('button', { name: 'Create pool' }).click();
+    await expect(
+      page.getByText('These docks have another door type, temperature zone or ADR setting'),
+    ).toBeVisible();
+    await expect(page.getByText('Docks: D-02', { exact: true })).toBeVisible();
   });
 
   test('lowering capacity warns that bookings show as over capacity and cancels nothing', async ({

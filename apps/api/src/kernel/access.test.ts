@@ -19,12 +19,13 @@ import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
-import { type World, world } from '../../test/world.ts';
+import { onboardingTenant, type World, world } from '../../test/world.ts';
 import { type SiteId, wrapJson } from '../db/ids.ts';
 import { type Scope, withScope } from '../db/scope.ts';
 import { entitlementOverride, invitation, settingValue } from '../modules/core/schema.ts';
 import {
   loadAccess,
+  requireActiveTenant,
   requireEntitlement,
   requireModule,
   requirePermission,
@@ -73,7 +74,8 @@ function gatedApp() {
   const tenant = new Hono<AppEnv>()
     .use(scoped(tenantScope))
     .route('/yard', withModule(Module.yard, yard))
-    .get('/report', requireModule(Module.report), (c) => c.json({ ok: true }));
+    .get('/report', requireModule(Module.report), (c) => c.json({ ok: true }))
+    .get('/invite', requireActiveTenant(), (c) => c.json({ ok: true }));
   return new Hono<AppEnv>()
     .use(async (c, next) => {
       c.set('clock', systemClock);
@@ -121,6 +123,18 @@ describe('access middleware', () => {
     // report depends on yard: its blocking feature is yard's enabling feature.
     const report = await as(gatedApp(), w.B.users.dispatcher).get(`/api/t/${w.B.tenantId}/report`);
     expect(await report.json()).toMatchObject({ error: { details: { key: 'yard.checkin_qr' } } });
+  });
+});
+
+describe('requireActiveTenant', () => {
+  it('answers 409 onboarding_incomplete in onboarding and passes once the tenant is active', async () => {
+    const t = await onboardingTenant();
+    const res = await as(gatedApp(), t.users.tenant_admin).get(`/api/t/${t.tenantId}/invite`);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: { code: ErrorCode.onboarding_incomplete } });
+    const ok = await as(gatedApp(), w.A.users.tenant_admin).get(`/api/t/${w.A.tenantId}/invite`);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ ok: true });
   });
 });
 

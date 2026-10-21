@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [research, avis, booking, capacity, yard, safety, gdpr, i18n]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 ---
 
 # Domain standards and compliance research
@@ -171,7 +171,7 @@ The avis is a 1:1 child of the booking. The carrier can edit it until the change
 
 **Pool versus dock.** Both models exist, and many sites mix them.
 - **Cargoclix:** the carrier picks a free time on a *specific ramp* inside a group, such as rear unloading or side unloading.
-- **Opendock:** the carrier books a load type at the warehouse. The appointment payload has no dock ID, and the system assigns the dock.
+- **Opendock:** the carrier books a load type at the warehouse. Each dock lists the load types it serves (`loadTypeIds`, required on `Dock`), and creating an appointment requires a `dockId` next to the `loadTypeId` (`CreateAppointmentDto`). An Opendock appointment therefore sits on one dock from the start.
 - **General practice:** reserve generic capacity and assign the door on arrival, while dedicating fixed doors to reefer or hazmat loads, or to certain carriers.
 
 **Context.**
@@ -245,7 +245,7 @@ Availability algorithm. It is the same for both target kinds. Compute it on a 5-
 6. A start time `s` on the grid is offered when `free ≥ 1` for every bucket in `[s, s + duration + buffer)`, when the site-level caps (trucks on site, carrier per day) still hold, and when `s` lies inside `[now + minLead, now + maxAdvance]`.
 7. Commit inside a transaction that locks the pool row for that day. Direct dock bookings are also protected by a PostgreSQL exclusion constraint on `(dock_id, tstzrange)`.
 
-The rule "at most one pool per dock" keeps step 4 a counting check. Overlapping pools would turn availability into a bipartite matching problem, which the MVP should avoid. A site can mix models: rear-unloading doors in one pool, a reefer door bookable directly, a crane bay in no pool.
+The rule "at most one pool per dock" keeps step 4 a counting check. Overlapping pools would turn availability into a bipartite matching problem, which the MVP should avoid. A site can mix models: rear-unloading doors in one pool, a reefer door bookable directly, and a crane bay set to inactive so that nobody books it.
 
 ## 3. Yard and gate process
 
@@ -531,6 +531,7 @@ Booking practice and capacity
 - Cornelsen delivery rules: https://www.cvk.de/wp-content/uploads/Warenanlieferungsrichtlinien-CVK-1121.pdf
 - Faire on Opendock: https://www.faire.com/support/articles/46023138863387
 - Opendock booking API: https://developer.loadsmart.com/docs/opendock/for-carriers/booking-appointments
+- Opendock API description (`CreateAppointmentDto`, `Dock`): https://neutron.opendock.com/docs-json
 - Opendock load type: https://community.loadsmart.com/hc/en-us/articles/14905949746579--Opendock-What-is-a-Load-Type
 - Opendock adding docks: https://community.loadsmart.com/hc/en-us/articles/14908083511827--Opendock-Adding-Docks
 - Opendock what is a dock: https://community.loadsmart.com/hc/en-us/articles/14908026829587--Opendock-What-is-a-Dock

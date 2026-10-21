@@ -1,0 +1,46 @@
+{
+  "title": "Set up your company",
+  "description": "Three steps until carriers can book: a site with its opening hours, a hall, and a dock. The first dock makes your company active.",
+  "progress": "{{done}} of {{total}} steps done",
+  "state": {
+    "done": "Done",
+    "open": "Open"
+  },
+  "steps": {
+    "site": {
+      "title": "Create a site",
+      "description": "Address, time zone, region and weekly opening hours."
+    },
+    "hall": {
+      "title": "Add a hall",
+      "description": "Halls group the docks of a site."
+    },
+    "dock": {
+      "title": "Add a dock",
+      "description": "The first dock makes your company active and opens carriers and bookings."
+    }
+  },
+  "needs_site": "Create a site first.",
+  "hours": "Opening hours of the site",
+  "edit_hours": "Edit opening hours",
+  "active": {
+    "title": "Your company is set up",
+    "since": "Active since {{date}},",
+    "next": "Next steps",
+    "invite_carriers": "Invite carriers",
+    "public_link": "Create a public booking link",
+    "staff": "Invite staff"
+  },
+  "notice": {
+    "text": "Your company is still being set up. Carriers and bookings open once the first dock exists.",
+    "link": "Open the setup checklist"
+  },
+  "gate": {
+    "carriers": "Carriers can be invited once the first dock exists.",
+    "links": "Public links open once the first dock exists.",
+    "bookings": "Bookings and walk-ins open once the first dock exists.",
+    "walk_in": "Walk-ins open once the first dock exists.",
+    "link": "Finish setup"
+  },
+  "hours_of": "Opening hours of {{site}}, wall-clock times in {{zone}}:"
+}

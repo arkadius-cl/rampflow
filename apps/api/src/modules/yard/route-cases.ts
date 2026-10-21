@@ -5,6 +5,7 @@ import {
   TurnAwayReason,
   WalkInOutcome,
 } from '@rampflow/shared/modules/booking/values';
+import { OnboardingCase } from '@rampflow/shared/modules/core/values';
 import {
   Feature,
   ForeignOutcome,
@@ -110,6 +111,7 @@ export const cases = defineRouteCases([
     ...gate,
     method: HttpMethod.POST,
     path: '/api/t/:orgId/yard/walk-ins',
+    onboarding: OnboardingCase.blocked,
     params: org,
     body: (w) => ({
       clientRequestId: '0193f6f0-0000-7000-8000-000000000009',

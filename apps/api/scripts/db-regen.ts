@@ -5,11 +5,12 @@
 // same command. A rebase conflict in drizzle/meta needs no hand merge: run it and continue.
 //   pnpm db:regen --name u4 [--base <ref>]
 import { execFileSync } from 'node:child_process';
-import { readdirSync, rmSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { CliOptionType } from '@rampflow/shared/values';
+import { uniqueKeysFirst } from './migration-order.ts';
 
 const { values } = parseArgs({
   options: { name: { type: CliOptionType.string }, base: { type: CliOptionType.string } },
@@ -53,3 +54,8 @@ execFileSync('pnpm', ['exec', 'drizzle-kit', 'generate', '--name', values.name],
   cwd: apiDir,
   stdio: 'inherit',
 });
+const generated = readdirSync(drizzleDir).filter((f) => f.endsWith(`_${values.name}.sql`));
+for (const file of generated) {
+  const path = join(drizzleDir, file);
+  writeFileSync(path, uniqueKeysFirst(readFileSync(path, 'utf8')));
+}

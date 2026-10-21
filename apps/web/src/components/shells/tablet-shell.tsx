@@ -20,6 +20,8 @@ export interface TabletShellProps {
   online?: boolean;
   /** Tabs or filters rendered under the title row. */
   toolbar?: React.ReactNode;
+  /** A band under the header that renders nothing when empty, for example a setup notice. */
+  notice?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }
@@ -41,6 +43,7 @@ export function TabletShell({
   userMenu,
   online = true,
   toolbar,
+  notice,
   children,
   className,
 }: TabletShellProps) {
@@ -86,6 +89,9 @@ export function TabletShell({
           )}
         </div>
       </header>
+      {notice ? (
+        <div className="shrink-0 bg-background px-5 py-2 empty:hidden">{notice}</div>
+      ) : null}
       {toolbar ? (
         <div className="flex shrink-0 items-center gap-3 border-b bg-background px-5 py-3">
           {toolbar}

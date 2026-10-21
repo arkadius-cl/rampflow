@@ -27,6 +27,7 @@ import * as contextPlatform from './core/context/routes.platform.ts';
 import * as contextTenant from './core/context/routes.tenant.ts';
 import * as invitations from './core/invitations/routes.public.ts';
 import * as me from './core/me/routes.user.ts';
+import * as onboarding from './core/onboarding/routes.tenant.ts';
 import * as platformAdmin from './core/platform/routes.platform.ts';
 import * as settings from './core/settings/routes.tenant.ts';
 import * as signup from './core/signup/routes.public.ts';
@@ -49,6 +50,7 @@ import * as yard from './yard/routes.tenant.ts';
 const tenant = new Hono<AppEnv>()
   .use(scoped(tenantScope))
   .route('/context', contextTenant.tenant)
+  .route('/onboarding', onboarding.tenant)
   .route('/staff', staff.tenant)
   .route('/settings', settings.tenant)
   .route('/sites', sites.tenant)

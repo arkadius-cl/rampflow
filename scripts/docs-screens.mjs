@@ -8,6 +8,7 @@ import { chromium, devices } from '@playwright/test';
 // inside the Playwright container and starts nothing itself.
 // Every run changes the demo data like the tutorial does: it switches the demo accounts to English
 // and books one Trans-Pol truck at Hamburg DC, which it takes through the gate and a dock to departure.
+// The onboarding capture needs Nordhafen without a dock, as `pnpm db:seed` leaves it.
 import { OrgKind } from '../packages/shared/src/values/roles.ts';
 
 const base = process.env.APP_ORIGIN ?? 'http://localhost:5173';
@@ -27,6 +28,7 @@ const ACCOUNTS = {
   dock: 'dock@acme.local',
   carrier: 'admin@trans-pol.local',
   platform: 'admin@rampflow.local',
+  onboarding: 'admin@nordhafen.local',
 };
 
 // The dev servers render the TanStack devtools buttons; the docs show the app without them.
@@ -113,6 +115,14 @@ const lager = siteId('Lager Hamburg');
 
 await goto(admin, `/t/${tenantId}/sites/${hamburgDc}`);
 await shot(admin, 'master-data-site');
+const onboarding = await open('onboarding', 'desktop');
+const onboardingId = (await json(onboarding, '/me')).memberships.find(
+  (m) => m.orgKind === OrgKind.tenant,
+)?.orgId;
+await goto(onboarding, `/t/${onboardingId}`);
+await onboarding.waitForURL(/\/onboarding$/);
+await onboarding.getByText('2 of 3 steps done').waitFor();
+await shot(onboarding, 'onboarding');
 await goto(admin, `/t/${tenantId}/settings`);
 await admin.getByRole('tab', { name: 'Hamburg DC' }).click();
 await shot(admin, 'settings', admin.getByRole('region', { name: 'Booking rules' }));
