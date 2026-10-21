@@ -20,18 +20,24 @@ import { DockDialog, type DockEdit, HallCard, HallDialog } from '@/modules/capac
 import { capacityQueries, siteQueries } from '@/modules/capacity/queries';
 import { ResourceEditor } from '@/modules/capacity/resource-editor';
 
-// MD-02 and MD-03: halls with their docks, and the editor of pools and single docks.
+// MD-02 and MD-03: halls with their docks, and the editor of pools and single docks. With
+// `booking.view` the tab also loads the resources and load types the dock dialog shows.
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId/')({
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(siteQueries.halls(params.orgId, params.siteId)),
       context.queryClient.ensureQueryData(siteQueries.docks(params.orgId, params.siteId)),
-      allows(context.access, { permission: Permission.booking.view })
-        ? context.queryClient.ensureQueryData(
-            capacityQueries.resources(params.orgId, params.siteId),
-          )
-        : null,
+      ...(allows(context.access, { permission: Permission.booking.view })
+        ? [
+            context.queryClient.ensureQueryData(
+              capacityQueries.resources(params.orgId, params.siteId),
+            ),
+            context.queryClient.ensureQueryData(
+              capacityQueries.loadTypes(params.orgId, params.siteId),
+            ),
+          ]
+        : []),
     ]),
   component: DocksTab,
 });
@@ -43,9 +49,11 @@ function DocksTab() {
   const canBook = can(Permission.booking.manage_resources);
   const halls = useSuspenseQuery(siteQueries.halls(orgId, siteId)).data.items;
   const docks = useSuspenseQuery(siteQueries.docks(orgId, siteId)).data.items;
+  const canView = can(Permission.booking.view);
   const resources =
-    useQuery({ ...capacityQueries.resources(orgId, siteId), enabled: can(Permission.booking.view) })
-      .data?.items ?? [];
+    useQuery({ ...capacityQueries.resources(orgId, siteId), enabled: canView }).data?.items ?? [];
+  const loadTypes = useQuery({ ...capacityQueries.loadTypes(orgId, siteId), enabled: canView }).data
+    ?.items;
   const [hallDialog, setHallDialog] = useState<{ hall: HallView | null } | null>(null);
   const [dockEdit, setDockEdit] = useState<DockEdit | null>(null);
   const pools = resources.filter((r) => r.kind === ResourceKind.pool);
@@ -105,6 +113,8 @@ function DocksTab() {
         siteId={siteId}
         halls={halls}
         edit={dockEdit}
+        holderOf={holderOf}
+        loadTypes={loadTypes}
         onOpenChange={(open) => (open ? null : setDockEdit(null))}
       />
     </div>

@@ -93,7 +93,13 @@
       "zone": "Temperature zone",
       "status": "Status",
       "adr": "Dangerous goods (ADR) allowed"
-    }
+    },
+    "bookable_for": "Bookable for",
+    "in_pool": "Pool {{name}}",
+    "single": "Single dock",
+    "no_load_types": "No active load type",
+    "edit_load_types": "Edit load types",
+    "moves_on_save": "Saving moves this dock to the pool for its new profile."
   },
   "door_types": {
     "dock_leveler": "Dock leveler",

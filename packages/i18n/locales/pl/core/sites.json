@@ -93,7 +93,13 @@
       "zone": "Strefa temperaturowa",
       "status": "Status",
       "adr": "Towary niebezpieczne (ADR) dozwolone"
-    }
+    },
+    "bookable_for": "Do rezerwacji dla",
+    "in_pool": "Pula {{name}}",
+    "single": "Pojedyncza rampa",
+    "no_load_types": "Brak aktywnego rodzaju ładunku",
+    "edit_load_types": "Edytuj rodzaje ładunku",
+    "moves_on_save": "Po zapisaniu rampa przejdzie do puli dla swojego nowego profilu."
   },
   "door_types": {
     "dock_leveler": "Pomost przeładunkowy",

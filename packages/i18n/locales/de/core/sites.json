@@ -93,7 +93,13 @@
       "zone": "Temperaturzone",
       "status": "Status",
       "adr": "Gefahrgut (ADR) erlaubt"
-    }
+    },
+    "bookable_for": "Buchbar für",
+    "in_pool": "Pool {{name}}",
+    "single": "Einzelrampe",
+    "no_load_types": "Keine aktive Ladungsart",
+    "edit_load_types": "Ladungsarten bearbeiten",
+    "moves_on_save": "Beim Speichern wechselt diese Rampe in den Pool für ihr neues Profil."
   },
   "door_types": {
     "dock_leveler": "Überladebrücke",

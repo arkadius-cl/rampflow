@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { applyServerIssues } from '@/components/app-shell/form-errors';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,12 +45,14 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAccess } from '@/lib/access';
 import { api, call } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { sameProfile } from './booked-as';
 import { numberOrNull, useIssueText } from './form';
 import { useRefreshMasterData } from './queries';
 
 // MD-03: the editor of the site's bookable resources. A pool has a name, directions, parallel
-// slots, a daily cap and member docks; a single dock has the same minus slots and members. Docks
-// held by another resource are disabled with its name, the 409 rule shown before it happens.
+// slots, a daily cap and member docks; a single dock has the same minus slots and members.
+// Checking a dock of another resource moves it here. A pool holds one dock profile, and a hall
+// pool only docks of its hall, so docks that break either rule are disabled with the reason.
 
 const ResourceForm = UpdateResource.pick({
   name: true,
@@ -241,6 +244,14 @@ function ResourceDetails({
 
   const holderOf = (dockId: string) =>
     resources.find((r) => r.id !== resource?.id && r.dockIds.includes(dockId));
+  // A new pool takes the profile of its first dock.
+  const profile = resource ?? docks.find((d) => d.id === current.dockIds?.[0]);
+  const unfit = (d: DockView) =>
+    profile && !sameProfile(profile, d)
+      ? t(($) => $.capacity.resources.other_profile)
+      : resource?.hallId && resource.hallId !== d.hallId
+        ? t(($) => $.capacity.resources.other_hall)
+        : null;
 
   const number = (
     name: keyof Pick<ResourceValues, 'capacityCap' | 'dailyCap'>,
@@ -289,6 +300,7 @@ function ResourceDetails({
                   code: docks.find((d) => d.id === resource?.dockIds[0])?.code ?? '',
                 })}
           </p>
+          {resource ? <ProfileLine resource={resource} /> : null}
           <Controller
             name="name"
             control={form.control}
@@ -366,22 +378,24 @@ function ResourceDetails({
                   </FieldDescription>
                   <div className="flex flex-col gap-1.5">
                     {[...docks].sort(byCode).map((d) => {
+                      const checked = field.value.includes(d.id);
                       const elsewhere = holderOf(d.id);
+                      const reason = checked ? null : unfit(d);
                       return (
                         <div
                           key={d.id}
                           className={cn(
                             'flex items-center gap-2 text-sm',
-                            elsewhere && 'text-muted-foreground',
+                            reason && 'text-muted-foreground',
                           )}
                         >
                           <Checkbox
                             id={`member-${d.id}`}
-                            checked={field.value.includes(d.id)}
-                            disabled={elsewhere !== undefined}
-                            onCheckedChange={(checked) =>
+                            checked={checked}
+                            disabled={reason !== null}
+                            onCheckedChange={(on) =>
                               field.onChange(
-                                checked
+                                on
                                   ? [...field.value, d.id]
                                   : field.value.filter((id) => id !== d.id),
                               )
@@ -391,13 +405,16 @@ function ResourceDetails({
                             {d.code}
                           </label>
                           <span className="text-xs text-muted-foreground">
-                            {elsewhere
-                              ? elsewhere.kind === ResourceKind.pool
-                                ? t(($) => $.capacity.resources.in_pool, { name: elsewhere.name })
-                                : t(($) => $.capacity.resources.is_single)
-                              : d.status === DockStatus.active
-                                ? null
-                                : t(($) => $.capacity.resources.no_capacity)}
+                            {reason ??
+                              (elsewhere
+                                ? elsewhere.kind === ResourceKind.pool
+                                  ? t(($) => $.capacity.resources.moves_from, {
+                                      name: elsewhere.name,
+                                    })
+                                  : t(($) => $.capacity.resources.moves_from_single)
+                                : d.status === DockStatus.active
+                                  ? null
+                                  : t(($) => $.capacity.resources.no_capacity))}
                           </span>
                         </div>
                       );
@@ -442,5 +459,25 @@ function ResourceDetails({
         </FieldGroup>
       </fieldset>
     </form>
+  );
+}
+
+/** The dock profile every member of the resource has, and whether it is its hall's pool. */
+function ProfileLine({ resource }: { resource: ResourceView }) {
+  const { t } = useTranslation();
+  const { t: tb } = useTranslation('booking');
+  const parts = [
+    t(($) => $.sites.door_types[resource.doorType]),
+    t(($) => $.sites.zones[resource.temperatureZone]),
+    ...(resource.adrAllowed ? [tb(($) => $.capacity.resources.adr)] : []),
+  ];
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-muted-foreground">{tb(($) => $.capacity.resources.profile)}</span>
+      <span>{parts.join(' · ')}</span>
+      {resource.hallId ? (
+        <Badge variant="outline">{tb(($) => $.capacity.resources.hall_pool)}</Badge>
+      ) : null}
+    </p>
   );
 }

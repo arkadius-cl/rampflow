@@ -13,14 +13,24 @@ import { useRefreshMasterData } from './queries';
 
 // MD-03: how a dock is booked. A dock is in exactly one pool, or bookable on its own as a
 // single dock. One select per dock row makes that choice; the API moves the
-// dock in one transaction (PUT /capacity/docks/:dockId/booking).
+// dock in one transaction (PUT /capacity/docks/:dockId/booking). Pools of another profile, and
+// default pools of another hall, cannot take the dock and say why.
 
-type Choice = 'none' | 'single' | `pool:${string}`;
+type Choice = 'single' | `pool:${string}`;
 
-const choiceOf = (holder: ResourceView | undefined): Choice =>
-  !holder ? 'none' : holder.kind === ResourceKind.single ? 'single' : `pool:${holder.id}`;
+const choiceOf = (holder: ResourceView): Choice =>
+  holder.kind === ResourceKind.single ? 'single' : `pool:${holder.id}`;
 
-function bookingOf(choice: Exclude<Choice, 'none'>): DockBooking {
+/** Whether a resource has the dock's door type, temperature zone and ADR flag (ADR-0017). */
+export const sameProfile = (
+  r: Pick<ResourceView, 'doorType' | 'temperatureZone' | 'adrAllowed'>,
+  d: Pick<DockView, 'doorType' | 'temperatureZone' | 'adrAllowed'>,
+) =>
+  r.doorType === d.doorType &&
+  r.temperatureZone === d.temperatureZone &&
+  r.adrAllowed === d.adrAllowed;
+
+function bookingOf(choice: Choice): DockBooking {
   if (choice === ResourceKind.single) return { as: ResourceKind.single };
   return { as: ResourceKind.pool, resourceId: choice.slice('pool:'.length) };
 }
@@ -28,8 +38,7 @@ function bookingOf(choice: Exclude<Choice, 'none'>): DockBooking {
 /** The resource name of a dock's holder with its kind icon, for read-only views. */
 export function BookedAsLabel({ holder }: { holder: ResourceView | undefined }) {
   const { t } = useTranslation('booking');
-  if (!holder)
-    return <span className="text-muted-foreground">{t(($) => $.capacity.booked_as.none)}</span>;
+  if (!holder) return null;
   const Icon = holder.kind === ResourceKind.pool ? LayersIcon : SquareIcon;
   return (
     <span className="inline-flex items-center gap-1">
@@ -56,7 +65,7 @@ export function BookedAsSelect({
   const refresh = useRefreshMasterData(orgId);
   const poolsOn = has(Feature.booking.pools);
   const move = useMutation({
-    mutationFn: (choice: Exclude<Choice, 'none'>) =>
+    mutationFn: (choice: Choice) =>
       call(
         api.t[':orgId'].capacity.docks[':dockId'].booking.$put({
           param: { orgId, dockId: dock.id },
@@ -66,36 +75,44 @@ export function BookedAsSelect({
     onSuccess: () => toast.success(t(($) => $.capacity.booked_as.saved, { code: dock.code })),
     onSettled: refresh,
   });
-  const current = choiceOf(holder);
   const offered = pools.filter((p) => p.active || p.id === holder?.id);
+  const blocked = (p: ResourceView) =>
+    p.id === holder?.id
+      ? null
+      : !sameProfile(p, dock)
+        ? t(($) => $.capacity.booked_as.pool_other_profile, { name: p.name })
+        : p.hallId !== null && p.hallId !== dock.hallId
+          ? t(($) => $.capacity.booked_as.pool_other_hall, { name: p.name })
+          : null;
   return (
     <NativeSelect
       size="sm"
       className="w-44"
       aria-label={t(($) => $.capacity.booked_as.label, { code: dock.code })}
-      value={current}
+      value={holder ? choiceOf(holder) : ''}
       disabled={move.isPending || (!poolsOn && holder?.kind === ResourceKind.pool)}
-      onChange={(e) => move.mutate(e.target.value as Exclude<Choice, 'none'>)}
+      onChange={(e) => move.mutate(e.target.value as Choice)}
     >
-      {!holder && (
-        <NativeSelectOption value="none" disabled>
-          {t(($) => $.capacity.booked_as.none)}
-        </NativeSelectOption>
-      )}
+      {/* A dock from before every dock had a resource; its next save places it. */}
+      {holder ? null : <NativeSelectOption value="" disabled hidden />}
       <NativeSelectOption value="single">
         {t(($) => $.capacity.booked_as.single)}
       </NativeSelectOption>
-      {offered.map((p) => (
-        <NativeSelectOption
-          key={p.id}
-          value={`pool:${p.id}`}
-          disabled={!poolsOn && p.id !== holder?.id}
-        >
-          {p.active
-            ? t(($) => $.capacity.booked_as.pool, { name: p.name })
-            : t(($) => $.capacity.booked_as.pool_inactive, { name: p.name })}
-        </NativeSelectOption>
-      ))}
+      {offered.map((p) => {
+        const reason = blocked(p);
+        return (
+          <NativeSelectOption
+            key={p.id}
+            value={`pool:${p.id}`}
+            disabled={reason !== null || (!poolsOn && p.id !== holder?.id)}
+          >
+            {reason ??
+              (p.active
+                ? t(($) => $.capacity.booked_as.pool, { name: p.name })
+                : t(($) => $.capacity.booked_as.pool_inactive, { name: p.name }))}
+          </NativeSelectOption>
+        );
+      })}
     </NativeSelect>
   );
 }

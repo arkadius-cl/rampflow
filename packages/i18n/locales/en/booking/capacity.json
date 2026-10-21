@@ -6,11 +6,12 @@
   "booked_as": {
     "column": "Booked as",
     "label": "Booked as, dock {{code}}",
-    "none": "Not bookable",
     "single": "Single dock",
     "pool": "Pool {{name}}",
     "pool_inactive": "Pool {{name}} (inactive)",
-    "saved": "Dock {{code}} updated"
+    "saved": "Dock {{code}} updated",
+    "pool_other_profile": "Pool {{name}}: other dock profile",
+    "pool_other_hall": "Pool {{name}}: hall pool of another hall"
   },
   "resources": {
     "title": "Bookable resources",
@@ -32,18 +33,23 @@
       "daily_unit": "per day",
       "daily_hint": "Empty: no daily limit.",
       "members": "Member docks",
-      "members_hint": "Docks already in another pool or booked on their own are not selectable. Change them in their \"Booked as\" column.",
+      "members_hint": "Checking a dock moves it here from its current pool or single booking. A pool holds docks of one profile; a hall pool only docks of its hall.",
       "active": "Bookable"
     },
-    "in_pool": "in {{name}}",
-    "is_single": "single dock",
     "no_capacity": "adds no capacity while not active",
     "members_required": "Choose at least one dock.",
     "lowering": "Lowering capacity never cancels bookings. Bookings above the new capacity show as over capacity on the plan board.",
     "discard": "Discard",
     "save": "Save",
     "create": "Create pool",
-    "saved": "{{name}} saved"
+    "saved": "{{name}} saved",
+    "adr": "ADR",
+    "moves_from": "moves from {{name}}",
+    "moves_from_single": "booked on its own, moves here",
+    "other_profile": "other profile",
+    "other_hall": "other hall",
+    "hall_pool": "Hall pool",
+    "profile": "Dock profile"
   },
   "hours": {
     "title": "Weekly hours",
