@@ -5,13 +5,13 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, booking, capacity, concurrency, postgres]
 status: stable
-updated: 2026-10-19
-related: [docs/explanation/mvp-scope.md, docs/explanation/research/domain-standards.md]
+updated: 2026-10-21
+related: [docs/decisions/ADR-0017-homogeneous-pools-dock-profile.md, docs/explanation/mvp-scope.md, docs/explanation/research/domain-standards.md]
 ---
 
 # ADR-0004: Bookable resource capacity and booking concurrency
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: one lock per site instead of per-resource row locks, buckets as instants, bookings across local midnight, `24:00`, and walk-ins.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: one lock per site instead of per-resource row locks, buckets as instants, bookings across local midnight, `24:00`, and walk-ins. Amended 2026-10-21 by [ADR-0017](ADR-0017-homogeneous-pools-dock-profile.md) (change 03): resources carry the dock profile, each hall gets a default pool per profile, every dock is in exactly one resource with an active load type, master data writes take the site lock, and the site lock comes before the `core.max_docks` limit lock.
 
 ## Context
 
@@ -42,9 +42,12 @@ The advisory key is invisible in the schema, so one function owns it, and a key 
 
 ### Data
 
-- `bookable_resource (id, tenant_id, site_id, kind, name, directions, capacity_cap, daily_cap, sort, active)`. `capacity_cap` is allowed only for pools (check constraint).
-- `resource_dock (resource_id, resource_kind, dock_id, site_id, tenant_id)`:
-  - `unique (dock_id)`: a dock is in at most one resource.
+- `bookable_resource (id, tenant_id, site_id, kind, name, directions, capacity_cap, daily_cap, sort, active, door_type, temperature_zone, adr_allowed, hall_id)`. `capacity_cap` is allowed only for pools (check constraint).
+  - `door_type`, `temperature_zone` and `adr_allowed` are the profile of the resource's docks ([ADR-0017](ADR-0017-homogeneous-pools-dock-profile.md)). `bookable_resource_id_profile_key` is unique on `(id, door_type, temperature_zone, adr_allowed)`.
+  - `hall_id` is set only on the default pool of a hall for its profile (check `bookable_resource_hall_check`, foreign key `(hall_id, site_id)` to `hall`). The partial unique index `bookable_resource_default_pool_key` on `(hall_id, door_type, temperature_zone, adr_allowed) where hall_id is not null` allows one default pool per hall and profile.
+- `resource_dock (resource_id, resource_kind, dock_id, site_id, tenant_id, door_type, temperature_zone, adr_allowed)`:
+  - Primary key `(dock_id)`: a dock is in at most one resource. The service keeps every dock in exactly one (ADR-0017).
+  - Composite FKs `resource_dock_dock_profile_fk` to `dock (id, door_type, temperature_zone, adr_allowed)` (unique key `dock_id_profile_key`) and `resource_dock_resource_profile_fk` to `bookable_resource (id, door_type, temperature_zone, adr_allowed)`: a membership has the profile of its dock and of its resource, so a pool holds docks of one profile.
   - Composite FK `(resource_id, resource_kind)` to `bookable_resource (id, kind)` plus a partial unique index on `(resource_id)` where `resource_kind = 'single'`: a single resource has at most one dock.
   - Composite FKs `(dock_id, site_id)` and `(resource_id, site_id)`: dock and resource are on the same site.
 - `booking.resource_id` is the planned target. `booking.dock_id` is the physical dock assigned at the call; it may be outside the resource (YD-07, with a warning).
@@ -105,7 +108,7 @@ export function lockSiteCapacity(tx: Tx, siteId: SiteId): Promise<void>;
 // select pg_advisory_xact_lock(hashtextextended('capacity:' || $siteId, 0))
 ```
 
-- **One lock per site.** Every writer that checks capacity calls `lockSiteCapacity` once, before it reads load: create, reschedule (also across resources), and an avis edit that changes the duration. A transaction never takes it twice and never takes another capacity lock, so no lock order exists. `transitionBooking` locks the booking row first, then the site; `createBooking` has no booking row yet. Both orders end at the site lock, so they cannot form a cycle. A walk-in's check-in locks the row it just inserted, which no other transaction can see yet.
+- **One lock per site.** Every writer that checks capacity calls `lockSiteCapacity` once, before it reads load: create, reschedule (also across resources), and an avis edit that changes the duration. The master data writes that must keep every dock bookable take the same lock before they read memberships or load types ([ADR-0017](ADR-0017-homogeneous-pools-dock-profile.md)). A transaction never takes it twice and never takes another capacity lock, so no lock order exists. `transitionBooking` locks the booking row first, then the site; `createBooking` has no booking row yet. Both orders end at the site lock, so they cannot form a cycle. A walk-in's check-in locks the row it just inserted, which no other transaction can see yet.
 - **Writers that only remove load** (cancel, no-show, turn away, uncall, departure) do not lock. A concurrent remover can make a creator see one booking too many, which only ever rejects, never overbooks.
 - **Writers that add load without checking** need no lock either, because they never reject: a walk-in, a check-in from `no_show` (the truck is there), and a staff avis edit from `checked_in` on (the truck is loaded with what it carries). They may push a slot over capacity, and the plan board flags it. `createBooking` still takes the lock for walk-ins, because it is one code path and the cost is nil.
 - **Idempotent create.** The `clientRequestId` lookup runs after the lock, so a double submit finds the first booking instead of raising `23505` inside an aborted transaction. A booking `code` collision (`23505` on `(tenant_id, code)`) retries code generation up to three times inside a savepoint. A `23505` maps to 409 `dock_occupied` only when the constraint is `booking_dock_occupied`, and that insert or update also runs inside a savepoint so the handler can still read afterwards.
@@ -116,7 +119,9 @@ export function lockSiteCapacity(tx: Tx, siteId: SiteId): Promise<void>;
 
 ### Hard limits
 
-`withinLimit(tx, key, count)` takes a transaction-scoped advisory lock per tenant and limit key (as built in U1; it needs no UPDATE policy on `org`), counts, and throws 409 `limit_reached` with `{ key, limit }` when `count + 1 > limit` (`null` never blocks). It is typed to hard limits only (`HardLimitKey`). `booking.max_bookings_per_month` is soft: no write checks it, and PL-04 flags usage above 100%. Booking writes take no limit lock. A transaction that needs both takes the limit lock before the site capacity lock.
+`withinLimit(tx, key, count)` takes a transaction-scoped advisory lock per tenant and limit key (as built in U1; it needs no UPDATE policy on `org`), counts, and throws 409 `limit_reached` with `{ key, limit }` when `count + 1 > limit` (`null` never blocks). It is typed to hard limits only (`HardLimitKey`). `booking.max_bookings_per_month` is soft: no write checks it, and PL-04 flags usage above 100%. Booking writes take no limit lock.
+
+A transaction that needs both locks takes the site capacity lock first. `createDock` and `updateDock` (`core/sites/docks.ts`) are the only writers that take both. Each calls `lockSiteCapacity` as its first statement and reaches `withinLimit` for `core.max_docks` later. With one fixed order, no transaction holds the limit lock while it waits for a site lock. Two writers therefore cannot each hold the lock the other waits for, and they never deadlock (`40P01`). The site lock has to come first because `updateDock` decides whether it needs the limit at all only after it reads the dock's status, and that read already runs under the site lock.
 
 ### Capacity reductions
 
@@ -124,7 +129,11 @@ Lowering `capacity_cap`, removing a dock, setting a dock to maintenance or addin
 
 ### Pools and the `booking.pools` entitlement
 
-Creating a pool or changing its docks requires `booking.pools`. Existing pools keep working when the entitlement is turned off, so a downgrade never strands booked trucks; the resource screen shows them read-only.
+Creating a pool or changing its docks requires `booking.pools`, and so does moving a dock out of a pool on any path. Existing pools keep working when the entitlement is turned off, so a downgrade never strands booked trucks; the resource screen shows them read-only.
+
+A new dock joins the default pool of its hall and profile, created on demand with the site's load types ([ADR-0017](ADR-0017-homogeneous-pools-dock-profile.md)). While `booking.pools` is off, a new dock gets a single resource of its own instead, named by its code, with both directions and the site's load types.
+
+Pool membership moves docks. Creating a pool or setting its docks takes each dock out of its current resource, and a dock removed from a manual pool returns to its default pool. 409 `conflict` with reason `dock_in_resource` answers only the race that the primary key of `resource_dock` catches, two concurrent moves of one dock.
 
 ## Consequences
 
