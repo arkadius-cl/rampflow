@@ -86,6 +86,10 @@
     "verification_required": "The automatic check is required.",
     "wait": "Checking… please wait.",
     "reload": "Reload",
-    "verify": "Check"
+    "verify": "Check",
+    "secure_title": "Use a secure connection to register",
+    "secure_required": "The bot check needs HTTPS. Open the secure address to register.",
+    "open_localhost": "Open registration on localhost",
+    "dev_hint": "On the development machine, you can also open localhost. Other devices need the trusted HTTPS address."
   }
 }

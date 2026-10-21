@@ -86,6 +86,10 @@
     "verification_required": "Automatyczna weryfikacja jest wymagana.",
     "wait": "Sprawdzanie… proszę czekać.",
     "reload": "Odśwież",
-    "verify": "Sprawdź"
+    "verify": "Sprawdź",
+    "secure_title": "Rejestracja wymaga bezpiecznego połączenia",
+    "secure_required": "Sprawdzenie ochrony przed botami wymaga HTTPS. Otwórz bezpieczny adres, aby się zarejestrować.",
+    "open_localhost": "Otwórz rejestrację na localhost",
+    "dev_hint": "Na komputerze deweloperskim możesz też otworzyć localhost. Inne urządzenia potrzebują zaufanego adresu HTTPS."
   }
 }

@@ -197,6 +197,17 @@ export const SignupIssue = {
 } as const;
 export type SignupIssue = ValueOf<typeof SignupIssue>;
 
+/** ALTCHA 3 widget states (its State enum is declared in types but has no runtime export). */
+export const AltchaState = {
+  code: 'code',
+  error: 'error',
+  verified: 'verified',
+  verifying: 'verifying',
+  unverified: 'unverified',
+  expired: 'expired',
+} as const;
+export type AltchaState = ValueOf<typeof AltchaState>;
+
 /** Derived from `org.activated_at`, never stored (tenant-lifecycle). */
 export const TenantStatus = {
   onboarding: 'onboarding',

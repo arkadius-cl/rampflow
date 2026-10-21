@@ -1,11 +1,115 @@
+import { networkInterfaces } from 'node:os';
 import { expect, test } from '@playwright/test';
-import { SignupStatus } from '../../packages/shared/src/modules/core/values.ts';
+import { SignupIssue, SignupStatus } from '../../packages/shared/src/modules/core/values.ts';
+import { ErrorCode } from '../../packages/shared/src/values/index.ts';
 import { expectAccessible } from '../support/auth.ts';
 import { accountAndTenant, signupsOf } from '../support/db.ts';
 import { latestEmailTo, linkIn } from '../support/mailpit.ts';
 import { fillSignup, ownClientAddress, registration } from '../support/signup.ts';
 
 test.describe('RG-01 Register a company', () => {
+  test('LAN HTTP explains the secure-context requirement and offers localhost recovery', async ({
+    page,
+    baseURL,
+  }) => {
+    const address = Object.values(networkInterfaces())
+      .flat()
+      .find((entry) => entry?.family === 'IPv4' && !entry.internal)?.address;
+    expect(address, 'the container exposes a LAN interface').toBeTruthy();
+    const lan = new URL('/signup', baseURL);
+    lan.hostname = address ?? '';
+    await page.goto(lan.href);
+    expect(await page.evaluate('isSecureContext')).toBe(false);
+    expect(await page.evaluate(() => typeof crypto.subtle)).toBe('undefined');
+    // The proxy works; the widget's secure-context restriction caused the original failure.
+    expect(
+      (await page.request.get(new URL('/api/public/signups/challenge', lan).href)).status(),
+    ).toBe(200);
+    await expect(page.getByText('Use a secure connection to register')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Register company' })).toBeDisabled();
+    await expectAccessible(page);
+    await page.getByRole('link', { name: 'Open registration on localhost' }).click();
+    expect(await page.evaluate('isSecureContext')).toBe(true);
+    await fillSignup(page, registration('rg01-lan-recovery'));
+    await page.getByRole('button', { name: 'Register company' }).click();
+    await expect(page.getByText('Check your inbox')).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('a solved proof expires in the UI and submit solves a fresh challenge', async ({ page }) => {
+    await ownClientAddress(page);
+    await page.clock.install();
+    await page.goto('/signup');
+    const r = registration('rg01-expired');
+    await fillSignup(page, r);
+    await page.getByRole('checkbox', { name: 'Automatic check against bots' }).click();
+    await expect(page.locator('altcha-widget').getByText('Checked', { exact: true })).toBeVisible({
+      timeout: 20_000,
+    });
+    const oldPayload = await page.locator('input[name="altcha"]').inputValue();
+    await page.clock.fastForward(11 * 60_000);
+    await expect(page.getByText('The check expired. Try again.')).toBeVisible();
+    await expect(page.locator('input[name="altcha"]')).toHaveValue('');
+    expect(await signupsOf(r.email)).toEqual([]);
+    await page.clock.setSystemTime(new Date());
+    const freshChallenge = page.waitForResponse('**/api/public/signups/challenge');
+    const posted = page.waitForRequest(
+      (req) => req.url().endsWith('/api/public/signups') && req.method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Register company' }).click();
+    expect((await freshChallenge).status()).toBe(200);
+    expect((await posted).postDataJSON().altcha).not.toBe(oldPayload);
+    await expect(page.getByText('Check your inbox')).toBeVisible({ timeout: 20_000 });
+    expect(await signupsOf(r.email)).toHaveLength(1);
+  });
+
+  test('a challenge fetch failure shows a translated error and can be retried', async ({
+    page,
+  }) => {
+    await ownClientAddress(page);
+    await page.route('**/api/public/signups/challenge', (route) => route.abort(), { times: 1 });
+    await page.goto('/signup');
+    const r = registration('rg01-retry');
+    await fillSignup(page, r);
+    await page.getByRole('button', { name: 'Register company' }).click();
+    await expect(page.getByText('The check failed. Try again.')).toBeVisible();
+    expect(await signupsOf(r.email)).toEqual([]);
+    await page.getByRole('button', { name: 'Register company' }).click();
+    await expect(page.getByText('Check your inbox')).toBeVisible({ timeout: 20_000 });
+    expect(await signupsOf(r.email)).toHaveLength(1);
+  });
+
+  test('an API-rejected proof shows its field error and the next submit retries', async ({
+    page,
+  }) => {
+    await ownClientAddress(page);
+    await page.route(
+      '**/api/public/signups',
+      (route) =>
+        route.fulfill({
+          status: 422,
+          json: {
+            error: {
+              code: ErrorCode.validation_failed,
+              message: 'Invalid json',
+              details: { issues: [{ path: ['altcha'], code: SignupIssue.altcha_failed }] },
+            },
+          },
+        }),
+      { times: 1 },
+    );
+    await page.goto('/signup');
+    const r = registration('rg01-rejected');
+    await fillSignup(page, r);
+    await page.getByRole('button', { name: 'Register company' }).click();
+    await expect(page.getByText('The automatic check failed. Send the form again.')).toBeVisible({
+      timeout: 20_000,
+    });
+    expect(await signupsOf(r.email)).toEqual([]);
+    await page.getByRole('button', { name: 'Register company' }).click();
+    await expect(page.getByText('Check your inbox')).toBeVisible({ timeout: 20_000 });
+    expect(await signupsOf(r.email)).toHaveLength(1);
+  });
+
   test('the form registers with a local proof of work, no cookie and no third-party request', async ({
     page,
     context,
@@ -63,7 +167,9 @@ test.describe('RG-01 Register a company', () => {
       .poll(async () => (await signupsOf(r.email)).map((s) => s.status))
       .toEqual([SignupStatus.pending_email, SignupStatus.superseded]);
     await expect
-      .poll(async () => linkIn((await latestEmailTo(r.email)).text, '/signup/verify#'))
+      .poll(async () => linkIn((await latestEmailTo(r.email)).text, '/signup/verify#'), {
+        timeout: 20_000,
+      })
       .not.toBe(firstLink);
     await expectAccessible(page);
   });

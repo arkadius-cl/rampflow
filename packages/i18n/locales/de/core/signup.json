@@ -86,6 +86,10 @@
     "verification_required": "Die automatische Prüfung ist erforderlich.",
     "wait": "Wird geprüft… bitte warten.",
     "reload": "Neu laden",
-    "verify": "Prüfen"
+    "verify": "Prüfen",
+    "secure_title": "Sichere Verbindung zur Registrierung erforderlich",
+    "secure_required": "Die Bot-Prüfung benötigt HTTPS. Öffnen Sie die sichere Adresse zur Registrierung.",
+    "open_localhost": "Registrierung auf localhost öffnen",
+    "dev_hint": "Auf dem Entwicklungsrechner können Sie auch localhost öffnen. Andere Geräte benötigen die vertrauenswürdige HTTPS-Adresse."
   }
 }

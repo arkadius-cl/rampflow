@@ -318,7 +318,11 @@ export function SignupForm() {
             )}
           />
           <AltchaField key={attempt} control={form.control} />
-          <Button type="submit" size="lg" disabled={submit.isPending}>
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submit.isPending || !globalThis.isSecureContext}
+          >
             {submit.isPending ? <Spinner /> : null}
             {t(($) => $.signup.form.submit)}
           </Button>

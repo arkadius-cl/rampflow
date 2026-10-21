@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { isIP } from 'node:net';
 import path from 'node:path';
-import { ViteCommand } from '@rampflow/shared/values';
+import { ViteCommand, ViteMode } from '@rampflow/shared/values';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
@@ -18,8 +19,20 @@ const allowedHosts = devHost && !isIP(devHost) ? [devHost] : [];
 // the dev routes and no prototype code or mock data ships.
 const PROD_ROUTE_TREE = './node_modules/.tmp/routeTree.prod.gen.ts';
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   const production = command === ViteCommand.build;
+  const tlsCert = process.env.DEV_TLS_CERT;
+  const tlsKey = process.env.DEV_TLS_KEY;
+  if (mode !== ViteMode.e2e && Boolean(tlsCert) !== Boolean(tlsKey)) {
+    throw new Error('Set both DEV_TLS_CERT and DEV_TLS_KEY for LAN HTTPS.');
+  }
+  const https =
+    !production && mode !== ViteMode.e2e && tlsCert && tlsKey
+      ? {
+          cert: readFileSync(path.resolve(import.meta.dirname, '../..', tlsCert)),
+          key: readFileSync(path.resolve(import.meta.dirname, '../..', tlsKey)),
+        }
+      : undefined;
   return {
     plugins: [
       tanstackRouter({
@@ -46,6 +59,7 @@ export default defineConfig(({ command }) => {
       ],
     },
     server: {
+      https,
       host: true,
       allowedHosts,
       port: port('WEB_PORT', 5173),

@@ -5,7 +5,7 @@ type: how-to
 audience: [developer, agent]
 tags: [setup, dev, testing, database, mail, worktrees, lan, api, openapi, swagger]
 status: stable
-updated: 2026-10-20
+updated: 2026-10-21
 related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
@@ -139,13 +139,34 @@ How the address is chosen:
 
 To use a different address or a hostname, set `DEV_HOST` in `.env` or in the shell, for example `DEV_HOST=dock-pc.local`. Vite then accepts that hostname as well. An `APP_ORIGIN` in the shell overrides the derived origin.
 
-Over plain `http` on a LAN address the browser does not give the page a secure context. Only `localhost` counts as secure without HTTPS. This has three effects on the other device:
+Over plain `http` on a LAN address the browser does not give the page a secure context. Loopback addresses such as `localhost` count as secure without HTTPS. This affects the other device:
 
+- Registration at `/signup` cannot solve the ALTCHA bot check. The page explains that HTTPS is required. On the development machine itself, open `http://localhost:<WEB_PORT>/signup`; the localhost link refers to the device running the browser, so it cannot reach the server from a phone.
 - The driver PWA works in the browser, but it cannot install its service worker. There is no "Add to home screen" install and no offline view.
 - Copy to clipboard is not available.
 - The Web Share sheet is not available.
 
-Test these three features on `localhost` or behind HTTPS.
+Test these features on `localhost` or behind trusted HTTPS ([browser secure contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts)).
+
+### Use HTTPS for LAN registration
+
+The web dev server accepts a certificate and key through `DEV_TLS_CERT` and `DEV_TLS_KEY`; both paths are absolute or relative to the repository root. The API stays on internal HTTP behind Vite's `/api` proxy. No additional dependency or production crypto setting is needed.
+
+1. Install [mkcert](https://github.com/FiloSottile/mkcert#installation), install its development CA on your machine, and create a certificate for the actual LAN address (replace `192.168.0.10` with `DEV_HOST`). Keep keys outside the repository.
+
+   ```sh
+   mkdir -p "$HOME/.local/share/rampflow-tls"
+   mkcert -install
+   mkcert -cert-file "$HOME/.local/share/rampflow-tls/cert.pem" \
+     -key-file "$HOME/.local/share/rampflow-tls/key.pem" \
+     192.168.0.10 localhost 127.0.0.1
+   ```
+
+2. Set `DEV_TLS_CERT` and `DEV_TLS_KEY` in `.env` to the absolute paths just created (use full paths, not `$HOME`). On the next `pnpm dev` start, `APP_ORIGIN` and `APP_EXTRA_ORIGINS` use HTTPS and Vite serves the web app with that certificate. Use `https://<DEV_HOST>:<WEB_PORT>/signup`. A certificate must include the new address after a DHCP change. If a dev session is already running, localhost HTTP works immediately; enable TLS at its next start.
+
+3. On another device, install and trust the CA certificate `rootCA.pem` from `mkcert -CAROOT`, following [mkcert's mobile instructions](https://github.com/FiloSottile/mkcert#mobile-devices). Keep `rootCA-key.pem` on the development machine. Confirm that the browser trusts the site before testing registration.
+
+`pnpm test:e2e` clears the TLS settings and continues to use its own localhost HTTP servers, ports and database.
 
 ## Browse the API in Swagger
 
