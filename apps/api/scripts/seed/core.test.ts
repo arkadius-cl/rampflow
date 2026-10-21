@@ -1,16 +1,19 @@
 import { Salutation, TaxIdStatus, TaxIdType } from '@rampflow/shared/modules/core/values';
+import { Setting } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { app } from '../../src/app.ts';
-import { appUser, org } from '../../src/modules/core/schema.ts';
+import { appUser, org, settingValue } from '../../src/modules/core/schema.ts';
 import { ownerCount, ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
 import {
   ACME,
+  ACME_CANCEL_CUTOFF_MINUTES,
   ACME_VAT,
   ADMIN_UI_PREFS,
   DEMO_PASSWORD,
   DEMO_USERS,
+  PLATFORM_HORIZON_DAYS,
   seed,
   TRANS_POL,
 } from './core.ts';
@@ -78,5 +81,31 @@ describe('pnpm db:seed, core', () => {
     await run();
     await run();
     expect(await prefs()).toEqual({ ...ADMIN_UI_PREFS, 'platform.tenant.openModules': ['yard'] });
+  });
+
+  it('stores one platform horizon and one Acme cutoff, however often it runs', async () => {
+    await run();
+    await run();
+    const rows = await ownerDb()
+      .select({ key: settingValue.key, value: settingValue.value, tenantId: settingValue.tenantId })
+      .from(settingValue)
+      .where(
+        sql`(${settingValue.tenantId} is null and ${settingValue.key} = ${Setting.booking.horizon_days})
+          or (${settingValue.tenantId} = (select id from org where name = ${ACME})
+            and ${settingValue.siteId} is null
+            and ${settingValue.key} = ${Setting.booking.cancel_cutoff_minutes})`,
+      );
+    const [acme] = await ownerDb().select({ id: org.id }).from(org).where(eq(org.name, ACME));
+    expect(rows).toHaveLength(2);
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        { key: Setting.booking.horizon_days, value: { v: PLATFORM_HORIZON_DAYS }, tenantId: null },
+        {
+          key: Setting.booking.cancel_cutoff_minutes,
+          value: { v: ACME_CANCEL_CUTOFF_MINUTES },
+          tenantId: acme?.id,
+        },
+      ]),
+    );
   });
 });

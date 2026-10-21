@@ -1,9 +1,19 @@
 import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
 import { Salutation, TaxIdStatus, TaxIdType } from '@rampflow/shared/modules/core/values';
-import { Module, OrgKind, Role, SeedOrg, StaffLocale } from '@rampflow/shared/values';
+import {
+  Module,
+  OrgKind,
+  Role,
+  SeedOrg,
+  Setting,
+  SettingScope,
+  StaffLocale,
+} from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
+import type { Tx } from '../../src/db/scope.ts';
+import { loadEntitlements } from '../../src/kernel/access.ts';
 import { hashPassword, verifyPassword } from '../../src/modules/core/auth/password.ts';
 import {
   appUser,
@@ -12,6 +22,7 @@ import {
   tenantCarrierLink,
   tenantSubscription,
 } from '../../src/modules/core/schema.ts';
+import { writeSetting } from '../../src/modules/core/settings/settings.ts';
 import { findOrg, type SeedContext } from './context.ts';
 
 // The demo orgs and accounts of docs/how-to/run-locally.md: the platform admin, the tenant
@@ -24,6 +35,13 @@ export const ACME = 'Acme Logistics';
 /** Acme's VAT number, which the seeded "Acme Logistik Süd GmbH" shares (signups.ts). */
 export const ACME_VAT = 'DE136695976';
 export const TRANS_POL = 'Trans-Pol Sp. z o.o.';
+/**
+ * Two of the three overrides that show every origin text on Hamburg DC's booking topic: a
+ * platform horizon and an Acme cutoff (sites.ts adds the site's slot grid; change 06).
+ */
+export const PLATFORM_HORIZON_DAYS = 60;
+export const ACME_CANCEL_CUTOFF_MINUTES = 240;
+
 export const ADMIN_UI_PREFS: UiPrefs = {
   'platform.packages.openModules': [Module.booking, Module.yard],
 };
@@ -188,5 +206,24 @@ export async function seed(ctx: SeedContext): Promise<void> {
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
       set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
+  const tx = ctx.db as unknown as Tx;
+  const now = new Date();
+  await writeSetting(
+    tx,
+    { scope: SettingScope.platform },
+    null,
+    { key: Setting.booking.horizon_days, value: PLATFORM_HORIZON_DAYS },
+    admin,
+    now,
+  );
+  const acme = orgs.acme as TenantId;
+  await writeSetting(
+    tx,
+    { scope: SettingScope.tenant, tenantId: acme },
+    await loadEntitlements(tx, acme, now),
+    { key: Setting.booking.cancel_cutoff_minutes, value: ACME_CANCEL_CUTOFF_MINUTES },
+    users.get('admin@acme.local') as UserId,
+    now,
+  );
   ctx.log(`${DEMO_USERS.length} accounts ready`);
 }
