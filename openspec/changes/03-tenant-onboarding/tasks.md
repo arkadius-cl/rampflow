@@ -31,7 +31,7 @@
 - [x] 3.9 Add the global invariant test to `placement.test.ts`: build a site through the services, run every write path from tasks 3.3 to 3.8, and after each assert that no dock lacks a resource and no resource with docks lacks an active load type.
 - [x] 3.10 Fix existing tests that used the `none` variant of `DockBooking` or expected 409 `ConflictReason.dock_in_resource` for a held dock (`resources.test.ts`, `availability.test.ts`, the yard and booking tests that create resources). Verify `pnpm --filter @rampflow/api test` passes.
 
-- [ ] 3.11 Checkpoint: groups 1 to 3 (the resource rework) are reviewed and committed as their own stage before the onboarding work starts. Verify `pnpm verify` is green on that commit, and that the seeded dev database still books on every site.
+- [x] 3.11 Checkpoint: groups 1 to 3 (the resource rework) are reviewed and committed as their own stage before the onboarding work starts. Verify `pnpm verify` is green on that commit, and that the seeded dev database still books on every site.
 
 ## 4. Site hours at creation (API)
 
