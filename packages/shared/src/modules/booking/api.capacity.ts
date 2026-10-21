@@ -1,21 +1,19 @@
 import * as z from 'zod';
 import {
-  closingTimeSchema,
   type LocalDate,
   type LocalDateTime,
   type LocalTime,
   localDateSchema,
   localDateTimeSchema,
-  localTimeSchema,
   type TimeZone,
 } from '../../time/index.ts';
+import { WeeklyHours } from '../../time/weekly-hours.ts';
 import type { WallTimeFold } from '../../values/time.ts';
-import { ZodIssueCode } from '../../values/validation.ts';
+import type { DoorType, TemperatureZone } from '../core/values.ts';
 import {
   ClosureKind,
   type ClosureSource,
   Direction,
-  DockBookingKind,
   DurationKind,
   ResourceKind,
 } from './values.ts';
@@ -95,14 +93,13 @@ export type UpdateResource = z.infer<typeof UpdateResource>;
 export const PutResourceDocks = z.object({ dockIds: ids.min(1) });
 
 /**
- * How one dock is booked (MD-03): not at all, on its own as a single resource, or as a member of
- * one pool. `PUT /capacity/docks/:dockId/booking` moves the dock in one transaction.
+ * How one dock is booked (MD-03): on its own as a single resource, or as a member of one pool.
+ * `PUT /capacity/docks/:dockId/booking` moves the dock in one transaction.
  */
 export const DockBooking = z.discriminatedUnion('as', [
-  z.object({ as: z.literal(DockBookingKind.none) }),
   // Without directions a reused single keeps its own and a new one serves both.
-  z.object({ as: z.literal(DockBookingKind.single), directions: directions.optional() }),
-  z.object({ as: z.literal(DockBookingKind.pool), resourceId: z.uuid() }),
+  z.object({ as: z.literal(ResourceKind.single), directions: directions.optional() }),
+  z.object({ as: z.literal(ResourceKind.pool), resourceId: z.uuid() }),
 ]);
 export type DockBooking = z.infer<typeof DockBooking>;
 
@@ -117,38 +114,21 @@ export interface ResourceView {
   sort: number;
   active: boolean;
   dockIds: string[];
+  /** The profile every dock of the resource has (ADR-0017). */
+  doorType: DoorType;
+  temperatureZone: TemperatureZone;
+  adrAllowed: boolean;
+  /** Set on the default pool of that hall, null on manual pools and singles. */
+  hallId: string | null;
+  loadTypeIds: string[];
 }
 
 export const SiteQuery = z.object({ siteId: z.uuid() });
 
-export const HoursRow = z
-  .object({ weekday: z.int().min(1).max(7), opens: localTimeSchema, closes: closingTimeSchema })
-  .refine((r) => r.opens < r.closes, { message: 'Opens before it closes', path: ['closes'] });
-
 export const PutHours = z.object({
   siteId: z.uuid(),
   resourceId: z.uuid().nullable(),
-  rows: z
-    .array(HoursRow)
-    .max(70)
-    .superRefine((rows, ctx) => {
-      rows.forEach((row, i) => {
-        const overlaps = rows.some(
-          (other, j) =>
-            j < i &&
-            other.weekday === row.weekday &&
-            other.opens < row.closes &&
-            row.opens < other.closes,
-        );
-        if (overlaps) {
-          ctx.addIssue({
-            code: ZodIssueCode.custom,
-            message: 'Overlaps another window',
-            path: [i],
-          });
-        }
-      });
-    }),
+  rows: WeeklyHours,
 });
 export type PutHours = z.infer<typeof PutHours>;
 

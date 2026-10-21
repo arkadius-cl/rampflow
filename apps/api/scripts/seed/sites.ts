@@ -1,14 +1,10 @@
-import {
-  CreateLoadType,
-  CreateResource,
-  PutHours,
-} from '@rampflow/shared/modules/booking/api.capacity';
+import { CreateLoadType, PutHours } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction, DurationKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { CreateDock, CreateSite } from '@rampflow/shared/modules/core/api.sites';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { OrgKind } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
-import type { SiteId, TenantId } from '../../src/db/ids.ts';
+import type { DockId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Tx } from '../../src/db/scope.ts';
 import { loadEntitlements } from '../../src/kernel/access.ts';
 import { systemClock } from '../../src/kernel/clock.ts';
@@ -18,8 +14,12 @@ import {
   listLoadTypes,
   putLoadTypeResources,
 } from '../../src/modules/booking/capacity/load-types.ts';
-import { createResource } from '../../src/modules/booking/capacity/resources.ts';
-import type { LoadTypeId } from '../../src/modules/booking/schema.resources.ts';
+import {
+  bookDock,
+  listResources,
+  updateResource,
+} from '../../src/modules/booking/capacity/resources.ts';
+import type { LoadTypeId, ResourceId } from '../../src/modules/booking/schema.resources.ts';
 import { site } from '../../src/modules/core/schema.ts';
 import { createDock, createHall } from '../../src/modules/core/sites/docks.ts';
 import { createSite } from '../../src/modules/core/sites/sites.ts';
@@ -34,7 +34,8 @@ import { ACME } from './core.ts';
 interface DemoSite {
   site: CreateSite;
   halls: { name: string; docks: string[] }[];
-  pools: { name: string; directions: Direction[]; docks: string[] }[];
+  /** The default pool of `hall`, renamed; its other docks become `singles`. */
+  pools: { hall: string; name: string; directions: Direction[] }[];
   singles: string[];
   /** `[weekday, opens, closes]` site rows. */
   hours: [number, string, string][];
@@ -42,6 +43,13 @@ interface DemoSite {
 
 const weekdays = (opens: string, closes: string) =>
   [1, 2, 3, 4, 5].map((d): [number, string, string] => [d, opens, closes]);
+const hoursRows = (hours: [number, string, string][]) =>
+  hours.map(([weekday, opens, closes]) => ({ weekday, opens, closes }));
+const HAMBURG_HOURS: [number, string, string][] = [
+  ...weekdays('06:00', '22:00'),
+  [6, '06:00', '14:00'],
+];
+const BUCHAREST_HOURS = weekdays('07:00', '19:00');
 
 const DEMO_SITES: readonly DemoSite[] = [
   {
@@ -55,21 +63,18 @@ const DEMO_SITES: readonly DemoSite[] = [
       timeZone: 'Europe/Berlin',
       defaultLocale: 'de',
       phone: '+4940123456',
+      hours: hoursRows(HAMBURG_HOURS),
     }),
     halls: [
       { name: 'Halle 1', docks: ['T01', 'T02', 'T03', 'T04', 'T05'] },
       { name: 'Halle 2', docks: ['T06', 'T07', 'T08'] },
     ],
     pools: [
-      {
-        name: 'Wareneingang',
-        directions: [Direction.inbound],
-        docks: ['T01', 'T02', 'T03', 'T04'],
-      },
-      { name: 'Versand', directions: [Direction.outbound], docks: ['T06', 'T07'] },
+      { hall: 'Halle 1', name: 'Wareneingang', directions: [Direction.inbound] },
+      { hall: 'Halle 2', name: 'Versand', directions: [Direction.outbound] },
     ],
     singles: ['T05', 'T08'],
-    hours: [...weekdays('06:00', '22:00'), [6, '06:00', '14:00']],
+    hours: HAMBURG_HOURS,
   },
   {
     site: CreateSite.parse({
@@ -81,13 +86,12 @@ const DEMO_SITES: readonly DemoSite[] = [
       subdivision: 'RO-B',
       timeZone: 'Europe/Bucharest',
       defaultLocale: 'en',
+      hours: hoursRows(BUCHAREST_HOURS),
     }),
     halls: [{ name: 'Hall A', docks: ['R1', 'R2'] }],
-    pools: [
-      { name: 'Ramps', directions: [Direction.inbound, Direction.outbound], docks: ['R1', 'R2'] },
-    ],
+    pools: [{ hall: 'Hall A', name: 'Ramps', directions: [Direction.inbound, Direction.outbound] }],
     singles: [],
-    hours: weekdays('07:00', '19:00'),
+    hours: BUCHAREST_HOURS,
   },
 ];
 
@@ -100,9 +104,11 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   // The demo sites lie in EU countries, which `core.site_countries` admits by default.
   const row = await createSite(tx, req, systemClock, demo.site, [demo.site.country]);
   const siteId = row.id as SiteId;
-  const dockIds = new Map<string, string>();
+  const dockIds = new Map<string, DockId>();
+  const hallIds = new Map<string, string>();
   for (const [sort, h] of demo.halls.entries()) {
     const hall = await createHall(tx, req.tenantId, siteId, { name: h.name, sort });
+    hallIds.set(h.name, hall.id);
     for (const [i, code] of h.docks.entries()) {
       const input = CreateDock.parse({
         hallId: hall.id,
@@ -111,36 +117,36 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
         temperatureZone: TemperatureZone.ambient,
         sort: i,
       });
-      dockIds.set(code, (await createDock(tx, req, siteId, input)).id);
+      dockIds.set(code, (await createDock(tx, req, systemClock, siteId, input)).id as DockId);
     }
   }
-  const ids = (codes: string[]) => codes.map((c) => dockIds.get(c) as string);
-  const resources: { id: string; directions: Direction[] }[] = [];
+  // `createDock` put every dock into its hall's default pool (ADR-0017); the demo renames those.
+  const defaults = await listResources(tx, req.tenantId, siteId);
   for (const [sort, p] of demo.pools.entries()) {
-    const input = { siteId, kind: ResourceKind.pool, name: p.name, directions: p.directions, sort };
-    resources.push(
-      await createResource(tx, req, CreateResource.parse({ ...input, dockIds: ids(p.docks) })),
-    );
+    const pool = defaults.find((r) => r.hallId === hallIds.get(p.hall));
+    if (!pool) throw new Error(`no default pool for ${p.hall}`);
+    await updateResource(tx, req, pool.id as ResourceId, {
+      name: p.name,
+      directions: p.directions,
+      sort,
+    });
   }
   for (const code of demo.singles) {
-    const input = {
-      siteId,
-      kind: ResourceKind.single,
-      name: code,
-      directions: ['inbound', 'outbound'],
-      sort: resources.length,
-      dockIds: ids([code]),
-    };
-    resources.push(await createResource(tx, req, CreateResource.parse(input)));
+    await bookDock(tx, req, dockIds.get(code) as DockId, {
+      as: ResourceKind.single,
+      directions: [Direction.inbound, Direction.outbound],
+    });
   }
-  const rows = demo.hours.map(([weekday, opens, closes]) => ({ weekday, opens, closes }));
-  await putHours(tx, req.tenantId, PutHours.parse({ siteId, resourceId: null, rows }));
+  const resources = await listResources(tx, req.tenantId, siteId);
+  await putHours(
+    tx,
+    req.tenantId,
+    PutHours.parse({ siteId, resourceId: null, rows: hoursRows(demo.hours) }),
+  );
   const serving = (d: Direction) =>
     resources.filter((r) => r.directions.includes(d)).map((r) => r.id);
-  for (const lt of await listLoadTypes(tx, req.tenantId, siteId)) {
-    await putLoadTypeResources(tx, req.tenantId, lt.id as LoadTypeId, serving(lt.direction));
-  }
-  await createLoadType(
+  // Outbound first: narrowing the inbound types must leave every pool a load type (ADR-0017).
+  const outbound = await createLoadType(
     tx,
     req,
     CreateLoadType.parse({
@@ -152,6 +158,10 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
       resourceIds: serving(Direction.outbound),
     }),
   );
+  for (const lt of await listLoadTypes(tx, req.tenantId, siteId)) {
+    if (lt.id === outbound.id) continue;
+    await putLoadTypeResources(tx, req.tenantId, lt.id as LoadTypeId, serving(lt.direction));
+  }
   return true;
 }
 

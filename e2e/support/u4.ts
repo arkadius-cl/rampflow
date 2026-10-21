@@ -1,5 +1,6 @@
 import { type BrowserContext, expect } from '@playwright/test';
 import pg from 'pg';
+import { hoursTemplateRows } from '../../packages/shared/src/modules/core/api.sites.ts';
 import { HttpMethod } from '../../packages/shared/src/values/http.ts';
 import type { World, WorldSide } from './auth.ts';
 
@@ -87,4 +88,5 @@ export const newSiteBody = (name: string) => ({
   subdivision: 'DE-BY',
   timeZone: 'Europe/Berlin',
   defaultLocale: 'en',
+  hours: hoursTemplateRows.one_shift,
 });

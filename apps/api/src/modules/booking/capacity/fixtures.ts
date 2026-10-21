@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { Entitlements } from '@rampflow/shared';
 import {
   BookingStatus,
   CreatedParty,
@@ -7,9 +8,21 @@ import {
   type LoadStatus,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
-import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
+import { CreateDock, CreateSite, hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
+import {
+  DockStatus,
+  DoorType,
+  SiteCountry,
+  TemperatureZone,
+} from '@rampflow/shared/modules/core/values';
 import type { TimeZone } from '@rampflow/shared/time';
-import { ScopeParty, TenantActorKind, TenantRole } from '@rampflow/shared/values';
+import {
+  Feature,
+  ScopeParty,
+  StaffLocale,
+  TenantActorKind,
+  TenantRole,
+} from '@rampflow/shared/values';
 import { type OwnerDb, ownerDb } from '../../../../test/db.ts';
 import type { WorldSide } from '../../../../test/world.ts';
 import type { BookingId, DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
@@ -17,6 +30,9 @@ import { type Scope, type Tx, withScope } from '../../../db/scope.ts';
 import { type Access, loadAccess } from '../../../kernel/access.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { dock, hall, site } from '../../core/schema.ts';
+import { createDock, createHall } from '../../core/sites/docks.ts';
+import { createSite } from '../../core/sites/sites.ts';
+import type { TenantRequest } from '../../core/sites/tenant.ts';
 import {
   bookableResource,
   type LoadTypeId,
@@ -183,4 +199,88 @@ export function asTenantAdmin<T>(
     },
   };
   return withScope(scope, async (tx) => fn(tx, await loadAccess(tx, scope, testClock(now))));
+}
+
+/** A tenant request of side's admin without hard limits, `booking.pools` as given (default on). */
+export function asTenantRequest<T>(
+  side: WorldSide,
+  fn: (tx: Tx, req: TenantRequest) => Promise<T>,
+  o: { pools?: boolean } = {},
+): Promise<T> {
+  return asTenantAdmin(side, (tx, access) => {
+    const granted = access.entitlements as Entitlements;
+    const entitlements: Entitlements = {
+      ...granted,
+      features: { ...granted.features, [Feature.booking.pools]: o.pools ?? true },
+      limits: Object.fromEntries(
+        Object.keys(granted.limits).map((key) => [key, null]),
+      ) as Entitlements['limits'],
+    };
+    return fn(tx, { tenantId: side.tenantId, userId: side.users.tenant_admin.id, entitlements });
+  });
+}
+
+export interface DockSpec {
+  code: string;
+  hall: string;
+  doorType?: DoorType;
+  temperatureZone?: TemperatureZone;
+  adrAllowed?: boolean;
+}
+
+export interface ServiceSite {
+  siteId: SiteId;
+  halls: Record<string, HallId>;
+  docks: Record<string, DockId>;
+}
+
+/**
+ * A site built through the services, like one created on screen: one-shift hours, the seeded
+ * load types, its halls, and docks placed by `createDock` (ADR-0017).
+ */
+export function serviceSite(
+  side: WorldSide,
+  docks: readonly DockSpec[],
+  o: { pools?: boolean; locale?: StaffLocale } = {},
+): Promise<ServiceSite> {
+  return asTenantRequest(
+    side,
+    async (tx, req) => {
+      const clock = testClock(new Date('2026-10-19T08:00:00Z'));
+      const created = await createSite(
+        tx,
+        req,
+        clock,
+        CreateSite.parse({
+          name: `Placement ${randomUUID().slice(0, 8)}`,
+          addressLine1: 'Am Seedeich 40',
+          postalCode: '27572',
+          city: 'Bremerhaven',
+          country: SiteCountry.DE,
+          subdivision: 'DE-HB',
+          timeZone: 'Europe/Berlin',
+          defaultLocale: o.locale ?? StaffLocale.de,
+          hours: hoursTemplateRows.one_shift,
+        }),
+        [SiteCountry.DE],
+      );
+      const siteId = created.id as SiteId;
+      const halls: Record<string, HallId> = {};
+      const ids: Record<string, DockId> = {};
+      for (const d of docks) {
+        halls[d.hall] ??= (await createHall(tx, req.tenantId, siteId, { name: d.hall }))
+          .id as HallId;
+        const input = CreateDock.parse({
+          hallId: halls[d.hall],
+          code: d.code,
+          doorType: d.doorType ?? DoorType.dock_leveler,
+          temperatureZone: d.temperatureZone ?? TemperatureZone.ambient,
+          adrAllowed: d.adrAllowed ?? false,
+        });
+        ids[d.code] = (await createDock(tx, req, clock, siteId, input)).id as DockId;
+      }
+      return { siteId, halls, docks: ids };
+    },
+    o,
+  );
 }

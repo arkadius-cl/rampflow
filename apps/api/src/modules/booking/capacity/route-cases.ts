@@ -3,7 +3,6 @@ import {
   ClosureKind,
   ClosureSource,
   Direction,
-  DockBookingKind,
   DurationKind,
   ResourceKind,
 } from '@rampflow/shared/modules/booking/values';
@@ -18,6 +17,23 @@ import type { OwnerDb } from '../../../../test/db.ts';
 import { defineRouteCases } from '../../../../test/route-cases.ts';
 import type { World, WorldSide } from '../../../../test/world.ts';
 import { closure, loadTypeResource } from '../schema.resources.ts';
+
+/** Every site's pool serves its load type, so a dock may join it (ADR-0017). */
+async function poolLoadTypes(w: World, db: OwnerDb): Promise<void> {
+  for (const side of [w.A, w.B]) {
+    for (const site of side.sites) {
+      await db
+        .insert(loadTypeResource)
+        .values({
+          loadTypeId: site.loadTypeId,
+          resourceId: site.resourceId,
+          siteId: site.id,
+          tenantId: side.tenantId,
+        })
+        .onConflictDoNothing();
+    }
+  }
+}
 
 /** Per world: one manual closure and one holiday closure on site 0 of each side. */
 const closures = new WeakMap<World, { manual: string; holiday: string }>();
@@ -122,6 +138,7 @@ export const cases = defineRouteCases([
     entitlement: Feature.booking.pools,
     params: (w) => ({ orgId: w.A.tenantId, resourceId: w.A.sites[0].resourceId }),
     body: (w) => ({ dockIds: [...w.A.sites[0].dockIds] }),
+    setup: poolLoadTypes,
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },
@@ -132,7 +149,8 @@ export const cases = defineRouteCases([
     permission: Permission.booking.manage_resources,
     entitlement: Feature.booking.pools,
     params: (w) => ({ orgId: w.A.tenantId, dockId: w.A.sites[0].dockIds[0] }),
-    body: (w) => ({ as: DockBookingKind.pool, resourceId: w.A.sites[0].resourceId }),
+    body: (w) => ({ as: ResourceKind.pool, resourceId: w.A.sites[0].resourceId }),
+    setup: poolLoadTypes,
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
   },

@@ -284,14 +284,6 @@ export const DurationKind = {
 } as const;
 export type DurationKind = ValueOf<typeof DurationKind>;
 
-/** How a dock is booked (MD-03): not at all, as a single resource, or as a pool member. */
-export const DockBookingKind = {
-  none: 'none',
-  single: ResourceKind.single,
-  pool: ResourceKind.pool,
-} as const;
-export type DockBookingKind = ValueOf<typeof DockBookingKind>;
-
 /** The portal's booking list filter: bookings still to come, or past ones. */
 export const BookingPeriod = {
   upcoming: 'upcoming',
@@ -423,3 +415,18 @@ export const CarriersTab = {
   links: 'links',
 } as const;
 export type CarriersTab = ValueOf<typeof CarriersTab>;
+
+/** Constraints of `resource_dock` that the API maps to a 409 (ADR-0017). */
+export const ResourceDockConstraint = {
+  resource_dock_pkey: 'resource_dock_pkey',
+  resource_dock_dock_profile_fk: 'resource_dock_dock_profile_fk',
+  resource_dock_resource_profile_fk: 'resource_dock_resource_profile_fk',
+} as const;
+export type ResourceDockConstraint = ValueOf<typeof ResourceDockConstraint>;
+
+/** The composite keys that hold a membership to its dock's and its resource's profile. */
+export const ProfileForeignKey = {
+  resource_dock_dock_profile_fk: ResourceDockConstraint.resource_dock_dock_profile_fk,
+  resource_dock_resource_profile_fk: ResourceDockConstraint.resource_dock_resource_profile_fk,
+} as const;
+export type ProfileForeignKey = ValueOf<typeof ProfileForeignKey>;

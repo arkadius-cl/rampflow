@@ -198,7 +198,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'core.sites.createDock',
       stories: [StoryId.MD_02],
       description:
-        '409 `conflict` with reason `duplicate_code`; a hall of another site answers 422',
+        'Puts the dock into the default pool of its hall and profile, or a single resource of its own without `booking.pools`. 409 `conflict` with reason `duplicate_code`, or `dock_without_load_type` if its resource would serve no active load type; a hall of another site answers 422',
       limits: [Limit.core.max_docks],
       responses: { 201: type<DockView>() },
     }),
@@ -207,7 +207,13 @@ export const tenant = new Hono<AppEnv>()
     validate(ValidationTarget.json, CreateDock),
     async (c) => {
       const { siteId } = c.req.valid('param');
-      const dock = await createDock(c.var.db, tenantRequest(c), siteId, c.req.valid('json'));
+      const dock = await createDock(
+        c.var.db,
+        tenantRequest(c),
+        c.var.clock,
+        siteId,
+        c.req.valid('json'),
+      );
       return c.json(dock, 201);
     },
   )
@@ -216,7 +222,8 @@ export const tenant = new Hono<AppEnv>()
     op({
       id: 'core.sites.updateDock',
       stories: [StoryId.MD_02],
-      description: 'Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`.',
+      description:
+        'Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`. A new profile updates its single resource or moves it from its pool to the default pool of its hall and new profile (403 `entitlement_required` without `booking.pools`); a new hall moves it out of a default pool; a dock in no resource is placed.',
       limits: [Limit.core.max_docks],
       responses: { 200: type<DockView>() },
     }),

@@ -1,5 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CreateSite, type SiteView } from '@rampflow/shared/modules/core/api.sites';
+import {
+  CreateSite,
+  hoursTemplateRows,
+  type SiteView,
+} from '@rampflow/shared/modules/core/api.sites';
 import { DisplayNamesType, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -41,6 +45,7 @@ const EMPTY: SiteValues = {
   timeZone: 'Europe/Berlin',
   defaultLocale: StaffLocale.de,
   phone: null,
+  hours: hoursTemplateRows.one_shift,
 };
 
 const valuesOf = (site: SiteView): SiteValues => ({
@@ -54,6 +59,8 @@ const valuesOf = (site: SiteView): SiteValues => ({
   timeZone: site.timeZone,
   defaultLocale: site.defaultLocale,
   phone: site.phone,
+  // Hours are edited on the hours tab; this only satisfies the create schema.
+  hours: hoursTemplateRows.one_shift,
 });
 
 const TIME_ZONES = Intl.supportedValuesOf('timeZone');
@@ -124,15 +131,15 @@ function SiteForm({
       : { ...EMPTY, country: admitted.includes(EMPTY.country) ? EMPTY.country : '' },
   });
   const save = useMutation({
-    mutationFn: (body: SiteValues) =>
+    mutationFn: ({ hours, ...fields }: SiteValues) =>
       site
         ? call(
             api.t[':orgId'].sites[':siteId'].$patch({
               param: { orgId, siteId: site.id },
-              json: body,
+              json: fields,
             }),
           )
-        : call(api.t[':orgId'].sites.$post({ param: { orgId }, json: body })),
+        : call(api.t[':orgId'].sites.$post({ param: { orgId }, json: { ...fields, hours } })),
     onSuccess: async (saved) => {
       await refresh();
       toast.success(t(($) => $.sites.saved));

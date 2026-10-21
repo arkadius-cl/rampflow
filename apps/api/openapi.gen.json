@@ -8410,7 +8410,7 @@
       "put": {
         "operationId": "booking.capacity.setDockBooking",
         "summary": "Set dock booking",
-        "description": "Needs `booking.pools` when a pool is left or joined. `{ as: 'none' } | { as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }` (null for `none`); a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions; idempotent",
+        "description": "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; idempotent",
         "tags": [
           "Master data and capacity"
         ],
@@ -8440,18 +8440,6 @@
             "application/json": {
               "schema": {
                 "oneOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "as": {
-                        "type": "string",
-                        "const": "none"
-                      }
-                    },
-                    "required": [
-                      "as"
-                    ]
-                  },
                   {
                     "type": "object",
                     "properties": {
@@ -8495,7 +8483,7 @@
                 ]
               },
               "example": {
-                "as": "none"
+                "as": "single"
               }
             }
           }
@@ -8509,10 +8497,7 @@
                   "type": "object",
                   "properties": {
                     "resource": {
-                      "type": [
-                        "object",
-                        "null"
-                      ],
+                      "type": "object",
                       "properties": {
                         "id": {
                           "type": "string"
@@ -8563,6 +8548,38 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "doorType": {
+                          "type": "string",
+                          "enum": [
+                            "dock_leveler",
+                            "ground_level",
+                            "side_loading",
+                            "yard_open"
+                          ]
+                        },
+                        "temperatureZone": {
+                          "type": "string",
+                          "enum": [
+                            "ambient",
+                            "chilled",
+                            "frozen"
+                          ]
+                        },
+                        "adrAllowed": {
+                          "type": "boolean"
+                        },
+                        "hallId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "loadTypeIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
                         }
                       },
                       "required": [
@@ -8575,7 +8592,12 @@
                         "dailyCap",
                         "sort",
                         "active",
-                        "dockIds"
+                        "dockIds",
+                        "doorType",
+                        "temperatureZone",
+                        "adrAllowed",
+                        "hallId",
+                        "loadTypeIds"
                       ]
                     }
                   },
@@ -9615,6 +9637,38 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "doorType": {
+                            "type": "string",
+                            "enum": [
+                              "dock_leveler",
+                              "ground_level",
+                              "side_loading",
+                              "yard_open"
+                            ]
+                          },
+                          "temperatureZone": {
+                            "type": "string",
+                            "enum": [
+                              "ambient",
+                              "chilled",
+                              "frozen"
+                            ]
+                          },
+                          "adrAllowed": {
+                            "type": "boolean"
+                          },
+                          "hallId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "loadTypeIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
                           }
                         },
                         "required": [
@@ -9627,7 +9681,12 @@
                           "dailyCap",
                           "sort",
                           "active",
-                          "dockIds"
+                          "dockIds",
+                          "doorType",
+                          "temperatureZone",
+                          "adrAllowed",
+                          "hallId",
+                          "loadTypeIds"
                         ]
                       }
                     }
@@ -9664,7 +9723,7 @@
       "post": {
         "operationId": "booking.capacity.createResource",
         "summary": "Create resource",
-        "description": "Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`",
+        "description": "Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left",
         "tags": [
           "Master data and capacity"
         ],
@@ -9934,7 +9993,7 @@
       "put": {
         "operationId": "booking.capacity.setResourceDocks",
         "summary": "Set resource docks",
-        "description": "Needs `booking.pools` for pools. `{ dockIds }`; 409 `dock_in_resource` with `dockIds`",
+        "description": "Needs `booking.pools` for pools. `{ dockIds }` of one profile; added docks move in from their resources, removed docks return to the default pool of their hall and profile; 409 `profile_mismatch` or `dock_needs_resource` (removed from their own default pool) with `dockIds`; 422 for a dock of another hall in a default pool; 409 `dock_without_load_type` if the docks would have no active load type",
         "tags": [
           "Master data and capacity"
         ],
@@ -14837,6 +14896,34 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "hours": {
+                    "minItems": 1,
+                    "maxItems": 70,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "weekday": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7
+                        },
+                        "opens": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "closes": {
+                          "type": "string",
+                          "pattern": "^(([01]\\d|2[0-3]):[0-5]\\d|24:00)$"
+                        }
+                      },
+                      "required": [
+                        "weekday",
+                        "opens",
+                        "closes"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -14846,7 +14933,8 @@
                   "city",
                   "country",
                   "timeZone",
-                  "defaultLocale"
+                  "defaultLocale",
+                  "hours"
                 ]
               },
               "example": {
@@ -14856,7 +14944,14 @@
                 "city": "example",
                 "country": "DE",
                 "timeZone": "Europe/Berlin",
-                "defaultLocale": "de"
+                "defaultLocale": "de",
+                "hours": [
+                  {
+                    "weekday": 1,
+                    "opens": "08:00",
+                    "closes": "16:00"
+                  }
+                ]
               }
             }
           }
@@ -15235,7 +15330,7 @@
       "post": {
         "operationId": "core.sites.createDock",
         "summary": "Create dock",
-        "description": "409 `conflict` with reason `duplicate_code`; a hall of another site answers 422",
+        "description": "Puts the dock into the default pool of its hall and profile, or a single resource of its own without `booking.pools`. 409 `conflict` with reason `duplicate_code`, or `dock_without_load_type` if its resource would serve no active load type; a hall of another site answers 422",
         "tags": [
           "Master data and capacity"
         ],
@@ -15372,7 +15467,7 @@
       "patch": {
         "operationId": "core.sites.updateDock",
         "summary": "Update dock",
-        "description": "Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`.",
+        "description": "Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`. A new profile updates its single resource or moves it from its pool to the default pool of its hall and new profile (403 `entitlement_required` without `booking.pools`); a new hall moves it out of a default pool; a dock in no resource is placed.",
         "tags": [
           "Master data and capacity"
         ],
@@ -22019,6 +22114,7 @@
                   "internal_error",
                   "limit_reached",
                   "not_found",
+                  "onboarding_incomplete",
                   "rate_limited",
                   "unauthorized",
                   "validation_failed"
@@ -24156,6 +24252,38 @@
             "items": {
               "type": "string"
             }
+          },
+          "doorType": {
+            "type": "string",
+            "enum": [
+              "dock_leveler",
+              "ground_level",
+              "side_loading",
+              "yard_open"
+            ]
+          },
+          "temperatureZone": {
+            "type": "string",
+            "enum": [
+              "ambient",
+              "chilled",
+              "frozen"
+            ]
+          },
+          "adrAllowed": {
+            "type": "boolean"
+          },
+          "hallId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "loadTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -24168,7 +24296,12 @@
           "dailyCap",
           "sort",
           "active",
-          "dockIds"
+          "dockIds",
+          "doorType",
+          "temperatureZone",
+          "adrAllowed",
+          "hallId",
+          "loadTypeIds"
         ]
       },
       "SettingEntry": {
@@ -24931,6 +25064,13 @@
           "org": {
             "$ref": "#/components/schemas/OrgRef"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "onboarding"
+            ]
+          },
           "role": {
             "type": "string",
             "enum": [
@@ -25059,6 +25199,7 @@
         },
         "required": [
           "org",
+          "status",
           "role",
           "permissions",
           "entitlements",
@@ -25155,16 +25296,16 @@
               "status": {
                 "type": "object",
                 "properties": {
-                  "active": {
+                  "onboarding": {
                     "type": "number"
                   },
-                  "onboarding": {
+                  "active": {
                     "type": "number"
                   }
                 },
                 "required": [
-                  "active",
-                  "onboarding"
+                  "onboarding",
+                  "active"
                 ]
               }
             },

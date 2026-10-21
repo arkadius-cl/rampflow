@@ -1,5 +1,5 @@
 import type { DockBooking, ResourceView } from '@rampflow/shared/modules/booking/api.capacity';
-import { DockBookingKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { Feature } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { api, call } from '@/lib/api';
 import { useRefreshMasterData } from './queries';
 
 // MD-03: how a dock is booked. A dock is in exactly one pool, or bookable on its own as a
-// single dock, or not bookable. One select per dock row makes that choice; the API moves the
+// single dock. One select per dock row makes that choice; the API moves the
 // dock in one transaction (PUT /capacity/docks/:dockId/booking).
 
 type Choice = 'none' | 'single' | `pool:${string}`;
@@ -20,10 +20,9 @@ type Choice = 'none' | 'single' | `pool:${string}`;
 const choiceOf = (holder: ResourceView | undefined): Choice =>
   !holder ? 'none' : holder.kind === ResourceKind.single ? 'single' : `pool:${holder.id}`;
 
-function bookingOf(choice: Choice): DockBooking {
-  if (choice === DockBookingKind.none) return { as: DockBookingKind.none };
-  if (choice === DockBookingKind.single) return { as: DockBookingKind.single };
-  return { as: DockBookingKind.pool, resourceId: choice.slice('pool:'.length) };
+function bookingOf(choice: Exclude<Choice, 'none'>): DockBooking {
+  if (choice === ResourceKind.single) return { as: ResourceKind.single };
+  return { as: ResourceKind.pool, resourceId: choice.slice('pool:'.length) };
 }
 
 /** The resource name of a dock's holder with its kind icon, for read-only views. */
@@ -57,7 +56,7 @@ export function BookedAsSelect({
   const refresh = useRefreshMasterData(orgId);
   const poolsOn = has(Feature.booking.pools);
   const move = useMutation({
-    mutationFn: (choice: Choice) =>
+    mutationFn: (choice: Exclude<Choice, 'none'>) =>
       call(
         api.t[':orgId'].capacity.docks[':dockId'].booking.$put({
           param: { orgId, dockId: dock.id },
@@ -76,9 +75,13 @@ export function BookedAsSelect({
       aria-label={t(($) => $.capacity.booked_as.label, { code: dock.code })}
       value={current}
       disabled={move.isPending || (!poolsOn && holder?.kind === ResourceKind.pool)}
-      onChange={(e) => move.mutate(e.target.value as Choice)}
+      onChange={(e) => move.mutate(e.target.value as Exclude<Choice, 'none'>)}
     >
-      <NativeSelectOption value="none">{t(($) => $.capacity.booked_as.none)}</NativeSelectOption>
+      {!holder && (
+        <NativeSelectOption value="none" disabled>
+          {t(($) => $.capacity.booked_as.none)}
+        </NativeSelectOption>
+      )}
       <NativeSelectOption value="single">
         {t(($) => $.capacity.booked_as.single)}
       </NativeSelectOption>

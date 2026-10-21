@@ -75,7 +75,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'booking.capacity.createResource',
       stories: [StoryId.MD_03],
       description:
-        'Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`',
+        'Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left',
       responses: { 201: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
@@ -104,7 +104,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'booking.capacity.setResourceDocks',
       stories: [StoryId.MD_03],
       description:
-        'Needs `booking.pools` for pools. `{ dockIds }`; 409 `dock_in_resource` with `dockIds`',
+        'Needs `booking.pools` for pools. `{ dockIds }` of one profile; added docks move in from their resources, removed docks return to the default pool of their hall and profile; 409 `profile_mismatch` or `dock_needs_resource` (removed from their own default pool) with `dockIds`; 422 for a dock of another hall in a default pool; 409 `dock_without_load_type` if the docks would have no active load type',
       responses: { 200: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
@@ -122,7 +122,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'booking.capacity.setDockBooking',
       stories: [StoryId.MD_03],
       description:
-        "Needs `booking.pools` when a pool is left or joined. `{ as: 'none' } | { as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }` (null for `none`); a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions; idempotent",
+        "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; idempotent",
       responses: {},
     }),
     requirePermission(Permission.booking.manage_resources),

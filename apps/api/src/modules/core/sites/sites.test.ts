@@ -1,5 +1,10 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
-import type { HolidayRegions, SiteCountries } from '@rampflow/shared/modules/core/api.sites';
+import { ResourceKind } from '@rampflow/shared/modules/booking/values';
+import {
+  type HolidayRegions,
+  hoursTemplateRows,
+  type SiteCountries,
+} from '@rampflow/shared/modules/core/api.sites';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { ConflictReason, ErrorCode, PackageId } from '@rampflow/shared/values';
 import { and, count, eq } from 'drizzle-orm';
@@ -9,6 +14,7 @@ import { as } from '../../../../test/http.ts';
 import { type World, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
 import { testClock } from '../../../kernel/clock.ts';
+import { serviceSite } from '../../booking/capacity/fixtures.ts';
 import { closure, loadType } from '../../booking/schema.resources.ts';
 import { site } from '../schema.ts';
 
@@ -28,6 +34,7 @@ const garching = {
   subdivision: 'DE-BY',
   timeZone: 'Europe/Berlin',
   defaultLocale: 'de',
+  hours: hoursTemplateRows.one_shift,
 };
 
 const admin = (side: World['A']) => as(app, side.users.tenant_admin);
@@ -210,6 +217,114 @@ describe('MD-02 halls and docks', () => {
     );
     const list = (await (await admin(w.B).get(url)).json()) as { items: { name: string }[] };
     expect(list.items.map((h) => h.name)).toEqual(['Hall 1', 'Kühlhalle']);
+  });
+});
+
+describe('MD-02 docks join the resource of their hall and profile (ADR-0017)', () => {
+  // Its own world: the sites built here would use up world B's core.max_sites.
+  let p: World;
+  beforeAll(async () => {
+    p = await world();
+  });
+  const docksOf = (siteId: string) => `${sitesOf(p.A)}/${siteId}/docks`;
+  type Resource = {
+    id: string;
+    name: string;
+    kind: string;
+    hallId: string | null;
+    adrAllowed: boolean;
+    dockIds: string[];
+  };
+  const holderOf = async (siteId: string, dockId: string | undefined) => {
+    const res = await admin(p.A).get(`/api/t/${p.A.tenantId}/capacity/resources?siteId=${siteId}`);
+    const { items } = (await res.json()) as { items: Resource[] };
+    return items.find((r) => r.dockIds.includes(dockId as string));
+  };
+  const hamburg = () =>
+    serviceSite(p.A, [
+      ...['T01', 'T04', 'T05'].map((code) => ({ code, hall: 'Halle 1' })),
+      ...['T06', 'T08'].map((code) => ({ code, hall: 'Halle 2' })),
+    ]);
+
+  it('answers 201 with the resource of a new dock, the default pool of its hall', async () => {
+    const s = await hamburg();
+    const res = await admin(p.A).post(docksOf(s.siteId), {
+      body: {
+        hallId: s.halls['Halle 1'],
+        code: 'T02',
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
+      },
+    });
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as { id: string; resourceId: string | null };
+    expect(created.resourceId).not.toBeNull();
+    expect(await holderOf(s.siteId, created.id)).toMatchObject({
+      id: created.resourceId,
+      name: 'Halle 1',
+      hallId: s.halls['Halle 1'],
+    });
+  });
+
+  it('moves a pooled dock that becomes chilled to "Halle 1 · Kühl"', async () => {
+    const s = await hamburg();
+    const res = await admin(p.A).patch(`${docksOf(s.siteId)}/${s.docks.T05}`, {
+      body: { temperatureZone: TemperatureZone.chilled },
+    });
+    expect(res.status).toBe(200);
+    const moved = (await res.json()) as { temperatureZone: string; resourceId: string };
+    expect(moved.temperatureZone).toBe(TemperatureZone.chilled);
+    expect(await holderOf(s.siteId, s.docks.T05)).toMatchObject({
+      id: moved.resourceId,
+      name: 'Halle 1 · Kühl',
+      hallId: s.halls['Halle 1'],
+      dockIds: [s.docks.T05],
+    });
+  });
+
+  it('keeps a single dock in its single when its profile changes', async () => {
+    const s = await hamburg();
+    const booked = await admin(p.A).put(
+      `/api/t/${p.A.tenantId}/capacity/docks/${s.docks.T08}/booking`,
+      { body: { as: ResourceKind.single } },
+    );
+    const single = ((await booked.json()) as { resource: { id: string } }).resource;
+    const res = await admin(p.A).patch(`${docksOf(s.siteId)}/${s.docks.T08}`, {
+      body: { adrAllowed: true },
+    });
+    expect(res.status).toBe(200);
+    expect(await holderOf(s.siteId, s.docks.T08)).toMatchObject({
+      id: single.id,
+      adrAllowed: true,
+    });
+  });
+
+  it('moves a dock to the default pool of its new hall, but keeps it in a manual pool', async () => {
+    const s = await hamburg();
+    const hallTwo = await admin(p.A).patch(`${docksOf(s.siteId)}/${s.docks.T04}`, {
+      body: { hallId: s.halls['Halle 2'] },
+    });
+    expect(hallTwo.status).toBe(200);
+    expect(await holderOf(s.siteId, s.docks.T04)).toMatchObject({
+      name: 'Halle 2',
+      hallId: s.halls['Halle 2'],
+    });
+
+    const express = await admin(p.A).post(`/api/t/${p.A.tenantId}/capacity/resources`, {
+      body: {
+        siteId: s.siteId,
+        kind: ResourceKind.pool,
+        name: 'Express',
+        directions: ['inbound'],
+        dockIds: [s.docks.T05, s.docks.T08],
+      },
+    });
+    const { id } = (await express.json()) as { id: string };
+    const res = await admin(p.A).patch(`${docksOf(s.siteId)}/${s.docks.T05}`, {
+      body: { hallId: s.halls['Halle 2'] },
+    });
+    expect(res.status).toBe(200);
+    expect((await holderOf(s.siteId, s.docks.T05))?.id).toBe(id);
   });
 });
 

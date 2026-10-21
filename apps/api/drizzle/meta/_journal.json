@@ -64,6 +64,13 @@
       "when": 1792539340133,
       "tag": "0008_02-tenant-self-registration-backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792587582233,
+      "tag": "0009_03-tenant-onboarding",
+      "breakpoints": true
     }
   ]
 }
