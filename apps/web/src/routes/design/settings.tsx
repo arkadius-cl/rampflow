@@ -1,3 +1,4 @@
+import type { SettingKey } from '@rampflow/shared';
 import { PrototypeScreen, Setting, SettingSource } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
@@ -90,12 +91,17 @@ function SettingsScreen() {
                 {rows.map((row) => (
                   <SettingField
                     key={row.key}
-                    id={row.key}
+                    settingKey={row.key as SettingKey}
                     label={row.label}
                     description={row.description}
-                    source={row.source}
-                    scope={SettingSource.site}
-                    inheritedValue={inheritedValue(row)}
+                    overridden={row.source === SettingSource.site}
+                    origin={
+                      <p className="text-xs text-muted-foreground">
+                        {row.source === SettingSource.site
+                          ? `Set for this site · Inherited: ${inheritedValue(row)}`
+                          : `From ${row.source}`}
+                      </p>
+                    }
                     control={<Control row={row} />}
                   />
                 ))}

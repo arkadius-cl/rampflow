@@ -8,28 +8,7 @@
   "empty": "Na tym poziomie nie ma ustawień.",
   "save": "Zapisz",
   "saved": "Zapisano.",
-  "reset_done": "Przywrócono wartość dziedziczoną.",
   "clear": "Usuń link",
-  "set_here": "Ustawione tutaj ({{source}})",
-  "inherited_from": "Dziedziczone: {{source}}",
-  "reset": "Przywróć wartość dziedziczoną",
-  "reset_to": "Przywróć wartość dziedziczoną ({{value}})",
-  "source": {
-    "default": "Domyślne",
-    "platform": "Platforma",
-    "tenant": "Klient",
-    "site": "Lokalizacja"
-  },
-  "sections": {
-    "avis": "Awizacja",
-    "booking": "Zasady rezerwacji",
-    "core": "Lokalizacje",
-    "i18n": "Język",
-    "notify": "Powiadomienia",
-    "privacy": "Ochrona danych i przechowywanie",
-    "safety": "Instruktaże bezpieczeństwa",
-    "yard": "Plac"
-  },
   "values": {
     "on": "Wł.",
     "off": "Wył.",
@@ -53,14 +32,92 @@
     "url": "Wpisz link zaczynający się od https:// lub http://.",
     "duplicate": "Każdy typ może wystąpić tylko raz.",
     "invalid": "Ta wartość jest niedozwolona.",
-    "at_least_one": "Wybierz co najmniej jedną pozycję."
+    "at_least_one": "Wybierz co najmniej jedną pozycję.",
+    "at_least_one_country": "Wybierz co najmniej jeden kraj."
   },
-  "picker": {
-    "search": "Szukaj",
-    "search_label": "{{label}}: szukaj",
-    "add": "Dodaj",
-    "add_named": "Dodaj: {{name}}",
-    "remove": "Usuń: {{name}}",
-    "no_match": "Brak wyników."
+  "topics": {
+    "general": "Ogólne",
+    "booking": "Rezerwacje",
+    "avis": "Awizacja",
+    "safety": "Bezpieczeństwo",
+    "yard": "Plac",
+    "privacy": "Prywatność"
+  },
+  "sections": {
+    "sites": "Lokalizacje",
+    "language": "Język",
+    "rules": "Zasady rezerwacji",
+    "public_booking": "Rezerwacja publiczna",
+    "reminders": "Przypomnienia",
+    "requirements": "Wymagane dane",
+    "briefing": "Instruktaż bezpieczeństwa",
+    "arrival": "Przyjazd",
+    "dwell": "Czas postoju",
+    "notice": "Informacja o prywatności",
+    "retention": "Przechowywanie",
+    "driver_access": "Dostęp kierowcy"
+  },
+  "origin": {
+    "default": "Domyślne ustawienie produktu",
+    "platform": "Z platformy",
+    "tenant": "Od klienta",
+    "here": {
+      "platform": "Ustawione dla platformy",
+      "tenant": "Ustawione dla tego klienta",
+      "site": "Ustawione dla tej lokalizacji"
+    },
+    "inherited": "Dziedziczone: {{value}} ({{source}})",
+    "pending_inherit": "Po zapisaniu obowiązuje wartość dziedziczona"
+  },
+  "levels": {
+    "platform_only": "Tylko platforma: klienci nie mogą tego zmienić.",
+    "all_sites": "Dotyczy wszystkich lokalizacji klienta."
+  },
+  "use_inherited": "Użyj wartości dziedziczonej ({{value}})",
+  "copy_link": "Kopiuj link do „{{label}}”",
+  "link_copied": "Skopiowano link",
+  "save_bar": {
+    "discard": "Odrzuć",
+    "clean": "Brak niezapisanych zmian",
+    "dirty": "Niezapisane zmiany: {{count}}"
+  },
+  "leave": {
+    "title": "Opuścić bez zapisywania?",
+    "description": "Niezapisane zmiany na tej stronie zostaną utracone.",
+    "stay": "Zostań",
+    "leave": "Opuść"
+  },
+  "search": {
+    "button": "Szukaj ustawień",
+    "placeholder": "Szukaj ustawień…",
+    "empty": "Nie znaleziono ustawienia."
+  },
+  "retention": {
+    "title": "Skrócić okres przechowywania?",
+    "description": "Dane starsze niż nowy okres zostaną usunięte lub spseudonimizowane przy następnym przebiegu retencji.",
+    "change": "{{label}}: {{from}} → {{to}} {{unit}}",
+    "confirm": "Skróć i zapisz",
+    "cancel": "Anuluj"
+  },
+  "countries": {
+    "groups": {
+      "eu": "Państwa członkowskie UE",
+      "other": "Pozostałe kraje"
+    },
+    "filter": "Filtruj kraje",
+    "count": "Wybrano {{selected}} z {{total}}",
+    "no_match": "Żaden kraj nie pasuje."
+  },
+  "units": {
+    "minutes": "min",
+    "hours": "godz.",
+    "days": "dni",
+    "percent": "%"
+  },
+  "unit_names": {
+    "minutes": "min",
+    "hours": "godz.",
+    "days": "dni",
+    "percent": "%"
   }
 }

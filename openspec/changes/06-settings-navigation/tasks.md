@@ -55,21 +55,21 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 5. Field building blocks
 
-- [ ] 5.1 Give `apps/web/src/components/ui/checkbox.tsx` a visible indeterminate state (`MinusIcon` when `indeterminate`). Verify with a component test that `indeterminate` renders `aria-checked="mixed"` and the minus icon, and that `checked` renders the check icon.
-- [ ] 5.2 Replace `SourceBadge` with `SettingOrigin` in `apps/web/src/components/settings-field.tsx` per design decision 6: texts per source and page level, "Inherited: …" for a value set here, link to the source level only with permission, and the levels hint from `entry.scopes`. Verify with component tests:
+- [x] 5.1 Give `apps/web/src/components/ui/checkbox.tsx` a visible indeterminate state (`MinusIcon` when `indeterminate`). Verify with a component test that `indeterminate` renders `aria-checked="mixed"` and the minus icon, and that `checked` renders the check icon.
+- [x] 5.2 Replace `SourceBadge` with `SettingOrigin` in `apps/web/src/components/settings-field.tsx` per design decision 6: texts per source and page level, "Inherited: …" for a value set here, link to the source level only with permission, and the levels hint from `entry.scopes`. Verify with component tests:
   - tenant value equal to the platform value still reads "Set for this tenant";
   - platform without a row reads "Product default";
   - a site page links "From tenant" for a tenant admin;
   - "From platform" has no link for a tenant admin;
   - `safety.quiz_pass_percent` on the tenant page says it applies to all sites.
-- [ ] 5.3 Rebuild `SettingField`:
+- [x] 5.3 Rebuild `SettingField`:
   - `<h3 id={key} tabIndex={-1}>` wrapping the `<label htmlFor={"input-" + key}>`, and description by `aria-describedby`;
   - no visible key;
   - a "Copy link" icon button named after the setting, which copies the absolute deep link and shows the "Link copied" toast;
   - the unit suffix via `InputGroupAddon`, with the addon in `aria-describedby`.
 
   Verify with component tests for the ids, the accessible name of the button, the clipboard content and the suffix.
-- [ ] 5.4 Replace `SettingControl.picker` with `SettingControl.grouped_list` in `packages/shared/src/modules/core/values.ts` and `apps/web/src/modules/core/setting-control.ts`. `OPTION_GROUPS` maps `core.site_countries` to `countryGroupOf`, and `controlOf` throws for an ungrouped enum array above 20. Write `GroupedChecklist`:
+- [x] 5.4 Replace `SettingControl.picker` with `SettingControl.grouped_list` in `packages/shared/src/modules/core/values.ts` and `apps/web/src/modules/core/setting-control.ts`. `OPTION_GROUPS` maps `core.site_countries` to `countryGroupOf`, and `controlOf` throws for an ungrouped enum array above 20. Write `GroupedChecklist`:
   - one `FieldSet` and `FieldLegend` per group, with a tri-state group checkbox;
   - an auto-fill grid;
   - a filter that folds case and accents and matches name or code, and hides the group checkboxes while active;
@@ -84,7 +84,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 6. Topic form, save bar and guards
 
-- [ ] 6.1 Write `SettingsTopicForm` in `apps/web/src/modules/core/settings-topic-form.tsx` per design decision 4:
+- [x] 6.1 Write `SettingsTopicForm` in `apps/web/src/modules/core/settings-topic-form.tsx` per design decision 4:
   - one react-hook-form over `Record<SettingKey, FieldDraft>` with the manifest schemas;
   - sections with headings in placement order;
   - "Use inherited value ({value})" as a pending `inherit` draft;
@@ -100,9 +100,9 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - inherit then save sends `reset`;
   - inherit then discard sends nothing;
   - a refetch keeps edits.
-- [ ] 6.2 Add the retention confirmation per design decision 10: an `AlertDialog` that lists each lowered `privacy.retention.*` key as "old → new unit", including `inherit` to a lower value, and saves only on confirm. Verify with component tests: lowering asks, raising does not, inheriting a lower value asks, cancel sends nothing.
-- [ ] 6.3 Add the unsaved-changes guard with `useBlocker` per design decision 9, with an `AlertDialog` offering "Stay" and "Leave" and `enableBeforeUnload` while dirty. Verify with a router test: a topic change with edits asks and "Stay" keeps the edits; a hash change on the same path does not ask; after a save, navigation does not ask.
-- [ ] 6.4 Add `useSettingAnchor()` per design decision 7: scroll with `scroll-margin-top`, focus the title, `data-highlighted` for 2 s, and ignore unknown hashes. Verify with a component test that the hash `booking.horizon_days` focuses its title and that Tab then reaches its input.
+- [x] 6.2 Add the retention confirmation per design decision 10: an `AlertDialog` that lists each lowered `privacy.retention.*` key as "old → new unit", including `inherit` to a lower value, and saves only on confirm. Verify with component tests: lowering asks, raising does not, inheriting a lower value asks, cancel sends nothing.
+- [x] 6.3 Add the unsaved-changes guard with `useBlocker` per design decision 9, with an `AlertDialog` offering "Stay" and "Leave" and `enableBeforeUnload` while dirty. Verify with a router test: a topic change with edits asks and "Stay" keeps the edits; a hash change on the same path does not ask; after a save, navigation does not ask.
+- [x] 6.4 Add `useSettingAnchor()` per design decision 7: scroll with `scroll-margin-top`, focus the title, `data-highlighted` for 2 s, and ignore unknown hashes. Verify with a component test that the hash `booking.horizon_days` focuses its title and that Tab then reaches its input.
 
 ## 7. Routes, navigation and search
 
@@ -140,7 +140,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - the unit suffixes.
 
   Remove the keys of the old picker, source badge and site tabs. Verify the i18n check passes and `rg` finds no use of a removed key.
-- [ ] 9.2 Drop the unit from every settings label in `packages/i18n/locales/{de,en,pl}/*/settings.json`, for example "Zeitraster (Minuten)" → "Zeitraster". Verify the i18n check passes and `rg '\((Minuten|Stunden|Tage|%)\)' packages/i18n/locales/de/*/settings.json` prints nothing.
+- [x] 9.2 Drop the unit from every settings label in `packages/i18n/locales/{de,en,pl}/*/settings.json`, for example "Zeitraster (Minuten)" → "Zeitraster". Verify the i18n check passes and `rg '\((Minuten|Stunden|Tage|%)\)' packages/i18n/locales/de/*/settings.json` prints nothing.
 
 ## 10. Seed
 

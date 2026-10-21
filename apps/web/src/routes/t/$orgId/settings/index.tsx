@@ -1,10 +1,9 @@
-import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
+import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
 import { OrgKind, Permission } from '@rampflow/shared/values';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import * as z from 'zod';
 import { PageHeader } from '@/components/shells/office-shell';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,7 +12,8 @@ import { guard, tenantContextQuery } from '@/lib/access';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { tenantSettingsQuery } from '@/modules/core/queries';
-import { type SettingsActions, SettingsSections } from '@/modules/core/settings-sections';
+import { SettingsSections } from '@/modules/core/settings-sections';
+import type { SettingChanges } from '@/modules/core/settings-topic-form';
 
 // TN-02: the tenant level and one tab per site (`?site=`). Each field shows its value and where
 // it comes from; a save refreshes the tenant context, so `useAccess().setting` sees it at once.
@@ -44,24 +44,12 @@ function TenantSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenant', orgId, 'core', 'settings'] }),
       queryClient.invalidateQueries({ queryKey: queryKeys.context(OrgKind.tenant, orgId) }),
     ]);
-  const actions: SettingsActions = {
-    save: async (key, value) => {
-      await call<SettingEntry>(
-        api.t[':orgId'].settings[':key'].$put({ param: { orgId, key }, json: { siteId, value } }),
-      );
-      await refresh();
-      toast.success(t(($) => $['settings-ui'].saved));
-    },
-    reset: async (key) => {
-      await call(
-        api.t[':orgId'].settings[':key'].$delete({
-          param: { orgId, key },
-          query: siteId ? { siteId } : {},
-        }),
-      );
-      await refresh();
-      toast.success(t(($) => $['settings-ui'].reset_done));
-    },
+  const save = async (changes: SettingChanges) => {
+    const view = await call<SettingsView>(
+      api.t[':orgId'].settings.$patch({ param: { orgId }, json: { siteId, ...changes } }),
+    );
+    await refresh();
+    return view;
   };
 
   const tab = siteId ?? TENANT_TAB;
@@ -89,12 +77,7 @@ function TenantSettingsPage() {
         </TabsList>
         <TabsContent value={tab} className="pt-4">
           {settings.data ? (
-            <SettingsSections
-              key={tab}
-              items={settings.data.items}
-              scope={settings.data.scope}
-              actions={actions}
-            />
+            <SettingsSections key={tab} view={settings.data} save={save} />
           ) : (
             <Skeleton className="h-64 max-w-5xl" />
           )}

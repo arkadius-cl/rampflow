@@ -1,116 +1,174 @@
-import type { SettingSource } from '@rampflow/shared/contract/settings';
-import {
-  Building2Icon,
-  CodeIcon,
-  GlobeIcon,
-  type LucideIcon,
-  MapPinIcon,
-  RotateCcwIcon,
-} from 'lucide-react';
+import type { SettingKey } from '@rampflow/shared';
+import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
+import { SettingScope, SettingSource } from '@rampflow/shared/values';
+import { useLocation, useRouter } from '@tanstack/react-router';
+import { LinkIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { fieldIds } from '@/modules/core/setting-input';
 
-export const SETTING_SOURCE_ICON: Record<SettingSource, LucideIcon> = {
-  default: CodeIcon,
-  platform: GlobeIcon,
-  tenant: Building2Icon,
-  site: MapPinIcon,
-};
+// One settings field (TN-02, PL-03, ADR-0020): the title is the field's anchor, the origin says
+// as text where the value comes from, and "Copy link" copies the deep link to it.
 
-export function SourceBadge({
-  source,
-  overridden,
-  className,
-}: {
-  source: SettingSource;
-  /** True when the source is the scope currently being edited. */
-  overridden: boolean;
-  className?: string;
-}) {
+/** The path of the same field on the level a value comes from, when the user may manage it. */
+export type OriginHref = (source: SettingSource, key: SettingKey) => string | undefined;
+
+export interface SettingOriginProps {
+  entry: SettingEntry;
+  /** The level the page edits. */
+  scope: SettingScope;
+  /** The inherited value as text, for "Inherited: …". */
+  inheritedText: string;
+  /** The field will drop its value on this level when the form is saved. */
+  pendingInherit?: boolean;
+  originHref?: OriginHref;
+}
+
+/** Where the field's value comes from, relative to the page's level (design decision 6). */
+export function SettingOrigin({
+  entry,
+  scope,
+  inheritedText,
+  pendingInherit = false,
+  originHref,
+}: SettingOriginProps) {
   const { t } = useTranslation();
-  const Icon = SETTING_SOURCE_ICON[source];
-  const label = t(($) => $['settings-ui'].source[source]);
+  const router = useRouter();
+  const source = pendingInherit ? entry.inherited.source : entry.source;
+  const setHere = source === scope;
+  const fromText = (s: SettingSource) =>
+    s === SettingSource.site
+      ? t(($) => $['settings-ui'].origin.here.site)
+      : t(($) => $['settings-ui'].origin[s]);
+  const href =
+    setHere || source === SettingSource.default ? undefined : originHref?.(source, entry.key);
+  const levelsHint =
+    entry.scopes.length === 1 && entry.scopes[0] === SettingScope.platform
+      ? t(($) => $['settings-ui'].levels.platform_only)
+      : scope === SettingScope.tenant && !entry.scopes.includes(SettingScope.site)
+        ? t(($) => $['settings-ui'].levels.all_sites)
+        : null;
+
   return (
-    <span
-      data-testid="setting-source"
-      className={cn(
-        'inline-flex h-5 items-center gap-1 rounded-md border px-1.5 text-[11px] font-medium',
-        overridden
-          ? 'border-tone-planned-border bg-tone-planned-bg text-tone-planned'
-          : 'border-border bg-muted text-muted-foreground',
-        className,
-      )}
-    >
-      <Icon className="size-3" />
-      {overridden
-        ? t(($) => $['settings-ui'].set_here, { source: label })
-        : t(($) => $['settings-ui'].inherited_from, { source: label })}
-    </span>
+    <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+      <p data-testid="setting-origin">
+        {setHere ? (
+          <span className="font-medium text-tone-planned">
+            {t(($) => $['settings-ui'].origin.here[scope])}
+          </span>
+        ) : href ? (
+          <a
+            href={href}
+            className="font-medium underline underline-offset-2 hover:text-foreground"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+              e.preventDefault();
+              void router.navigate({ href });
+            }}
+          >
+            {fromText(source)}
+          </a>
+        ) : (
+          <span className="font-medium">{fromText(source)}</span>
+        )}
+        {setHere ? (
+          <>
+            {' · '}
+            {t(($) => $['settings-ui'].origin.inherited, {
+              value: inheritedText,
+              source: fromText(entry.inherited.source),
+            })}
+          </>
+        ) : null}
+        {pendingInherit ? (
+          <>
+            {' · '}
+            {t(($) => $['settings-ui'].origin.pending_inherit)}
+          </>
+        ) : null}
+      </p>
+      {levelsHint ? <p>{levelsHint}</p> : null}
+    </div>
   );
 }
 
 export interface SettingFieldProps {
-  id: string;
+  settingKey: SettingKey;
   label: string;
   description: string;
-  source: SettingSource;
-  /** The scope this page edits. A value whose source equals it is an override. */
-  scope: SettingSource;
-  /** What the value would become after "Reset to inherited". */
-  inheritedValue?: string;
-  onReset?: () => void;
-  resetting?: boolean;
-  control: React.ReactNode;
+  /** The value is set on the page's level (and stays so after saving). */
+  overridden: boolean;
+  control: ReactNode;
+  error?: string;
+  origin: ReactNode;
+  /** "Use inherited value", when the field has one to offer. */
+  action?: ReactNode;
 }
 
-/** One settings row: label and help on the left, control plus provenance on the right (TN-02). */
+/** One settings row: title and help on the left, control, origin and actions on the right. */
 export function SettingField({
-  id,
+  settingKey,
   label,
   description,
-  source,
-  scope,
-  inheritedValue,
-  onReset,
-  resetting,
+  overridden,
   control,
+  error,
+  origin,
+  action,
 }: SettingFieldProps) {
   const { t } = useTranslation();
-  const overridden = source === scope;
+  const ids = fieldIds(settingKey);
+  const pathname = useLocation({ select: (l) => l.pathname });
+  const copyLink = async () => {
+    const url = new URL(`${pathname}#${settingKey}`, window.location.origin);
+    await navigator.clipboard.writeText(url.href);
+    toast.success(t(($) => $['settings-ui'].link_copied));
+  };
   return (
     <div
-      data-testid={`setting-${id}`}
+      data-setting={settingKey}
       className={cn(
-        'grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]',
+        'grid gap-3 py-4 transition-colors data-highlighted:bg-tone-planned-bg md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]',
         overridden && 'border-l-2 border-l-tone-planned pl-3 md:-ml-3',
       )}
     >
       <div className="min-w-0">
-        <label htmlFor={id} className="text-sm font-medium">
-          {label}
-        </label>
-        <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-        <code className="mt-1 block text-[11px] text-muted-foreground">{id}</code>
+        <h3
+          id={ids.title}
+          tabIndex={-1}
+          className="scroll-mt-24 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <label htmlFor={ids.input}>{label}</label>
+        </h3>
+        <p id={ids.description} className="mt-0.5 text-sm text-muted-foreground">
+          {description}
+        </p>
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1.5">
         {control}
-        <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
-          <SourceBadge source={source} overridden={overridden} />
-          {overridden ? (
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex min-h-6 flex-wrap items-start justify-between gap-2">
+          {origin}
+          <div className="flex items-center gap-1">
+            {action}
             <Button
+              type="button"
               variant="ghost"
-              size="xs"
-              onClick={onReset}
-              disabled={resetting}
+              size="icon-xs"
               className="text-muted-foreground"
+              aria-label={t(($) => $['settings-ui'].copy_link, { label })}
+              onClick={() => void copyLink()}
             >
-              <RotateCcwIcon />
-              {inheritedValue
-                ? t(($) => $['settings-ui'].reset_to, { value: inheritedValue })
-                : t(($) => $['settings-ui'].reset)}
+              <LinkIcon />
             </Button>
-          ) : null}
+          </div>
         </div>
       </div>
     </div>

@@ -77,6 +77,12 @@ export const PLACEMENT = {
   },
 } as const satisfies Record<SettingKey, Placement>;
 
+/** The unit of a numeric setting, shown as its input's suffix. */
+export function unitOf(key: SettingKey): SettingUnit | undefined {
+  const placement: Placement = PLACEMENT[key];
+  return placement.unit;
+}
+
 const PLACED = Object.entries(PLACEMENT) as [SettingKey, Placement][];
 
 /** The topics that hold at least one of the level's available settings, in navigation order. */

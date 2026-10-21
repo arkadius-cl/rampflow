@@ -83,8 +83,8 @@ export const SettingControl = {
   select: 'select',
   number: 'number',
   list: 'list',
-  /** A long list: the chosen members as chips, the others found by search and added. */
-  picker: 'picker',
+  /** A long list in named groups, each with a select-all checkbox, plus a filter (PL-03). */
+  grouped_list: 'grouped_list',
   url: 'url',
 } as const;
 export type SettingControl = ValueOf<typeof SettingControl>;
