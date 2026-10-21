@@ -5,9 +5,14 @@
 
 const BREAKPOINT = '--> statement-breakpoint';
 
+const TABLE = String.raw`(?:"[^"]+"\.)?"[^"]+"`;
+const UNIQUE_CONSTRAINT = new RegExp(
+  String.raw`^ALTER TABLE ${TABLE} ADD CONSTRAINT "[^"]+" UNIQUE(?: NULLS NOT DISTINCT)?\s*\(`,
+);
+const UNIQUE_INDEX = /^CREATE UNIQUE INDEX /;
+
 const isUniqueKey = (statement: string) =>
-  /^ALTER TABLE "[^"]+" ADD CONSTRAINT "[^"]+" UNIQUE\(/.test(statement) ||
-  /^CREATE UNIQUE INDEX /.test(statement);
+  UNIQUE_CONSTRAINT.test(statement) || UNIQUE_INDEX.test(statement);
 const isForeignKey = (statement: string) => / FOREIGN KEY \(/.test(statement);
 
 export function uniqueKeysFirst(sql: string): string {

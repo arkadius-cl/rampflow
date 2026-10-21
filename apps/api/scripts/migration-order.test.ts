@@ -24,4 +24,15 @@ describe('uniqueKeysFirst', () => {
     );
     expect(uniqueKeysFirst(sql)).toBe(sql);
   });
+
+  it('also moves NULLS NOT DISTINCT keys and keys on schema-qualified tables', () => {
+    const fk =
+      'ALTER TABLE "public"."b" ADD CONSTRAINT "b_fk" FOREIGN KEY ("x") REFERENCES "public"."a"("x");';
+    const nulls = 'ALTER TABLE "a" ADD CONSTRAINT "a_x_key" UNIQUE NULLS NOT DISTINCT("x");';
+    const qualified = 'ALTER TABLE "public"."a" ADD CONSTRAINT "a_y_key" UNIQUE("y");';
+    const index = 'CREATE UNIQUE INDEX IF NOT EXISTS "a_z_idx" ON "public"."a" USING btree ("z");';
+    expect(uniqueKeysFirst(join(fk, nulls, qualified, index))).toBe(
+      join(nulls, qualified, index, fk),
+    );
+  });
 });
