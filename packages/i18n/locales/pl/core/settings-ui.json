@@ -23,6 +23,7 @@
   "sections": {
     "avis": "Awizacja",
     "booking": "Zasady rezerwacji",
+    "core": "Lokalizacje",
     "i18n": "Język",
     "notify": "Powiadomienia",
     "privacy": "Ochrona danych i przechowywanie",
@@ -51,6 +52,15 @@
     "number_range": "Wpisz liczbę całkowitą od {{min}} do {{max}}.",
     "url": "Wpisz link zaczynający się od https:// lub http://.",
     "duplicate": "Każdy typ może wystąpić tylko raz.",
-    "invalid": "Ta wartość jest niedozwolona."
+    "invalid": "Ta wartość jest niedozwolona.",
+    "at_least_one": "Wybierz co najmniej jedną pozycję."
+  },
+  "picker": {
+    "search": "Szukaj",
+    "search_label": "{{label}}: szukaj",
+    "add": "Dodaj",
+    "add_named": "Dodaj: {{name}}",
+    "remove": "Usuń: {{name}}",
+    "no_match": "Brak wyników."
   }
 }

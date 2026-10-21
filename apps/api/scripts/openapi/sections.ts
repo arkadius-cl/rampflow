@@ -24,6 +24,7 @@ export const SECTIONS = {
     'modules/brand/logo/routes.public.ts',
   ],
   [ApiSection.master_data]: [
+    'modules/core/sites/routes.public.ts',
     'modules/core/sites/routes.tenant.ts',
     'modules/booking/capacity/routes.tenant.ts',
   ],

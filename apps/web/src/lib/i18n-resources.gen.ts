@@ -25,6 +25,7 @@ import type core_errors from '@rampflow/i18n/locales/en/core/errors.json';
 import type core_module from '@rampflow/i18n/locales/en/core/module.json';
 import type core_nav from '@rampflow/i18n/locales/en/core/nav.json';
 import type core_platform from '@rampflow/i18n/locales/en/core/platform.json';
+import type core_settings from '@rampflow/i18n/locales/en/core/settings.json';
 import type core_settings_ui from '@rampflow/i18n/locales/en/core/settings-ui.json';
 import type core_shell from '@rampflow/i18n/locales/en/core/shell.json';
 import type core_signup from '@rampflow/i18n/locales/en/core/signup.json';
@@ -100,6 +101,7 @@ export interface Resources {
     module: typeof core_module;
     nav: typeof core_nav;
     platform: typeof core_platform;
+    settings: typeof core_settings;
     'settings-ui': typeof core_settings_ui;
     shell: typeof core_shell;
     signup: typeof core_signup;

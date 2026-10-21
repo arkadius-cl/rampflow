@@ -37,15 +37,16 @@
     "postal_code": "Postal code",
     "city": "City",
     "country": "Country",
-    "country_hint": "Two letters, for example DE.",
     "subdivision": "Region",
-    "subdivision_hint": "For public holidays, for example DE-BY.",
+    "subdivision_hint": "Sets the regional public holidays. Without a region only the national ones apply.",
+    "subdivision_none": "No region",
     "time_zone": "Time zone",
     "time_zone_hint": "Slots, hours and closures use this zone's clock.",
     "default_locale": "Default language",
     "phone": "Phone",
     "phone_hint": "International format, for example +4940123456.",
-    "active": "Active"
+    "active": "Active",
+    "country_none": "Choose a country"
   },
   "locales": {
     "de": "Deutsch",
@@ -123,6 +124,7 @@
     "window_order": "Opening comes before closing.",
     "overlap": "Overlaps another window of the day.",
     "range_order": "The start comes before the end.",
-    "tiers": "Upper limits ascend, and only the last tier is open."
+    "tiers": "Upper limits ascend, and only the last tier is open.",
+    "country_admitted": "The platform admits no sites in this country."
   }
 }

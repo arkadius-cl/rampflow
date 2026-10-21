@@ -10,8 +10,8 @@ import {
   UpdateHall,
   UpdateSite,
 } from '@rampflow/shared/modules/core/api.sites';
-import { Limit, Permission, StoryId, ValidationTarget } from '@rampflow/shared/values';
-import { Hono } from 'hono';
+import { Limit, Permission, Setting, StoryId, ValidationTarget } from '@rampflow/shared/values';
+import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema } from '../../../db/ids.ts';
 import { requirePermission } from '../../../kernel/access.ts';
@@ -36,6 +36,9 @@ import {
   updateSite,
 } from './sites.ts';
 import { tenantRequest } from './tenant.ts';
+
+const admittedCountries = async (c: Context<AppEnv>) =>
+  (await c.var.access.setting(Setting.core.site_countries, null)).value;
 
 const SiteParam = z.object({ siteId: idSchema<'site'>() });
 const HallParam = SiteParam.extend({ hallId: idSchema<'hall'>() });
@@ -74,7 +77,13 @@ export const tenant = new Hono<AppEnv>()
     requirePermission(Permission.core.manage_sites),
     validate(ValidationTarget.json, CreateSite),
     async (c) => {
-      const row = await createSite(c.var.db, tenantRequest(c), c.var.clock, c.req.valid('json'));
+      const row = await createSite(
+        c.var.db,
+        tenantRequest(c),
+        c.var.clock,
+        c.req.valid('json'),
+        await admittedCountries(c),
+      );
       return c.json(siteView(row), 201);
     },
   )
@@ -113,6 +122,7 @@ export const tenant = new Hono<AppEnv>()
         c.var.clock,
         siteId,
         c.req.valid('json'),
+        await admittedCountries(c),
       );
       return c.json(siteView(row), 200);
     },

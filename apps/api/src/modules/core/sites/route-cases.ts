@@ -1,12 +1,13 @@
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import {
+  AccountCredential,
   ForeignOutcome,
   HttpMethod,
   Permission,
   RouteCaseActor,
   RouteCaseGrant,
 } from '@rampflow/shared/values';
-import { defineRouteCases } from '../../../../test/route-cases.ts';
+import { defineAccountCases, defineRouteCases } from '../../../../test/route-cases.ts';
 
 const site = {
   name: 'Lager Nord',
@@ -134,5 +135,20 @@ export const cases = defineRouteCases([
     body: () => ({ status: DockStatus.maintenance }),
     foreign: ForeignOutcome.not_found,
     siteScoped: true,
+  },
+]);
+
+export const accountCases = defineAccountCases([
+  {
+    method: HttpMethod.GET,
+    path: '/api/public/countries',
+    credential: AccountCredential.none,
+    arrange: async () => ({ actor: null }),
+  },
+  {
+    method: HttpMethod.GET,
+    path: '/api/public/countries/:country/holiday-regions',
+    credential: AccountCredential.none,
+    arrange: async () => ({ actor: null, params: { country: 'DE' } }),
   },
 ]);

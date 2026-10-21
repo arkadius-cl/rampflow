@@ -1,4 +1,5 @@
 import { ClosureKind, ClosureSource, HolidayType } from '@rampflow/shared/modules/booking/values';
+import type { HolidayRegion } from '@rampflow/shared/modules/core/api.sites';
 import {
   addDays,
   type LocalDate,
@@ -37,6 +38,14 @@ function calendar(country: string, subdivision: string | null): Holidays {
     calendars.set(key, hd);
   }
   return hd;
+}
+
+/** The subdivisions of the country with their own public holidays, by native name (MD-05). */
+export function holidayRegions(country: string): HolidayRegion[] {
+  return Object.entries(new Holidays().getStates(country) ?? {}).map(([region, name]) => ({
+    code: `${country}-${region}`,
+    name,
+  }));
 }
 
 /** The public holidays of the site's country and subdivision in `[from, from + days)`, by date. */

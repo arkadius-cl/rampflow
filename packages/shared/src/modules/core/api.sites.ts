@@ -1,12 +1,17 @@
 import * as z from 'zod';
 import { type TimeZone, timeZoneSchema } from '../../time/index.ts';
 import { StaffLocale } from '../../values/locales.ts';
-import { DockStatus, DoorType, TemperatureZone } from './values.ts';
+import { DockStatus, DoorType, type SiteCountry, TemperatureZone } from './values.ts';
 
 // Request schemas and response shapes of /api/t/:orgId/sites (MD-01, MD-02).
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();
+
+/** ISO 3166-2, the form the holiday calendar and the site share. */
+export const SubdivisionCode = z
+  .string()
+  .regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/, 'ISO 3166-2, for example DE-BY');
 
 const siteFields = {
   name: text(120),
@@ -15,11 +20,7 @@ const siteFields = {
   postalCode: text(20),
   city: text(120),
   country: z.string().regex(/^[A-Z]{2}$/, 'ISO 3166-1 alpha-2, for example DE'),
-  subdivision: z
-    .string()
-    .regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/, 'ISO 3166-2, for example DE-BY')
-    .nullable()
-    .optional(),
+  subdivision: SubdivisionCode.nullable().optional(),
   timeZone: timeZoneSchema,
   defaultLocale: z.enum(StaffLocale),
   phone: z
@@ -68,6 +69,21 @@ export interface SiteView {
 export interface SiteUsage {
   sites: number;
   docks: number;
+}
+
+/** A subdivision with its own public holidays, `code` in ISO 3166-2 (`DE-BY`), `name` native. */
+export interface HolidayRegion {
+  code: string;
+  name: string;
+}
+
+export interface HolidayRegions {
+  items: HolidayRegion[];
+}
+
+/** The countries the platform admits sites in, `core.site_countries`. */
+export interface SiteCountries {
+  items: SiteCountry[];
 }
 
 export const CreateHall = z.object({ name: text(80), sort: z.int().min(0).optional() });

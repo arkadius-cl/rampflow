@@ -21,12 +21,13 @@ test.describe('MD-01 Sites', () => {
     await sheet.getByLabel('Street and number').fill('Strada Fabricii 12');
     await sheet.getByLabel('Postal code').fill('400632');
     await sheet.getByLabel('City').fill('Cluj-Napoca');
-    await sheet.getByLabel('Country').fill('ro');
-    await sheet.getByLabel('Region').fill('de-by');
+    await sheet.getByLabel('Region').selectOption({ label: 'Bayern' });
+    await expect(sheet.getByLabel('Region')).toHaveValue('DE-BY');
+    // Romania has no regional holidays: changing the country clears the region and leaves none.
+    await sheet.getByLabel('Country').selectOption({ label: 'Romania' });
+    await expect(sheet.getByLabel('Region')).toHaveValue('');
+    await expect(sheet.getByLabel('Region')).toBeDisabled();
     await sheet.getByLabel('Time zone').selectOption('Europe/Bucharest');
-    await sheet.getByRole('button', { name: 'Create site' }).click();
-    await expect(sheet.getByText('The region must belong to the country.')).toBeVisible();
-    await sheet.getByLabel('Region').fill('RO-CJ');
     await sheet.getByRole('button', { name: 'Create site' }).click();
 
     await expect(page.getByRole('heading', { name: 'Cluj Cross-Dock' })).toBeVisible();

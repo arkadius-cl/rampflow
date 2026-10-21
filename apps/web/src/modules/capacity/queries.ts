@@ -77,3 +77,19 @@ export function useRefreshMasterData(orgId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.context(OrgKind.tenant, orgId) }),
     ]);
 }
+
+/** The countries the platform admits sites in, the same for every tenant. */
+export const siteCountriesQuery = queryOptions({
+  queryKey: ['public', 'countries'],
+  queryFn: () => call(api.public.countries.$get()),
+});
+
+/** Reference data of the holiday calendar, the same for every tenant. */
+export const holidayRegionsQuery = (country: string) =>
+  queryOptions({
+    queryKey: ['public', 'countries', country, 'holiday-regions'],
+    queryFn: () =>
+      call(api.public.countries[':country']['holiday-regions'].$get({ param: { country } })),
+    enabled: /^[A-Z]{2}$/.test(country),
+    staleTime: Number.POSITIVE_INFINITY,
+  });

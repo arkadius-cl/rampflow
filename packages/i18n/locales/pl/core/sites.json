@@ -37,15 +37,16 @@
     "postal_code": "Kod pocztowy",
     "city": "Miasto",
     "country": "Kraj",
-    "country_hint": "Dwie litery, na przykład PL.",
     "subdivision": "Region",
-    "subdivision_hint": "Dla świąt, na przykład PL-14.",
+    "subdivision_hint": "Określa regionalne święta. Bez regionu obowiązują tylko ogólnokrajowe.",
+    "subdivision_none": "Brak regionu",
     "time_zone": "Strefa czasowa",
     "time_zone_hint": "Sloty, godziny otwarcia i zamknięcia używają zegara tej strefy.",
     "default_locale": "Język domyślny",
     "phone": "Telefon",
     "phone_hint": "Format międzynarodowy, na przykład +48221234567.",
-    "active": "Aktywna"
+    "active": "Aktywna",
+    "country_none": "Wybierz kraj"
   },
   "locales": {
     "de": "Deutsch",
@@ -123,6 +124,7 @@
     "window_order": "Otwarcie musi być przed zamknięciem.",
     "overlap": "Nakłada się na inne okno tego dnia.",
     "range_order": "Początek musi być przed końcem.",
-    "tiers": "Górne granice rosną, a tylko ostatni próg jest otwarty."
+    "tiers": "Górne granice rosną, a tylko ostatni próg jest otwarty.",
+    "country_admitted": "Platforma nie dopuszcza lokalizacji w tym kraju."
   }
 }

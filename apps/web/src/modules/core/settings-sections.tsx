@@ -4,12 +4,14 @@ import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
 import { SettingControl } from '@rampflow/shared/modules/core/values';
 import { DisplayNamesType, LabelPart, Setting, ZodIssueCode } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
-import { XIcon } from 'lucide-react';
+import { PlusIcon, XIcon } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 import { applyServerIssues } from '@/components/app-shell/form-errors';
 import { SettingField } from '@/components/settings-field';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FieldError } from '@/components/ui/field';
@@ -229,6 +231,17 @@ function Control({
         </fieldset>
       );
     }
+    case SettingControl.picker:
+      return (
+        <Picker
+          id={id}
+          label={label}
+          options={spec.options}
+          value={Array.isArray(value) ? (value as string[]) : []}
+          onChange={onChange}
+          display={display}
+        />
+      );
     case SettingControl.url:
       return (
         <InputGroup>
@@ -256,14 +269,142 @@ function Control({
   }
 }
 
+/** Letters NFD keeps whole, so `wlochy` finds Włochy as `osterreich` finds Österreich. */
+const FOLD: Readonly<Record<string, string>> = {
+  ł: 'l',
+  ø: 'o',
+  đ: 'd',
+  ß: 'ss',
+  æ: 'ae',
+  œ: 'oe',
+};
+
+/** Folds case and accents for search. */
+const searchable = (text: string) =>
+  text
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[łøđßæœ]/g, (c) => FOLD[c] ?? c);
+
+/** The chosen members as removable chips; the others found by name or code and added. */
+function Picker({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+  display,
+}: {
+  id: string;
+  label: string;
+  options: readonly string[];
+  value: string[];
+  onChange: (value: unknown) => void;
+  display: (value: unknown) => string;
+}) {
+  const { t } = useTranslation();
+  const locale = useLocale();
+  const [query, setQuery] = useState('');
+  // Adding or removing unmounts the pressed button; the search keeps keyboard users in place.
+  const search = useRef<HTMLInputElement>(null);
+  const name = (o: string) => display([o]);
+  const byName = (a: string, b: string) => name(a).localeCompare(name(b), locale);
+  const needle = searchable(query.trim());
+  const add = (o: string) => {
+    onChange([...value, o]);
+    setQuery('');
+    search.current?.focus();
+  };
+  const matches =
+    needle === ''
+      ? []
+      : options
+          .filter((o) => !value.includes(o))
+          .filter((o) => searchable(name(o)).includes(needle) || searchable(o) === needle)
+          .toSorted(byName)
+          .slice(0, PICKER_MATCHES);
+  return (
+    <div className="flex flex-col gap-2">
+      <ul aria-label={label} className="flex flex-wrap gap-1.5">
+        {value.toSorted(byName).map((o) => (
+          <li key={o}>
+            <Badge variant="secondary" className="h-7 gap-1 pr-0.5 text-sm">
+              {name(o)}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={t(($) => $['settings-ui'].picker.remove, { name: name(o) })}
+                onClick={() => {
+                  onChange(value.filter((x) => x !== o));
+                  search.current?.focus();
+                }}
+              >
+                <XIcon />
+              </Button>
+            </Badge>
+          </li>
+        ))}
+      </ul>
+      <Input
+        ref={search}
+        id={id}
+        type="search"
+        className="max-w-sm"
+        placeholder={t(($) => $['settings-ui'].picker.search)}
+        aria-label={t(($) => $['settings-ui'].picker.search_label, { label })}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter adds the first match instead of saving the half-edited list.
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          if (matches[0]) add(matches[0]);
+        }}
+      />
+      {needle === '' ? null : matches.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t(($) => $['settings-ui'].picker.no_match)}
+        </p>
+      ) : (
+        <ul className="flex max-w-sm flex-col divide-y rounded-md border">
+          {matches.map((o) => (
+            <li key={o} className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm">
+              <span>
+                {name(o)} <span className="text-muted-foreground">{o}</span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={t(($) => $['settings-ui'].picker.add_named, { name: name(o) })}
+                onClick={() => add(o)}
+              >
+                <PlusIcon />
+                {t(($) => $['settings-ui'].picker.add)}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Search answers stay short; a longer list means the query is not specific yet. */
+const PICKER_MATCHES = 8;
+
 /** A setting value as text: the inherited hint, select options and the switch label. */
 function useValueText(key: SettingKey, spec: ControlSpec) {
   const { t } = useTranslation();
   const locale = useLocale();
   const format = useFormat();
   const languages = new Intl.DisplayNames(locale, { type: DisplayNamesType.language });
+  const regions = new Intl.DisplayNames(locale, { type: DisplayNamesType.region });
   const option = (v: unknown): string => {
     if (key === Setting.i18n.default_locale) return languages.of(String(v)) ?? String(v);
+    if (key === Setting.core.site_countries) return regions.of(String(v)) ?? String(v);
     if (key === Setting.booking.public_registration_mode) {
       return t(`settings-ui.values.public_registration_mode.${String(v)}` as never) as string;
     }
@@ -276,7 +417,8 @@ function useValueText(key: SettingKey, spec: ControlSpec) {
     switch (spec.kind) {
       case SettingControl.switch:
         return value ? t(($) => $['settings-ui'].values.on) : t(($) => $['settings-ui'].values.off);
-      case SettingControl.list: {
+      case SettingControl.list:
+      case SettingControl.picker: {
         const list = Array.isArray(value) ? value : [];
         return list.length === 0
           ? t(($) => $['settings-ui'].values.none)
@@ -305,6 +447,9 @@ function useSettingMessage(spec: ControlSpec) {
     if (spec.kind === SettingControl.url) return t(($) => $['settings-ui'].validation.url);
     if (spec.kind === SettingControl.list && error.type === ZodIssueCode.custom) {
       return t(($) => $['settings-ui'].validation.duplicate);
+    }
+    if (spec.kind === SettingControl.picker && error.type === ZodIssueCode.too_small) {
+      return t(($) => $['settings-ui'].validation.at_least_one);
     }
     return t(($) => $['settings-ui'].validation.invalid);
   };

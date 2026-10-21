@@ -1,4 +1,8 @@
 import { ClosureKind } from '@rampflow/shared/modules/booking/values';
+import { SubdivisionCode } from '@rampflow/shared/modules/core/api.sites';
+import { SiteCountry } from '@rampflow/shared/modules/core/values';
+import { values } from '@rampflow/shared/values';
+import Holidays from 'date-holidays';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -9,7 +13,7 @@ import type { SiteId } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { runJobTick } from '../../../kernel/jobs.ts';
 import { closure } from '../schema.resources.ts';
-import { job } from './holiday-import.ts';
+import { holidayRegions, job } from './holiday-import.ts';
 
 const clock = testClock(new Date('2026-10-19T08:00:00Z'));
 const app = createApp({ clock });
@@ -88,5 +92,18 @@ describe('holiday import (MD-04)', () => {
     const dates = (await holidays()).map((r) => r.holidayDate);
     expect(dates).toContain('2027-12-25');
     expect(dates).toContain('2026-11-01');
+  });
+});
+
+describe('site countries', () => {
+  it('offer only regions a site can store', () => {
+    const offered = values(SiteCountry).flatMap(holidayRegions);
+    expect(offered.filter((r) => !SubdivisionCode.safeParse(r.code).success)).toEqual([]);
+    expect(holidayRegions('DE')).toHaveLength(16);
+  });
+
+  it('each have a holiday calendar', () => {
+    const calendars = new Holidays().getCountries();
+    expect(values(SiteCountry).filter((c) => !(c in calendars))).toEqual([]);
   });
 });

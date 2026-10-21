@@ -23,6 +23,7 @@
   "sections": {
     "avis": "Avis",
     "booking": "Booking rules",
+    "core": "Sites",
     "i18n": "Language",
     "notify": "Notifications",
     "privacy": "Privacy and retention",
@@ -51,6 +52,15 @@
     "number_range": "Enter a whole number from {{min}} to {{max}}.",
     "url": "Enter a link that starts with https:// or http://.",
     "duplicate": "Each type may appear only once.",
-    "invalid": "This value is not allowed."
+    "invalid": "This value is not allowed.",
+    "at_least_one": "Choose at least one entry."
+  },
+  "picker": {
+    "search": "Search",
+    "search_label": "{{label}}: search",
+    "add": "Add",
+    "add_named": "Add {{name}}",
+    "remove": "Remove {{name}}",
+    "no_match": "No match."
   }
 }

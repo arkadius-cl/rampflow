@@ -4813,6 +4813,78 @@
         "x-router": "modules/booking/carriers/routes.public.ts"
       }
     },
+    "/api/public/countries": {
+      "get": {
+        "operationId": "core.sites.listSiteCountries",
+        "summary": "List site countries",
+        "description": "The ISO 3166-1 alpha-2 codes the platform admits sites in (`core.site_countries`), for the country select of the site form",
+        "tags": [
+          "Master data and capacity"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteCountries"
+                }
+              }
+            }
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "MD-01",
+          "PL-03"
+        ],
+        "x-router": "modules/core/sites/routes.public.ts"
+      }
+    },
+    "/api/public/countries/{country}/holiday-regions": {
+      "get": {
+        "operationId": "core.sites.listHolidayRegions",
+        "summary": "List holiday regions",
+        "description": "The subdivisions of an ISO 3166-1 alpha-2 country that have their own public holidays, for the region select of the site form; empty for a country without any",
+        "tags": [
+          "Master data and capacity"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayRegions"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-party": "public",
+        "x-stories": [
+          "MD-01",
+          "MD-05"
+        ],
+        "x-router": "modules/core/sites/routes.public.ts"
+      }
+    },
     "/api/public/driver-session": {
       "post": {
         "operationId": "driver.session.createSession",
@@ -22014,6 +22086,35 @@
           "sort"
         ]
       },
+      "HolidayRegion": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "HolidayRegions": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HolidayRegion"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "InstructionSafety": {
         "type": "string",
         "enum": [
@@ -24136,6 +24237,7 @@
           "booking.public_registration_mode",
           "booking.require_plate",
           "booking.slot_grid_minutes",
+          "core.site_countries",
           "i18n.default_locale",
           "notify.reminder_hours_before",
           "privacy.notice_url",
@@ -24304,6 +24406,79 @@
         "required": [
           "tenantId",
           "possibleDuplicate"
+        ]
+      },
+      "SiteCountries": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "AD",
+                "AL",
+                "AM",
+                "AT",
+                "AX",
+                "AZ",
+                "BA",
+                "BE",
+                "BG",
+                "BY",
+                "CH",
+                "CY",
+                "CZ",
+                "DE",
+                "DK",
+                "EE",
+                "ES",
+                "FI",
+                "FO",
+                "FR",
+                "GB",
+                "GE",
+                "GG",
+                "GI",
+                "GR",
+                "HR",
+                "HU",
+                "IE",
+                "IM",
+                "IS",
+                "IT",
+                "JE",
+                "LI",
+                "LT",
+                "LU",
+                "LV",
+                "MC",
+                "MD",
+                "ME",
+                "MK",
+                "MT",
+                "NL",
+                "NO",
+                "PL",
+                "PT",
+                "RO",
+                "RS",
+                "RU",
+                "SE",
+                "SI",
+                "SJ",
+                "SK",
+                "SM",
+                "TR",
+                "UA",
+                "VA",
+                "XK"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "SiteView": {
@@ -24788,6 +24963,9 @@
             "additionalProperties": {
               "type": "object",
               "properties": {
+                "core.site_countries": {
+                  "$ref": "#/components/schemas/ContextSetting"
+                },
                 "i18n.default_locale": {
                   "$ref": "#/components/schemas/ContextSetting"
                 },

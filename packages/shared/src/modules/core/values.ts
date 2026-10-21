@@ -83,6 +83,8 @@ export const SettingControl = {
   select: 'select',
   number: 'number',
   list: 'list',
+  /** A long list: the chosen members as chips, the others found by search and added. */
+  picker: 'picker',
   url: 'url',
 } as const;
 export type SettingControl = ValueOf<typeof SettingControl>;
@@ -115,11 +117,23 @@ export const RefinementMessage = {
 } as const;
 export type RefinementMessage = ValueOf<typeof RefinementMessage>;
 
-/** The 27 EU member states, the countries a company may register from (RG-01). */
-export const EuCountry = {
+/**
+ * The countries a site may lie in (MD-01, MD-05): Europe by the UN geoscheme, plus Cyprus, Turkey
+ * and the South Caucasus.
+ * `holiday-import.test.ts` checks that the holiday calendar covers each.
+ */
+export const SiteCountry = {
+  AD: 'AD',
+  AL: 'AL',
+  AM: 'AM',
   AT: 'AT',
+  AX: 'AX',
+  AZ: 'AZ',
+  BA: 'BA',
   BE: 'BE',
   BG: 'BG',
+  BY: 'BY',
+  CH: 'CH',
   CY: 'CY',
   CZ: 'CZ',
   DE: 'DE',
@@ -127,23 +141,77 @@ export const EuCountry = {
   EE: 'EE',
   ES: 'ES',
   FI: 'FI',
+  FO: 'FO',
   FR: 'FR',
+  GB: 'GB',
+  GE: 'GE',
+  GG: 'GG',
+  GI: 'GI',
   GR: 'GR',
   HR: 'HR',
   HU: 'HU',
   IE: 'IE',
+  IM: 'IM',
+  IS: 'IS',
   IT: 'IT',
+  JE: 'JE',
+  LI: 'LI',
   LT: 'LT',
   LU: 'LU',
   LV: 'LV',
+  MC: 'MC',
+  MD: 'MD',
+  ME: 'ME',
+  MK: 'MK',
   MT: 'MT',
   NL: 'NL',
+  NO: 'NO',
   PL: 'PL',
   PT: 'PT',
   RO: 'RO',
+  RS: 'RS',
+  RU: 'RU',
   SE: 'SE',
   SI: 'SI',
+  SJ: 'SJ',
   SK: 'SK',
+  SM: 'SM',
+  TR: 'TR',
+  UA: 'UA',
+  VA: 'VA',
+  XK: 'XK',
+} as const;
+export type SiteCountry = ValueOf<typeof SiteCountry>;
+
+/** The 27 EU member states, the countries a company may register from (RG-01). */
+export const EuCountry = {
+  AT: SiteCountry.AT,
+  BE: SiteCountry.BE,
+  BG: SiteCountry.BG,
+  CY: SiteCountry.CY,
+  CZ: SiteCountry.CZ,
+  DE: SiteCountry.DE,
+  DK: SiteCountry.DK,
+  EE: SiteCountry.EE,
+  ES: SiteCountry.ES,
+  FI: SiteCountry.FI,
+  FR: SiteCountry.FR,
+  GR: SiteCountry.GR,
+  HR: SiteCountry.HR,
+  HU: SiteCountry.HU,
+  IE: SiteCountry.IE,
+  IT: SiteCountry.IT,
+  LT: SiteCountry.LT,
+  LU: SiteCountry.LU,
+  LV: SiteCountry.LV,
+  MT: SiteCountry.MT,
+  NL: SiteCountry.NL,
+  PL: SiteCountry.PL,
+  PT: SiteCountry.PT,
+  RO: SiteCountry.RO,
+  SE: SiteCountry.SE,
+  SI: SiteCountry.SI,
+  SK: SiteCountry.SK,
 } as const;
 export type EuCountry = ValueOf<typeof EuCountry>;
 
