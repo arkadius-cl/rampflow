@@ -31,6 +31,8 @@ import { Route as DesignPlatformAdminRouteImport } from './routes/design/platfor
 import { Route as DesignSettingsRouteImport } from './routes/design/settings'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as RSlugRouteImport } from './routes/r/$slug'
+import { Route as SignupIndexRouteImport } from './routes/signup/index'
+import { Route as SignupVerifyRouteImport } from './routes/signup/verify'
 import { Route as TOrgIdRouteRouteImport } from './routes/t/$orgId/route'
 import { Route as COrgIdIndexRouteImport } from './routes/c/$orgId/index'
 import { Route as PlatformPackagesIndexRouteImport } from './routes/platform/packages/index'
@@ -170,6 +172,16 @@ const PlatformIndexRoute = PlatformIndexRouteImport.update({
 const RSlugRoute = RSlugRouteImport.update({
   id: '/r/$slug',
   path: '/r/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupIndexRoute = SignupIndexRouteImport.update({
+  id: '/signup/',
+  path: '/signup/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupVerifyRoute = SignupVerifyRouteImport.update({
+  id: '/signup/verify',
+  path: '/signup/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TOrgIdRouteRoute = TOrgIdRouteRouteImport.update({
@@ -349,8 +361,10 @@ export interface FileRoutesByFullPath {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/r/$slug': typeof RSlugRoute
+  '/signup/verify': typeof SignupVerifyRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
+  '/signup/': typeof SignupIndexRoute
   '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/platform/packages/': typeof PlatformPackagesIndexRoute
@@ -399,8 +413,10 @@ export interface FileRoutesByTo {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/r/$slug': typeof RSlugRoute
+  '/signup/verify': typeof SignupVerifyRoute
   '/design': typeof DesignIndexRoute
   '/platform': typeof PlatformIndexRoute
+  '/signup': typeof SignupIndexRoute
   '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId': typeof COrgIdIndexRoute
   '/platform/packages': typeof PlatformPackagesIndexRoute
@@ -453,8 +469,10 @@ export interface FileRoutesById {
   '/design/platform-admin': typeof DesignPlatformAdminRoute
   '/design/settings': typeof DesignSettingsRoute
   '/r/$slug': typeof RSlugRoute
+  '/signup/verify': typeof SignupVerifyRoute
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
+  '/signup/': typeof SignupIndexRoute
   '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/platform/packages/': typeof PlatformPackagesIndexRoute
@@ -509,8 +527,10 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/r/$slug'
+    | '/signup/verify'
     | '/design/'
     | '/platform/'
+    | '/signup/'
     | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
     | '/platform/packages/'
@@ -559,8 +579,10 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/r/$slug'
+    | '/signup/verify'
     | '/design'
     | '/platform'
+    | '/signup'
     | '/platform/tenants/$tenantId'
     | '/c/$orgId'
     | '/platform/packages'
@@ -612,8 +634,10 @@ export interface FileRouteTypes {
     | '/design/platform-admin'
     | '/design/settings'
     | '/r/$slug'
+    | '/signup/verify'
     | '/design/'
     | '/platform/'
+    | '/signup/'
     | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
     | '/platform/packages/'
@@ -658,6 +682,8 @@ export interface RootRouteChildren {
   AuthMagicRoute: typeof AuthMagicRoute
   AuthResetRoute: typeof AuthResetRoute
   RSlugRoute: typeof RSlugRoute
+  SignupVerifyRoute: typeof SignupVerifyRoute
+  SignupIndexRoute: typeof SignupIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -814,6 +840,20 @@ declare module '@tanstack/react-router' {
       path: '/r/$slug'
       fullPath: '/r/$slug'
       preLoaderRoute: typeof RSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup/': {
+      id: '/signup/'
+      path: '/signup'
+      fullPath: '/signup/'
+      preLoaderRoute: typeof SignupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup/verify': {
+      id: '/signup/verify'
+      path: '/signup/verify'
+      fullPath: '/signup/verify'
+      preLoaderRoute: typeof SignupVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/t/$orgId': {
@@ -1175,6 +1215,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthMagicRoute: AuthMagicRoute,
   AuthResetRoute: AuthResetRoute,
   RSlugRoute: RSlugRoute,
+  SignupVerifyRoute: SignupVerifyRoute,
+  SignupIndexRoute: SignupIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

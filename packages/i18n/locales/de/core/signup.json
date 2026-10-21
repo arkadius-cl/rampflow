@@ -21,5 +21,71 @@
       "reset": "Passwort vergessen? Setzen Sie es auf der Anmeldeseite zurück.",
       "ignore": "Wenn Sie das nicht waren, ignorieren Sie diese E-Mail."
     }
+  },
+  "form": {
+    "title": "Unternehmen registrieren",
+    "description": "Legen Sie Ihr Unternehmen bei rampflow an. Sie werden sein Administrator; das Paket Start ist kostenlos.",
+    "salutation": "Anrede",
+    "salutations": {
+      "none": "Keine Angabe",
+      "mr": "Herr",
+      "ms": "Frau"
+    },
+    "given_name": "Vorname",
+    "family_name": "Nachname",
+    "email": "Geschäftliche E-Mail",
+    "password": "Passwort",
+    "password_hint": "Mindestens 10 Zeichen.",
+    "company": "Name des Unternehmens",
+    "country": "Land",
+    "tax_id_type": "Art der Steuernummer",
+    "tax_id_types": {
+      "eu_vat": "USt-IdNr.",
+      "de_stn": "Steuernummer oder W-IdNr.",
+      "pl_nip": "NIP"
+    },
+    "tax_id_value": "Steuernummer",
+    "tax_id_examples": {
+      "eu_vat": "Ihre Umsatzsteuer-Identifikationsnummer, mit oder ohne das Präfix {{prefix}}.",
+      "de_stn": "10, 11 oder 13 Ziffern, oder eine W-IdNr. wie DE123456789-00001.",
+      "pl_nip": "10 Ziffern, zum Beispiel 526-025-02-74."
+    },
+    "submit": "Unternehmen registrieren",
+    "have_account": "Sie haben schon ein Konto?",
+    "sign_in": "Anmelden"
+  },
+  "sent": {
+    "title": "Sehen Sie in Ihr Postfach",
+    "body": "Wir haben einen Link an {{email}} gesendet. Öffnen Sie ihn innerhalb von 24 Stunden, um Ihr Unternehmen anzulegen.",
+    "no_email": "Nach ein paar Minuten keine E-Mail? Sehen Sie im Spam-Ordner nach oder senden Sie sie erneut.",
+    "again": "Erneut senden",
+    "again_done": "Erneut gesendet. Nur der neueste Link gilt."
+  },
+  "verify": {
+    "title": "Unternehmen anlegen",
+    "loading": "Link wird geprüft…",
+    "confirm": "Mit dem Anlegen werden Sie Administrator des Unternehmens und angemeldet.",
+    "create": "Unternehmen anlegen",
+    "create_anyway": "Unternehmen trotzdem anlegen",
+    "duplicate_title": "Ihr Unternehmen nutzt rampflow möglicherweise schon.",
+    "duplicate": "Bitten Sie dessen Administrator, Sie einzuladen.",
+    "invalid_title": "Dieser Link gilt nicht mehr",
+    "invalid": "Registrierungslinks gelten einmal und 24 Stunden. Registrieren Sie sich erneut, um einen neuen zu erhalten.",
+    "register_again": "Erneut registrieren",
+    "account_exists_title": "Sie haben bereits ein Konto",
+    "account_exists": "Diese E-Mail-Adresse hat bereits ein rampflow-Konto. Melden Sie sich stattdessen an.",
+    "sign_in": "Anmelden"
+  },
+  "altcha": {
+    "label": "Automatische Prüfung gegen Bots",
+    "loading": "Wird geladen…",
+    "verifying": "Prüfung, dass Sie kein Bot sind…",
+    "verified": "Geprüft",
+    "error": "Die Prüfung ist fehlgeschlagen. Versuchen Sie es erneut.",
+    "expired": "Die Prüfung ist abgelaufen. Versuchen Sie es erneut.",
+    "verification_required": "Die automatische Prüfung ist erforderlich.",
+    "wait": "Wird geprüft… bitte warten.",
+    "reload": "Neu laden",
+    "verify": "Prüfen"
   }
 }

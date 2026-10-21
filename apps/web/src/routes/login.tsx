@@ -158,6 +158,9 @@ function PasswordForm({ redirect }: { redirect: string }) {
         >
           {t(($) => $.auth.login.magic_instead)}
         </Link>
+        <Link to="/signup" className={buttonVariants({ variant: 'link' })}>
+          {t(($) => $.auth.login.register)}
+        </Link>
       </FieldGroup>
     </form>
   );
