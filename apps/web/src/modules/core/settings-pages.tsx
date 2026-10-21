@@ -68,14 +68,20 @@ export function SiteSettingsLayout({
 }: {
   level: Extract<SettingsLevel, { scope: typeof SettingScope.site }>;
 }) {
+  const { t } = useTranslation();
   const view = useSuspenseQuery(settingsQuery(level)).data;
+  const topic = useParams({ strict: false, select: (p) => p.topic }) as SettingsTopic | undefined;
   return (
     <div data-settings-page className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SettingsTopicNav level={level} view={view} tabs />
         <SettingsSearch level={level} view={view} />
       </div>
-      <div className="max-w-3xl">
+      <div className="flex max-w-3xl flex-col gap-4">
+        {/* The site's name is the page's h1; the topic names this tab's content. */}
+        {topic ? (
+          <h2 className="text-lg font-semibold">{t(($) => $['settings-ui'].topics[topic])}</h2>
+        ) : null}
         <Outlet />
       </div>
     </div>

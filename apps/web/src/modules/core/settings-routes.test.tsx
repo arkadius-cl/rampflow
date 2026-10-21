@@ -27,6 +27,7 @@ describe('PL-03 platform settings routes', () => {
     const { router } = renderApp('/platform/settings', platformApi());
     await landsOn(router, '/platform/settings/general');
     expect(router.history.length).toBe(1);
+    expect(await screen.findByRole('heading', { level: 1, name: 'General' })).toBeDefined();
     expect(await topicLink('General')).toHaveProperty('ariaCurrent', 'page');
   });
 
@@ -69,6 +70,7 @@ describe('MD-01 site settings routes', () => {
     expect(router.history.length).toBe(1);
     expect(await topicLink('Booking')).toHaveProperty('ariaCurrent', 'page');
     expect(await topicLink('General')).toBeNull();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Booking' })).toBeDefined();
   });
 
   it('shows no access for the general topic, which has no site level', async () => {
