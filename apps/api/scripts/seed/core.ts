@@ -206,7 +206,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
       target: [tenantCarrierLink.tenantId, tenantCarrierLink.carrierId],
       set: { status: CarrierLinkStatus.active, deactivatedAt: null },
     });
-  const tx = ctx.db as unknown as Tx;
+  const tx: Tx = ctx.db;
   const now = new Date();
   await writeSetting(
     tx,

@@ -250,7 +250,7 @@ async function seedHamburgSlotGrid(tx: Tx, req: TenantRequest): Promise<void> {
 export async function seed(ctx: SeedContext): Promise<void> {
   const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
   if (!tenantId) throw new Error(`${ACME} is missing; the core seed runs first`);
-  const tx = ctx.db as unknown as Tx;
+  const tx: Tx = ctx.db;
   const entitlements = await loadEntitlements(tx, tenantId, new Date());
   const req: TenantRequest = { tenantId, userId: null, entitlements };
   for (const demo of DEMO_SITES) {

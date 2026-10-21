@@ -373,7 +373,7 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
       closes: '24:00',
     })),
   );
-  await seedLoadTypes(db as unknown as Tx, { id: siteId, tenantId });
+  await seedLoadTypes(db, { id: siteId, tenantId });
   const types = await db
     .select({ id: loadType.id })
     .from(loadType)
@@ -415,7 +415,7 @@ export async function seed(ctx: SeedContext, clock: Clock = systemClock): Promis
     gate_operator: await userId(ctx, ACCOUNTS.gate_operator),
     dock_operator: await userId(ctx, ACCOUNTS.dock_operator),
   };
-  const tx = ctx.db as unknown as Tx;
+  const tx: Tx = ctx.db;
   const context = async (as: SeedActor, now: Date): Promise<BookingContext> => {
     const scope: Scope =
       as === SeedActor.system
