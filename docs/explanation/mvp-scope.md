@@ -6,7 +6,7 @@ audience: [agent, developer]
 tags: [mvp, scope, booking, yard, safety, avis, entitlements, settings, i18n, gdpr]
 status: draft
 updated: 2026-10-21
-related: [docs/explanation/research/market-and-features.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/explanation/domain-glossary.md]
+related: [docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/research/market-and-features.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/explanation/domain-glossary.md]
 ---
 
 # MVP scope
@@ -69,7 +69,11 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - Overrides can raise or lower a value, apply on the next request, and lapse at expiry.
    - Unknown or reserved keys return 400.
    - A route whose entitlement is off returns 403 `entitlement_required` with the key, and its navigation item is hidden.
-3. **PL-03 Platform defaults.** The admin edits every setting with platform scope, including the countries admitted for sites, found by name and added. Invalid values return 422 with the zod issue path. Tenants with an override keep it.
+3. **PL-03 Platform defaults.** The admin edits every setting with platform scope. Invalid values return 422 with the zod issue path. Tenants with an override keep it.
+   - Settings are grouped in topics (General, Booking, Avis, Safety, Yard, Privacy), and each topic has its own URL (`/platform/settings/booking`). `/platform/settings` opens the first topic.
+   - Every setting has a deep link (`/platform/settings/privacy#privacy.retention.visit_days`) that scrolls to the field and focuses it. A search in the settings header finds a setting by label, description or key.
+   - The countries admitted for sites (`core.site_countries`) are chosen from a list grouped into "EU member states" and "Other countries", each group with a select-all checkbox, a filter and "N of M selected". At least one country stays admitted.
+   - A save that shortens a `privacy.retention.*` period asks for confirmation first and names each old and new value. Settings layout: [ADR-0020](../decisions/ADR-0020-settings-information-architecture.md).
 4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing. The platform admin searches tenants by name, filters by package, sorts by name or creation date and pages through the list; the list's state is in the URL ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)).
 
 ### Tenant admin
@@ -78,8 +82,10 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - At `core.max_internal_users` the invite returns 409 `limit_reached`.
    - A gate operator of site A gets 404 for every site B resource.
    - Removing a member ends that user's sessions for this tenant.
-2. **TN-02 Settings.** Each tenant and site settings field shows the effective value and its source (Default, Platform, Tenant, Site).
-   - A site value overrides only that site. "Reset to inherited" deletes the override.
+2. **TN-02 Settings.** The tenant settings and each site's settings use the topics of PL-03 (`/t/$orgId/settings/$topic`). Every field always shows the effective value and its origin as text ("Product default", "From platform", "From tenant", "Set for this tenant", "Set for this site"). An origin on a level the user may manage links to that level.
+   - A topic page is one form with "Save" and "Discard". Saving writes only the changed keys, in one request: all or none.
+   - A site value overrides only that site. "Use inherited value" is a pending change; saving deletes the override.
+   - Site settings are the Settings tab of the site view (MD-01). `/t/$orgId/settings?site=<id>` redirects there; an unknown or foreign site shows "no access", never the tenant level.
    - Settings whose entitlement is off are hidden, and writes return 403.
    - Retention values above the platform maximum return 422.
 3. **TN-03 Invite carriers.** The admin invites a carrier by company name and email.
@@ -95,6 +101,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone, default locale and weekly opening hours. Country and subdivision are chosen from lists; the country must be one the platform admits (`core.site_countries`), otherwise 422. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
    - Creating a site requires at least one weekly window. Without hours, or with overlapping windows, the request returns 422 and no site exists.
    - The "New site" form offers three templates: "One shift" (Monday to Friday 06:00 to 14:00, preselected), "Two shifts" (Monday to Friday 06:00 to 22:00) and "Custom" (several windows a day, for example with a lunch break).
+   - For a user with `core.manage_settings`, the site view ends with a "Settings" tab (`/t/$orgId/sites/$siteId/settings`). It edits the site level of every setting that has one (TN-02).
 8. **MD-02 Halls and docks.** A dock belongs to a hall and has a code unique per site, door type, temperature zone, ADR flag and status (`active`, `maintenance`, `inactive`). `core.max_docks` counts active and maintenance docks.
    - A new dock joins the default pool of its hall and profile (door type, temperature zone, ADR flag) in the same transaction. If that pool does not exist yet, the system creates it, named after the hall plus every attribute that differs from the standard profile, for example "Halle 2 · Tiefkühl", and links it to every load type of the site.
    - Without `booking.pools`, a new dock becomes a single resource instead.
@@ -264,10 +271,11 @@ In the MVP, Enterprise differs from Pro only in limits. Reserved keys join the p
 
 ## Settings catalog
 
-Scopes are P (platform), T (tenant) and S (site). Resolution runs site, tenant, platform, code default. A setting whose entitlement is off is hidden and rejected.
+Scopes are P (platform), T (tenant) and S (site). Resolution runs site, tenant, platform, code default. A setting whose entitlement is off is hidden and rejected. The settings screens group the 30 keys into topics and sections ([ADR-0020](../decisions/ADR-0020-settings-information-architecture.md)).
 
 | Key | Type | Default | Scopes | Notes |
 |---|---|---|---|---|
+| `core.site_countries` | list of country codes | the 27 EU member states | P | countries admitted for sites, at least one |
 | `booking.slot_grid_minutes` | 5, 10, 15, 20, 30, 60 | 30 | P T S | |
 | `booking.min_lead_minutes` | 0..10080 | 120 | P T S | |
 | `booking.horizon_days` | 1..365 | 30 | P T S | |
@@ -288,7 +296,7 @@ Scopes are P (platform), T (tenant) and S (site). Resolution runs site, tenant, 
 | `safety.require_for_checkin` | bool | true | P T S | `safety.gate_enforcement` |
 | `safety.quiz_pass_percent` | 50..100 | 100 | P T | `safety.quiz` |
 | `notify.reminder_hours_before` | 1..72 | 24 | P T S | `notify.reminders` |
-| `i18n.default_locale` | `de`, `en`, `pl` | `de` | P T S | users without a locale |
+| `i18n.default_locale` | `de`, `en`, `pl` | `de` | P T | people without a language of their own: invitations, emails, exports |
 | `privacy.notice_url` | URL or null | null | P T S | null shows the platform Art. 14 template |
 | `privacy.retention.driver_phone_days` | 1..30 | 7 | P T | |
 | `privacy.retention.driver_identity_days` | 1..395 | 90 | P T | then pseudonymize |

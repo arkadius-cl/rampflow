@@ -2,9 +2,9 @@ import { CreateLoadType } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction, DurationKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { CreateDock, CreateSite, hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
-import { OrgKind } from '@rampflow/shared/values';
+import { OrgKind, Setting, SettingScope } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
-import type { DockId, SiteId, TenantId } from '../../src/db/ids.ts';
+import type { DockId, SiteId, TenantId, UserId } from '../../src/db/ids.ts';
 import type { Tx } from '../../src/db/scope.ts';
 import { loadEntitlements } from '../../src/kernel/access.ts';
 import { systemClock } from '../../src/kernel/clock.ts';
@@ -19,7 +19,8 @@ import {
   updateResource,
 } from '../../src/modules/booking/capacity/resources.ts';
 import type { LoadTypeId, ResourceId } from '../../src/modules/booking/schema.resources.ts';
-import { dock, hall, site } from '../../src/modules/core/schema.ts';
+import { appUser, dock, hall, site } from '../../src/modules/core/schema.ts';
+import { writeSetting } from '../../src/modules/core/settings/settings.ts';
 import { createDock, createHall } from '../../src/modules/core/sites/docks.ts';
 import { createSite } from '../../src/modules/core/sites/sites.ts';
 import type { TenantRequest } from '../../src/modules/core/sites/tenant.ts';
@@ -49,10 +50,12 @@ const HAMBURG_HOURS: [number, string, string][] = [
 ];
 const BUCHAREST_HOURS = weekdays('07:00', '19:00');
 
+export const HAMBURG_DC = 'Hamburg DC';
+
 const DEMO_SITES: readonly DemoSite[] = [
   {
     site: CreateSite.parse({
-      name: 'Hamburg DC',
+      name: HAMBURG_DC,
       addressLine1: 'Am Ballinkai 1',
       postalCode: '21129',
       city: 'Hamburg',
@@ -157,7 +160,7 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
 }
 
 /** A frozen dock, which gets its own default pool and shows "Bookable for" (ADR-0017). */
-const FROZEN_DOCK = { site: 'Hamburg DC', hall: 'Halle 2', code: 'T09', sort: 3 } as const;
+const FROZEN_DOCK = { site: HAMBURG_DC, hall: 'Halle 2', code: 'T09', sort: 3 } as const;
 
 /** Ensured on every run, so a database seeded before 03 also shows a second dock profile. */
 async function ensureFrozenDock(tx: Tx, req: TenantRequest): Promise<boolean> {
@@ -221,15 +224,39 @@ async function seedNordhafen(ctx: SeedContext, tx: Tx): Promise<void> {
   if (!h) await createHall(tx, tenantId, siteId, { name: BREMERHAVEN_HALL, sort: 0 });
 }
 
+/** Hamburg DC's own slot grid, next to the platform and Acme overrides of core.ts (change 06). */
+export const HAMBURG_SLOT_GRID_MINUTES = 15;
+
+async function seedHamburgSlotGrid(tx: Tx, req: TenantRequest): Promise<void> {
+  const [hamburg] = await tx
+    .select({ id: site.id })
+    .from(site)
+    .where(and(eq(site.tenantId, req.tenantId), eq(site.name, HAMBURG_DC)));
+  const [admin] = await tx
+    .select({ id: appUser.id })
+    .from(appUser)
+    .where(eq(appUser.email, 'admin@acme.local'));
+  if (!hamburg || !admin) throw new Error('Hamburg DC or admin@acme.local is missing');
+  await writeSetting(
+    tx,
+    { scope: SettingScope.site, tenantId: req.tenantId, siteId: hamburg.id as SiteId },
+    req.entitlements,
+    { key: Setting.booking.slot_grid_minutes, value: HAMBURG_SLOT_GRID_MINUTES },
+    admin.id as UserId,
+    new Date(),
+  );
+}
+
 export async function seed(ctx: SeedContext): Promise<void> {
   const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
   if (!tenantId) throw new Error(`${ACME} is missing; the core seed runs first`);
-  const tx = ctx.db as unknown as Tx;
+  const tx: Tx = ctx.db;
   const entitlements = await loadEntitlements(tx, tenantId, new Date());
   const req: TenantRequest = { tenantId, userId: null, entitlements };
   for (const demo of DEMO_SITES) {
     if (await seedSite(tx, req, demo)) ctx.log(`created site ${demo.site.name}`);
   }
   if (await ensureFrozenDock(tx, req)) ctx.log(`created dock ${FROZEN_DOCK.code}`);
+  await seedHamburgSlotGrid(tx, req);
   await seedNordhafen(ctx, tx);
 }

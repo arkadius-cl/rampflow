@@ -196,6 +196,10 @@
   html {
     @apply font-sans;
   }
+  /* The settings save bar sticks to the bottom; a focused field never hides under it (WCAG 2.4.11). */
+  html:has([data-settings-page]) {
+    scroll-padding-bottom: 6rem;
+  }
 
   /* Density modes. Shells set data-density on their root. "touch" is for
      gate and dock tablets and the driver phone: every interactive element

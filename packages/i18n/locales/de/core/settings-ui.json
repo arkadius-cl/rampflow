@@ -1,35 +1,12 @@
 {
   "title": "Einstellungen",
-  "description": "Jeder Wert zeigt, woher er stammt. Ein Standortwert überschreibt den Mandanten, der Mandant den Plattform-Standard.",
-  "platform_title": "Plattform-Standards",
+  "description": "Jeder Wert zeigt, woher er stammt. Werte des Mandanten gelten für alle Standorte; ein Standort kann sie in seinem Reiter „Einstellungen“ überschreiben.",
   "platform_description": "Standards für alle Mandanten. Werte eines Mandanten oder Standorts haben Vorrang und bleiben bei Änderungen erhalten.",
-  "tenant_tab": "Alle Standorte",
-  "scope_tabs": "Einstellungsebene",
-  "empty": "Auf dieser Ebene gibt es keine Einstellungen.",
+  "topics_label": "Themen der Einstellungen",
+  "site_settings": "Standort-Einstellungen",
   "save": "Speichern",
   "saved": "Gespeichert.",
-  "reset_done": "Auf den geerbten Wert zurückgesetzt.",
   "clear": "Link entfernen",
-  "set_here": "Hier gesetzt ({{source}})",
-  "inherited_from": "Geerbt von {{source}}",
-  "reset": "Auf geerbten Wert zurücksetzen",
-  "reset_to": "Auf geerbten Wert zurücksetzen ({{value}})",
-  "source": {
-    "default": "Standard",
-    "platform": "Plattform",
-    "tenant": "Mandant",
-    "site": "Standort"
-  },
-  "sections": {
-    "avis": "Avis",
-    "booking": "Buchungsregeln",
-    "core": "Standorte",
-    "i18n": "Sprache",
-    "notify": "Benachrichtigungen",
-    "privacy": "Datenschutz und Aufbewahrung",
-    "safety": "Sicherheitsunterweisungen",
-    "yard": "Hof"
-  },
   "values": {
     "on": "An",
     "off": "Aus",
@@ -53,14 +30,92 @@
     "url": "Geben Sie einen Link ein, der mit https:// oder http:// beginnt.",
     "duplicate": "Jeder Typ darf nur einmal vorkommen.",
     "invalid": "Dieser Wert ist nicht zulässig.",
-    "at_least_one": "Wählen Sie mindestens einen Eintrag."
+    "at_least_one": "Wählen Sie mindestens einen Eintrag.",
+    "at_least_one_country": "Wählen Sie mindestens ein Land."
   },
-  "picker": {
-    "search": "Land suchen",
-    "search_label": "{{label}}: suchen",
-    "add": "Hinzufügen",
-    "add_named": "{{name}} hinzufügen",
-    "remove": "{{name}} entfernen",
-    "no_match": "Kein Treffer."
+  "topics": {
+    "general": "Allgemein",
+    "booking": "Buchung",
+    "avis": "Avis",
+    "safety": "Sicherheit",
+    "yard": "Hof",
+    "privacy": "Datenschutz"
+  },
+  "sections": {
+    "sites": "Standorte",
+    "language": "Sprache",
+    "rules": "Buchungsregeln",
+    "public_booking": "Öffentliche Buchung",
+    "reminders": "Erinnerungen",
+    "requirements": "Pflichtangaben",
+    "briefing": "Sicherheitsunterweisung",
+    "arrival": "Ankunft",
+    "dwell": "Standzeit",
+    "notice": "Datenschutzhinweis",
+    "retention": "Aufbewahrung",
+    "driver_access": "Fahrerzugang"
+  },
+  "origin": {
+    "default": "Produktstandard",
+    "platform": "Von der Plattform",
+    "tenant": "Vom Mandanten",
+    "here": {
+      "platform": "Für die Plattform gesetzt",
+      "tenant": "Für diesen Mandanten gesetzt",
+      "site": "Für diesen Standort gesetzt"
+    },
+    "inherited": "Geerbt: {{value}} ({{source}})",
+    "pending_inherit": "Nach dem Speichern gilt der geerbte Wert"
+  },
+  "levels": {
+    "platform_only": "Nur Plattform: Mandanten können dies nicht ändern.",
+    "all_sites": "Gilt für alle Standorte des Mandanten."
+  },
+  "use_inherited": "Geerbten Wert verwenden ({{value}})",
+  "copy_link": "Link zu „{{label}}“ kopieren",
+  "link_copied": "Link kopiert",
+  "save_bar": {
+    "discard": "Verwerfen",
+    "clean": "Keine ungespeicherten Änderungen",
+    "dirty": "Ungespeicherte Änderungen: {{count}}"
+  },
+  "leave": {
+    "title": "Ohne Speichern verlassen?",
+    "description": "Ihre ungespeicherten Änderungen auf dieser Seite gehen verloren.",
+    "stay": "Bleiben",
+    "leave": "Verlassen"
+  },
+  "search": {
+    "button": "Einstellungen durchsuchen",
+    "placeholder": "Einstellungen durchsuchen …",
+    "empty": "Keine Einstellung gefunden."
+  },
+  "retention": {
+    "title": "Aufbewahrung verkürzen?",
+    "description": "Daten, die älter als der neue Zeitraum sind, werden beim nächsten Aufbewahrungslauf gelöscht oder pseudonymisiert.",
+    "change": "{{label}}: {{from}} → {{to}} {{unit}}",
+    "confirm": "Verkürzen und speichern",
+    "cancel": "Abbrechen"
+  },
+  "countries": {
+    "groups": {
+      "eu": "EU-Mitgliedstaaten",
+      "other": "Weitere Länder"
+    },
+    "filter": "Länder filtern",
+    "count": "{{selected}} von {{total}} ausgewählt",
+    "no_match": "Kein Land passt."
+  },
+  "units": {
+    "minutes": "Min.",
+    "hours": "Std.",
+    "days": "Tage",
+    "percent": "%"
+  },
+  "unit_names": {
+    "minutes": "Minuten",
+    "hours": "Stunden",
+    "days": "Tage",
+    "percent": "Prozent"
   }
 }

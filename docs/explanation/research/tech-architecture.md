@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [research, architecture, tenancy, auth, entitlements, settings, testing, i18n]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 ---
 
 # Technical architecture research
@@ -467,7 +467,7 @@ Deleting the row means "inherit".
 type Resolved<T> = { value: T; source: "site" | "tenant" | "platform" | "default"; inherited: { value: T; source: string } | null };
 ```
 
-**UI:** each settings field shows the effective value and a badge: "Default", "Platform", "Inherited from tenant", or "Set for this site". An overridden field shows the inherited value as hint text and has a "Reset to inherited" action, which issues the DELETE. A non-overridden field renders the inherited value as a placeholder; typing into it creates the override.
+**UI:** each settings field shows the effective value and, as quiet text, where it comes from: "Product default", "From platform", "From tenant" or "Set for this site". An overridden field also shows the value it would inherit and offers "Use inherited value", a pending change that the topic's one `PATCH` saves together with the other edits. ADR-0020 records the topic pages, deep links and search built on this.
 
 An optional `lockedAt: "tenant"` flag lets a tenant forbid site overrides. That is the common "corporate policy" request.
 

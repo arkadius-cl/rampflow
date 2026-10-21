@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { api, call } from '@/lib/api';
-import { applyLocale, isStaffLocale, useLocale } from '@/lib/i18n';
+import { applyLocale, isStaffLocale, pickLocale, showLocale, useLocale } from '@/lib/i18n';
 import { queryKeys } from '@/lib/query-keys';
 
 /** Each language named in itself, so a user who cannot read the current UI still finds theirs. */
@@ -52,15 +52,15 @@ export function useChangeLocale(signedIn: boolean) {
 }
 
 /**
- * Applies the user's language, else `fallback` (the tenant's `i18n.default_locale`), once the
- * signed-in user is known. A user without a locale keeps this device's choice when no fallback
- * is given.
+ * Shows the UI in the signed-in user's language order (ADR-0009): the account's, this device's
+ * choice, the browser's, then `tenantDefault` (a tenant's `i18n.default_locale`). Nothing here
+ * counts as the device's choice.
  */
-export function useSyncLocale(me: MeResponse | undefined, fallback?: StaffLocale) {
+export function useSyncLocale(me: MeResponse | undefined, tenantDefault?: StaffLocale) {
   const { i18n } = useTranslation();
-  const wanted = me?.user.locale ?? fallback;
+  const wanted = pickLocale(me?.user.locale, tenantDefault);
   useEffect(() => {
-    if (wanted && isStaffLocale(wanted) && i18n.language !== wanted) void applyLocale(i18n, wanted);
+    if (i18n.language !== wanted) void showLocale(i18n, wanted);
   }, [wanted, i18n]);
 }
 

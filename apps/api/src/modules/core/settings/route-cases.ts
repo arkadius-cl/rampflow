@@ -4,6 +4,7 @@ import {
   HttpMethod,
   Permission,
   RouteCaseActor,
+  Setting,
 } from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
@@ -28,6 +29,15 @@ export const cases = defineRouteCases([
     path: P,
     params: (w) => ({ orgId: w.A.tenantId }),
     query: site,
+  },
+  {
+    ...base,
+    method: HttpMethod.PATCH,
+    path: P,
+    // A setting whose `requires` feature is off answers 403 entitlement_required (TN-02).
+    entitlement: Feature.safety.gate_enforcement,
+    params: (w) => ({ orgId: w.A.tenantId }),
+    body: (w) => ({ ...site(w), set: { [Setting.safety.require_for_checkin]: false }, reset: [] }),
   },
   {
     ...base,

@@ -3981,6 +3981,81 @@
           "PL-03"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
+      },
+      "patch": {
+        "operationId": "core.platform.patchSettings",
+        "summary": "Patch settings (core.platform)",
+        "description": "A topic form's save: `{ set: { <key>: value }, reset: [<key>] }` → the platform settings view. All or nothing. At least one entry and no key in both lists (422). 400 for an unknown key or one without platform scope, 422 under `[\"set\", key, ...]`. Tenant and site rows stay",
+        "tags": [
+          "Platform administration"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "set": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "additionalProperties": {}
+                  },
+                  "reset": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                },
+                "required": [
+                  "set",
+                  "reset"
+                ]
+              },
+              "example": {
+                "set": {},
+                "reset": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_platform_settings"
+        ],
+        "x-stories": [
+          "PL-03"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
       }
     },
     "/api/platform/settings/{key}": {
@@ -14575,6 +14650,108 @@
           "TN-02"
         ],
         "x-router": "modules/core/settings/routes.tenant.ts"
+      },
+      "patch": {
+        "operationId": "core.settings.patchSettings",
+        "summary": "Patch settings (core.settings)",
+        "description": "A topic form's save: `{ siteId: uuid | null, set: { <key>: value }, reset: [<key>] }` → the level's settings view. All or nothing. At least one entry and no key in both lists (422). 400 for an unknown key or a level the key lacks (`scope_not_allowed`, `allowed`), 403 `entitlement_required` with the blocking feature, 422 under `[\"set\", key, ...]`, 404 for another tenant's site",
+        "tags": [
+          "Tenant administration"
+        ],
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "set": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "additionalProperties": {}
+                  },
+                  "reset": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "set",
+                  "reset"
+                ]
+              },
+              "example": {
+                "siteId": "00000000-0000-4000-8000-000000000000",
+                "set": {},
+                "reset": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "tenant",
+        "x-permission": [
+          "core.manage_settings"
+        ],
+        "x-stories": [
+          "TN-02"
+        ],
+        "x-router": "modules/core/settings/routes.tenant.ts"
       }
     },
     "/api/t/{orgId}/settings/{key}": {
@@ -14675,7 +14852,7 @@
       "delete": {
         "operationId": "core.settings.deleteSetting",
         "summary": "Delete setting (core.settings)",
-        "description": "`?siteId=`; \"Reset to inherited\"",
+        "description": "`?siteId=`; drops the value of this level for one key (the web resets through the PATCH)",
         "tags": [
           "Tenant administration"
         ],

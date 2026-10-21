@@ -83,8 +83,8 @@ export const SettingControl = {
   select: 'select',
   number: 'number',
   list: 'list',
-  /** A long list: the chosen members as chips, the others found by search and added. */
-  picker: 'picker',
+  /** A long list in named groups, each with a select-all checkbox, plus a filter (PL-03). */
+  grouped_list: 'grouped_list',
   url: 'url',
 } as const;
 export type SettingControl = ValueOf<typeof SettingControl>;
@@ -214,6 +214,18 @@ export const EuCountry = {
   SK: SiteCountry.SK,
 } as const;
 export type EuCountry = ValueOf<typeof EuCountry>;
+
+/** The groups of the admitted-countries editor (PL-03): EU member states and the rest. */
+export const CountryGroup = {
+  eu: 'eu',
+  other: 'other',
+} as const;
+export type CountryGroup = ValueOf<typeof CountryGroup>;
+
+const EU_COUNTRIES: ReadonlySet<SiteCountry> = new Set(Object.values(EuCountry));
+
+export const countryGroupOf = (code: SiteCountry): CountryGroup =>
+  EU_COUNTRIES.has(code) ? CountryGroup.eu : CountryGroup.other;
 
 /** `org.tax_id_type`: an EU VAT number, a German tax number or W-IdNr, a Polish NIP (RG-05). */
 export const TaxIdType = {

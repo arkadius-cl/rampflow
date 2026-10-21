@@ -6,12 +6,12 @@ audience: [agent, developer]
 tags: [adr, frontend, routing, tenancy, entitlements, ux]
 status: stable
 updated: 2026-10-21
-related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0016-tenant-self-registration.md]
+related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0016-tenant-self-registration.md]
 ---
 
 # ADR-0011: Frontend route structure per area with the active org in the URL
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. Amended by [ADR-0015](ADR-0015-data-tables-and-entity-views.md) on 2026-10-20: entity views, detail tabs as child routes, and list state in the URL. Updated 2026-10-21 by change 03: the onboarding checklist, the tenant home redirect while a tenant is in onboarding, and `?new=1` on the site list. The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
+Status: accepted, 2026-10-19. Revised 2026-10-19 after the design review: this ADR now holds the one route map, and the UX concept points here. Amended by [ADR-0015](ADR-0015-data-tables-and-entity-views.md) on 2026-10-20: entity views, detail tabs as child routes, and list state in the URL. Updated 2026-10-21 by change 03: the onboarding checklist, the tenant home redirect while a tenant is in onboarding, and `?new=1` on the site list. Updated 2026-10-21 by change 06: settings topics as routes on every level, the site Settings tab and the `?site=` redirect ([ADR-0020](ADR-0020-settings-information-architecture.md)). The UX concept decides layouts and screens; this ADR fixes the routing contract that screens plug into.
 
 ## Context
 
@@ -52,6 +52,7 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 - Every entity with its own id that users manage on its own has a view at `<list path>/$<entity>Id`, and list rows link to it. Rows edited only inside their parent's view (hours, closures, overrides, setting values, invitations, duration rules) need none.
 - A detail view's tabs are child routes `<detail path>/<tab>`; the first tab is the index route. Tabs that switch between lists on one page stay search params.
 - An unknown or foreign id shows the area's "no access" page inside the shell.
+- A settings index redirects to the first topic that holds an available setting on that level. An unknown topic, or one without an available setting there, shows "no access" ([ADR-0020](ADR-0020-settings-information-architecture.md)).
 - A data-table list keeps its search, facets, sort and page in the search params listed in its row.
 
 **Sign-in and token pages** (no shell). Tokens travel only in the URL fragment, never in the path or the query, so they stay out of request lines, logs, history and `Referer` ([ADR-0003](ADR-0003-authentication-self-built-sessions.md)). The page reads `location.hash`, removes it with `history.replaceState`, then posts the token.
@@ -76,7 +77,8 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 | `/platform/tenants?q=&package=&sort=&order=&page=&pageSize=` | Tenants with usage meters against limits: search by name, package filter, sort by name or creation, paging | PL-01, PL-04 | nav `core.tenants` | U3 |
 | `/platform/tenants/$tenantId` | Package and overrides | PL-02 | row of the tenant list | U3 |
 | `/platform/packages` | Packages, read-only | PL-02 | nav `core.packages` | U3 |
-| `/platform/settings` | Platform defaults | PL-03 | nav `core.platform_settings` | U3 |
+| `/platform/settings` | Redirects with `replace` to the first available topic | PL-03 | nav `core.platform_settings` | U3, 06 |
+| `/platform/settings/$topic` | Platform settings of one topic, one form; `#<setting key>` focuses a field | PL-03 | topic navigation; settings search | 06 |
 
 **Tenant office** (office shell with sidebar).
 
@@ -90,12 +92,15 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 | `/t/$orgId/sites/$siteId` | Halls, docks and the pool editor in three panes | MD-01, MD-02, MD-03 | row of the site list | U4 |
 | `/t/$orgId/sites/$siteId/hours` | Weekly hours, closures and holidays | MD-04 | tab on the site page | U4 |
 | `/t/$orgId/sites/$siteId/load-types` | Load types and duration rules | MD-05 | tab on the site page | U4 |
+| `/t/$orgId/sites/$siteId/settings` | Redirects with `replace` to the first available topic | TN-02, MD-01 | "Settings" tab on the site page, with `core.manage_settings` | 06 |
+| `/t/$orgId/sites/$siteId/settings/$topic` | Site settings of one topic, one form; `#<setting key>` focuses a field | TN-02 | topic tabs under the site tabs; settings search; origin link | 06 |
 | `/t/$orgId/carriers?tab=linked\|registrations\|links` | Linked carriers, invitations, registrations, public links | TN-03, TN-04 | nav `booking.carriers` | U7 |
 | `/t/$orgId/safety/briefings` | Briefings | SF-01 | nav `safety.briefings` | U5 |
 | `/t/$orgId/safety/briefings/$instructionId` | Briefing editor: versions, locales, quiz | SF-01, SF-02 | row of the briefing list | U5 |
 | `/t/$orgId/safety/acknowledgements` | Acknowledgement register | SF-03 | nav `safety.acknowledgements` | U5 |
 | `/t/$orgId/staff` | Staff and invitations | TN-01 | nav `core.staff` | U3 |
-| `/t/$orgId/settings?site=` | Settings with inheritance | TN-02 | nav `core.settings` | U3 |
+| `/t/$orgId/settings?site=` | Redirects with `replace` to the first available topic. With `?site=<id>` of a site the user may see, it redirects to `/t/$orgId/sites/<id>/settings`; an unknown or foreign site shows "no access", never the tenant level | TN-02 | nav `core.settings`; old bookmarks | U3, 06 |
+| `/t/$orgId/settings/$topic` | Tenant settings of one topic, one form; `#<setting key>` focuses a field | TN-02 | topic navigation; settings search; origin link | 06 |
 | `/t/$orgId/brand` | Logo | TN-05 | nav `brand.brand` | U3 |
 | `/t/$orgId/privacy` | Data subject requests | TN-06 | nav `privacy.privacy` | U11 |
 

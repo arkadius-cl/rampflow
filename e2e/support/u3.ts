@@ -27,6 +27,9 @@ export async function putOverride(
   expect(res.status(), await res.text()).toBe(200);
 }
 
+/** One field of a settings topic page, by its setting key. */
+export const settingField = (page: Page, key: string) => page.locator(`[data-setting="${key}"]`);
+
 /** Back to the code default for a platform setting. */
 export async function resetPlatformSetting(request: APIRequestContext, w: World, key: string) {
   const res = await request.delete(`/api/platform/settings/${key}`, {

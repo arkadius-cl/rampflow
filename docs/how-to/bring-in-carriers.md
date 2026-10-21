@@ -37,7 +37,7 @@ The invitation email is an account email. It is sent even when your package has 
 
 1. Open **Carriers**, tab **Public links**. Each site has one row.
 2. Select **Create link** for the site. The link has the form `https://<host>/r/<slug>`.
-3. Switch the link on: in **Settings**, choose the site and set **Public booking link** (`booking.public_link_enabled`) to on.
+3. Switch the link on: in **Sites and docks**, select the site and open its **Settings** tab. In the topic **Booking**, set **Public booking link** (`booking.public_link_enabled`) to on and select **Save**.
 4. In the same place, choose how new carriers are approved (`booking.public_registration_mode`):
    - **Approved by you** (`approval_required`, the default): registrations wait for you.
    - **Approved automatically** (`auto_approve`): a carrier can book as soon as it confirms its email.

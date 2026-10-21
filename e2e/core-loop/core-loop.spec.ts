@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page, test } from '@playwright/test';
 import { templateContent } from '../../apps/api/src/modules/safety/template/platform.ts';
+import { Setting } from '../../packages/shared/src/values/keys.ts';
 import { DriverLocale } from '../../packages/shared/src/values/locales.ts';
 import { DeviceClass } from '../../packages/shared/src/values/ui.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { uniqueEmail } from '../support/db.ts';
 import { linkIn } from '../support/mailpit.ts';
+import { settingField } from '../support/u3.ts';
 import { emailMatching } from '../support/u7.ts';
 import { dayButton } from '../support/u8.ts';
 import {
@@ -25,15 +27,12 @@ const WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 /** The booking horizon the walk-through pins at the site, as the settings field shows it. */
 const HORIZON_DAYS = '30';
 
-type SettingRow = ReturnType<Page['getByTestId']>;
-
-/** Saves one setting on /t/$orgId/settings at the site level. */
-async function setSiteValue(page: Page, key: string, set: (row: SettingRow) => Promise<void>) {
-  const row = page.getByTestId(`setting-${key}`);
-  await set(row);
-  await row.getByRole('button', { name: 'Save' }).click();
-  await expect(row).toContainText('Set here (Site)');
-}
+/** The booking rules the walk-through sets on the site's Settings tab, saved together. */
+const SITE_SETTINGS = [
+  Setting.booking.min_lead_minutes,
+  Setting.booking.slot_grid_minutes,
+  Setting.booking.close_on_public_holidays,
+];
 
 /** The wizard names each site with its zone abbreviation, which depends on the date. */
 async function pickSite(page: Page) {
@@ -170,27 +169,25 @@ test.describe('Core loop', () => {
         await expect(row).toContainText('Ramp pool');
         await expect(row).toContainText('Can book');
 
-        await page.goto(`/t/${tenantId}/settings`);
-        await page.getByRole('tab', { name: SITE }).click();
-        await setSiteValue(page, 'booking.min_lead_minutes', (r) =>
-          r.getByRole('spinbutton').fill('0'),
-        );
-        // The row offers "Save" only for a changed value; an inherited 30 already pins it.
-        const horizon = page.getByTestId('setting-booking.horizon_days').getByRole('spinbutton');
-        await expect(horizon).not.toHaveValue('');
-        if ((await horizon.inputValue()) !== HORIZON_DAYS) {
-          await setSiteValue(page, 'booking.horizon_days', (r) =>
-            r.getByRole('spinbutton').fill(HORIZON_DAYS),
-          );
+        await page.goto(`/t/${tenantId}/sites/${siteId}`);
+        await page
+          .getByRole('navigation', { name: 'Site sections' })
+          .getByRole('link', { name: 'Settings' })
+          .click();
+        await expect(page).toHaveURL(new RegExp(`/sites/${siteId}/settings/booking$`));
+        await page.getByRole('spinbutton', { name: 'Minimum lead time' }).fill('0');
+        // Typing the inherited value changes nothing, so the horizon stays inherited when it is 30.
+        const horizon = page.getByRole('spinbutton', { name: 'Booking horizon' });
+        await horizon.fill(HORIZON_DAYS);
+        await page.getByRole('combobox', { name: 'Slot grid' }).selectOption('15');
+        const holidays = page.getByRole('switch', { name: 'Closed on public holidays' });
+        await holidays.click();
+        await expect(holidays).not.toBeChecked();
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        for (const key of SITE_SETTINGS) {
+          await expect(settingField(page, key)).toContainText('Set for this site');
         }
         await expect(horizon).toHaveValue(HORIZON_DAYS);
-        await setSiteValue(page, 'booking.slot_grid_minutes', async (r) => {
-          await r.getByRole('combobox').selectOption('15');
-        });
-        await setSiteValue(page, 'booking.close_on_public_holidays', async (r) => {
-          await r.getByRole('switch').click();
-          await expect(r.getByRole('switch')).not.toBeChecked();
-        });
         await expectAccessible(page);
 
         await page.goto(`/t/${tenantId}/safety/briefings`);

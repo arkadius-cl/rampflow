@@ -33,9 +33,9 @@ Reserved keys (features that are not built yet) cannot be overridden. Turning a 
 
 ## 3. Set platform defaults
 
-**Platform defaults** (`/platform/settings`) holds the default of every setting with a platform level, for example the retention periods. A tenant or site value always wins over the platform default, so changing a default never overwrites a tenant's own choice.
+**Settings** (`/platform/settings`) holds the default of every setting with a platform level, for example the retention periods. The settings are grouped in topics (General, Booking, Avis, Safety, Yard, Privacy); select a topic in the list on the left, change the fields, and select **Save**. A tenant or site value always wins over the platform default, so changing a default never overwrites a tenant's own choice. Saving a shorter retention period asks for confirmation first.
 
-**Admitted countries** (`core.site_countries`) lists the countries a tenant may create sites in; the default is the 27 EU member states. Search a country by name, for example `norw`, and select **Add**; select the cross on a chip to remove a country. The list offers Europe, Turkey and the South Caucasus, each with a public holiday calendar, and keeps at least one country. Removing a country blocks new sites there and moving a site there; existing sites keep their country and can still be edited.
+**Admitted countries** (`core.site_countries`, topic General) lists the countries a tenant may create sites in; the default is the 27 EU member states. The countries are grouped into **EU member states** and **Other countries**. Check or uncheck a country, or a whole group with its group checkbox. Type in the filter, for example `norw`, to find one country. The list offers Europe, Turkey and the South Caucasus, each with a public holiday calendar, and keeps at least one country. Removing a country blocks new sites there and moving a site there; existing sites keep their country and can still be edited.
 
 ## 4. Check usage
 
@@ -83,7 +83,7 @@ At the package's user limit, new invitations are refused until a member leaves, 
 
 ## 7. Configure settings
 
-Open **Settings** (`/t/<tenant>/settings`). The first tab edits the tenant level, the other tabs one site each. Every field shows its effective value and where it comes from: Default, Platform, Tenant or Site. **Reset to inherited** removes the value of the level you are editing, so the field falls back to the next level up. Settings of features outside the package do not appear.
+Open **Settings** (`/t/<tenant>/settings`) for the tenant level. Select a topic in the list on the left, change the fields, and select **Save**; **Discard** undoes the changes. To change one site, open the site under **Sites and docks** and select its **Settings** tab. Every field shows its effective value and, below it, where the value comes from, for example **From platform** or **Set for this tenant**. **Use inherited value** removes the value of the level you are editing when you save, so the field falls back to the next level up. Settings of features outside the package do not appear.
 
 ## 8. Upload the logo
 

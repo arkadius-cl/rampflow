@@ -1,35 +1,12 @@
 {
   "title": "Settings",
-  "description": "Each value shows where it comes from. A site value overrides the tenant, which overrides the platform default.",
-  "platform_title": "Platform defaults",
+  "description": "Each value shows where it comes from. Tenant values apply to every site; a site can override them in its Settings tab.",
   "platform_description": "Defaults for every tenant. A tenant or site value overrides them, and existing overrides stay.",
-  "tenant_tab": "All sites",
-  "scope_tabs": "Settings level",
-  "empty": "No settings at this level.",
+  "topics_label": "Settings topics",
+  "site_settings": "Site settings",
   "save": "Save",
   "saved": "Saved.",
-  "reset_done": "Reset to the inherited value.",
   "clear": "Clear the link",
-  "set_here": "Set here ({{source}})",
-  "inherited_from": "Inherited from {{source}}",
-  "reset": "Reset to inherited",
-  "reset_to": "Reset to inherited ({{value}})",
-  "source": {
-    "default": "Default",
-    "platform": "Platform",
-    "tenant": "Tenant",
-    "site": "Site"
-  },
-  "sections": {
-    "avis": "Avis",
-    "booking": "Booking rules",
-    "core": "Sites",
-    "i18n": "Language",
-    "notify": "Notifications",
-    "privacy": "Privacy and retention",
-    "safety": "Safety briefings",
-    "yard": "Yard"
-  },
   "values": {
     "on": "On",
     "off": "Off",
@@ -53,14 +30,92 @@
     "url": "Enter a link that starts with https:// or http://.",
     "duplicate": "Each type may appear only once.",
     "invalid": "This value is not allowed.",
-    "at_least_one": "Choose at least one entry."
+    "at_least_one": "Choose at least one entry.",
+    "at_least_one_country": "Select at least one country."
   },
-  "picker": {
-    "search": "Search",
-    "search_label": "{{label}}: search",
-    "add": "Add",
-    "add_named": "Add {{name}}",
-    "remove": "Remove {{name}}",
-    "no_match": "No match."
+  "topics": {
+    "general": "General",
+    "booking": "Booking",
+    "avis": "Avis",
+    "safety": "Safety",
+    "yard": "Yard",
+    "privacy": "Privacy"
+  },
+  "sections": {
+    "sites": "Sites",
+    "language": "Language",
+    "rules": "Booking rules",
+    "public_booking": "Public booking",
+    "reminders": "Reminders",
+    "requirements": "Requirements",
+    "briefing": "Safety briefing",
+    "arrival": "Arrival",
+    "dwell": "Dwell time",
+    "notice": "Privacy notice",
+    "retention": "Retention",
+    "driver_access": "Driver access"
+  },
+  "origin": {
+    "default": "Product default",
+    "platform": "From platform",
+    "tenant": "From tenant",
+    "here": {
+      "platform": "Set for the platform",
+      "tenant": "Set for this tenant",
+      "site": "Set for this site"
+    },
+    "inherited": "Inherited: {{value}} ({{source}})",
+    "pending_inherit": "Uses the inherited value after saving"
+  },
+  "levels": {
+    "platform_only": "Platform only: tenants cannot change this.",
+    "all_sites": "Applies to all sites of the tenant."
+  },
+  "use_inherited": "Use inherited value ({{value}})",
+  "copy_link": "Copy link to “{{label}}”",
+  "link_copied": "Link copied",
+  "save_bar": {
+    "discard": "Discard",
+    "clean": "No unsaved changes",
+    "dirty": "Unsaved changes: {{count}}"
+  },
+  "leave": {
+    "title": "Leave without saving?",
+    "description": "Your unsaved changes on this page will be lost.",
+    "stay": "Stay",
+    "leave": "Leave"
+  },
+  "search": {
+    "button": "Search settings",
+    "placeholder": "Search settings…",
+    "empty": "No setting found."
+  },
+  "retention": {
+    "title": "Shorten retention?",
+    "description": "Data older than the new period is deleted or pseudonymized on the next retention run.",
+    "change": "{{label}}: {{from}} → {{to}} {{unit}}",
+    "confirm": "Shorten and save",
+    "cancel": "Cancel"
+  },
+  "countries": {
+    "groups": {
+      "eu": "EU member states",
+      "other": "Other countries"
+    },
+    "filter": "Filter countries",
+    "count": "{{selected}} of {{total}} selected",
+    "no_match": "No country matches."
+  },
+  "units": {
+    "minutes": "min",
+    "hours": "h",
+    "days": "d",
+    "percent": "%"
+  },
+  "unit_names": {
+    "minutes": "minutes",
+    "hours": "hours",
+    "days": "days",
+    "percent": "percent"
   }
 }

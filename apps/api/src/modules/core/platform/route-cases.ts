@@ -1,4 +1,10 @@
-import { ForeignOutcome, HttpMethod, Permission, RouteCaseActor } from '@rampflow/shared/values';
+import {
+  ForeignOutcome,
+  HttpMethod,
+  Permission,
+  RouteCaseActor,
+  Setting,
+} from '@rampflow/shared/values';
 import { defineRouteCases, type RouteCase } from '../../../../test/route-cases.ts';
 import type { World } from '../../../../test/world.ts';
 import { inviteeEmail } from '../staff/fixtures.ts';
@@ -64,6 +70,13 @@ export const cases = defineRouteCases([
     path: '/api/platform/settings/:key',
     params: () => ({ key: 'booking.horizon_days' }),
     body: () => ({ value: 30 }),
+  },
+  {
+    ...settings,
+    method: HttpMethod.PATCH,
+    path: '/api/platform/settings',
+    params: none,
+    body: () => ({ set: {}, reset: [Setting.booking.horizon_days] }),
   },
   {
     ...settings,

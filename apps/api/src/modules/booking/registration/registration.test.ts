@@ -195,6 +195,21 @@ describe('CR-02 register through a public link', () => {
     expect(mail?.payload).toMatchObject({ registrationId: row.id, knownAccount: false });
   });
 
+  it('makes the page language the language of the new account', async () => {
+    const slug = await open(RegistrationMode.auto_approve);
+    const email = unique('polish');
+    const res = await anon.post(`/api/public/links/${slug}/registrations`, {
+      body: { ...form(email), locale: StaffLocale.pl },
+    });
+    expect(res.status).toBe(202);
+    const { token } = await registered(email);
+    expect((await anon.post('/api/public/registrations/verify', { body: { token } })).status).toBe(
+      200,
+    );
+    const users = await ownerDb().select().from(appUser).where(eq(appUser.email, email));
+    expect(users.map((u) => u.locale)).toEqual([StaffLocale.pl]);
+  });
+
   it('auto_approve: verification creates the carrier, links it at once and signs in', async () => {
     const slug = await open(RegistrationMode.auto_approve);
     const email = unique('auto');

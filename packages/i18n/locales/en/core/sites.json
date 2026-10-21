@@ -57,7 +57,8 @@
     "label": "Site sections",
     "docks": "Halls, docks and pools",
     "hours": "Hours and closures",
-    "load_types": "Load types"
+    "load_types": "Load types",
+    "settings": "Settings"
   },
   "halls": {
     "new": "New hall",

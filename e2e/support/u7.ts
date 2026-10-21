@@ -1,5 +1,8 @@
-import { expect } from '@playwright/test';
+import { type APIRequestContext, expect } from '@playwright/test';
 import pg from 'pg';
+import type { RegistrationMode } from '../../packages/shared/src/modules/booking/values.ts';
+import { Setting } from '../../packages/shared/src/values/keys.ts';
+import { APP_ORIGIN, type World } from './auth.ts';
 
 // Owner-role fixtures for the carrier network specs (U7): site settings that TN-02's settings
 // screen (U3) writes, package overrides that the platform screens (U3) write, and lookups.
@@ -82,4 +85,23 @@ export async function emailMatching(
     Text: string;
   };
   return { subject: message.Subject, text: message.Text };
+}
+
+/** A switched-on public link of tenant A's first site, created through the API; returns its slug. */
+export async function openPublicLink(
+  request: APIRequestContext,
+  w: World,
+  mode: RegistrationMode,
+): Promise<string> {
+  const site = w.A.sites[0]?.id as string;
+  const res = await request.post(`/api/t/${w.A.tenantId}/carriers/public-links`, {
+    data: { siteId: site },
+    headers: { Cookie: `rf_session=${w.A.users.dispatcher.sessionToken}`, Origin: APP_ORIGIN },
+  });
+  expect(res.status(), await res.text()).toBe(201);
+  const { slug } = (await res.json()) as { slug: string };
+  const on = { tenantId: w.A.tenantId, siteId: site, by: w.A.users.tenant_admin.id };
+  await setSiteSetting({ ...on, key: Setting.booking.public_link_enabled, value: true });
+  await setSiteSetting({ ...on, key: Setting.booking.public_registration_mode, value: mode });
+  return slug;
 }

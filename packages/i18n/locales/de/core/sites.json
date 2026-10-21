@@ -57,7 +57,8 @@
     "label": "Bereiche des Standorts",
     "docks": "Hallen, Rampen und Pools",
     "hours": "Öffnungszeiten und Schließungen",
-    "load_types": "Ladungsarten"
+    "load_types": "Ladungsarten",
+    "settings": "Einstellungen"
   },
   "halls": {
     "new": "Neue Halle",

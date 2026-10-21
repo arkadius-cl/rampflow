@@ -1,4 +1,6 @@
 import type { ShellLayout } from '@rampflow/shared/values';
+import type { AnyRouteMatch } from '@tanstack/react-router';
+import type { TFunction } from 'i18next';
 import '@/index.css';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -21,6 +23,8 @@ declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
     /** `station`: the tenant layout renders the tablet station layout instead of the office shell. */
     shell?: ShellLayout;
+    /** The route's own breadcrumb after the nav item's, e.g. a site's name or a topic. */
+    crumb?: (match: AnyRouteMatch, t: TFunction) => string | undefined;
   }
 }
 

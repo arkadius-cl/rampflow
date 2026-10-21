@@ -1,11 +1,11 @@
 import { ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { OrgKind } from '@rampflow/shared/values';
+import { OrgKind, Setting } from '@rampflow/shared/values';
 import { type SQL, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ownerCount, ownerDb } from '../../test/db.ts';
 import { ACME, seed as seedCore } from './core.ts';
 import { NORDHAFEN, SIGNUP_TENANTS, seed as seedSignups } from './signups.ts';
-import { seed } from './sites.ts';
+import { HAMBURG_DC, HAMBURG_SLOT_GRID_MINUTES, seed } from './sites.ts';
 
 const run = async () => {
   for (const s of [seedCore, seedSignups, seed]) {
@@ -95,5 +95,14 @@ describe('pnpm db:seed, sites', () => {
     for (const t of SIGNUP_TENANTS.filter((t) => t.name !== NORDHAFEN)) {
       expect(await ownerCount('site', sql`tenant_id = ${tenantOf(t.name)}`), t.name).toBe(0);
     }
+  });
+
+  it('stores one Hamburg DC slot grid, however often it runs', async () => {
+    await run();
+    await run();
+    const { rows } = await ownerDb().execute<{ value: unknown }>(sql`
+      select value from setting_value
+      where ${siteOf(ACME, HAMBURG_DC)} and key = ${Setting.booking.slot_grid_minutes}`);
+    expect(rows).toEqual([{ value: { v: HAMBURG_SLOT_GRID_MINUTES } }]);
   });
 });

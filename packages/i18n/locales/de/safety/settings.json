@@ -1,6 +1,6 @@
 {
   "validity_days": {
-    "label": "Gültigkeit der Unterweisung (Tage)",
+    "label": "Gültigkeit der Unterweisung",
     "description": "Wie lange eine abgeschlossene Sicherheitsunterweisung gültig bleibt."
   },
   "require_for_checkin": {
@@ -8,7 +8,7 @@
     "description": "Das Tor kann einen Fahrer ohne gültige Unterweisung nicht einchecken."
   },
   "quiz_pass_percent": {
-    "label": "Bestehensgrenze im Quiz (%)",
+    "label": "Bestehensgrenze im Quiz",
     "description": "Anteil richtiger Antworten, der zum Bestehen des Quiz nötig ist."
   }
 }

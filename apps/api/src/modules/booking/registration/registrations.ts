@@ -98,7 +98,7 @@ export async function submitRegistration(
     {
       template: EmailTemplate.booking_registration_verify,
       to: body.email,
-      locale: body.locale ?? 'en',
+      locale: body.locale ?? StaffLocale.en,
       tenantId: link.tenantId,
       payload: {
         registrationId: id,

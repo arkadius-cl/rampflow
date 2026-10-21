@@ -58,7 +58,7 @@ export async function seed(ctx: SeedContext): Promise<void> {
     .where(and(eq(loadType.siteId, s.id), eq(loadType.sort, 1)));
   if (!palletised) throw new Error(`no load type at ${SITE}`);
 
-  const tx = ctx.db as unknown as Tx;
+  const tx: Tx = ctx.db;
   const zone = s.timeZone as TimeZone;
   const now = new Date();
   const scope: Scope = {

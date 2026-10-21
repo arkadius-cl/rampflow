@@ -1,6 +1,6 @@
 {
   "reminder_hours_before": {
-    "label": "Reminder before the slot (hours)",
+    "label": "Reminder before the slot",
     "description": "Carriers get a reminder email this long before the start."
   }
 }

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { hashPassword } from '../../apps/api/src/modules/core/auth/password.ts';
+import { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import { PackageId } from '../../packages/shared/src/values/packages.ts';
 import { OrgKind, TenantRole } from '../../packages/shared/src/values/roles.ts';
 
@@ -44,12 +45,17 @@ export async function addMembership(
   );
 }
 
-/** A verified account without memberships. */
-export async function createAccount(email: string, password: string, name = 'E2E User') {
+/** A verified account without memberships; `locale: null` is an account without a language. */
+export async function createAccount(
+  email: string,
+  password: string,
+  name = 'E2E User',
+  locale: StaffLocale | null = StaffLocale.en,
+) {
   const { rows } = await db().query<{ id: string }>(
     `insert into app_user (email, name, locale, password_hash, email_verified_at)
-     values ($1, $2, 'en', $3, now()) returning id`,
-    [email, name, await hashPassword(password)],
+     values ($1, $2, $3, $4, now()) returning id`,
+    [email, name, locale, await hashPassword(password)],
   );
   return { id: rows[0]?.id as string, email, password };
 }
@@ -163,4 +169,20 @@ export async function createOnboardingTenant(): Promise<OnboardingTenant> {
     [tenantId, PackageId.pro, users.tenant_admin.id],
   );
   return { tenantId, users };
+}
+
+/** A pending carrier invitation of a tenant; returns the raw token of its /carrier-invite#<token> link. */
+export async function createCarrierInvitation(o: {
+  tenantId: string;
+  companyName: string;
+  email: string;
+  invitedBy: string;
+}): Promise<string> {
+  const token = randomBytes(32).toString('base64url');
+  await db().query(
+    `insert into carrier_invitation (tenant_id, company_name, email, token_hash, invited_by, expires_at)
+     values ($1, $2, $3, $4, $5, now() + interval '7 days')`,
+    [o.tenantId, o.companyName, o.email, createHash('sha256').update(token).digest(), o.invitedBy],
+  );
+  return token;
 }
