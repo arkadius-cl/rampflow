@@ -90,6 +90,12 @@ interface Visit {
 }
 
 const dockStep = (dockNo: number) => `D-0${dockNo}`;
+/** The profile of every Lager Hamburg dock, its pool and memberships. */
+const STANDARD = {
+  doorType: DoorType.dock_leveler,
+  temperatureZone: TemperatureZone.ambient,
+  adrAllowed: false,
+} as const;
 
 /** The day: one visit per state, earliest first. Dock commands name docks by code. */
 function visits(): Visit[] {
@@ -328,8 +334,7 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
         siteId,
         hallId: h?.id as string,
         code: dockStep(n),
-        doorType: DoorType.dock_leveler,
-        temperatureZone: TemperatureZone.ambient,
+        ...STANDARD,
         status: CarrierLinkStatus.active,
         sort: n,
       })),
@@ -342,6 +347,9 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
       siteId,
       kind: ResourceKind.pool,
       name: 'Rampen 1–6',
+      // The hall's default pool for the standard profile (ADR-0017).
+      hallId: h?.id as string,
+      ...STANDARD,
       directions: [Direction.inbound, Direction.outbound],
     })
     .returning({ id: bookableResource.id });
@@ -352,6 +360,7 @@ async function ensureSite(ctx: SeedContext, tenantId: TenantId) {
       resourceKind: ResourceKind.pool,
       siteId,
       tenantId,
+      ...STANDARD,
     })),
   );
   // A 24/7 site, so the demo day works whenever the seed runs.

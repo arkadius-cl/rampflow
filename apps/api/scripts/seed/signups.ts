@@ -33,9 +33,12 @@ interface SignupTenant {
   admin: DemoAccount;
 }
 
+/** The tenant that `sites.ts` takes halfway through onboarding. */
+export const NORDHAFEN = 'Nordhafen Kühllogistik GmbH';
+
 export const SIGNUP_TENANTS: readonly SignupTenant[] = [
   {
-    name: 'Nordhafen Kühllogistik GmbH',
+    name: NORDHAFEN,
     country: EuCountry.DE,
     taxId: { type: TaxIdType.de_stn, value: 'DE81190798000001', status: TaxIdStatus.unverified },
     possibleDuplicate: false,

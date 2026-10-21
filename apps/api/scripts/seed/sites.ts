@@ -1,6 +1,6 @@
-import { CreateLoadType, PutHours } from '@rampflow/shared/modules/booking/api.capacity';
+import { CreateLoadType } from '@rampflow/shared/modules/booking/api.capacity';
 import { Direction, DurationKind, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { CreateDock, CreateSite } from '@rampflow/shared/modules/core/api.sites';
+import { CreateDock, CreateSite, hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { OrgKind } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
@@ -8,7 +8,6 @@ import type { DockId, SiteId, TenantId } from '../../src/db/ids.ts';
 import type { Tx } from '../../src/db/scope.ts';
 import { loadEntitlements } from '../../src/kernel/access.ts';
 import { systemClock } from '../../src/kernel/clock.ts';
-import { putHours } from '../../src/modules/booking/capacity/hours.ts';
 import {
   createLoadType,
   listLoadTypes,
@@ -20,16 +19,17 @@ import {
   updateResource,
 } from '../../src/modules/booking/capacity/resources.ts';
 import type { LoadTypeId, ResourceId } from '../../src/modules/booking/schema.resources.ts';
-import { site } from '../../src/modules/core/schema.ts';
+import { dock, hall, site } from '../../src/modules/core/schema.ts';
 import { createDock, createHall } from '../../src/modules/core/sites/docks.ts';
 import { createSite } from '../../src/modules/core/sites/sites.ts';
 import type { TenantRequest } from '../../src/modules/core/sites/tenant.ts';
 import { findOrg, type SeedContext } from './context.ts';
 import { ACME } from './core.ts';
+import { NORDHAFEN } from './signups.ts';
 
-// Acme's demo sites (docs/how-to/set-up-a-site.md), written through the module's own functions so
-// they get the seeded load types and public holidays like a site created on screen. A site that
-// already exists by name is left as it is.
+// Acme's demo sites (docs/how-to/set-up-a-site.md) and Nordhafen's first site, written through the
+// module's own functions so they get the seeded load types, public holidays and default pools like
+// a site created on screen. A site that already exists by name is left as it is.
 
 interface DemoSite {
   site: CreateSite;
@@ -37,8 +37,6 @@ interface DemoSite {
   /** The default pool of `hall`, renamed; its other docks become `singles`. */
   pools: { hall: string; name: string; directions: Direction[] }[];
   singles: string[];
-  /** `[weekday, opens, closes]` site rows. */
-  hours: [number, string, string][];
 }
 
 const weekdays = (opens: string, closes: string) =>
@@ -74,7 +72,6 @@ const DEMO_SITES: readonly DemoSite[] = [
       { hall: 'Halle 2', name: 'Versand', directions: [Direction.outbound] },
     ],
     singles: ['T05', 'T08'],
-    hours: HAMBURG_HOURS,
   },
   {
     site: CreateSite.parse({
@@ -91,7 +88,6 @@ const DEMO_SITES: readonly DemoSite[] = [
     halls: [{ name: 'Hall A', docks: ['R1', 'R2'] }],
     pools: [{ hall: 'Hall A', name: 'Ramps', directions: [Direction.inbound, Direction.outbound] }],
     singles: [],
-    hours: BUCHAREST_HOURS,
   },
 ];
 
@@ -138,11 +134,6 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
     });
   }
   const resources = await listResources(tx, req.tenantId, siteId);
-  await putHours(
-    tx,
-    req.tenantId,
-    PutHours.parse({ siteId, resourceId: null, rows: hoursRows(demo.hours) }),
-  );
   const serving = (d: Direction) =>
     resources.filter((r) => r.directions.includes(d)).map((r) => r.id);
   // Outbound first: narrowing the inbound types must leave every pool a load type (ADR-0017).
@@ -165,6 +156,71 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
   return true;
 }
 
+/** A frozen dock, which gets its own default pool and shows "Bookable for" (ADR-0017). */
+const FROZEN_DOCK = { site: 'Hamburg DC', hall: 'Halle 2', code: 'T09', sort: 3 } as const;
+
+/** Ensured on every run, so a database seeded before 03 also shows a second dock profile. */
+async function ensureFrozenDock(tx: Tx, req: TenantRequest): Promise<boolean> {
+  const [h] = await tx
+    .select({ siteId: site.id, hallId: hall.id, dockId: dock.id })
+    .from(site)
+    .innerJoin(hall, and(eq(hall.siteId, site.id), eq(hall.name, FROZEN_DOCK.hall)))
+    .leftJoin(dock, and(eq(dock.siteId, site.id), eq(dock.code, FROZEN_DOCK.code)))
+    .where(and(eq(site.tenantId, req.tenantId), eq(site.name, FROZEN_DOCK.site)));
+  if (!h || h.dockId) return false;
+  const input = CreateDock.parse({
+    hallId: h.hallId,
+    code: FROZEN_DOCK.code,
+    doorType: DoorType.dock_leveler,
+    temperatureZone: TemperatureZone.frozen,
+    adrAllowed: false,
+    sort: FROZEN_DOCK.sort,
+  });
+  await createDock(tx, req, systemClock, h.siteId as SiteId, input);
+  return true;
+}
+
+const BREMERHAVEN = CreateSite.parse({
+  name: 'Bremerhaven',
+  addressLine1: 'Am Seedeich 40',
+  postalCode: '27572',
+  city: 'Bremerhaven',
+  country: 'DE',
+  subdivision: 'DE-HB',
+  timeZone: 'Europe/Berlin',
+  defaultLocale: 'de',
+  hours: hoursTemplateRows.one_shift,
+});
+const BREMERHAVEN_HALL = 'Halle 1';
+
+/**
+ * Nordhafen halfway through onboarding: a site and a hall, never a dock, so it stays in
+ * onboarding on every run (ON-01).
+ */
+async function seedNordhafen(ctx: SeedContext, tx: Tx): Promise<void> {
+  const tenantId = (await findOrg(ctx.db, OrgKind.tenant, NORDHAFEN)) as TenantId | null;
+  if (!tenantId) {
+    ctx.log(`${NORDHAFEN} is missing; skipped its site (the signups seed creates it)`);
+    return;
+  }
+  let [s] = await tx
+    .select({ id: site.id })
+    .from(site)
+    .where(and(eq(site.tenantId, tenantId), eq(site.name, BREMERHAVEN.name)));
+  if (!s) {
+    const entitlements = await loadEntitlements(tx, tenantId, new Date());
+    const req: TenantRequest = { tenantId, userId: null, entitlements };
+    s = await createSite(tx, req, systemClock, BREMERHAVEN, [BREMERHAVEN.country]);
+    ctx.log(`created site ${BREMERHAVEN.name} of ${NORDHAFEN}`);
+  }
+  const siteId = s.id as SiteId;
+  const [h] = await tx
+    .select({ id: hall.id })
+    .from(hall)
+    .where(and(eq(hall.siteId, siteId), eq(hall.name, BREMERHAVEN_HALL)));
+  if (!h) await createHall(tx, tenantId, siteId, { name: BREMERHAVEN_HALL, sort: 0 });
+}
+
 export async function seed(ctx: SeedContext): Promise<void> {
   const tenantId = (await findOrg(ctx.db, OrgKind.tenant, ACME)) as TenantId | null;
   if (!tenantId) throw new Error(`${ACME} is missing; the core seed runs first`);
@@ -174,4 +230,6 @@ export async function seed(ctx: SeedContext): Promise<void> {
   for (const demo of DEMO_SITES) {
     if (await seedSite(tx, req, demo)) ctx.log(`created site ${demo.site.name}`);
   }
+  if (await ensureFrozenDock(tx, req)) ctx.log(`created dock ${FROZEN_DOCK.code}`);
+  await seedNordhafen(ctx, tx);
 }
