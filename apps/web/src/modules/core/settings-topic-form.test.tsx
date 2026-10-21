@@ -235,6 +235,36 @@ describe('retention confirmation', () => {
     expect(within(dialog).getByText('Keep visits: 395 → 365 days')).toBeTruthy();
   });
 
+  it('writes the periods in the UI language number format', async () => {
+    const user = userEvent.setup();
+    openTopic(SettingsTopic.privacy, { [visits]: { value: 1500, source: SettingSource.tenant } });
+    await retype(user, 'Keep visits', '1000');
+    await user.click(button('Save'));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('Keep visits: 1,500 → 1,000 days')).toBeTruthy();
+  });
+
+  it('saves a shorter driver link lifetime without asking, as it deletes nothing', async () => {
+    const user = userEvent.setup();
+    const save = vi.fn(async () => settingsView(SettingScope.platform));
+    renderRoutes(
+      {
+        '/': () => (
+          <SettingsTopicForm
+            view={settingsView(SettingScope.platform)}
+            topic={SettingsTopic.privacy}
+            save={save}
+          />
+        ),
+      },
+      '/',
+    );
+    await retype(user, 'Driver link lifetime after departure', '1');
+    await user.click(button('Save'));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
   it('sends nothing on cancel and keeps the edit', async () => {
     const user = userEvent.setup();
     const { save } = openTopic(SettingsTopic.privacy, stored);

@@ -5,7 +5,7 @@ import {
   ErrorCode,
   FieldDraftKind,
   LabelPart,
-  Setting,
+  SettingsSection,
   type SettingsTopic,
 } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
@@ -29,10 +29,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiFailure } from '@/lib/api';
+import { useFormat } from './format';
 import { controlOf, settingDef } from './setting-control';
 import { SettingInput, useSettingMessage, useValueText } from './setting-input';
 import type { OriginLink } from './settings-levels';
-import { sectionsOf, unitOf } from './settings-placement';
+import { PLACEMENT, type Placement, sectionsOf, unitOf } from './settings-placement';
 
 // One topic of one settings level as one form (TN-02, PL-03; design decisions 4, 7, 9, 10).
 // Each field holds a draft: a value of its own on this level, or "use the inherited value".
@@ -81,7 +82,12 @@ const shownValue = (entry: SettingEntry, draft: FieldDraft) =>
 /** Discard and save reset every field; only a refetch keeps the edits (`resetOptions`). */
 const EXACT = { keepDirtyValues: false };
 
-const RETENTION_KEYS: ReadonlySet<SettingKey> = new Set(Object.values(Setting.privacy.retention));
+/** The periods after which data is deleted; driver link validity sits apart and deletes nothing. */
+const RETENTION_KEYS: ReadonlySet<SettingKey> = new Set(
+  (Object.entries(PLACEMENT) as [SettingKey, Placement][])
+    .filter(([, p]) => p.section === SettingsSection.retention)
+    .map(([key]) => key),
+);
 
 interface Shortening {
   key: SettingKey;
@@ -352,6 +358,7 @@ function RetentionDialog({
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
+  const format = useFormat();
   return (
     <AlertDialog open={shortened.length > 0} onOpenChange={(open) => (open ? null : onCancel())}>
       <AlertDialogContent>
@@ -368,8 +375,8 @@ function RetentionDialog({
               <li key={key}>
                 {t(($) => $['settings-ui'].retention.change, {
                   label: t(settingLabelKey(key, LabelPart.label) as never) as string,
-                  from,
-                  to,
+                  from: format.number(from),
+                  to: format.number(to),
                   unit: unit ? t(($) => $['settings-ui'].unit_names[unit]) : '',
                 })}
               </li>
