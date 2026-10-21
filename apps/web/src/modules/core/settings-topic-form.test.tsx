@@ -103,6 +103,11 @@ describe('SettingsTopicForm', () => {
     expect(await screen.findByText('Enter a whole number from 1 to 365.')).toBeTruthy();
     expect((await input('Minimum lead time')).value).toBe('60');
     expect(save).not.toHaveBeenCalled();
+    const horizonInput = screen.getByRole('spinbutton', {
+      name: 'Booking horizon',
+      description: /Enter a whole number from 1 to 365\./,
+    });
+    await waitFor(() => expect(document.activeElement).toBe(horizonInput));
   });
 
   it('keeps every edit and puts a 422 issue on its field', async () => {
@@ -182,6 +187,11 @@ describe('admitted countries', () => {
     await user.click(button('Save'));
     expect(await screen.findByText('Select at least one country.')).toBeTruthy();
     expect(save).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('group', { name: 'Admitted countries' }),
+      ),
+    );
   });
 });
 

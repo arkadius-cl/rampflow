@@ -157,11 +157,10 @@ describe('SettingField', () => {
 
   it('describes the input with the help text and the unit suffix', async () => {
     showField();
-    const input = await screen.findByLabelText('Booking horizon');
-    const described = (input.getAttribute('aria-describedby') ?? '')
-      .split(' ')
-      .map((id) => document.getElementById(id)?.textContent);
-    expect(described).toEqual(['How far ahead carriers may book.', 'd']);
+    const input = await screen.findByRole('spinbutton', { name: 'Booking horizon' });
+    expect(
+      screen.getByRole('spinbutton', { description: 'How far ahead carriers may book. days' }),
+    ).toBe(input);
   });
 
   it('copies the absolute deep link and says so', async () => {

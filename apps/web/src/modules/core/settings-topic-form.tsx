@@ -1,5 +1,6 @@
 import type { SettingKey } from '@rampflow/shared';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
+import { SettingControl } from '@rampflow/shared/modules/core/values';
 import {
   ErrorCode,
   FieldDraftKind,
@@ -298,6 +299,7 @@ function TopicField({
             label={label}
             description={t(settingLabelKey(entry.key, LabelPart.description) as never) as string}
             overridden={draft.kind === FieldDraftKind.own && entry.source === scope}
+            group={spec.kind === SettingControl.list || spec.kind === SettingControl.grouped_list}
             error={message(fieldState.error)}
             control={
               <SettingInput
@@ -307,6 +309,7 @@ function TopicField({
                 value={shownValue(entry, draft)}
                 onChange={(value) => field.onChange(own(value))}
                 invalid={fieldState.invalid}
+                inputRef={field.ref}
               />
             }
             origin={

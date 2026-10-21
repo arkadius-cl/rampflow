@@ -26,6 +26,7 @@ export const fieldIds = (key: SettingKey) => ({
   input: `input-${key}`,
   description: `description-${key}`,
   unit: `unit-${key}`,
+  error: `error-${key}`,
 });
 
 export interface SettingInputProps {
@@ -35,6 +36,8 @@ export interface SettingInputProps {
   value: unknown;
   onChange: (value: unknown) => void;
   invalid: boolean;
+  /** Takes the element react-hook-form focuses when the field is the first invalid one. */
+  inputRef?: (element: HTMLElement | null) => void;
 }
 
 export function SettingInput({
@@ -44,16 +47,18 @@ export function SettingInput({
   value,
   onChange,
   invalid,
+  inputRef,
 }: SettingInputProps) {
   const { t } = useTranslation();
   const display = useValueText(settingKey, spec);
   const ids = fieldIds(settingKey);
-  const describedBy = ids.description;
+  const describedBy = invalid ? `${ids.description} ${ids.error}` : ids.description;
   switch (spec.kind) {
     case SettingControl.switch:
       return (
         <div className="flex h-8 items-center gap-2 text-sm">
           <Switch
+            ref={inputRef}
             id={ids.input}
             aria-describedby={describedBy}
             checked={value === true}
@@ -65,6 +70,7 @@ export function SettingInput({
     case SettingControl.select:
       return (
         <NativeSelect
+          ref={inputRef}
           id={ids.input}
           aria-describedby={describedBy}
           className="w-full"
@@ -86,6 +92,7 @@ export function SettingInput({
       return (
         <InputGroup className="w-40">
           <InputGroupInput
+            ref={inputRef}
             id={ids.input}
             aria-describedby={unit ? `${describedBy} ${ids.unit}` : describedBy}
             type="number"
@@ -100,7 +107,8 @@ export function SettingInput({
           />
           {unit ? (
             <InputGroupAddon id={ids.unit} align="inline-end">
-              {t(($) => $['settings-ui'].units[unit])}
+              <span aria-hidden>{t(($) => $['settings-ui'].units[unit])}</span>
+              <span className="sr-only">{t(($) => $['settings-ui'].unit_names[unit])}</span>
             </InputGroupAddon>
           ) : null}
         </InputGroup>
@@ -109,7 +117,9 @@ export function SettingInput({
       const picked = Array.isArray(value) ? (value as string[]) : [];
       return (
         <fieldset
+          ref={inputRef}
           id={ids.input}
+          tabIndex={-1}
           aria-labelledby={ids.title}
           aria-describedby={describedBy}
           className="flex flex-col gap-1.5"
@@ -132,6 +142,7 @@ export function SettingInput({
     case SettingControl.grouped_list:
       return (
         <GroupedChecklist
+          ref={inputRef}
           id={ids.input}
           labelledBy={ids.title}
           describedBy={describedBy}
@@ -149,6 +160,7 @@ export function SettingInput({
       return (
         <InputGroup>
           <InputGroupInput
+            ref={inputRef}
             id={ids.input}
             aria-describedby={describedBy}
             type="url"

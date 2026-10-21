@@ -99,6 +99,8 @@ export interface SettingFieldProps {
   origin: ReactNode;
   /** "Use inherited value", when the field has one to offer. */
   action?: ReactNode;
+  /** The control is a group of checkboxes, named by the title rather than by a label. */
+  group?: boolean;
 }
 
 /** One settings row: title and help on the left, control, origin and actions on the right. */
@@ -111,6 +113,7 @@ export function SettingField({
   error,
   origin,
   action,
+  group = false,
 }: SettingFieldProps) {
   const { t } = useTranslation();
   const ids = fieldIds(settingKey);
@@ -134,7 +137,7 @@ export function SettingField({
           tabIndex={-1}
           className="scroll-mt-24 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <label htmlFor={ids.input}>{label}</label>
+          {group ? label : <label htmlFor={ids.input}>{label}</label>}
         </h3>
         <p id={ids.description} className="mt-0.5 text-sm text-muted-foreground">
           {description}
@@ -143,7 +146,7 @@ export function SettingField({
       <div className="flex min-w-0 flex-col gap-1.5">
         {control}
         {error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p id={ids.error} role="alert" className="text-sm text-destructive">
             {error}
           </p>
         ) : null}

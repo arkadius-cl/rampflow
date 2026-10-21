@@ -28,6 +28,8 @@ export interface GroupedChecklistProps {
   /** An option's name in the UI language; the filter matches it and the option itself. */
   name: (option: string) => string;
   invalid?: boolean;
+  /** Takes the fieldset, which a form focuses when the list is invalid. */
+  ref?: (element: HTMLFieldSetElement | null) => void;
 }
 
 export function GroupedChecklist({
@@ -39,6 +41,7 @@ export function GroupedChecklist({
   onChange,
   name,
   invalid,
+  ref,
 }: GroupedChecklistProps) {
   const { t } = useTranslation();
   const locale = useLocale();
@@ -68,7 +71,9 @@ export function GroupedChecklist({
 
   return (
     <fieldset
+      ref={ref}
       id={id}
+      tabIndex={-1}
       aria-labelledby={labelledBy}
       aria-describedby={[describedBy, countId].filter(Boolean).join(' ')}
       aria-invalid={invalid || undefined}
