@@ -148,7 +148,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 11. End-to-end tests
 
-- [ ] 11.1 Rewrite `e2e/core/PL-03.spec.ts` (`describe('PL-03 Platform defaults')`):
+- [x] 11.1 Rewrite `e2e/core/PL-03.spec.ts` (`describe('PL-03 Platform defaults')`):
   - the topic nav and the `/platform/settings` redirect;
   - a deep link to `privacy#privacy.retention.visit_days` focuses the field;
   - search "Fahrerlink";
@@ -157,7 +157,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - axe on `/platform/settings/general`.
 
   Verify with `pnpm test:e2e e2e/core/PL-03.spec.ts`.
-- [ ] 11.2 Rewrite `e2e/core/TN-02.spec.ts` (`describe('TN-02 Settings')`):
+- [x] 11.2 Rewrite `e2e/core/TN-02.spec.ts` (`describe('TN-02 Settings')`):
   - edit two booking fields and save once (one PATCH);
   - discard;
   - leaving with edits asks;
@@ -168,14 +168,14 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - axe on the tenant and site topic pages.
 
   Verify with `pnpm test:e2e e2e/core/TN-02.spec.ts`.
-- [ ] 11.3 Add a step to `e2e/core/MD-01.spec.ts`: the site's tabs end with "Settings", which opens `…/settings/booking`. Verify with `pnpm test:e2e e2e/core/MD-01.spec.ts`.
-- [ ] 11.4 Add to `e2e/core/shell.spec.ts`: on every signed-out page (login, signup, signup verify, invite, carrier invite, carrier registration, magic link, reset, `/r/<slug>`), the language menu switches to English without reload and keeps a typed value. Then a device choice of English on `/login` survives sign-in for a user without a locale. Verify with `pnpm test:e2e e2e/core/shell.spec.ts`.
-- [ ] 11.5 Search `e2e/` for the old settings labels with units, `setting-source` and `?site=`, and update any spec outside PL-03, TN-02 and MD-01 that used them (for example `e2e/core-loop/core-loop.spec.ts`). Verify `rg "setting-source|settings\?site=" e2e` prints nothing.
+- [x] 11.3 Add a step to `e2e/core/MD-01.spec.ts`: the site's tabs end with "Settings", which opens `…/settings/booking`. Verify with `pnpm test:e2e e2e/core/MD-01.spec.ts`.
+- [x] 11.4 Add to `e2e/core/shell.spec.ts`: on every signed-out page (login, signup, signup verify, invite, carrier invite, carrier registration, magic link, reset, `/r/<slug>`), the language menu switches to English without reload and keeps a typed value. Then a device choice of English on `/login` survives sign-in for a user without a locale. Verify with `pnpm test:e2e e2e/core/shell.spec.ts`.
+- [x] 11.5 Search `e2e/` for the old settings labels with units, `setting-source` and `?site=`, and update any spec outside PL-03, TN-02 and MD-01 that used them (for example `e2e/core-loop/core-loop.spec.ts`). Verify `rg "setting-source|settings\?site=" e2e` prints nothing.
 
 ## 12. Docs
 
-- [ ] 12.1 Grep `docs/` for `?site=`, "Plattform-Standards", `SourceBadge`, "chips" and the old `/platform/settings` description, and fix every doc that still describes the old screens, including `docs/how-to/` and `docs/reference/api-routes.md`. Verify the grep prints only historical ADR text.
-- [ ] 12.2 Run `pnpm docs:index` and `pnpm docs:check`. Verify both pass and `docs/INDEX.md` lists ADR-0020.
+- [x] 12.1 Grep `docs/` for `?site=`, "Plattform-Standards", `SourceBadge`, "chips" and the old `/platform/settings` description, and fix every doc that still describes the old screens, including `docs/how-to/` and `docs/reference/api-routes.md`. Verify the grep prints only historical ADR text.
+- [x] 12.2 Run `pnpm docs:index` and `pnpm docs:check`. Verify both pass and `docs/INDEX.md` lists ADR-0020.
 
 ## 13. Integration
 
