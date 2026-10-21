@@ -106,18 +106,18 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 7. Routes, navigation and search
 
-- [ ] 7.1 Write `SettingsTopicNav` (vertical and horizontal) and `SettingsSearch` (`CommandDialog` over the level's view, filtered with `searchable()`, results with "Topic › Section", choosing one navigates to `…/$topic#key`). Verify with component tests:
+- [x] 7.1 Write `SettingsTopicNav` (vertical and horizontal) and `SettingsSearch` (`CommandDialog` over the level's view, filtered with `searchable()`, results with "Topic › Section", choosing one navigates to `…/$topic#key`). Verify with component tests:
   - "storno" finds the cancellation cutoff;
   - `driver_link_hours` finds the driver link;
   - a tenant view yields nothing for "Länder";
   - the current topic carries `aria-current="page"`.
-- [ ] 7.2 Build the platform routes `apps/web/src/routes/platform/settings/{route,index,$topic}.tsx` per design decision 2. Use the `PATCH` route, `notFound()` for an unknown or empty topic, and the breadcrumb "Platform › Settings › {topic}". Rename the platform nav label to "Einstellungen" / "Settings" / "Ustawienia" with `pnpm i18n:derive` and a translation. Verify with a router test that `/platform/settings` replaces to `/platform/settings/general` and that `/platform/settings/billing` shows "no access".
-- [ ] 7.3 Build the tenant routes `apps/web/src/routes/t/$orgId/settings/{route,index,$topic}.tsx`. `index` redirects `?site=<id>` to the site tab for a known site, shows `notFound()` for an unknown one, and otherwise redirects to the first topic. The header links to the site list. Delete `settings-sections.tsx`. Verify with router tests for the three index cases.
-- [ ] 7.4 Build the site routes `apps/web/src/routes/t/$orgId/sites/$siteId/settings/{route,index,$topic}.tsx` with the horizontal topic nav, and add the "Settings" tab to `routes/t/$orgId/sites/$siteId/route.tsx` only with `core.manage_settings`. Verify with router tests:
+- [x] 7.2 Build the platform routes `apps/web/src/routes/platform/settings/{route,index,$topic}.tsx` per design decision 2. Use the `PATCH` route, `notFound()` for an unknown or empty topic, and the breadcrumb "Platform › Settings › {topic}". Rename the platform nav label to "Einstellungen" / "Settings" / "Ustawienia" with `pnpm i18n:derive` and a translation. Verify with a router test that `/platform/settings` replaces to `/platform/settings/general` and that `/platform/settings/billing` shows "no access".
+- [x] 7.3 Build the tenant routes `apps/web/src/routes/t/$orgId/settings/{route,index,$topic}.tsx`. `index` redirects `?site=<id>` to the site tab for a known site, shows `notFound()` for an unknown one, and otherwise redirects to the first topic. The header links to the site list. Delete `settings-sections.tsx`. Verify with router tests for the three index cases.
+- [x] 7.4 Build the site routes `apps/web/src/routes/t/$orgId/sites/$siteId/settings/{route,index,$topic}.tsx` with the horizontal topic nav, and add the "Settings" tab to `routes/t/$orgId/sites/$siteId/route.tsx` only with `core.manage_settings`. Verify with router tests:
   - the index replaces to `…/settings/booking`;
   - `…/settings/general` shows "no access";
   - a user without `core.manage_settings` sees no tab.
-- [ ] 7.5 Run `pnpm values:check apps/web packages/shared` and `pnpm lint`. Verify no topic, section, unit or draft kind is written as a string literal.
+- [x] 7.5 Run `pnpm values:check apps/web packages/shared` and `pnpm lint`. Verify no topic, section, unit or draft kind is written as a string literal.
 
 ## 8. UI language order
 
@@ -129,7 +129,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 9. Strings
 
-- [ ] 9.1 Add to `packages/i18n/locales/{de,en,pl}/core/settings-ui.json`:
+- [x] 9.1 Add to `packages/i18n/locales/{de,en,pl}/core/settings-ui.json`:
   - topic and section names;
   - origin texts and the levels hints;
   - save bar, discard and leave dialog;
