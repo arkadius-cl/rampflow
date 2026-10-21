@@ -51,6 +51,10 @@ const EnvSchema = z
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     MAIL_FROM: z.string().default('rampflow <no-reply@rampflow.local>'),
+    // The EC's VIES REST API for the tax id check job; empty switches the check off (dev, tests).
+    VIES_URL: z
+      .union([z.literal(''), z.url({ protocol: /^https?$/ })])
+      .default('https://ec.europa.eu/taxation_customs/vies/rest-api'),
   })
   .refine((e) => !(e.ENABLE_TEST_ROUTES && e.NODE_ENV === NodeEnv.production), {
     message: 'ENABLE_TEST_ROUTES=1 is not allowed with NODE_ENV=production',

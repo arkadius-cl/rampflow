@@ -7,6 +7,7 @@ export const JobName = {
   no_show: 'no_show',
   retention: 'retention',
   booking_holiday_import: 'booking.holiday_import',
+  core_tax_id_check: 'core.tax_id_check',
 } as const;
 export type JobName = ValueOf<typeof JobName>;
 

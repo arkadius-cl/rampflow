@@ -164,6 +164,20 @@ export const TaxIdStatus = {
 } as const;
 export type TaxIdStatus = ValueOf<typeof TaxIdStatus>;
 
+/**
+ * Error codes of the VIES REST API (`errorWrappers[].error`). `INVALID_INPUT` means the number
+ * is malformed for its state; every other code, and any code VIES adds later, means no answer.
+ */
+export const ViesError = {
+  INVALID_INPUT: 'INVALID_INPUT',
+  MS_UNAVAILABLE: 'MS_UNAVAILABLE',
+  TIMEOUT: 'TIMEOUT',
+  MS_MAX_CONCURRENT_REQ: 'MS_MAX_CONCURRENT_REQ',
+  GLOBAL_MAX_CONCURRENT_REQ: 'GLOBAL_MAX_CONCURRENT_REQ',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+} as const;
+export type ViesError = ValueOf<typeof ViesError>;
+
 /** What the synchronous tax id check found; every member but `ok` is a 422 issue code. */
 export const TaxIdCheck = {
   ok: 'ok',

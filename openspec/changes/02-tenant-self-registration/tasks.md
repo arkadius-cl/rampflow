@@ -43,8 +43,8 @@
 
 ## 6. VIES job
 
-- [ ] 6.1 Add `VIES_URL` (URL or empty, default `https://ec.europa.eu/taxation_customs/vies/rest-api`) to `kernel/env.ts` and ask the coordinator to set `VIES_URL=` in `.env.example`; verify `pnpm dev` starts and the job makes no outbound request.
-- [ ] 6.2 Add the value set `ViesError` to `packages/shared/src/modules/core/values.ts` and the member `core_tax_id_check` (`core.tax_id_check`) to `JobName`, and `apps/api/src/modules/core/jobs/tax-id-check.ts` with `viesClient(url)` and `makeTaxIdCheckJob(client)` (`JobName.core_tax_id_check`, every 300 s, batch 50, due rules and result mapping of design decision 12, writes under `platformSystemScope`); verify in `tax-id-check.test.ts` with a fake client: `valid: true` → `verified` with `tax_id_checked_at`, `valid: false` and `INVALID_INPUT` → `unverified`, `MS_UNAVAILABLE` and a timeout → `unavailable` retried only after one hour and not after 7 days, `de_stn` and `pl_nip` tenants untouched, an empty URL checks nothing, and the job stats hold counts only.
+- [x] 6.1 Add `VIES_URL` (URL or empty, default `https://ec.europa.eu/taxation_customs/vies/rest-api`) to `kernel/env.ts` and ask the coordinator to set `VIES_URL=` in `.env.example`; verify `pnpm dev` starts and the job makes no outbound request.
+- [x] 6.2 Add the value set `ViesError` to `packages/shared/src/modules/core/values.ts` and the member `core_tax_id_check` (`core.tax_id_check`) to `JobName`, and `apps/api/src/modules/core/jobs/tax-id-check.ts` with `viesClient(url)` and `makeTaxIdCheckJob(client)` (`JobName.core_tax_id_check`, every 300 s, batch 50, due rules and result mapping of design decision 12, writes under `platformSystemScope`); verify in `tax-id-check.test.ts` with a fake client: `valid: true` → `verified` with `tax_id_checked_at`, `valid: false` and `INVALID_INPUT` → `unverified`, `MS_UNAVAILABLE` and a timeout → `unavailable` retried only after one hour and not after 7 days, `de_stn` and `pl_nip` tenants untouched, an empty URL checks nothing, and the job stats hold counts only.
 
 ## 7. Retention
 

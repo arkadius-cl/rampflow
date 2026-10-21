@@ -13,6 +13,7 @@ export default defineConfig({
       ENABLE_API_DOCS: '0',
       APP_ORIGIN: 'http://rampflow.test',
       APP_EXTRA_ORIGINS: '',
+      VIES_URL: '',
     },
     // Cached transforms keep the template glob of kernel/outbox.ts from before new email files existed.
     fsModuleCache: false,
