@@ -1,8 +1,11 @@
 import type { OnboardingView } from '@rampflow/shared/modules/core/api.onboarding';
+import { CreateDock } from '@rampflow/shared/modules/core/api.sites';
 import {
   DockStatus,
+  DoorType,
   OnboardingCase,
   OnboardingStep,
+  TemperatureZone,
   TenantStatus,
 } from '@rampflow/shared/modules/core/values';
 import { ErrorCode, Limit, StaffLocale, TenantRole } from '@rampflow/shared/values';
@@ -13,13 +16,15 @@ import { as } from '../../../../test/http.ts';
 import { loadRouteCases } from '../../../../test/route-cases.ts';
 import { onboardingTenant, WORLD_NOW, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
-import { type OrgId, type TenantId, wrapJson } from '../../../db/ids.ts';
+import { type OrgId, type SiteId, type TenantId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
-import { publicLinkCount } from '../../booking/carriers/fixtures.ts';
+import { asTenantRequest } from '../../booking/capacity/fixtures.ts';
+import { publicLinksOf } from '../../booking/carriers/fixtures.ts';
 import { carrierInvitation } from '../../booking/schema.carriers.ts';
 import { booking } from '../../booking/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { dock, entitlementOverride, org } from '../schema.ts';
+import { createDock } from '../sites/docks.ts';
 import { onboardingSteps } from './fixtures.ts';
 
 const DAY = 24 * 3600_000;
@@ -116,6 +121,52 @@ describe('ON-02 the first dock activates the tenant', () => {
   });
 });
 
+describe('ON-02 two first docks at the same time', () => {
+  it('keeps the activation time of the first commit, also after a later dock', async () => {
+    const t = await onboardingTenant();
+    const steps = onboardingSteps(app, t.users.tenant_admin, t.tenantId);
+    const north = await steps.site('Nord');
+    const south = await steps.site('Süd');
+    const halls = { [north]: await steps.hall(north), [south]: await steps.hall(south) };
+    const first = new Date(WORLD_NOW.getTime() + 60_000);
+    const second = new Date(WORLD_NOW.getTime() + 120_000);
+    const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    // Two connections on two sites, so no capacity lock serializes them: the first activates and
+    // holds its transaction open, and the second's update waits on the org row until it commits.
+    const dockAt = (siteId: string, code: string, now: Date, holdMs = 0) =>
+      asTenantRequest(t, async (tx, req) => {
+        const created = await createDock(
+          tx,
+          req,
+          testClock(now),
+          siteId as SiteId,
+          CreateDock.parse({
+            hallId: halls[siteId],
+            code,
+            doorType: DoorType.dock_leveler,
+            temperatureZone: TemperatureZone.ambient,
+          }),
+        );
+        await pause(holdMs);
+        return created;
+      });
+    const [a, b] = await Promise.all([
+      dockAt(north, 'N1', first, 400),
+      pause(100).then(() => dockAt(south, 'S1', second)),
+    ]);
+    expect([a.siteId, b.siteId]).toEqual([north, south]);
+    expect(await activatedAt(t.tenantId)).toEqual(first);
+
+    const later = onboardingSteps(
+      appAt(new Date(WORLD_NOW.getTime() + DAY)),
+      t.users.tenant_admin,
+      t.tenantId,
+    );
+    expect((await later.dock(north, halls[north] as string, 'N2')).status).toBe(201);
+    expect(await activatedAt(t.tenantId)).toEqual(first);
+  });
+});
+
 describe('ON-01 onboarding steps', () => {
   const stepsOf = (v: OnboardingView) =>
     v.steps.map((s) => ({ id: s.id, done: s.done, siteId: s.siteId }));
@@ -176,24 +227,26 @@ describe('ON-03 carrier-facing and booking actions wait for the first dock', () 
       .map((l) => l.case)
       .filter((rc) => rc.onboarding === OnboardingCase.blocked))();
 
-  /** Rows a gated route could write for the tenant: invitations, links, bookings, emails. */
+  /** Every row a gated route could write or change for the tenant, by id. */
   const written = async (tenantId: TenantId) => {
     const o = ownerDb();
-    const n = async (rows: Promise<{ n: number }[]>) => (await rows)[0]?.n ?? 0;
     return {
-      invitations: await n(
-        o
-          .select({ n: count() })
-          .from(carrierInvitation)
-          .where(eq(carrierInvitation.tenantId, tenantId)),
-      ),
-      links: await publicLinkCount(o, tenantId),
-      bookings: await n(
-        o.select({ n: count() }).from(booking).where(eq(booking.tenantId, tenantId)),
-      ),
-      emails: await n(
-        o.select({ n: count() }).from(outboxMessage).where(eq(outboxMessage.tenantId, tenantId)),
-      ),
+      invitations: await o
+        .select()
+        .from(carrierInvitation)
+        .where(eq(carrierInvitation.tenantId, tenantId))
+        .orderBy(carrierInvitation.id),
+      links: await publicLinksOf(o, tenantId),
+      bookings: await o
+        .select()
+        .from(booking)
+        .where(eq(booking.tenantId, tenantId))
+        .orderBy(booking.id),
+      emails: await o
+        .select()
+        .from(outboxMessage)
+        .where(eq(outboxMessage.tenantId, tenantId))
+        .orderBy(outboxMessage.id),
     };
   };
 

@@ -182,9 +182,14 @@ export async function placeBooking(
   return row.id;
 }
 
+/** A world side, or any tenant fixture with an admin (`onboardingTenant`). */
+export type TenantWithAdmin = Pick<WorldSide, 'tenantId'> & {
+  users: Pick<WorldSide['users'], 'tenant_admin'>;
+};
+
 /** Runs `fn` as side's tenant admin with the request's `Access`, like a handler. */
 export function asTenantAdmin<T>(
-  side: WorldSide,
+  side: TenantWithAdmin,
   fn: (tx: Tx, access: Access) => Promise<T>,
   now = new Date('2026-10-19T08:00:00Z'),
 ): Promise<T> {
@@ -203,7 +208,7 @@ export function asTenantAdmin<T>(
 
 /** A tenant request of side's admin without hard limits, `booking.pools` as given (default on). */
 export function asTenantRequest<T>(
-  side: WorldSide,
+  side: TenantWithAdmin,
   fn: (tx: Tx, req: TenantRequest) => Promise<T>,
   o: { pools?: boolean } = {},
 ): Promise<T> {

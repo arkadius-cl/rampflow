@@ -12,7 +12,9 @@ import { dock, hall, org, site } from '../schema.ts';
 
 /**
  * ON-02: the first dock activates the tenant. The update only matches while `activated_at` is
- * null, and the `tenant_update_activate` policy allows nothing else, so activation is one-way.
+ * null, and `tenant_update_activate` lets the tenant update only its own row and only into the
+ * active state, so activation is one-way. The policy does not restrict the other org columns;
+ * this is the only statement that writes `org` as the tenant.
  */
 export async function activateTenant(tx: Tx, tenantId: TenantId, now: Date): Promise<void> {
   await tx

@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { RegistrationMode, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
 import { StaffLocale, TokenPurpose } from '@rampflow/shared/values';
-import { and, count, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { OwnerDb } from '../../../../test/db.ts';
 import {
   type CarrierId,
@@ -109,11 +109,11 @@ export async function openLinkFor(
   return slug;
 }
 
-/** The tenant's public links, for tests that assert a route wrote none. */
-export async function publicLinkCount(db: OwnerDb, tenantId: TenantId): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
+/** The tenant's public link rows by slug, for tests that assert a route changed none. */
+export function publicLinksOf(db: OwnerDb, tenantId: TenantId) {
+  return db
+    .select()
     .from(publicLink)
-    .where(eq(publicLink.tenantId, tenantId));
-  return row?.n ?? 0;
+    .where(eq(publicLink.tenantId, tenantId))
+    .orderBy(publicLink.slug);
 }
