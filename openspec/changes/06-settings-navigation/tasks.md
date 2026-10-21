@@ -31,7 +31,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 3. Batch write API
 
-- [ ] 3.1 Add `PatchPlatformSettings` and `PatchTenantSettings` to `packages/shared/src/modules/core/api.settings.ts`: at least one entry, and no key in both `set` and `reset` (422). Verify with schema unit tests.
+- [x] 3.1 Add `PatchPlatformSettings` and `PatchTenantSettings` to `packages/shared/src/modules/core/api.settings.ts`: at least one entry, and no key in both `set` and `reset` (422). Verify with schema unit tests.
 - [ ] 3.2 Implement `writeSettings` in `apps/api/src/modules/core/settings/settings.ts` per design decision 5 (validate all, then one upsert and one delete). Verify in `settings.test.ts`:
   - two keys stored;
   - one invalid value → 422 at `["set", key]` and nothing stored;
