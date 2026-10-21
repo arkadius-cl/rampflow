@@ -110,6 +110,9 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
     - `safety.max_briefing_templates` limits the instruction count.
 13. **SF-02 Quiz.** With `safety.quiz`, each locale has multiple-choice questions with one correct answer. Publishing needs 3 to 5 questions per published locale.
 14. **SF-03 Acknowledgement register.** Staff list and export (CSV) acknowledgements by site, carrier, driver name, version and expiry.
+15. **ON-01 Onboarding checklist.** While the tenant is in onboarding, the admin's tenant home opens a checklist with three steps: create a site, add a hall, add a dock. Each open step links to the existing master data screen; the checklist has no forms of its own.
+16. **ON-02 Activation.** The transaction that creates the tenant's first dock sets its activation time from the request clock. Activation is one-way: inactive docks or sites never return the tenant to onboarding.
+17. **ON-03 Blocked until the first dock.** During onboarding, carrier invitations, public links, staff and carrier bookings and walk-ins answer 409 `onboarding_incomplete` and write nothing. Setup actions and staff invitations work as usual.
 
 ### Dispatcher
 

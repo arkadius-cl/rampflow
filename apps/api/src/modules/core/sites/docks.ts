@@ -26,6 +26,7 @@ import {
   sameProfile,
 } from '../../booking/capacity/placement.ts';
 import { bookableResource, resourceDock } from '../../booking/schema.resources.ts';
+import { activateTenant } from '../onboarding/onboarding.ts';
 import { dock, hall } from '../schema.ts';
 import { requireSite } from './sites.ts';
 import { conflictOnProfile, conflictOnUnique, invalid, type TenantRequest } from './tenant.ts';
@@ -170,12 +171,13 @@ const placed = (row: DockRow): PlacedDock => ({ ...row, id: row.id as DockId });
 
 /**
  * MD-02: a new dock joins the default pool of its hall and profile, or becomes a single without
- * `booking.pools` (ADR-0017), and must be bookable for a load type.
+ * `booking.pools` (ADR-0017), and must be bookable for a load type. The first dock activates the
+ * tenant (ON-02).
  */
 export async function createDock(
   tx: Tx,
   req: TenantRequest,
-  _clock: Clock,
+  clock: Clock,
   siteId: SiteId,
   input: CreateDock,
 ): Promise<DockView> {
@@ -194,6 +196,7 @@ export async function createDock(
   if (!row) throw new Error('dock insert returned nothing');
   const resource = await placeDock(tx, req, placed(row), null);
   await assertBookable(tx, req.tenantId, [resource.id]);
+  await activateTenant(tx, req.tenantId, clock.now());
   const [view] = await dockViews(tx, req.tenantId, [row]);
   return view as DockView;
 }

@@ -11016,6 +11016,56 @@
         "x-router": "modules/core/context/routes.tenant.ts"
       }
     },
+    "/api/t/{orgId}/onboarding": {
+      "get": {
+        "operationId": "core.onboarding.getOnboarding",
+        "summary": "Get onboarding",
+        "description": "The tenant status, its activation time and the steps `site`, `hall` and `dock` in that order, each with `done` and the `siteId` its link opens.",
+        "tags": [
+          "Master data and capacity"
+        ],
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-party": "tenant",
+        "x-permission": [
+          "core.manage_sites"
+        ],
+        "x-stories": [
+          "ON-01"
+        ],
+        "x-router": "modules/core/onboarding/routes.tenant.ts"
+      }
+    },
     "/api/t/{orgId}/privacy/erase": {
       "post": {
         "operationId": "privacy.requests.eraseSubject",
@@ -22889,6 +22939,62 @@
           "timeZone",
           "standgeldMinutes",
           "items"
+        ]
+      },
+      "OnboardingStepState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "dock",
+              "hall",
+              "site"
+            ]
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "siteId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "done",
+          "siteId"
+        ]
+      },
+      "OnboardingView": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "onboarding"
+            ]
+          },
+          "activatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingStepState"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "activatedAt",
+          "steps"
         ]
       },
       "OrgRef": {

@@ -211,6 +211,7 @@ Unit U4.
 
 | Method | Path | Party | Permission | Entitlement | Story | Router | Notes |
 |---|---|---|---|---|---|---|---|
+| GET | `/api/t/:orgId/onboarding` | tenant | `core.manage_sites` |  | ON-01 | `core/onboarding/routes.tenant.ts` | The tenant status, its activation time and the steps `site`, `hall` and `dock` in that order, each with `done` and the `siteId` its link opens. |
 | GET | `/api/public/countries` | public | none |  | MD-01, PL-03 | `core/sites/routes.public.ts` | The ISO 3166-1 alpha-2 codes the platform admits sites in (`core.site_countries`), for the country select of the site form |
 | GET | `/api/public/countries/:country/holiday-regions` | public | none |  | MD-01, MD-05 | `core/sites/routes.public.ts` | The subdivisions of an ISO 3166-1 alpha-2 country that have their own public holidays, for the region select of the site form; empty for a country without any |
 | GET | `/api/t/:orgId/sites` | tenant | member |  | MD-01 | `core/sites/routes.tenant.ts` | a site-limited operator sees only its sites; `{ items, usage: { sites, docks } }` counts active sites and active and maintenance docks against `core.max_sites` and `core.max_docks` |

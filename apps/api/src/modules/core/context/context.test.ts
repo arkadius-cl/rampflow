@@ -5,14 +5,16 @@ import type {
   PlatformContext,
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import { Feature, Limit, PackageId, Role, SettingSource } from '@rampflow/shared/values';
 import { and, eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
-import { type World, world } from '../../../../test/world.ts';
+import { onboardingTenant, type World, world } from '../../../../test/world.ts';
 import { app } from '../../../app.ts';
 import { wrapJson } from '../../../db/ids.ts';
+import { onboardingSteps } from '../onboarding/fixtures.ts';
 import { entitlementOverride, tenantCarrierLink } from '../schema.ts';
 
 // The three context endpoints that the web layouts gate routes, navigation and actions with.
@@ -28,6 +30,22 @@ const json = async <T>(res: Response) => {
 };
 
 describe('GET /api/t/:orgId/context', () => {
+  it('answers status onboarding before the first dock and active after it (ON-02)', async () => {
+    const t = await onboardingTenant();
+    const status = async () =>
+      (
+        await json<TenantContext>(
+          await as(app, t.users.dispatcher).get(`/api/t/${t.tenantId}/context`),
+        )
+      ).status;
+    const steps = onboardingSteps(app, t.users.tenant_admin, t.tenantId);
+    const siteId = await steps.site();
+    const hallId = await steps.hall(siteId);
+    expect(await status()).toBe(TenantStatus.onboarding);
+    expect((await steps.dock(siteId, hallId)).status).toBe(201);
+    expect(await status()).toBe(TenantStatus.active);
+  });
+
   it("returns the role's permissions, the tenant's entitlements, sites and site settings", async () => {
     const ctx = await json<TenantContext>(
       await as(app, w.A.users.dispatcher).get(`/api/t/${w.A.tenantId}/context`),
