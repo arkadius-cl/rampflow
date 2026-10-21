@@ -5,7 +5,7 @@ type: reference
 audience: [agent, developer]
 tags: [modules, entitlements, permissions, settings, navigation, api, frontend]
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 related: [docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md, docs/decisions/ADR-0011-frontend-routes-and-org-context.md, docs/reference/api-routes.md]
 ---
 
@@ -257,11 +257,12 @@ export interface Access {
   role: Role | null;                              // null for driver, token, public, user, system and system actors
   permissions: ReadonlySet<PermissionKey>;
   entitlements: Entitlements | null;              // the acting tenant's (tenant, carrier_at_tenant, driver, public); null otherwise
+  tenantStatus: TenantStatus | null;              // tenantStatus(org.activated_at) for tenant and carrier_at_tenant; null otherwise
   setting<K extends SettingKey>(key: K, siteId: SiteId | null): Promise<ResolvedSetting<SettingValue<K>>>;
 }
 ```
 
-`loadAccess` reads `tenant_subscription` and `entitlement_override` for the scope's tenant, parses overrides with `parseEntitlementOverride` (skipping and logging stale rows), and calls `resolveEntitlements` with `clock.now()`. `setting()` loads the platform, tenant and site rows once per request and calls `resolveSetting`.
+`loadAccess` reads `tenant_subscription` and `entitlement_override` for the scope's tenant, parses overrides with `parseEntitlementOverride` (skipping and logging stale rows), and calls `resolveEntitlements` with `clock.now()`. For the `tenant` and `carrier_at_tenant` parties it also reads the tenant's `activated_at` and computes `tenantStatus` with `tenantStatus({ activatedAt })`. `setting()` loads the platform, tenant and site rows once per request and calls `resolveSetting`.
 
 ### Middleware
 
@@ -283,9 +284,15 @@ export async function withinLimit(
 // Takes a transaction-scoped advisory lock on (tenant, key), then 409 limit_reached { key, limit }
 // when count + 1 > limit. The advisory lock needs no UPDATE policy on org (U1 deviation from ADR-0004).
 // Soft limits do not compile here.
+
+export function requireActiveTenant(): MiddlewareHandler<AppEnv>;
+// 409 onboarding_incomplete unless access.tenantStatus is active (ON-03). Registers the guard
+// { kind: GuardKind.active_tenant }, which the API description and the route case coverage read.
 ```
 
-Order on a route: scope (mount) → module (mount) → permission → entitlement → validation → handler. A failed scope check answers 404 so a foreign org id reveals nothing.
+Order on a route: scope (mount) → module (mount) → permission → entitlement → active tenant → validation → handler. `requireActiveTenant()` comes after the permission and entitlement guards, so a missing right still answers 403 rather than 409.
+
+A route that faces carriers or creates a booking takes `requireActiveTenant()`: carrier invitations, public links, staff and carrier booking creation, and walk-ins today. A unit that adds such a route adds the guard and `onboarding: OnboardingCase.blocked` to its route case. Routes that can only act on something created behind the gate, such as public link reads or booking commands, stay ungated ([API routes](api-routes.md#onboarding-gate)). A failed scope check answers 404 so a foreign org id reveals nothing.
 
 ### Mounting
 
@@ -364,11 +371,12 @@ export interface RouteCase {
   setup?: (world: World, db: OwnerDb) => Promise<void>; // module fixtures in worlds A and B, as the owner
   foreign: 'not_found' | 'empty';                // expected result as world B
   siteScoped: boolean;                           // a gate operator of another site gets 404
+  onboarding?: OnboardingCase;                   // `blocked`: 409 onboarding_incomplete while A's tenant onboards
 }
 export function defineRouteCases(cases: readonly RouteCase[]): readonly RouteCase[];
 ```
 
-The harness (`checkRouteCase`) seeds fresh worlds A and B per case (each with two sites, a carrier and a rival carrier linked to the tenant, and one booking per carrier and site) and runs the foreign-org, rival-carrier, foreign-site, permission, entitlement and control checks of [ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md#leak-tests). `test/route-cases.test.ts` runs every case of every module; `route-coverage.test.ts` fails for a guarded route without a case and for a case that names no route. A case's `as: 'driver'` acts with the link of `A.bookings.own`.
+The harness (`checkRouteCase`) seeds fresh worlds A and B per case (each with two sites, a carrier and a rival carrier linked to the tenant, and one booking per carrier and site) and runs the foreign-org, rival-carrier, foreign-site, permission, entitlement and control checks of [ADR-0002](../decisions/ADR-0002-tenancy-isolation-rls.md#leak-tests). World tenants start active (`activated_at` set), because they have docks; `onboardingTenant()` in `test/world.ts` builds a tenant with no site, hall or dock. For a case with `onboarding: OnboardingCase.blocked` (`OnboardingCase` in `packages/shared/src/modules/core/values.ts`), the harness sets A's tenant back to onboarding as the owner, repeats the control request, expects 409 `onboarding_incomplete` and reports a failure as `RouteCaseCheck.onboarding`. It then restores `activated_at`. `test/route-cases.test.ts` runs every case of every module; `route-coverage.test.ts` fails for a guarded route without a case, for a case that names no route, and through `onboardingCoverage` for a route whose `requireActiveTenant()` guard and `onboarding` field disagree. A case's `as: 'driver'` acts with the link of `A.bookings.own`.
 
 Routes under `/api/me`, `/api/auth` and `/api/public` export `accountCases` from the same file instead:
 
@@ -394,7 +402,7 @@ export function defineAccountCases(cases: readonly AccountRouteCase[]): readonly
 | Endpoint | Body |
 |---|---|
 | `GET /api/me` | `{ user: { id, name, email, locale }, memberships: [{ orgId, orgKind, orgName, role }], uiPrefs }` ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) |
-| `GET /api/t/:orgId/context` | `{ org, role, permissions, entitlements, sites: [{ id, name, timeZone }], settings: { [siteId]: { [key]: { value, source } } } }`. Settings include only available keys. |
+| `GET /api/t/:orgId/context` | `{ org, status, role, permissions, entitlements, sites: [{ id, name, timeZone }], settings: { [siteId]: { [key]: { value, source } } } }`. `status` is `onboarding` or `active` (`TenantStatus`). Settings include only available keys. |
 | `GET /api/c/:orgId/context` | `{ org, role, permissions, tenants: [{ id, name, linkStatus, carrierPortal, logoUrl }] }` |
 | `GET /api/platform/context` | `{ role, permissions }` |
 

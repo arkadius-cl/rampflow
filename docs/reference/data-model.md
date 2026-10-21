@@ -6,7 +6,7 @@ audience: [agent, developer]
 tags: [database, data-model, tenancy, rls, booking, safety, yard]
 status: draft
 updated: 2026-10-21
-related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
+related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0017-homogeneous-pools-dock-profile.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
 ---
 
 # Data model
@@ -18,7 +18,7 @@ Postgres 18. Schema `public` for tables, schema `app` for the RLS helper functio
 - Primary keys: `id uuid not null default uuidv7()` unless stated.
 - Timestamps: `timestamptz`. `created_at timestamptz not null default now()` on every table unless stated; it is omitted from the column lists below.
 - `tenant_id` references `org(id)` of kind `tenant`. `carrier_id` references `org(id)` of kind `carrier`.
-- Composite foreign keys such as `(site_id, tenant_id) → site(id, tenant_id)` keep a child inside its parent's tenant and site. Each referenced pair has a unique constraint.
+- Composite foreign keys such as `(site_id, tenant_id) → site(id, tenant_id)` keep a child inside its parent's tenant and site. Each referenced pair has a unique constraint. drizzle-kit 0.31 emits a migration's new foreign keys before its new unique keys, so `db:regen` moves those unique keys (constraints and unique indexes) ahead of the first foreign key (`uniqueKeysFirst` in `apps/api/scripts/migration-order.ts`). A foreign key onto a key added in the same migration then applies.
 - Enumerations are `text` with a `check` constraint, so adding a value is a generated migration.
 - Every `tenant_id`, `carrier_id`, `site_id` and `booking_id` column has an index, alone or as the leading column of a composite index.
 - Personal data: columns marked **PD** hold personal data and fall under the retention rules in [Retention](#retention).
@@ -77,8 +77,9 @@ erDiagram
   site ||--o{ hall : has
   hall ||--o{ dock : has
   site ||--o{ bookable_resource : offers
+  hall |o--o{ bookable_resource : "default pools"
   bookable_resource ||--o{ resource_dock : groups
-  dock ||--o| resource_dock : "in at most one"
+  dock ||--o| resource_dock : "in one"
   site ||--o{ opening_hours : opens
   site ||--o{ closure : closes
   site ||--o{ load_type : defines
@@ -122,12 +123,12 @@ Every party organisation: the single platform org, tenants and carriers.
 | `tax_id_status` | text | yes | tenants only: `pending`, `verified`, `unverified`, `unavailable` (`TaxIdStatus`); `pending` until the job `core.tax_id_check` asked VIES about an `eu_vat`, `unverified` from the start for `de_stn` and `pl_nip` |
 | `tax_id_checked_at` | timestamptz | yes | last VIES answer or failure |
 | `possible_duplicate` | boolean | no | default `false`; set when a registration matched another tenant's tax id or company email domain (RG-04) |
-| `activated_at` | timestamptz | yes | tenants only; null while the tenant is onboarding (`tenantStatus`: `onboarding`, `active`). Change 03 writes it; existing tenants were backfilled with `created_at` |
+| `activated_at` | timestamptz | yes | tenants only; null while the tenant is onboarding (`tenantStatus`: `onboarding`, `active`). Set once, in the transaction that creates the tenant's first dock (ON-02), and never cleared; existing tenants were backfilled with `created_at` |
 
 - Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org. Partial index `org_tax_id_value_idx` on `(tax_id_value)` where `kind = 'tenant'`, for the duplicate check.
 - Check `org_tenant_facts_check`: `kind = 'tenant'` or all of `tax_id_type`, `tax_id_value`, `tax_id_status`, `tax_id_checked_at` and `activated_at` are null and `possible_duplicate` is false. Check `org_tax_id_check`: type, value and status are all null or all set, each from its value set.
 - No column of `org` is **PD**; the tax id is a company's registration number.
-- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration); `token` insert where `kind = 'carrier' or (kind = 'tenant' and activated_at is null)` (also an onboarding tenant created by a verified self-registration, RG-02). Ids are generated in the app, because these parties cannot read the new row back. Routes outside the platform and the tenant's own context never select the tenant facts.
+- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration); `token` insert where `kind = 'carrier' or (kind = 'tenant' and activated_at is null)` (also an onboarding tenant created by a verified self-registration, RG-02); `tenant` update (`tenant_update_activate`) using `id = app.tenant_id() and activated_at is null`, with check `id = app.tenant_id() and activated_at is not null`. That policy lets `activateTenant` set `activated_at` when the tenant's first dock is created (ON-02). The tenant can change its own row once, only into the active state, and the policy matches no row after that. No tenant route writes any other column of `org`. Ids are generated in the app, because these parties cannot read the new row back. Routes outside the platform and the tenant's own context never select the tenant facts.
 
 ### `app_user`
 
@@ -336,7 +337,7 @@ Unique `(id, site_id)`. RLS: `tenant-reference(carrier, carrier_at_tenant, drive
 | `status` | text | no | `active`, `maintenance`, `inactive`; `core.max_docks` counts `active` and `maintenance` |
 | `sort` | integer | no | |
 
-Unique `(site_id, code)` and `(id, site_id)`. RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped.
+Unique `(site_id, code)`, `(id, site_id)` and `dock_id_profile_key (id, door_type, temperature_zone, adr_allowed)`. The last one is the target of `resource_dock`'s dock profile key, so a dock's profile cannot change while it is in a resource; `updateDock` deletes the membership first and adds it again with the new profile ([ADR-0017](../decisions/ADR-0017-homogeneous-pools-dock-profile.md)). RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped.
 
 ### `tenant_carrier_link`
 
@@ -391,15 +392,23 @@ Partial index `(next_attempt_at)` where `sent_at is null and failed_at is null`.
 |---|---|---|---|
 | `id` | uuid | no | |
 | `tenant_id`, `site_id` | uuid | no | FK `(site_id, tenant_id) → site` |
-| `kind` | text | no | `pool`, `single`; immutable |
+| `kind` | text | no | `pool`, `single` (`ResourceKind`); immutable. The `as` of a dock booking (`PUT /capacity/docks/:dockId/booking`) takes the same set, so `DockBooking` has no value set of its own |
 | `name` | text | no | |
 | `directions` | text[] | no | non-empty subset of `inbound`, `outbound` |
 | `capacity_cap` | integer | yes | check `capacity_cap is null or (kind = 'pool' and capacity_cap >= 1)` |
 | `daily_cap` | integer | yes | bookings starting per site-local day, check `>= 1` |
 | `sort` | integer | no | order for automatic assignment |
 | `active` | boolean | no | |
+| `door_type` | text | no | the dock profile of every member (`DoorType`); default `dock_leveler` |
+| `temperature_zone` | text | no | `TemperatureZone`; default `ambient` |
+| `adr_allowed` | boolean | no | default `false` |
+| `hall_id` | uuid | yes | set on the default pool of this hall for its profile; null on manual pools and singles. FK `(hall_id, site_id) → hall(id, site_id)` (`bookable_resource_hall_fk`); check `bookable_resource_hall_check`: `hall_id is null or kind = 'pool'` |
 
-Unique `(id, kind)` and `(id, site_id)`. RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped. Capacity writers lock the site with an advisory lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)), so no party needs a lock policy here.
+- Unique `(id, kind)`, `(id, site_id)` and `bookable_resource_id_profile_key (id, door_type, temperature_zone, adr_allowed)`, the target of `resource_dock`'s resource profile key.
+- Partial unique index `bookable_resource_default_pool_key` on `(hall_id, door_type, temperature_zone, adr_allowed)` where `hall_id is not null`: one default pool per hall and profile. `placeDock` inserts the pool with `on conflict do nothing` on this index and then selects it, so two concurrent first docks of a hall end in one pool.
+- Checks `bookable_resource_door_type_check` and `bookable_resource_temperature_zone_check` against `DoorType` and `TemperatureZone`.
+- The profile defaults only let the migration add the columns to existing rows. Every writer passes the profile of the dock it places ([ADR-0017](../decisions/ADR-0017-homogeneous-pools-dock-profile.md)).
+- RLS: `tenant-reference(carrier, carrier_at_tenant, driver)`, site-scoped. Capacity writers lock the site with an advisory lock ([ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md)), so no party needs a lock policy here.
 
 ### `resource_dock`
 
@@ -409,8 +418,13 @@ Unique `(id, kind)` and `(id, site_id)`. RLS: `tenant-reference(carrier, carrier
 | `resource_id` | uuid | no | |
 | `resource_kind` | text | no | FK `(resource_id, resource_kind) → bookable_resource(id, kind)` on delete cascade |
 | `site_id`, `tenant_id` | uuid | no | FKs `(dock_id, site_id) → dock`, `(resource_id, site_id) → bookable_resource` |
+| `door_type`, `temperature_zone`, `adr_allowed` | text, text, boolean | no | the dock's profile, with the defaults of `bookable_resource` |
 
-Partial unique `(resource_id)` where `resource_kind = 'single'`. Adding a dock that has a row returns 409 (MD-03). RLS: `tenant-reference(carrier_at_tenant)`, site-scoped.
+- FK `resource_dock_dock_profile_fk`: `(dock_id, door_type, temperature_zone, adr_allowed) → dock(id, door_type, temperature_zone, adr_allowed)`. FK `resource_dock_resource_profile_fk`: `(resource_id, door_type, temperature_zone, adr_allowed) → bookable_resource(id, door_type, temperature_zone, adr_allowed)`. Both are `on update no action`. Together they hold a resource to one dock profile: a membership exists only where the dock's and the resource's profiles are equal.
+- Partial unique `(resource_id)` where `resource_kind = 'single'`.
+- Every dock is in exactly one resource that serves at least one active load type (MD-03). The primary key enforces "at most one". The services enforce the rest: `placeDock` puts every new dock into a resource, and `assertBookable` answers 409 `dock_without_load_type` after each write that could strand a dock (`booking/capacity/placement.ts`).
+- The API maps the constraints in `ResourceDockConstraint` (`packages/shared/src/modules/booking/values.ts`) to 409 `conflict`: a violation of `resource_dock_pkey` is `dock_in_resource`, the race of two moves of one dock. A violation of a key in its subset `ProfileForeignKey` is `profile_mismatch`, a profile changed by a concurrent edit.
+- RLS: `tenant-reference(carrier_at_tenant)`, site-scoped.
 
 ### `opening_hours`
 

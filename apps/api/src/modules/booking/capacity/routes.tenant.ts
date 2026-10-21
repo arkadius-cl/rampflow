@@ -75,7 +75,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'booking.capacity.createResource',
       stories: [StoryId.MD_03],
       description:
-        'Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left',
+        'Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left; 409 `dock_without_load_type` with `dockIds` if those are none or inactive',
       responses: { 201: type<ResourceView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
@@ -122,7 +122,7 @@ export const tenant = new Hono<AppEnv>()
       id: 'booking.capacity.setDockBooking',
       stories: [StoryId.MD_03],
       description:
-        "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; idempotent",
+        "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; 409 `dock_without_load_type` with `dockIds` if the target would serve no active load type; idempotent",
       responses: {},
     }),
     requirePermission(Permission.booking.manage_resources),
@@ -260,7 +260,8 @@ export const tenant = new Hono<AppEnv>()
     op({
       id: 'booking.capacity.updateLoadType',
       stories: [StoryId.MD_05],
-      description: 'Needs `booking.duration_rules` for tiers. Updates a load type.',
+      description:
+        'Needs `booking.duration_rules` for tiers. Updates a load type. `active: false` answers 409 `dock_without_load_type` with `dockIds` when a resource with docks would keep no active load type',
       responses: { 200: type<LoadTypeView>() },
     }),
     requirePermission(Permission.booking.manage_resources),
@@ -276,7 +277,8 @@ export const tenant = new Hono<AppEnv>()
     op({
       id: 'booking.capacity.setLoadTypeResources',
       stories: [StoryId.MD_05],
-      description: 'Sets the resources that take a load type.',
+      description:
+        'Sets the resources that take a load type. 409 `dock_without_load_type` with `dockIds` when a removed resource with docks would keep no active load type',
       responses: { 200: type<LoadTypeView>() },
     }),
     requirePermission(Permission.booking.manage_resources),

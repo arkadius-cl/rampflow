@@ -8418,7 +8418,7 @@
       "put": {
         "operationId": "booking.capacity.setDockBooking",
         "summary": "Set dock booking",
-        "description": "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; idempotent",
+        "description": "Needs `booking.pools` when a pool is left or joined. `{ as: 'single', directions? } | { as: 'pool', resourceId }` moves the dock in one transaction and answers `{ resource }`; a single resource whose dock leaves is deactivated and reused, with its directions unless new ones are given, when the dock is booked as single again; a new single serves both directions and the load types of the resource the dock left; 409 `profile_mismatch` for a pool of another profile, 422 at `resourceId` for the default pool of another hall; 409 `dock_without_load_type` with `dockIds` if the target would serve no active load type; idempotent",
         "tags": [
           "Master data and capacity"
         ],
@@ -9286,7 +9286,7 @@
       "patch": {
         "operationId": "booking.capacity.updateLoadType",
         "summary": "Update load type",
-        "description": "Needs `booking.duration_rules` for tiers. Updates a load type.",
+        "description": "Needs `booking.duration_rules` for tiers. Updates a load type. `active: false` answers 409 `dock_without_load_type` with `dockIds` when a resource with docks would keep no active load type",
         "tags": [
           "Master data and capacity"
         ],
@@ -9472,7 +9472,7 @@
       "put": {
         "operationId": "booking.capacity.setLoadTypeResources",
         "summary": "Set load type resources",
-        "description": "Sets the resources that take a load type.",
+        "description": "Sets the resources that take a load type. 409 `dock_without_load_type` with `dockIds` when a removed resource with docks would keep no active load type",
         "tags": [
           "Master data and capacity"
         ],
@@ -9731,7 +9731,7 @@
       "post": {
         "operationId": "booking.capacity.createResource",
         "summary": "Create resource",
-        "description": "Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left",
+        "description": "Needs `booking.pools` for pools. `{ siteId, kind, name, directions, capacityCap?, dailyCap?, dockIds }`; the docks share one profile (409 `profile_mismatch` otherwise) and move in from their resources, and the resource serves the load types of the resources they left; 409 `dock_without_load_type` with `dockIds` if those are none or inactive",
         "tags": [
           "Master data and capacity"
         ],
@@ -14876,7 +14876,7 @@
       "post": {
         "operationId": "core.sites.createSite",
         "summary": "Create site",
-        "description": "seeds the three load types, imports holidays, writes the weekly hours",
+        "description": "`hours` takes at least one weekly row (`{ weekday, opens, closes }`), written as the site hours. Seeds the three load types and imports holidays",
         "tags": [
           "Master data and capacity"
         ],
@@ -15400,7 +15400,7 @@
       "post": {
         "operationId": "core.sites.createDock",
         "summary": "Create dock",
-        "description": "Puts the dock into the default pool of its hall and profile, or a single resource of its own without `booking.pools`. 409 `conflict` with reason `duplicate_code`, or `dock_without_load_type` if its resource would serve no active load type; a hall of another site answers 422",
+        "description": "Puts the dock into the default pool of its hall and profile, or a single resource of its own without `booking.pools`. The first dock activates the tenant (ON-02). 409 `conflict` with reason `duplicate_code`, or `dock_without_load_type` with `dockIds` if its resource would serve no active load type; a hall of another site answers 422",
         "tags": [
           "Master data and capacity"
         ],
@@ -15537,7 +15537,7 @@
       "patch": {
         "operationId": "core.sites.updateDock",
         "summary": "Update dock",
-        "description": "Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`. A new profile updates its single resource or moves it from its pool to the default pool of its hall and new profile (403 `entitlement_required` without `booking.pools`); a new hall moves it out of a default pool; a dock in no resource is placed.",
+        "description": "Updates a dock. Checks `core.max_docks` when the dock leaves `inactive`. A new profile updates its single resource or moves it from its pool to the default pool of its hall and new profile; a new hall moves it from a default pool to the default pool of the new hall; both moves answer 403 `entitlement_required` without `booking.pools`. A dock in no resource is placed. 409 `duplicate_code`, `profile_mismatch` or `dock_without_load_type` as on create",
         "tags": [
           "Master data and capacity"
         ],
