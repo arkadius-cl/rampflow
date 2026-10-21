@@ -30,9 +30,11 @@ The code uses the English term. The UI shows the localized term.
 |---|---|---|
 | Site | Standort | A physical warehouse location with an address and a time zone. |
 | Hall | Halle | A building on a site. Groups docks. |
-| Dock | Rampe / Tor | One loading door. Has attributes such as door type, leveler, reefer. |
-| Dock pool | Rampen-Pool | A named group of docks on one site that is booked as one unit with a capacity. The concrete dock is assigned on arrival. |
-| Bookable resource | Buchbare Ressource | Either a dock pool or a standalone dock. Carriers book against bookable resources only. |
+| Dock | Rampe / Tor | One loading door. Has a door type, a temperature zone, an ADR flag and a status. |
+| Dock profile | Rampenprofil | The three attributes of a dock that decide which loads it can take: door type (`door_type`), temperature zone (`temperature_zone`) and ADR flag (`adr_allowed`). The standard profile is dock leveler, ambient, no ADR. Every bookable resource has a profile, and all its docks share it. |
+| Dock pool | Rampen-Pool | A named group of docks of one profile on one site that is booked as one unit with a capacity. The concrete dock is assigned on arrival. |
+| Default pool | Hallenpool | The pool the system keeps for one hall and one dock profile (`bookable_resource.hall_id` set). A new dock joins it, and a dock removed from a manual pool returns to it. The UI labels it "Hall pool". Its name is the hall name plus every attribute that differs from the standard profile, for example "Halle 2 · Tiefkühl". The admin may rename it. |
+| Bookable resource | Buchbare Ressource | Either a dock pool or a single dock (Einzelrampe). Carriers book against bookable resources only. |
 | Yard | Hof | The area between gate and docks where trucks wait. |
 
 ## Process
@@ -48,8 +50,8 @@ The code uses the English term. The UI shows the localized term.
 | Package | Paket | A sellable bundle of entitlement values assigned to a tenant. |
 | Setting | Einstellung | A typed configuration value with a platform default that a tenant or site may override. |
 | Registration (`tenant_signup`) | Registrierung | A company's self-registration at `/signup`, waiting for its email link. Confirming the email creates the tenant and its first `tenant_admin`. Not the carrier registration through a public link (`carrier_registration`, CR-02). |
-| Tenant status: onboarding | Einrichtung | A tenant without an activation time (`org.activated_at` null). Every new tenant starts here, whether self-registered or created by the platform admin. Derived, never stored. |
-| Tenant status: active | Aktiv | A tenant with an activation time. Tenants that existed before change 02 were backfilled as active since their creation. |
+| Tenant status: onboarding | Onboarding | A tenant without an activation time (`org.activated_at` null). Every new tenant starts here, whether self-registered or created by the platform admin. Carrier invitations, public links and bookings wait until the tenant is active (ON-03). Derived, never stored. |
+| Tenant status: active | Aktiv | A tenant with an activation time. The transaction that creates the tenant's first dock sets it (ON-02). Activation is one-way. No later write clears it, and inactive docks or sites leave the tenant active. Tenants that existed before change 02 were backfilled as active since their creation. |
 | Tax id (`tax_id_type`, `tax_id_value`) | Steuer-ID | The company's tax registration number, one of: `eu_vat`, the EU VAT number (USt-IdNr in Germany, NIP UE in Poland), confirmed against VIES; `de_stn`, a German Steuernummer (10, 11 or 13 digits) or Wirtschafts-Identifikationsnummer (W-IdNr, `DE` plus 14 digits); `pl_nip`, the Polish NIP (10 digits). |
 | Tax id status | Prüfstatus der Steuer-ID | `pending` until VIES answered for an `eu_vat`, `verified` or `unverified` by its answer, `unavailable` when VIES did not answer. `de_stn` and `pl_nip` stay `unverified`: no registry is queried. |
 
@@ -57,7 +59,8 @@ The code uses the English term. The UI shows the localized term.
 
 These are the starting assumptions for the architecture phase. ADRs in `docs/decisions/` confirm or replace them.
 
-- A dock belongs to at most one dock pool. A dock in a pool is not bookable on its own, so pool capacity and single-dock bookings never double count the same door.
+- A dock belongs to exactly one bookable resource: a pool or its own single resource. A dock in a pool is not bookable on its own, so pool capacity and single-dock bookings never double count the same door. A dock goes out of service through its status, not by leaving its resource.
+- A pool holds docks of one profile. Every dock's resource has at least one active load type.
 - A booking targets exactly one bookable resource. A pool booking gets its concrete dock assigned later, at check-in or by the dock operator.
 - A booking carries its visit lifecycle as a state machine. Every transition writes an event row with actor and time.
 - Times are stored in UTC. Opening hours and slots are defined in the site's time zone.

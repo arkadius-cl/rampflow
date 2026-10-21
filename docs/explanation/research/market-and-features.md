@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [research, market, features, packaging, entitlements]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 ---
 
 # Market and feature research
@@ -13,7 +13,7 @@ updated: 2026-10-19
 ## Summary
 
 - **The common core is small and stable.** Every booking product reviewed has a carrier self-booking portal, capacity rules (opening hours, slot length, duration by load type), an internal day plan, email confirmations, basic reports and multi-site support. This is the MVP.
-- **Carriers almost never pick a dock.** Opendock books against a *load type* mapped to docks. SAP DAS creates *provisional appointments* at a docking location and assigns the loading point later. C3 caps capacity per time slice. Cargoclix's per-ramp grid is the exception. rampflow should make the pool the default; a single bookable dock is a pool of one.
+- **Carriers almost never pick a dock.** Opendock carriers pick a *load type*, not a door, though each appointment still names its dock (`dockId` is required). SAP DAS creates *provisional appointments* at a docking location and assigns the loading point later. C3 caps capacity per time slice. Cargoclix's per-ramp grid is the exception. rampflow should make the pool the default; a single bookable dock is a pool of one.
 - **Who pays splits the market.** In DACH retail, carriers pay per slot: Transporeon charges carriers or suppliers EUR 2.73 per slot plus EUR 0.23 per SMS; Cargoclix charges EUR 0.50, paid by whichever party the customer chooses. Opendock, LoadingCalendar, TradeLink and GoRamp are free for carriers. A BVL project found that small forwarders cannot pass slot fees on. **rampflow should be free for carriers, and say so loudly.**
 - **Safety briefings and driver languages are a DACH gap.** None of the US dock schedulers reviewed offers briefings. DACH gate and visitor specialists sell them (Peripass, TradeLink, Heylog, Loady, WELCOME, friendlyway) in 17 to 29 languages without an app. In slot-booking tools the briefing is at best an add-on or a gate step. One native flow of *slot booking, avis and multilingual briefing before arrival* behind a single deep link is rampflow's wedge.
 - **Prices range from EUR 99 to EUR 1,299 per month.** LoadingCalendar is EUR 99 flat; Peripass starts at EUR 1,299 per site; US schedulers sit at USD 175 to 500; Opendock is estimated at USD 6,000 to 7,000 per facility per year. A per-site tiered price of EUR 150 to 600 per month is defensible.
@@ -53,7 +53,7 @@ Driver-side specialists also checked: **Loady** (17-language briefings, DGUV rec
 |---|---|---|---|---|---|---|---|
 | Cargoclix | Per-ramp schedule grid. Registration link per shipper; support activates the account by the next working day. | EUR 0.50 per booking; customer chooses whether shipper or booker pays | Booking period per ramp; frozen after confirmation; staff and forklift capacity | Per ramp | Series slots on request to the operator | Quantities and quality per shipment | Email; SMS validation of driver mobile number |
 | Transporeon | One portal across all shippers; shipper grants access to the carrier's Transporeon ID | EUR 2.73 per slot plus EUR 0.23 per SMS (retail price sheet); EUR 2.34 (Wanzl) | Capacity templates, booking rules, quotas. Zalando setup: weekly slot release, book by 23:59 the day before | Capacity and quotas per site | Reserved and recurring slots per carrier group | Shipping-notice ID, pallets and boxes, delivery or vehicle type | Reminders, SMS |
-| Opendock | Free account or guest booking; search facility, then load type, then slot | Free | Max days ahead, minimum hours before booking, edit and cancel; handling time per load type; optional "Requested" approval | Load type mapped to docks (pool-like) | – | refNumber (PO, can be required and unique) plus custom-field template (text, number, document) | Email and SMS status updates |
+| Opendock | Free account or guest booking; search facility, then load type, then slot | Free | Max days ahead, minimum hours before booking, edit and cancel; handling time per load type; optional "Requested" approval | Load types listed per dock; each appointment on one dock (`dockId` required) | – | refNumber (PO, can be required and unique) plus custom-field template (text, number, document) | Email and SMS status updates |
 | DataDocks | Branded link; coordinator sets carrier access level | – | Dock restrictions, time blocks, approval for new carriers, buffer between loads, weight caps, compound rules | Rule-based dock restriction | – | BOL / POD required before submit | Reminders 2 h and 30 min before |
 | C3 | Self-serve portal with guided wizards; carriers manage their own users | – | Duration from PO, load type, carrier or supplier; capacity per time slice (bookings, pallets, lifts); truck-type limits | Capacity per shift and time slice | Standing appointments | PO header and lines; attachments | Configurable email; no-show alerts |
 | Velostics | Self-booking portal; several calendars per facility; Voice AI booking | – | – | Calendar, then "intelligent dock assignment" | – | PO / load verification | Detention alerts; Voice AI |
@@ -98,7 +98,7 @@ Driver-side specialists also checked: **Loady** (17-language briefings, DGUV rec
 ### MUST (SME MVP)
 
 1. **Sites, halls, docks and pools with a calendar.** Opening hours, closures and holidays per site, with tenant and site overrides of platform defaults. *Why:* every vendor models this; SAP calls it business hours and block time.
-2. **Pool-first capacity.** Carriers book against a pool or capacity class; the dock is assigned later by an operator or a rule. Capacity is parallel slots, optionally capped by pallets per time slice. *Why:* Opendock, SAP, C3 and Velostics all work this way. Pools also absorb late trucks; in the BVL simulation, flexible slot use cut waiting more than strict use.
+2. **Pool-first capacity.** Carriers book against a pool or capacity class; the dock is assigned later by an operator or a rule. Capacity is parallel slots, optionally capped by pallets per time slice. *Why:* SAP, C3 and Velostics work this way. Opendock hides the door from the carrier but stores each appointment on one dock. Pools also absorb late trucks; in the BVL simulation, flexible slot use cut waiting more than strict use.
 3. **Duration rules.** Duration by load type and direction, plus pallet-count steps. *Why:* C3, LoadingCalendar and Opendock derive duration from the load; fixed slots waste capacity or overrun.
 4. **Booking rules.** Minimum lead time, maximum booking horizon, change/cancel cutoff and daily caps per pool. *Why:* every booking tool has them (Opendock, SAP, Cargoclix booking period, YardSlot360).
 5. **Free carrier portal with invite and magic link.** Carriers can book without a full account (email or SMS verification), then reschedule or cancel within the rules. The confirmation carries a reference and a QR code. *Why:* with mandatory accounts, 40–60% of carriers keep calling (Dashdoc estimate). Opendock and LoadingCalendar allow guest booking; Cargoclix's support-activated registration is the anti-pattern.
@@ -280,6 +280,7 @@ Tolerances (`early_tolerance`, `late_tolerance`, `no_show_grace`) are platform d
 - [F] Zalando partner guide (Transporeon, previously Mercareon): https://partner.zalando.com/university/article/book-warehouse-delivery-time-mercareon
 - [S] Trimble completes Transporeon acquisition: https://news.trimble.com/2023-04-03-Trimble-Completes-Transporeon-Acquisition
 - [F] Opendock carrier API (Loadsmart): https://developer.loadsmart.com/docs/opendock/for-carriers/booking-appointments
+- [F] Opendock API description (`CreateAppointmentDto` requires `dockId`, `Dock` requires `loadTypeIds`): https://neutron.opendock.com/docs-json
 - [F] Opendock self-scheduling blog: https://blog.opendock.com/self-schedule
 - [F] Taylor Logistics Opendock guide (free account or guest): https://taylorlogistics.com/2026/07/01/opendock/
 - [S] Opendock Adding Docks (lead-time settings): https://community.loadsmart.com/hc/en-us/articles/14908083511827--Opendock-Adding-Docks

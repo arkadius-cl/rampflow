@@ -171,18 +171,20 @@ function MasterDataScreen() {
                               </Badge>
                             </TableCell>
                             <TableCell className="pr-6">
-                              {r ? (
-                                <span className="inline-flex items-center gap-1">
-                                  {r.kind === ResourceKind.pool ? (
+                              {/* Every dock is in a pool or single (ADR-0017); a mock dock without one shows as single. */}
+                              <span className="inline-flex items-center gap-1">
+                                {r?.kind === ResourceKind.pool ? (
+                                  <>
                                     <LayersIcon className="size-3.5 text-muted-foreground" />
-                                  ) : (
+                                    Pool {r.name}
+                                  </>
+                                ) : (
+                                  <>
                                     <SquareIcon className="size-3.5 text-muted-foreground" />
-                                  )}
-                                  {r.name}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">Not bookable</span>
-                              )}
+                                    Single dock
+                                  </>
+                                )}
+                              </span>
                             </TableCell>
                           </TableRow>
                         );
@@ -240,32 +242,28 @@ function MasterDataScreen() {
               <FieldSet>
                 <FieldLegend variant="label">Member docks</FieldLegend>
                 <FieldDescription>
-                  A dock belongs to at most one pool or single resource.
+                  Checking a dock moves it here from its current pool or single booking.
                 </FieldDescription>
                 <div className="flex flex-col gap-1.5">
                   {docks
                     .filter((d) => d.status !== DockStatus.inactive)
                     .map((d) => {
                       const r = resourceOf(d.id);
-                      const elsewhere = r !== undefined && r.id !== pool.id;
+                      const moves =
+                        r?.id === pool.id
+                          ? doorLabel[d.doorType]
+                          : r?.kind === ResourceKind.pool
+                            ? `moves from ${r.name}`
+                            : 'booked on its own, moves here';
                       return (
                         <label
                           key={d.id}
                           htmlFor={`member-${d.id}`}
-                          className={cn(
-                            'flex items-center gap-2 text-sm',
-                            elsewhere && 'text-muted-foreground',
-                          )}
+                          className="flex items-center gap-2 text-sm"
                         >
-                          <Checkbox
-                            id={`member-${d.id}`}
-                            defaultChecked={r?.id === pool.id}
-                            disabled={elsewhere}
-                          />
+                          <Checkbox id={`member-${d.id}`} defaultChecked={r?.id === pool.id} />
                           <span className="font-medium">{d.code}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {elsewhere ? `in ${r.name}` : doorLabel[d.doorType]}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{moves}</span>
                         </label>
                       );
                     })}

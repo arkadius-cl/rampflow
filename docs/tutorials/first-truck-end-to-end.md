@@ -5,7 +5,7 @@ type: tutorial
 audience: [tenant-admin, carrier, gate-operator, driver]
 tags: [tutorial, booking, yard, safety, driver, reports, seed]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 related: [docs/how-to/run-locally.md, docs/how-to/set-up-a-site.md, docs/how-to/book-a-slot-as-a-carrier.md, docs/how-to/run-the-gate-and-docks.md, docs/explanation/mvp-scope.md]
 ---
 
@@ -64,7 +64,9 @@ The tutorial switches between accounts. To change the account, open the user men
 
 ![The Hamburg DC site page with its halls, the Booked as column and the pool editor](../assets/screens/master-data-site.png)
 
-Look at the **Booked as** column. Docks T01 to T04 are booked as the pool **Wareneingang**, T06 and T07 as the pool **Versand**, and T05 and T08 as single docks. On the right, **Bookable resources** shows the pool Wareneingang with its member docks. A carrier books the pool, and the dock operator picks a free member dock when the truck arrives.
+Look at the **Booked as** column. Every dock is in exactly one pool or booked on its own. Docks T01 to T04 are booked as **Pool Wareneingang**, T06 and T07 as **Pool Versand**, and T05 and T08 as **Single dock**. T09 is the frozen dock of Halle 2. It is booked as **Pool Halle 2 · Tiefkühl**, because a pool only holds docks with the same door type, temperature zone and ADR flag.
+
+On the right, **Bookable resources** shows the pool Wareneingang with its dock profile, **Dock leveler · Ambient**, and the **Hall pool** badge, and lists its member docks. A carrier books the pool, and the dock operator picks a free member dock when the truck arrives.
 
 5. Select **Settings** in the sidebar, then the tab **Hamburg DC**.
 
