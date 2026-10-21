@@ -179,8 +179,8 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 13. Integration
 
-- [ ] 13.1 Run `pnpm verify` and `scripts/test-at-date.sh +40d`. Verify both exit 0.
-- [ ] 13.2 Run the full `pnpm test:e2e`. Verify every spec passes.
+- [x] 13.1 Run `pnpm verify` and `scripts/test-at-date.sh +40d`. Verify both exit 0.
+- [x] 13.2 Run the full `pnpm test:e2e`. Verify every spec passes.
 - [ ] 13.3 Capture `/platform/settings/general`, `/t/<acme>/settings/booking` and `/t/<acme>/sites/<hamburg>/settings/booking` at 1920 × 1080 with `pnpm docs:screens` or Playwright. Verify:
   - the form column is at least 40rem wide on the site page;
   - no field is hidden under the save bar when focused;
