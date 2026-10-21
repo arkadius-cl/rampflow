@@ -35,6 +35,8 @@ Reserved keys (features that are not built yet) cannot be overridden. Turning a 
 
 **Platform defaults** (`/platform/settings`) holds the default of every setting with a platform level, for example the retention periods. A tenant or site value always wins over the platform default, so changing a default never overwrites a tenant's own choice.
 
+**Admitted countries** (`core.site_countries`) lists the countries a tenant may create sites in; the default is the 27 EU member states. Search a country by name, for example `norw`, and select **Add**; select the cross on a chip to remove a country. The list offers Europe, Turkey and the South Caucasus, each with a public holiday calendar, and keeps at least one country. Removing a country blocks new sites there and moving a site there; existing sites keep their country and can still be edited.
+
 ## 4. Check usage
 
 The tenant list shows sites, docks, internal users and bookings this month against the package limits.

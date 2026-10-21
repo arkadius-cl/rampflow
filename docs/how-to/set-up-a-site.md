@@ -5,7 +5,7 @@ type: how-to
 audience: [tenant-admin, developer]
 tags: [sites, docks, capacity, hours, closures, load-types]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 related: [docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0012-time-handling.md, docs/reference/api-routes.md]
 ---
 
@@ -17,7 +17,7 @@ A site offers start times only when four things are in place: bookable docks, we
 
 1. Open **Sites and docks** in the sidebar and select **New site**.
 2. Enter the name and address.
-3. Enter the country as two letters (`DE`) and the region as an ISO 3166-2 code (`DE-BY`). The region decides which public holidays close the site.
+3. Select the country and the region (for example *Bayern*). The country list holds only the countries the platform admits for sites; ask the platform admin if yours is missing. The region list belongs to the chosen country and decides which public holidays close the site. Without a region, only the nationwide holidays apply. Changing the country clears a region of the old country.
 4. Select the time zone. Slots, hours and closures use this zone's clock, whatever zone the viewer is in.
 5. Select **Create site**.
 

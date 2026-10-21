@@ -302,8 +302,8 @@ Primary key `(tenant_id, key)`. RLS custom: `platform` all; `tenant` select wher
 | `name` | text | no | |
 | `address_line1`, `postal_code`, `city` | text | no | |
 | `address_line2` | text | yes | |
-| `country` | char(2) | no | ISO 3166-1 |
-| `subdivision` | text | yes | ISO 3166-2, for example `DE-BY`; holiday import |
+| `country` | char(2) | no | ISO 3166-1, one of `SiteCountry` (Europe, Turkey, South Caucasus); create and a country change need it in `core.site_countries` |
+| `subdivision` | text | yes | ISO 3166-2, for example `DE-BY`, from the country's `date-holidays` regions (`GET /api/public/countries/:country/holiday-regions`); holiday import |
 | `time_zone` | text | no | IANA, validated (MD-01) |
 | `default_locale` | text | no | `de`, `en`, `pl` |
 | `phone` | text | yes | E.164; shown after the carrier cutoff (BK-05) |

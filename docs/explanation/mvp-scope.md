@@ -69,7 +69,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - Overrides can raise or lower a value, apply on the next request, and lapse at expiry.
    - Unknown or reserved keys return 400.
    - A route whose entitlement is off returns 403 `entitlement_required` with the key, and its navigation item is hidden.
-3. **PL-03 Platform defaults.** The admin edits every setting with platform scope. Invalid values return 422 with the zod issue path. Tenants with an override keep it.
+3. **PL-03 Platform defaults.** The admin edits every setting with platform scope, including the countries admitted for sites, found by name and added. Invalid values return 422 with the zod issue path. Tenants with an override keep it.
 4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing. The platform admin searches tenants by name, filters by package, sorts by name or creation date and pages through the list; the list's state is in the URL ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)).
 
 ### Tenant admin
@@ -92,7 +92,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 6. **TN-06 Data subject requests.** The admin finds drivers by name, phone or plate.
    - Export returns JSON of matching bookings and acknowledgements.
    - Erase pseudonymizes matching bookings with the retention job's function. Acknowledgements under retention become restricted, not deleted.
-7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone and default locale. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
+7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone and default locale. Country and subdivision are chosen from lists; the country must be one the platform admits (`core.site_countries`), otherwise 422. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
 8. **MD-02 Halls and docks.** A dock belongs to a hall and has a code unique per site, door type, temperature zone, ADR flag and status (`active`, `maintenance`, `inactive`). `core.max_docks` counts active and maintenance docks.
 9. **MD-03 Bookable resources.** The admin groups docks into pools (name, directions, optional capacity cap, optional daily cap) or marks a dock single.
    - Adding a dock that already belongs to a resource returns 409.
