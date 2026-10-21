@@ -1,5 +1,6 @@
 import { catalog, isSettingAvailable, type Role, type SettingKey } from '@rampflow/shared';
 import type { ContextSetting, TenantContext } from '@rampflow/shared/modules/core/api.context';
+import { tenantStatus } from '@rampflow/shared/modules/core/tenant-status';
 import { ScopeParty } from '@rampflow/shared/values';
 import { and, asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -29,7 +30,7 @@ export const tenant = new Hono<AppEnv>().get(
     }
     const { entitlements } = access;
     const [named] = await db
-      .select({ id: org.id, name: org.name })
+      .select({ id: org.id, name: org.name, activatedAt: org.activatedAt })
       .from(org)
       .where(eq(org.id, scope.tenantId));
     const sites = await db
@@ -46,6 +47,7 @@ export const tenant = new Hono<AppEnv>().get(
     }
     const body: TenantContext = {
       org: { id: scope.tenantId, name: named?.name ?? '' },
+      status: tenantStatus({ activatedAt: named?.activatedAt ?? null }),
       role: access.role as Role,
       permissions: [...access.permissions],
       entitlements,

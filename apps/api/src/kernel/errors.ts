@@ -17,6 +17,7 @@ export const ERROR_STATUS = {
   validation_failed: 422,
   rate_limited: 429,
   internal_error: 500,
+  onboarding_incomplete: 409,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 export type ErrorDetails = Readonly<Record<string, unknown>>;
@@ -48,6 +49,7 @@ export const DEFAULT_MESSAGE = {
   validation_failed: 'Validation failed',
   rate_limited: 'Too many requests',
   internal_error: 'Internal server error',
+  onboarding_incomplete: 'Finish onboarding first: add a site, a hall and a dock',
 } as const satisfies Record<ErrorCode, string>;
 
 /** Throw from handlers and services. The scoped transaction rolls back; the client gets the envelope. */

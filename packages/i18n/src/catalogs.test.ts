@@ -124,10 +124,10 @@ describe('conflict reasons', () => {
   });
 
   it('name the reason and the locale of a missing string', () => {
-    expect(missing(['dock_needs_resource'])).toEqual([
-      'de/core/errors.json: conflict.dock_needs_resource',
-      'en/core/errors.json: conflict.dock_needs_resource',
-      'pl/core/errors.json: conflict.dock_needs_resource',
+    expect(missing(['no_such_reason'])).toEqual([
+      'de/core/errors.json: conflict.no_such_reason',
+      'en/core/errors.json: conflict.no_such_reason',
+      'pl/core/errors.json: conflict.no_such_reason',
     ]);
   });
 });
