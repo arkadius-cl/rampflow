@@ -85,5 +85,5 @@
 
 ## 11. Integration
 
-- [ ] 11.1 Run `pnpm verify`, `scripts/test-at-date.sh +40d` (expiry and retention tests) and `pnpm test:e2e e2e/core`; verify all are green.
-- [ ] 11.2 Write the report's deviations from the contract: the new table and columns, the widened `token` policies, the backfill custom SQL, the coordinator edits (`modules/index.ts`, `biome.json`, `.env.example`), the new routes and conflict reason, the dependencies `altcha-lib`, `altcha` and `jsvat`, the vendored list, ADR-0016, and the PL-05 story-ID clash for 04.
+- [x] 11.1 Run `pnpm verify`, `scripts/test-at-date.sh +40d` (expiry and retention tests) and `pnpm test:e2e e2e/core`; verify all are green.
+- [x] 11.2 Write the report's deviations from the contract: the new table and columns, the widened `token` policies, the backfill custom SQL, the coordinator edits (`modules/index.ts`, `biome.json`, `.env.example`), the new routes and conflict reason, the dependencies `altcha-lib`, `altcha` and `jsvat`, the vendored list, ADR-0016, and the PL-05 story-ID clash for 04.
