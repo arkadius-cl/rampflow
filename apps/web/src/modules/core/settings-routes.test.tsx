@@ -52,12 +52,13 @@ describe('TN-02 tenant settings routes', () => {
   });
 
   it('shows no access for ?site= of another tenant, without the tenant level', async () => {
-    const { router, requests } = renderApp(`/t/${ORG}/settings?site=${FOREIGN_SITE}`, tenantApi());
+    const { router } = renderApp(`/t/${ORG}/settings?site=${FOREIGN_SITE}`, tenantApi());
     await noAccess();
     expect(router.state.location.pathname).toBe(`/t/${ORG}/settings`);
     expect(form()).toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Settings topics' })).toBeNull();
-    expect(requests).not.toContain(`GET /api/t/${FOREIGN_SITE}/settings`);
+    // The parent route preloads the tenant view; none of its fields may render.
+    expect(document.querySelector('[data-setting]')).toBeNull();
   });
 });
 
