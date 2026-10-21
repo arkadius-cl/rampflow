@@ -70,6 +70,14 @@ describe('admitted countries editor', () => {
     expect(screen.getByText('27 of 57 selected')).toBeTruthy();
   });
 
+  it('finds Türkiye typed without its accent', async () => {
+    const user = userEvent.setup();
+    renderUi(<Countries initial={values(EuCountry)} />);
+    await user.type(screen.getByRole('searchbox', { name: 'Filter countries' }), 'turkiye');
+    expect(countryBoxes()).toHaveLength(1);
+    expect(screen.getByRole('checkbox', { name: 'Türkiye' })).toBeTruthy();
+  });
+
   it('finds Turkey by its code', async () => {
     const user = userEvent.setup();
     renderUi(<Countries initial={values(EuCountry)} />);
