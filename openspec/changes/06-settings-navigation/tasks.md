@@ -24,7 +24,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 ## 2. Shared value sets and the placement map
 
 - [x] 2.1 Add value sets to `packages/shared/src/values/settings.ts` per ADR-0019: `SettingsTopic` (`general`, `booking`, `avis`, `safety`, `yard`, `privacy`), `SettingsSection` (`sites`, `language`, `rules`, `public_booking`, `reminders`, `requirements`, `briefing`, `arrival`, `dwell`, `notice`, `retention`, `driver_access`), `SettingUnit` (`minutes`, `hours`, `days`, `percent`) and `FieldDraftKind` (`own`, `inherit`). Add `CountryGroup` (`eu`, `other`) with `countryGroupOf(code)` to `packages/shared/src/modules/core/values.ts`. Verify with a unit test that `countryGroupOf` puts the 27 `EuCountry` members in `eu` and the other 30 `SiteCountry` members in `other`.
-- [ ] 2.2 Write `apps/web/src/modules/core/settings-placement.ts`: `PLACEMENT satisfies Record<SettingKey, Placement>` in the order of the spec table, units on every minutes, hours, days and percent key, plus `availableTopics(items)` and `sectionsOf(topic, items)`. Verify:
+- [x] 2.2 Write `apps/web/src/modules/core/settings-placement.ts`: `PLACEMENT satisfies Record<SettingKey, Placement>` in the order of the spec table, units on every minutes, hours, days and percent key, plus `availableTopics(items)` and `sectionsOf(topic, items)`. Verify:
   - with a unit test that every topic and section of the spec appears in its order;
   - that `availableTopics` of a site view leaves out `general`;
   - that removing one key from `PLACEMENT` fails `pnpm typecheck`.
