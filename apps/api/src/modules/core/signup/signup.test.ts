@@ -41,6 +41,7 @@ import { appUser, membership, org, tenantSubscription } from '../schema.ts';
 import { possibleDuplicate } from './duplicates.redeem.ts';
 import {
   pendingSignup,
+  SIGNUP_COMPANY,
   SIGNUP_PASSWORD,
   signupEmail,
   signupForm,
@@ -415,7 +416,7 @@ describe('RG-02 inspect', () => {
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
         email: s.email,
-        companyName: 'Nordhafen Kühllogistik GmbH',
+        companyName: SIGNUP_COMPANY,
         possibleDuplicate: false,
       });
     }
@@ -454,7 +455,7 @@ describe('RG-02 verify', () => {
     const [tenant] = await ownerDb().select().from(org).where(eq(org.id, body.tenantId));
     expect(tenant).toMatchObject({
       kind: OrgKind.tenant,
-      name: 'Nordhafen Kühllogistik GmbH',
+      name: SIGNUP_COMPANY,
       country: EuCountry.DE,
       taxIdType: TaxIdType.eu_vat,
       taxIdValue: vat,

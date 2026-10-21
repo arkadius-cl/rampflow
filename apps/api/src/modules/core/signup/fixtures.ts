@@ -38,13 +38,19 @@ export const signupEmail = (label = 'ops') =>
 
 export const SIGNUP_PASSWORD = 'kuehlkette-2026';
 
+/**
+ * Not the seeded demo tenant's name: these tenants share the worker database with
+ * scripts/seed/signups.test.ts, which expects exactly one tenant of that name.
+ */
+export const SIGNUP_COMPANY = 'Nordhafen Kühllogistik Testbetrieb GmbH';
+
 /** The registration form of Jonas Petersen for Nordhafen, without the ALTCHA payload. */
 export const signupForm = (email: string) => ({
   givenName: 'Jonas',
   familyName: 'Petersen',
   email,
   password: SIGNUP_PASSWORD,
-  companyName: 'Nordhafen Kühllogistik GmbH',
+  companyName: SIGNUP_COMPANY,
   country: EuCountry.DE,
   taxIdType: TaxIdType.de_stn,
   taxIdValue: 'DE136695976-00001',
@@ -71,7 +77,7 @@ export async function pendingSignup(
     givenName: 'Jonas',
     familyName: 'Petersen',
     passwordHash: await hashPassword(SIGNUP_PASSWORD),
-    companyName: 'Nordhafen Kühllogistik GmbH',
+    companyName: SIGNUP_COMPANY,
     country: EuCountry.DE,
     taxIdType: o.taxId?.type ?? TaxIdType.de_stn,
     taxIdValue: o.taxId?.value ?? 'DE13669597600001',
