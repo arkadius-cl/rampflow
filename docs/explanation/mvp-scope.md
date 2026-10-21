@@ -92,13 +92,9 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 6. **TN-06 Data subject requests.** The admin finds drivers by name, phone or plate.
    - Export returns JSON of matching bookings and acknowledgements.
    - Erase pseudonymizes matching bookings with the retention job's function. Acknowledgements under retention become restricted, not deleted.
-<<<<<<< HEAD
-7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone and default locale. Country and subdivision are chosen from lists; the country must be one the platform admits (`core.site_countries`), otherwise 422. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
-=======
-7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone, default locale and weekly opening hours. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
+7. **MD-01 Sites.** A site has name, address, country, ISO 3166-2 subdivision, IANA time zone, default locale and weekly opening hours. Country and subdivision are chosen from lists; the country must be one the platform admits (`core.site_countries`), otherwise 422. An unknown zone returns 422. A site beyond `core.max_sites` returns 409.
    - Creating a site requires at least one weekly window. Without hours, or with overlapping windows, the request returns 422 and no site exists.
    - The "New site" form offers three templates: "One shift" (Monday to Friday 06:00 to 14:00, preselected), "Two shifts" (Monday to Friday 06:00 to 22:00) and "Custom" (several windows a day, for example with a lunch break).
->>>>>>> feat/03-tenant-onboarding
 8. **MD-02 Halls and docks.** A dock belongs to a hall and has a code unique per site, door type, temperature zone, ADR flag and status (`active`, `maintenance`, `inactive`). `core.max_docks` counts active and maintenance docks.
    - A new dock joins the default pool of its hall and profile (door type, temperature zone, ADR flag) in the same transaction. If that pool does not exist yet, the system creates it, named after the hall plus every attribute that differs from the standard profile, for example "Halle 2 · Tiefkühl", and links it to every load type of the site.
    - Without `booking.pools`, a new dock becomes a single resource instead.
