@@ -51,6 +51,8 @@ const VALUE_FILES = ['packages/shared/src/values/*.ts', 'packages/shared/src/mod
 const IGNORE = /values-check-ignore:\s*(.*)$/;
 /** The manifest constructor of `packages/shared/src/contract/module.ts`. */
 const defineModuleName = 'defineModule';
+/** The manifest property that declares the module id. */
+const moduleIdProperty = 'id';
 
 export function valueFiles(root: string): string[] {
   return VALUE_FILES.flatMap((pattern) => globSync(pattern, { cwd: root }))
@@ -179,7 +181,8 @@ function scan(
       const defines =
         (verdict?.kind === VerdictKind.set &&
           dependencies(program, verdict.set.file).has(source.fileName)) ||
-        (verdict?.kind === VerdictKind.create && insideManifest(node));
+        (verdict?.kind === VerdictKind.create && insideManifest(node)) ||
+        declaresModuleId(node);
       if (verdict && !defines) {
         const start = node.getStart(source);
         const { line, character } = source.getLineAndCharacterOfPosition(start);
@@ -260,6 +263,22 @@ function insideManifest(node: ts.Node): boolean {
     }
   }
   return false;
+}
+
+/**
+ * True for the `id` of the object passed to `defineModule(...)`: it declares the module id, which a
+ * set member of the same spelling (`SettingsTopic.yard`) must not replace.
+ */
+function declaresModuleId(node: ts.Node): boolean {
+  const property = node.parent;
+  if (!ts.isPropertyAssignment(property) || property.initializer !== node) return false;
+  if (!ts.isIdentifier(property.name) || property.name.text !== moduleIdProperty) return false;
+  const call = property.parent.parent;
+  return (
+    ts.isCallExpression(call) &&
+    ts.isIdentifier(call.expression) &&
+    call.expression.text === defineModuleName
+  );
 }
 
 /** The verdict for a literal whose contextual type is a union of string literals from our source. */
