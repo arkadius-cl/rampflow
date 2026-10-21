@@ -121,11 +121,11 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 8. UI language order
 
-- [ ] 8.1 Split `deviceLocale()` in `apps/web/src/lib/i18n.ts` into `storedLocale()` and `browserLocale()`. Make `useSyncLocale` (`apps/web/src/components/app-shell/user-menu.tsx`) apply account, then stored choice, then browser, then tenant default, then `de`. Verify with unit tests:
+- [x] 8.1 Split `deviceLocale()` in `apps/web/src/lib/i18n.ts` into `storedLocale()` and `browserLocale()`. Make `useSyncLocale` (`apps/web/src/components/app-shell/user-menu.tsx`) apply account, then stored choice, then browser, then tenant default, then `de`. Verify with unit tests:
   - a stored `en` beats a tenant default `de` for a user without a locale;
   - the account `pl` beats a stored `en`;
   - a Turkish browser with no choice gets the tenant default.
-- [ ] 8.2 Check that invitation, carrier invitation, sign-up verification and the public-link registration store the page language as the account language. They send `locale` today. Add an API test for each path that lacks one. Verify each test reads the new user's `locale` as sent.
+- [x] 8.2 Check that invitation, carrier invitation, sign-up verification and the public-link registration store the page language as the account language. They send `locale` today. Add an API test for each path that lacks one. Verify each test reads the new user's `locale` as sent.
 
 ## 9. Strings
 
@@ -144,7 +144,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 10. Seed
 
-- [ ] 10.1 In `apps/api/scripts/seed/core.ts`, upsert the platform `booking.horizon_days` = 60 and the Acme tenant `booking.cancel_cutoff_minutes` = 240. In `apps/api/scripts/seed/sites.ts`, upsert `booking.slot_grid_minutes` = 15 for Acme's "Hamburg DC", found by name. Extend `core.test.ts` and `sites.test.ts` so two runs leave one row each. Verify on a fresh database that `pnpm db:seed` then `pnpm dev` shows "From platform", "From tenant" and "Set for this site · Inherited: 30 (Product default)" on `/t/<acme>/sites/<hamburg>/settings/booking`.
+- [x] 10.1 In `apps/api/scripts/seed/core.ts`, upsert the platform `booking.horizon_days` = 60 and the Acme tenant `booking.cancel_cutoff_minutes` = 240. In `apps/api/scripts/seed/sites.ts`, upsert `booking.slot_grid_minutes` = 15 for Acme's "Hamburg DC", found by name. Extend `core.test.ts` and `sites.test.ts` so two runs leave one row each. Verify on a fresh database that `pnpm db:seed` then `pnpm dev` shows "From platform", "From tenant" and "Set for this site · Inherited: 30 (Product default)" on `/t/<acme>/sites/<hamburg>/settings/booking`.
 
 ## 11. End-to-end tests
 
