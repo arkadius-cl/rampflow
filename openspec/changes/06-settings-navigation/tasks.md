@@ -51,7 +51,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - a site row inserted as the owner is ignored by the site view and by `access.setting` for that site.
 
   Verify both pass.
-- [ ] 4.3 Change the label and description of `i18n.default_locale` in `packages/i18n/locales/{de,en,pl}/i18n/settings.json`: "Language for new contacts" / "Sprache für neue Kontakte", applied to invitations, emails and exports for people without a language of their own; everyone can switch the UI language. Verify `pnpm i18n:derive` leaves no placeholder and the i18n check passes.
+- [x] 4.3 Change the label and description of `i18n.default_locale` in `packages/i18n/locales/{de,en,pl}/i18n/settings.json`: "Language for new contacts" / "Sprache für neue Kontakte", applied to invitations, emails and exports for people without a language of their own; everyone can switch the UI language. Verify `pnpm i18n:derive` leaves no placeholder and the i18n check passes.
 
 ## 5. Field building blocks
 

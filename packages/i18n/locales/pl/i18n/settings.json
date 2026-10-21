@@ -1,6 +1,6 @@
 {
   "default_locale": {
-    "label": "Język domyślny",
-    "description": "Język dla użytkowników, e-maili i stron bez własnego ustawienia języka."
+    "label": "Język dla nowych kontaktów",
+    "description": "Dotyczy zaproszeń, e-maili i eksportów do osób, które nie wybrały jeszcze własnego języka. Każdy może sam zmienić język interfejsu."
   }
 }

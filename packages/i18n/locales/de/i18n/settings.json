@@ -1,6 +1,6 @@
 {
   "default_locale": {
-    "label": "Standardsprache",
-    "description": "Sprache für Nutzer, E-Mails und Seiten ohne eigene Spracheinstellung."
+    "label": "Sprache für neue Kontakte",
+    "description": "Gilt für Einladungen, E-Mails und Exporte an Personen, die noch keine eigene Sprache gewählt haben. Alle können die Sprache der Oberfläche selbst umstellen."
   }
 }
