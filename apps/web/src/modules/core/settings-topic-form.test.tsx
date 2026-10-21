@@ -340,6 +340,17 @@ describe('setting anchor', () => {
     expect(document.activeElement?.id).toBe(`input-${horizon}`);
   });
 
+  it('opens the same field again when the same link is chosen twice', async () => {
+    const user = userEvent.setup();
+    const { router } = openTopic(SettingsTopic.booking);
+    await input('Booking horizon');
+    await act(() => router.navigate({ href: `/settings/booking#${horizon}` }));
+    await waitFor(() => expect(document.activeElement?.id).toBe(horizon));
+    await user.click(await input('Minimum lead time'));
+    await act(() => router.navigate({ href: `/settings/booking#${horizon}` }));
+    await waitFor(() => expect(document.activeElement?.id).toBe(horizon));
+  });
+
   it('ignores an unknown hash', async () => {
     const { router } = openTopic(SettingsTopic.booking);
     await input('Booking horizon');

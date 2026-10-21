@@ -9,7 +9,7 @@ import {
   type SettingsTopic,
 } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
-import { useBlocker, useLocation } from '@tanstack/react-router';
+import { useBlocker, useLocation, useRouter } from '@tanstack/react-router';
 import { Undo2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, type FieldErrors, type Resolver, useForm, useWatch } from 'react-hook-form';
@@ -403,7 +403,13 @@ function RetentionDialog({
  */
 export function useSettingAnchor(keys: readonly SettingKey[]) {
   const hash = useLocation({ select: (l) => l.hash });
+  // Navigating to the current URL only reloads the router, so choosing the same search result
+  // again counts resolved navigations rather than hash changes.
+  const router = useRouter();
+  const [visit, setVisit] = useState(0);
+  useEffect(() => router.subscribe('onResolved', () => setVisit((n) => n + 1)), [router]);
   const known = keys.join(' ');
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `visit` re-opens the field on a navigation to the same URL
   useEffect(() => {
     const key = decodeURIComponent(hash);
     if (!known.split(' ').includes(key)) return;
@@ -418,5 +424,5 @@ export function useSettingAnchor(keys: readonly SettingKey[]) {
       clearTimeout(timer);
       field.removeAttribute('data-highlighted');
     };
-  }, [hash, known]);
+  }, [hash, visit, known]);
 }
