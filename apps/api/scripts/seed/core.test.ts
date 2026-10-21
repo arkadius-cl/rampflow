@@ -1,10 +1,19 @@
+import { Salutation, TaxIdStatus, TaxIdType } from '@rampflow/shared/modules/core/values';
 import { eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { app } from '../../src/app.ts';
-import { appUser } from '../../src/modules/core/schema.ts';
+import { appUser, org } from '../../src/modules/core/schema.ts';
 import { ownerCount, ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
-import { ACME, ADMIN_UI_PREFS, DEMO_PASSWORD, DEMO_USERS, seed, TRANS_POL } from './core.ts';
+import {
+  ACME,
+  ACME_VAT,
+  ADMIN_UI_PREFS,
+  DEMO_PASSWORD,
+  DEMO_USERS,
+  seed,
+  TRANS_POL,
+} from './core.ts';
 
 const run = () => ownerDb().transaction((tx) => seed({ db: tx, log: () => undefined }));
 
@@ -14,6 +23,19 @@ describe('pnpm db:seed, core', () => {
     await run();
     expect(await ownerCount('org', sql`kind = 'tenant' and name = ${ACME}`)).toBe(1);
     expect(await ownerCount('org', sql`kind = 'carrier' and name = ${TRANS_POL}`)).toBe(1);
+    const [acme] = await ownerDb().select().from(org).where(eq(org.name, ACME));
+    expect(acme).toMatchObject({
+      taxIdType: TaxIdType.eu_vat,
+      taxIdValue: ACME_VAT,
+      taxIdStatus: TaxIdStatus.verified,
+      activatedAt: acme?.createdAt,
+    });
+    expect(acme?.taxIdCheckedAt).toBeInstanceOf(Date);
+    const [anna] = await ownerDb()
+      .select({ g: appUser.givenName, f: appUser.familyName, s: appUser.salutation })
+      .from(appUser)
+      .where(eq(appUser.email, 'admin@acme.local'));
+    expect(anna).toEqual({ g: 'Anna', f: 'Lenz', s: Salutation.ms });
     for (const u of DEMO_USERS) {
       expect(
         await ownerCount(

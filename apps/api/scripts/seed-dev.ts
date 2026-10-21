@@ -12,7 +12,15 @@ import { requireUrl } from './db-setup.ts';
 import type { SeedContext } from './seed/context.ts';
 
 /** Add one line per module, after the modules whose data it uses. */
-const SEEDS: readonly string[] = ['core', 'sites', 'safety', 'booking', 'carriers', 'portal'];
+const SEEDS: readonly string[] = [
+  'core',
+  'signups',
+  'sites',
+  'safety',
+  'booking',
+  'carriers',
+  'portal',
+];
 
 // The demo accounts share a published password, one of them a platform admin. An unset NODE_ENV
 // counts as production, as in apps/api/src/kernel/env.ts; `pnpm db:seed` sets development.
