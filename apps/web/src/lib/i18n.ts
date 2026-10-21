@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import type { Resources } from './i18n-resources.gen';
 
 // Staff and carrier UI languages (ADR-0009): de, en and pl, one namespace per module. The
-// language is the user's own (`app_user.locale`), else the tenant's `i18n.default_locale`, else
-// the last choice on this device, else the browser's, else German.
+// language is the user's own (`app_user.locale`), else the last explicit choice on this device,
+// else the browser's, else the tenant's `i18n.default_locale` in a tenant area, else German.
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -24,26 +24,46 @@ const STORAGE_KEY = 'rf_locale';
 export const isStaffLocale = (value: unknown): value is StaffLocale =>
   typeof value === 'string' && isValueOf(StaffLocale, value);
 
-/** The language before anyone is signed in: this device's last choice, then the browser's. */
-export function deviceLocale(): StaffLocale {
+/** This device's last explicit choice in a language menu. */
+export function storedLocale(): StaffLocale | undefined {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (isStaffLocale(stored)) return stored;
+  return isStaffLocale(stored) ? stored : undefined;
+}
+
+/** The first of the browser's preferred languages the UI has. */
+export function browserLocale(): StaffLocale | undefined {
   for (const tag of navigator.languages) {
     const language = tag.split('-')[0];
     if (isStaffLocale(language)) return language;
   }
-  return FALLBACK_LOCALE;
+  return undefined;
+}
+
+/**
+ * The UI language (ADR-0009): the account's, then this device's choice, then the browser's, then
+ * the tenant default, then German.
+ */
+export function pickLocale(
+  account: StaffLocale | null | undefined,
+  tenantDefault?: StaffLocale,
+): StaffLocale {
+  return account ?? storedLocale() ?? browserLocale() ?? tenantDefault ?? FALLBACK_LOCALE;
 }
 
 export function initI18n(): Promise<i18n> {
-  return createBrowserI18n(NAMESPACES, deviceLocale());
+  return createBrowserI18n(NAMESPACES, pickLocale(undefined));
 }
 
-/** Switches the UI language and remembers it on this device. */
-export async function applyLocale(instance: i18n, locale: StaffLocale): Promise<void> {
-  localStorage.setItem(STORAGE_KEY, locale);
+/** Shows the UI in `locale`, without taking it for the device's choice. */
+export async function showLocale(instance: i18n, locale: StaffLocale): Promise<void> {
   document.documentElement.lang = locale;
   if (instance.language !== locale) await instance.changeLanguage(locale);
+}
+
+/** A choice in a language menu: shows it and remembers it on this device. */
+export async function applyLocale(instance: i18n, locale: StaffLocale): Promise<void> {
+  localStorage.setItem(STORAGE_KEY, locale);
+  await showLocale(instance, locale);
 }
 
 /** The current UI language. */
