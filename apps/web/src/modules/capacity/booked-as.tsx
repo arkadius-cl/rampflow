@@ -87,7 +87,7 @@ export function BookedAsSelect({
   return (
     <NativeSelect
       size="sm"
-      className="w-44"
+      className="w-64"
       aria-label={t(($) => $.capacity.booked_as.label, { code: dock.code })}
       value={holder ? choiceOf(holder) : ''}
       disabled={move.isPending || (!poolsOn && holder?.kind === ResourceKind.pool)}

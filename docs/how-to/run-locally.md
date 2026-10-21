@@ -76,9 +76,11 @@ related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/dec
    | `gate@acme.local` | Acme Logistics | `gate_operator` (all sites) |
    | `dock@acme.local` | Acme Logistics | `dock_operator` (all sites) |
    | `admin@trans-pol.local` | Trans-Pol Sp. z o.o. (carrier, linked to Acme) | `carrier_admin` |
-   | `admin@nordhafen.local` | Nordhafen Kühllogistik GmbH (tenant in onboarding, package start, W-IdNr unverified) | `tenant_admin` |
+   | `admin@nordhafen.local` | Nordhafen Kühllogistik GmbH (tenant in onboarding, package start, W-IdNr unverified; site and hall done, dock open) | `tenant_admin` |
    | `admin@acme-sued.local` | Acme Logistik Süd GmbH (tenant in onboarding, Acme's VAT number, possible duplicate) | `tenant_admin` |
    | `admin@wisla-magazyny.local` | Wisła Magazyny Sp. z o.o. (tenant in onboarding, VAT number unavailable, Polish) | `tenant_admin` |
+
+   Signed in, each onboarding tenant lands on its onboarding checklist. Nordhafen has the site *Bremerhaven* with the hall *Halle 1*, so its checklist shows "Create a site" and "Add a hall" done and "Add a dock" open; carrier invitations and public links stay blocked until that dock exists. `admin@acme-sued.local` and `admin@wisla-magazyny.local` show an empty checklist with every step open.
 
    The seed also leaves two registrations waiting for their email link (`apps/api/scripts/seed/signups.ts`): `kontakt@kuehlhaus-weser.local` with a link that works for 24 hours after the run, and `info@lagerhaus-elbe.local` with a link that expired 2 days before the run. `db:seed` prints the Weser link:
 
