@@ -116,6 +116,28 @@ describe('MD-01 sites', () => {
     );
   });
 
+  it('leaves the hours alone when the site is renamed', async () => {
+    const created = (await (
+      await admin(w.B).post(sitesOf(w.B), {
+        body: { ...garching, name: 'Lager Freising', hours: hoursTemplateRows.two_shifts },
+      })
+    ).json()) as { id: string };
+    const hoursOf = async () =>
+      (
+        (await (
+          await admin(w.B).get(`/api/t/${w.B.tenantId}/capacity/hours?siteId=${created.id}`)
+        ).json()) as { items: unknown[] }
+      ).items;
+    const before = await hoursOf();
+    expect(before).toEqual(hoursTemplateRows.two_shifts.map((r) => ({ resourceId: null, ...r })));
+
+    const rename = await admin(w.B).patch(`${sitesOf(w.B)}/${created.id}`, {
+      body: { name: 'Lager Freising Nord' },
+    });
+    expect(rename.status).toBe(200);
+    expect(await hoursOf()).toEqual(before);
+  });
+
   it('answers 422 at the hours path and writes no site for missing, empty or overlapping hours', async () => {
     const { hours: _, ...withoutHours } = garching;
     const overlapping = [
