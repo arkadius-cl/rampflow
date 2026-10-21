@@ -31,6 +31,15 @@ export const cases = defineRouteCases([
   },
   {
     ...base,
+    method: HttpMethod.PATCH,
+    path: P,
+    // A setting whose `requires` feature is off answers 403 entitlement_required (TN-02).
+    entitlement: Feature.safety.gate_enforcement,
+    params: (w) => ({ orgId: w.A.tenantId }),
+    body: (w) => ({ ...site(w), set: { 'safety.require_for_checkin': false }, reset: [] }),
+  },
+  {
+    ...base,
     method: HttpMethod.PUT,
     path: `${P}/:key`,
     // A setting whose `requires` feature is off answers 403 entitlement_required (TN-02).

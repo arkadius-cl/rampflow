@@ -32,7 +32,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 ## 3. Batch write API
 
 - [x] 3.1 Add `PatchPlatformSettings` and `PatchTenantSettings` to `packages/shared/src/modules/core/api.settings.ts`: at least one entry, and no key in both `set` and `reset` (422). Verify with schema unit tests.
-- [ ] 3.2 Implement `writeSettings` in `apps/api/src/modules/core/settings/settings.ts` per design decision 5 (validate all, then one upsert and one delete). Verify in `settings.test.ts`:
+- [x] 3.2 Implement `writeSettings` in `apps/api/src/modules/core/settings/settings.ts` per design decision 5 (validate all, then one upsert and one delete). Verify in `settings.test.ts`:
   - two keys stored;
   - one invalid value → 422 at `["set", key]` and nothing stored;
   - set plus reset in one call;
@@ -40,13 +40,13 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
   - disallowed scope 400 with `allowed`;
   - entitlement off 403 with the key;
   - `updated_by` and `updated_at` written.
-- [ ] 3.3 Mount `PATCH /` in `apps/api/src/modules/core/settings/routes.tenant.ts` and `PATCH /settings` in `apps/api/src/modules/core/platform/routes.platform.ts`, with `op({ id, stories: [TN_02] / [PL_03], … responses: { 200: type<SettingsView>() } })` and `validate`. Add route cases for both in `settings/route-cases.ts` and the platform route cases: foreign tenant, foreign site 404, missing permission, entitlement off. Verify `route-coverage.test.ts` and `settings.test.ts` pass, including the 404 for another tenant's `siteId`.
-- [ ] 3.4 Run `pnpm api:docs`. Verify `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md` list both PATCH routes with their request and response schemas.
+- [x] 3.3 Mount `PATCH /` in `apps/api/src/modules/core/settings/routes.tenant.ts` and `PATCH /settings` in `apps/api/src/modules/core/platform/routes.platform.ts`, with `op({ id, stories: [TN_02] / [PL_03], … responses: { 200: type<SettingsView>() } })` and `validate`. Add route cases for both in `settings/route-cases.ts` and the platform route cases: foreign tenant, foreign site 404, missing permission, entitlement off. Verify `route-coverage.test.ts` and `settings.test.ts` pass, including the 404 for another tenant's `siteId`.
+- [x] 3.4 Run `pnpm api:docs`. Verify `apps/api/openapi.gen.json` and the route tables in `docs/reference/api-routes.md` list both PATCH routes with their request and response schemas.
 
 ## 4. Language setting scope (coordinator lands the manifest line)
 
 - [x] 4.1 Report the manifest change `i18n.default_locale` → `scopes: [SettingScope.platform, SettingScope.tenant]` (`packages/shared/src/modules/i18n/manifest.ts`) to the coordinator, and rebase once it lands. Verify `pnpm docs:index` updates the catalog table in `docs/reference/module-contract.md`, and `pnpm docs:check` passes.
-- [ ] 4.2 Add to `settings.test.ts`:
+- [x] 4.2 Add to `settings.test.ts`:
   - a write of `i18n.default_locale` with a `siteId` answers 400 `scope_not_allowed` with `allowed: ['platform', 'tenant']`;
   - a site row inserted as the owner is ignored by the site view and by `access.setting` for that site.
 

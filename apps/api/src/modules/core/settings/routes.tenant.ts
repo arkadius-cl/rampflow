@@ -1,4 +1,5 @@
 import {
+  PatchTenantSettings,
   PutTenantSetting,
   type SettingEntry,
   SettingsQuery,
@@ -15,7 +16,13 @@ import type { AppEnv } from '../../../kernel/env.ts';
 import { validate } from '../../../kernel/validate.ts';
 import { requireSite } from '../sites/sites.ts';
 import { tenantRequest } from '../sites/tenant.ts';
-import { resetSetting, type SettingTarget, settingsView, writeSetting } from './settings.ts';
+import {
+  resetSetting,
+  type SettingTarget,
+  settingsView,
+  writeSetting,
+  writeSettings,
+} from './settings.ts';
 
 const KeyParam = z.object({ key: z.string().min(1).max(100) });
 
@@ -49,6 +56,31 @@ export const tenant = new Hono<AppEnv>()
     async (c) => {
       const { req, target } = await targetOf(c, c.req.valid('query').siteId);
       return c.json(await settingsView(c.var.db, target, req.entitlements), 200);
+    },
+  )
+  .patch(
+    '/',
+    op({
+      id: 'core.settings.patchSettings',
+      stories: [StoryId.TN_02],
+      description:
+        "A topic form's save: `{ siteId: uuid | null, set: { <key>: value }, reset: [<key>] }` → the level's settings view. All or nothing. At least one entry and no key in both lists (422). 400 for an unknown key or a level the key lacks (`scope_not_allowed`, `allowed`), 403 `entitlement_required` with the blocking feature, 422 under `[\"set\", key, ...]`, 404 for another tenant's site",
+      responses: { 200: type<SettingsView>() },
+    }),
+    validate(ValidationTarget.json, PatchTenantSettings),
+    async (c) => {
+      const { siteId, set, reset } = c.req.valid('json');
+      const { req, target } = await targetOf(c, siteId);
+      if (!req.userId) throw new Error('settings write without a user');
+      const view = await writeSettings(
+        c.var.db,
+        target,
+        req.entitlements,
+        { set, reset },
+        req.userId,
+        c.var.clock.now(),
+      );
+      return c.json(view, 200);
     },
   )
   .put(

@@ -4,6 +4,7 @@ import {
   isSettingAvailable,
   parseSettingWrite,
   resolveSetting,
+  type SettingIssue,
   type SettingKey,
   type SettingLevels,
 } from '@rampflow/shared';
@@ -14,7 +15,7 @@ import {
   SettingScope,
   SettingWriteErrorCode,
 } from '@rampflow/shared/values';
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { type SiteId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -167,6 +168,68 @@ export async function writeSetting(
       set,
     });
   return entryOf(tx, target, entitlements, key);
+}
+
+/**
+ * A topic form's save (ADR-0007, "Write path"): checks every entry first, then stores the `set`
+ * values and deletes the `reset` rows. The first unknown key, missing level or blocked
+ * entitlement throws as for `writeSetting`; invalid values throw one 422 with their issues under
+ * `["set", key, ...]`. The request transaction makes it all or nothing.
+ */
+export async function writeSettings(
+  tx: Tx,
+  target: SettingTarget,
+  entitlements: Entitlements | null,
+  changes: { set: Record<string, unknown>; reset: readonly string[] },
+  userId: UserId,
+  now: Date,
+): Promise<SettingsView> {
+  const values: { key: SettingKey; value: unknown }[] = [];
+  const invalid: SettingIssue[] = [];
+  for (const [key, value] of Object.entries(changes.set)) {
+    const parsed = parseSettingWrite(catalog, entitlements, { key, value, scope: target.scope });
+    if (parsed.ok) values.push(parsed.value);
+    else if (parsed.error.code === SettingWriteErrorCode.invalid_value)
+      invalid.push(...parsed.error.issues.map((i) => ({ ...i, path: ['set', key, ...i.path] })));
+    else throw writeError(parsed.error);
+  }
+  const resets: SettingKey[] = [];
+  for (const key of changes.reset) {
+    // A reset has no value: only the key, level and entitlement checks apply.
+    const parsed = parseSettingWrite(catalog, entitlements, {
+      key,
+      value: undefined,
+      scope: target.scope,
+    });
+    if (!parsed.ok && parsed.error.code !== SettingWriteErrorCode.invalid_value)
+      throw writeError(parsed.error);
+    resets.push(requireSettingKey(key));
+  }
+  if (invalid.length > 0)
+    throw new ApiError(ErrorCode.validation_failed, 'Invalid json', { issues: invalid });
+
+  if (values.length > 0) {
+    await tx
+      .insert(settingValue)
+      .values(
+        values.map(({ key, value }) => ({
+          tenantId: target.scope === SettingScope.platform ? null : target.tenantId,
+          siteId: target.scope === SettingScope.site ? target.siteId : null,
+          key,
+          value: wrapJson(value),
+          updatedBy: userId,
+          updatedAt: now,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [settingValue.tenantId, settingValue.siteId, settingValue.key],
+        set: { value: sql`excluded.value`, updatedBy: userId, updatedAt: now },
+      });
+  }
+  if (resets.length > 0) {
+    await tx.delete(settingValue).where(and(rowOf(target), inArray(settingValue.key, resets)));
+  }
+  return settingsView(tx, target, entitlements);
 }
 
 /** "Reset to inherited": deletes the target's row. Unknown keys answer 400; a missing row is fine. */

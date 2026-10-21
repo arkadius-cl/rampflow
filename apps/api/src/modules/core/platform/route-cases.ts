@@ -67,6 +67,13 @@ export const cases = defineRouteCases([
   },
   {
     ...settings,
+    method: HttpMethod.PATCH,
+    path: '/api/platform/settings',
+    params: none,
+    body: () => ({ set: {}, reset: ['booking.horizon_days'] }),
+  },
+  {
+    ...settings,
     method: HttpMethod.DELETE,
     path: '/api/platform/settings/:key',
     params: () => ({ key: 'booking.horizon_days' }),

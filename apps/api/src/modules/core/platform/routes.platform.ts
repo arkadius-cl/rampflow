@@ -10,6 +10,7 @@ import {
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
 import {
+  PatchPlatformSettings,
   PutPlatformSetting,
   type SettingEntry,
   type SettingsView,
@@ -31,7 +32,7 @@ import { requirePermission } from '../../../kernel/access.ts';
 import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { validate } from '../../../kernel/validate.ts';
-import { resetSetting, settingsView, writeSetting } from '../settings/settings.ts';
+import { resetSetting, settingsView, writeSetting, writeSettings } from '../settings/settings.ts';
 import { invitationView } from '../staff/invitations.ts';
 import {
   createTenant,
@@ -222,6 +223,29 @@ export const platform = new Hono<AppEnv>()
     }),
     settings,
     async (c) => c.json(await settingsView(c.var.db, PLATFORM, null), 200),
+  )
+  .patch(
+    '/settings',
+    op({
+      id: 'core.platform.patchSettings',
+      stories: [StoryId.PL_03],
+      description:
+        'A topic form\'s save: `{ set: { <key>: value }, reset: [<key>] }` → the platform settings view. All or nothing. At least one entry and no key in both lists (422). 400 for an unknown key or one without platform scope, 422 under `["set", key, ...]`. Tenant and site rows stay',
+      responses: { 200: type<SettingsView>() },
+    }),
+    settings,
+    validate(ValidationTarget.json, PatchPlatformSettings),
+    async (c) => {
+      const view = await writeSettings(
+        c.var.db,
+        PLATFORM,
+        null,
+        c.req.valid('json'),
+        platformUser(c),
+        c.var.clock.now(),
+      );
+      return c.json(view, 200);
+    },
   )
   .put(
     '/settings/:key',
