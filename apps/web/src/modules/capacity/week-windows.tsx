@@ -76,28 +76,7 @@ export function WeekWindowsField<T extends FieldValues>({
     />
   );
 
-  if (readOnly) {
-    return (
-      <dl
-        aria-label={label}
-        className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm"
-      >
-        {WEEKDAYS.map((weekday) => {
-          const day = rows.filter((r) => r.weekday === weekday);
-          return (
-            <div key={weekday} className="contents">
-              <dt className="font-medium">{weekdayName(weekday, locale)}</dt>
-              <dd className={cn(day.length === 0 && 'text-muted-foreground')}>
-                {day.length === 0
-                  ? t(($) => $.capacity.hours.closed)
-                  : day.map((r) => `${r.opens}–${r.closes}`).join(', ')}
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
-    );
-  }
+  if (readOnly) return <WeekHoursList rows={rows} label={label} />;
 
   return (
     <div className="flex flex-col gap-2">
@@ -165,5 +144,37 @@ export function WeekWindowsField<T extends FieldValues>({
       {listError ? <FieldErrorText>{t(($) => $.capacity.hours.none_open)}</FieldErrorText> : null}
       <p className="text-xs text-muted-foreground">{t(($) => $.capacity.hours.midnight_hint)}</p>
     </div>
+  );
+}
+
+/** The windows of each weekday as text, "Closed" for a day without one. */
+export function WeekHoursList({
+  rows,
+  label,
+}: {
+  rows: readonly Pick<HoursRow, 'weekday' | 'opens' | 'closes'>[];
+  label?: string;
+}) {
+  const { t } = useTranslation('booking');
+  const locale = useLocale();
+  return (
+    <dl
+      aria-label={label}
+      className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm"
+    >
+      {WEEKDAYS.map((weekday) => {
+        const day = rows.filter((r) => r.weekday === weekday);
+        return (
+          <div key={weekday} className="contents">
+            <dt className="font-medium">{weekdayName(weekday, locale)}</dt>
+            <dd className={cn(day.length === 0 && 'text-muted-foreground')}>
+              {day.length === 0
+                ? t(($) => $.capacity.hours.closed)
+                : day.map((r) => `${r.opens}–${r.closes}`).join(', ')}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
   );
 }

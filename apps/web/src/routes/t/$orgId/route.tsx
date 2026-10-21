@@ -16,10 +16,12 @@ import {
 } from '@/lib/access';
 import { isFailure } from '@/lib/api';
 import { isStaffLocale } from '@/lib/i18n';
+import { OnboardingNotice } from '@/modules/core/onboarding';
 
 // The tenant area (ADR-0011): one context request per org gates every child route. A 404 (not a
 // member, or no such org) renders "no access" without the shell, never a redirect. Screens that
 // set `staticData: { shell: 'station' }` get the tablet station layout instead of the sidebar.
+// While the tenant is in onboarding, both layouts show the onboarding notice (ON-03).
 
 export const Route = createFileRoute('/t/$orgId')({
   beforeLoad: async ({ context, params, location }): Promise<AreaRouteContext> => {
@@ -51,13 +53,14 @@ function TenantLayout() {
   useSyncLocale(me, tenantLocale(context as TenantContext));
   if (station) {
     return (
-      <StationShell access={access} me={me}>
+      <StationShell access={access} me={me} notice={<OnboardingNotice orgId={orgId} />}>
         <Outlet />
       </StationShell>
     );
   }
   return (
     <AppShell access={access} me={me}>
+      <OnboardingNotice orgId={orgId} className="mb-4" />
       <Outlet />
     </AppShell>
   );

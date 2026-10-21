@@ -1,0 +1,45 @@
+{
+  "title": "Skonfiguruj firmę",
+  "description": "Trzy kroki, zanim przewoźnicy będą mogli rezerwować: lokalizacja z godzinami otwarcia, hala i rampa. Pierwsza rampa aktywuje firmę.",
+  "progress": "Ukończono {{done}} z {{total}} kroków",
+  "state": {
+    "done": "Gotowe",
+    "open": "Otwarte"
+  },
+  "steps": {
+    "site": {
+      "title": "Utwórz lokalizację",
+      "description": "Adres, strefa czasowa, region i tygodniowe godziny otwarcia."
+    },
+    "hall": {
+      "title": "Dodaj halę",
+      "description": "Hale grupują rampy lokalizacji."
+    },
+    "dock": {
+      "title": "Dodaj rampę",
+      "description": "Pierwsza rampa aktywuje firmę i udostępnia przewoźników oraz rezerwacje."
+    }
+  },
+  "needs_site": "Najpierw utwórz lokalizację.",
+  "hours": "Godziny otwarcia lokalizacji",
+  "edit_hours": "Edytuj godziny otwarcia",
+  "active": {
+    "title": "Firma jest skonfigurowana",
+    "since": "Aktywna od {{date}},",
+    "next": "Kolejne kroki",
+    "invite_carriers": "Zaproś przewoźników",
+    "public_link": "Utwórz publiczny link do rezerwacji",
+    "staff": "Zaproś pracowników"
+  },
+  "notice": {
+    "text": "Firma jest jeszcze konfigurowana. Przewoźnicy i rezerwacje będą dostępni po utworzeniu pierwszej rampy.",
+    "link": "Otwórz listę kontrolną"
+  },
+  "gate": {
+    "carriers": "Przewoźników można zaprosić po utworzeniu pierwszej rampy.",
+    "links": "Linki publiczne będą dostępne po utworzeniu pierwszej rampy.",
+    "bookings": "Rezerwacje i przyjęcia bez rezerwacji będą dostępne po utworzeniu pierwszej rampy.",
+    "walk_in": "Przyjęcia bez rezerwacji będą dostępne po utworzeniu pierwszej rampy.",
+    "link": "Dokończ konfigurację"
+  }
+}

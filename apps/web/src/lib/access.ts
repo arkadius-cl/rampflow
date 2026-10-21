@@ -14,6 +14,7 @@ import type {
   TenantContext,
 } from '@rampflow/shared/modules/core/api.context';
 import type { UiPrefKey, UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import type { TenantStatus } from '@rampflow/shared/modules/core/values';
 import { ErrorCode, OrgKind } from '@rampflow/shared/values';
 import {
   type QueryClient,
@@ -198,4 +199,11 @@ export function useAccess() {
       return value.value as SettingValue<K>;
     },
   };
+}
+
+/** The tenant's status (ON-02): `onboarding` until its first dock exists, then `active`. */
+export function useTenantStatus(): TenantStatus {
+  const access = useAreaAccess();
+  if (access.area !== OrgKind.tenant) throw new Error('useTenantStatus() outside the tenant area');
+  return access.context.status;
 }

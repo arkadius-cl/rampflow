@@ -48,6 +48,7 @@ import { DetailPanel } from '@/modules/booking/detail-panel';
 import { BookingStatusBadge, useDayLabel } from '@/modules/booking/display';
 import { PlanBoard, visibleWindow } from '@/modules/booking/plan-board';
 import { boardQuery, bookingListQuery } from '@/modules/booking/queries';
+import { OnboardingGate } from '@/modules/core/onboarding';
 
 // BK-01, BK-02, BK-03: the dispatcher's day per site (ADR-0011 route map). The site, day, view,
 // selected booking and the staff booking sheet live in the URL, so a reload or a shared link
@@ -82,10 +83,12 @@ function useNow(): Date {
 
 function PlanPage() {
   const { t } = useTranslation('booking');
+  const { t: tc } = useTranslation();
   const { orgId } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const access = useAccess();
+  const walkIn = access.can(Permission.booking.walk_in) && access.can(Permission.yard.gate);
   const sites = useQuery(tenantContextQuery(orgId)).data?.sites ?? [];
   const site = sites.find((s) => s.id === search.site) ?? sites[0];
   const now = useNow();
@@ -153,20 +156,35 @@ function PlanPage() {
         </ToggleGroup>
         <div className="ml-auto flex items-center gap-2">
           <Legend />
-          {access.can(Permission.booking.walk_in) && access.can(Permission.yard.gate) ? (
-            <a
-              href={`/t/${orgId}/gate?site=${site.id}&walkin=1`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            >
-              <TruckIcon />
-              {t(($) => $.plan.toolbar.walk_in)}
-            </a>
-          ) : null}
-          {access.can(Permission.booking.staff_book) ? (
-            <Button size="sm" onClick={() => set({ new: 1 })}>
-              <PlusIcon />
-              {t(($) => $.plan.toolbar.new)}
-            </Button>
+          {walkIn || access.can(Permission.booking.staff_book) ? (
+            <OnboardingGate reason={tc(($) => $.onboarding.gate.bookings)}>
+              {(blocked) => (
+                <>
+                  {walkIn ? (
+                    blocked ? (
+                      <Button variant="outline" size="sm" disabled>
+                        <TruckIcon />
+                        {t(($) => $.plan.toolbar.walk_in)}
+                      </Button>
+                    ) : (
+                      <a
+                        href={`/t/${orgId}/gate?site=${site.id}&walkin=1`}
+                        className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                      >
+                        <TruckIcon />
+                        {t(($) => $.plan.toolbar.walk_in)}
+                      </a>
+                    )
+                  ) : null}
+                  {access.can(Permission.booking.staff_book) ? (
+                    <Button size="sm" disabled={blocked} onClick={() => set({ new: 1 })}>
+                      <PlusIcon />
+                      {t(($) => $.plan.toolbar.new)}
+                    </Button>
+                  ) : null}
+                </>
+              )}
+            </OnboardingGate>
           ) : null}
         </div>
       </div>

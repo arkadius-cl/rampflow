@@ -2,12 +2,14 @@ import { OrgKind } from '@rampflow/shared/values';
 import { queryOptions, useQueryClient } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
+import { onboardingKey } from '@/modules/core/queries';
 
 // Master data of the sites screens (MD-01 to MD-05). Keys follow lib/query-keys.ts:
 //   ['tenant', orgId, 'core', 'sites', ...]                     sites, halls, docks
 //   ['tenant', orgId, 'booking', 'capacity', siteId, ...]       resources, hours, closures, load types
-// Every write invalidates both prefixes and the tenant context (which lists the active sites),
-// so a dock moved between resources shows the same in the dock table and the pool editor.
+// Every write invalidates both prefixes, the tenant context (which lists the active sites and the
+// tenant status) and the onboarding checklist, so a dock moved between resources shows the same
+// in the dock table and the pool editor, and the first dock unlocks the gated actions at once.
 
 const sitesKey = (orgId: string) => ['tenant', orgId, 'core', 'sites'] as const;
 const capacityKey = (orgId: string, siteId: string) =>
@@ -67,7 +69,7 @@ export const capacityQueries = {
     }),
 };
 
-/** Refetches every sites and capacity query of the org, and the tenant context. */
+/** Refetches every sites and capacity query of the org, the tenant context and the checklist. */
 export function useRefreshMasterData(orgId: string) {
   const queryClient = useQueryClient();
   return () =>
@@ -75,6 +77,7 @@ export function useRefreshMasterData(orgId: string) {
       queryClient.invalidateQueries({ queryKey: sitesKey(orgId) }),
       queryClient.invalidateQueries({ queryKey: ['tenant', orgId, 'booking', 'capacity'] }),
       queryClient.invalidateQueries({ queryKey: queryKeys.context(OrgKind.tenant, orgId) }),
+      queryClient.invalidateQueries({ queryKey: onboardingKey(orgId) }),
     ]);
 }
 

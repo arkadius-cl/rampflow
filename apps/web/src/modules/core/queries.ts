@@ -1,4 +1,5 @@
 import type { ListStateOf } from '@rampflow/shared/contract/list';
+import type { OnboardingView } from '@rampflow/shared/modules/core/api.onboarding';
 import {
   type PackageList,
   type TenantDetail,
@@ -48,6 +49,15 @@ export const platformSettingsQuery = queryOptions({
   queryKey: platformKeys.settings(),
   queryFn: () => call<SettingsView>(api.platform.settings.$get()),
 });
+
+export const onboardingKey = (orgId: string) => ['tenant', orgId, 'core', 'onboarding'] as const;
+
+/** The checklist of a tenant in onboarding (ON-01); master data writes invalidate it. */
+export const onboardingQuery = (orgId: string) =>
+  queryOptions({
+    queryKey: onboardingKey(orgId),
+    queryFn: () => call<OnboardingView>(api.t[':orgId'].onboarding.$get({ param: { orgId } })),
+  });
 
 export const staffKey = (orgId: string) => ['tenant', orgId, 'core', 'staff'] as const;
 

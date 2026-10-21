@@ -46,7 +46,7 @@ export async function overrideEntitlement(
 /** An API call as the context's signed-in user; fails the test on a non-2xx answer. */
 export async function apiCall<T>(
   context: BrowserContext,
-  method: 'GET' | 'POST' | 'PUT',
+  method: HttpMethod,
   path: string,
   data?: unknown,
 ): Promise<T> {

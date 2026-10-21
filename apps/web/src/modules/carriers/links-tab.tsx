@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/table';
 import { useAccess } from '@/lib/access';
 import { api, call } from '@/lib/api';
+import { OnboardingGate } from '@/modules/core/onboarding';
 import { carrierKeys, publicLinksQuery, publicLinkUrl } from './queries';
 
 /**
@@ -109,6 +110,7 @@ export function LinksTab({ orgId }: { orgId: string }) {
 
 function LinkRow({ orgId, link }: { orgId: string; link: PublicLinkView }) {
   const { t } = useTranslation('booking');
+  const { t: tc } = useTranslation();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const refresh = () => queryClient.invalidateQueries({ queryKey: carrierKeys.publicLinks(orgId) });
@@ -204,15 +206,19 @@ function LinkRow({ orgId, link }: { orgId: string; link: PublicLinkView }) {
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">{t(($) => $.carriers.links.none)}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={create.isPending}
-              onClick={() => create.mutate()}
-            >
-              <LinkIcon />
-              {t(($) => $.carriers.links.create)}
-            </Button>
+            <OnboardingGate reason={tc(($) => $.onboarding.gate.links)}>
+              {(blocked) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={blocked || create.isPending}
+                  onClick={() => create.mutate()}
+                >
+                  <LinkIcon />
+                  {t(($) => $.carriers.links.create)}
+                </Button>
+              )}
+            </OnboardingGate>
           </div>
         )}
       </TableCell>
