@@ -123,9 +123,8 @@ await goto(onboarding, `/t/${onboardingId}`);
 await onboarding.waitForURL(/\/onboarding$/);
 await onboarding.getByText('2 of 3 steps done').waitFor();
 await shot(onboarding, 'onboarding');
-await goto(admin, `/t/${tenantId}/settings`);
-await admin.getByRole('tab', { name: 'Hamburg DC' }).click();
-await shot(admin, 'settings', admin.getByRole('region', { name: 'Booking rules' }));
+await goto(admin, `/t/${tenantId}/sites/${hamburgDc}/settings/booking`);
+await shot(admin, 'settings');
 
 const carrier = await open('carrier', 'desktop');
 const carrierId = (await json(carrier, '/me')).memberships.find(
