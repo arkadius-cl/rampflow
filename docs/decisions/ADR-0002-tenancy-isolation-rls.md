@@ -5,8 +5,8 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, tenancy, security, rls, postgres, testing]
 status: stable
-updated: 2026-10-19
-related: [docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/reference/data-model.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md]
+updated: 2026-10-21
+related: [docs/decisions/ADR-0016-tenant-self-registration.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/reference/data-model.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md]
 ---
 
 # ADR-0002: Tenancy isolation with application scoping and row-level security
@@ -84,7 +84,7 @@ create function app.linked_tenant(tenant uuid) returns boolean language sql stab
 - `app.site_allowed` uses `case`, because `or` does not short-circuit: `'*'::uuid[]` would throw for a scope with all sites. The party matrix test found this.
 - `app.linked_tenant` reads under the caller's policies. The baseline creates it with `check_function_bodies = off`, so policies in the generated migration can call it before `tenant_carrier_link` exists.
 - `app.shares_org(user)` (security definer, `search_path` pinned) answers whether a user is a member of the scope's tenant or carrier, or, for a tenant, of a linked carrier. The `app_user` policies use it, because the caller's own membership policy hides other orgs' memberships.
-- `app.user_by_email(email)` (security definer) returns id, password hash, verification and disabled state for the `anonymous`, `token` and `public` parties only. Sign-in, magic-link and reset requests use it before anyone is signed in.
+- `app.user_by_email(address)` (security definer) returns `id`, `password_hash`, `email_verified_at`, `disabled_at` and `locale` for the `anonymous`, `token` and `public` parties only. Sign-in, magic-link, reset and registration requests use it before anyone is signed in. Change 02 added `locale` in the custom migration `0008_02-tenant-self-registration-backfill.sql`, so the known-account email of a registration uses the account's language.
 
 Policies call the accessors as `(select app.tenant_id())`, so the planner evaluates them once per statement.
 
@@ -117,14 +117,14 @@ export const scoped = (resolve: (c: Context<AppEnv>) => Promise<Scope>) =>
 
 | Party | Entered by | Sees | Writes |
 |---|---|---|---|
-| `anonymous` | `/api/auth/*` before a session exists | Platform setting rows; users only through `app.user_by_email()` | Outbox rows without a tenant (magic links, resets) |
+| `anonymous` | `/api/auth/*` before a session exists, and `POST /api/public/signups` | Platform setting rows; users only through `app.user_by_email()` | Outbox rows without a tenant (magic links, resets, registration emails) |
 | `user` | Any signed-in request without an org: `/api/me`, invitation acceptance by a signed-in user | Own `app_user` row, own memberships and their orgs, platform setting rows | Own profile; a new carrier org during acceptance |
 | `platform` | `/api/platform/*` for `platform_admin` members of the platform org | All orgs, users, memberships, subscriptions, overrides, platform settings, invitations | The same. It has no policy on operational tenant tables. |
 | `tenant` | `/api/t/:orgId/*` after the server finds the caller's membership in `:orgId`. Gate and dock operators carry their site list; one without `membership_site` rows sees all sites. | Rows with `tenant_id = app.tenant_id()`; site-scoped tables also require `app.site_allowed(site_id)`. Users of the tenant and of its linked carriers. | Same rows. |
 | `carrier` | `/api/c/:orgId/*` after the membership check | Own bookings, avis, events and driver links at every tenant (`carrier_id = app.carrier_id()`); reference data (sites, halls, docks, resources, load types, logo, settings, subscription) of linked tenants, including deactivated links so old bookings stay readable; own org's users | Own org's users and invitations |
 | `carrier_at_tenant` | `/api/c/:orgId/at/:tenantId/*` after the carrier's link to the tenant is found; it must be active for create and reschedule | Reference data of that tenant (including hours, closures and resource membership); its **own** bookings and children there | Bookings, avis, events and driver links with `carrier_id = app.carrier_id()` and `tenant_id = app.tenant_id()`; outbox rows |
 | `driver` | `/api/driver/*` after the `rf_driver` cookie resolves to an unrevoked, unexpired `driver_access` row | The one booking (`id = app.booking_id()`), its events and driver links, the tenant's reference data, published safety content, and its own acknowledgements, links and attempts. Not `avis`: it holds the visit's personal data. | `booking_event` rows of its booking (`safety_linked`), safety acknowledgements and their link to this booking, attempts, passes; locks its booking for `transitionBooking` |
-| `token` | Invitation, carrier invitation, registration and driver token exchange, before or while the holder signs in | Only the rows whose `token_hash = app.token_hash()`; the accepting user's own row | Marks that row used; creates a user or a carrier org on acceptance |
+| `token` | Invitation, carrier invitation, carrier registration, tenant registration (`/api/public/signups/inspect` and `/verify`) and driver token exchange, before or while the holder signs in | Only the rows whose `token_hash = app.token_hash()`; the accepting user's own row | Marks that row used; creates a user or a carrier org on acceptance; on tenant registration an onboarding tenant org (`kind = 'tenant' and activated_at is null`) and its `start` subscription (`package = 'start'`) |
 | `public` | `/api/public/links/:slug` after the slug lookup, and `/api/public/logos/:tenantId/:sha` | That tenant's org, sites, logo, subscription and settings | Carrier registrations and users for that tenant |
 | `system` | Job runner steps that span tenants | `org` (to list tenants), `outbox_message`, platform setting rows | `outbox_message` |
 
@@ -145,12 +145,13 @@ Rules that follow from the table:
   returning id, org_id, org_kind, role, site_ids
   ```
 
-  Under read committed, a select-then-update lets two concurrent exchanges both succeed; the guarded update lets exactly one return a row. `auth_token`, `carrier_invitation` and `driver_access` claims use the same shape. This resolves the earlier contradiction with ADR-0003, which required the token to be marked used in the transaction that creates the session or membership.
+  Under read committed, a select-then-update lets two concurrent exchanges both succeed; the guarded update lets exactly one return a row. `auth_token`, `carrier_invitation`, `driver_access` and `tenant_signup` claims use the same shape. A tenant registration ([ADR-0016](ADR-0016-tenant-self-registration.md)) writes the org, the subscription and the user under `token`, and only the `tenant_admin` membership under `asScope` as the new tenant with actor `system:signup`. This resolves the earlier contradiction with ADR-0003, which required the token to be marked used in the transaction that creates the session or membership.
+- **The duplicate check reads as the platform.** `core/signup/duplicates.redeem.ts` switches with `asScope` to `platformSystemScope` (`kernel/system.ts`, the platform party with the nil user id, also used by the retention job) to look for another tenant with the same tax id or company email domain, and returns only a boolean to the token holder. Granting `system` a read on `membership` and `app_user` instead would let every job read every user.
 - **System actors are rare by construction.** `systemActor()` and `systemScope()` live in `apps/api/src/kernel/system.ts`. A Biome override allows importing them, and `asScope`, only from the paths named above.
 
 ### Tables without RLS
 
-`session`, `auth_token` and `rate_limit_event` hold no tenant data and are reachable only from `apps/api/src/modules/core/auth/` and `kernel/`. `job_run` holds counts only and is written by `kernel/jobs.ts`. `public_link` maps a slug to a tenant and site and is read only by `modules/booking/`. A Biome rule restricts imports of these schema objects to those directories. `app_user` has RLS (see the table above); modules read names and emails through `userDisplay(tx, ids)` in `kernel/users.ts`.
+`session`, `auth_token` and `rate_limit_event` hold no tenant data and are reachable only from `apps/api/src/modules/core/auth/` and `kernel/`. `job_run` holds counts only and is written by `kernel/jobs.ts`. `public_link` maps a slug to a tenant and site and is read only by `modules/booking/`. `tenant_signup` holds a registration before any tenant or account exists, so no party owns it; it is reachable only from `modules/core/signup/` and `privacy/jobs/retention.ts` ([ADR-0016](ADR-0016-tenant-self-registration.md)). A Biome rule restricts imports of these schema objects to those directories. `app_user` has RLS (see the table above); modules read names and emails through `userDisplay(tx, ids)` in `kernel/users.ts`.
 
 ### Policies are generated
 

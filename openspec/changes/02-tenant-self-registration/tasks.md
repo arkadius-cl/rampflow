@@ -70,18 +70,18 @@
 
 ## 10. Docs
 
-- [ ] 10.1 Write `docs/decisions/ADR-0016-tenant-self-registration.md` (type `explanation`, tag `adr`) recording design decisions 2, 3, 6, 7, 8, 9, 10 and 12, with the research sources of the brief (OWASP Authentication and Forgot Password cheat sheets, CJEU C-394/23, OLG Frankfurt 9 U 92/20, the VIES REST specification, the CC0 list).
-- [ ] 10.2 Update `docs/decisions/ADR-0003-authentication-self-built-sessions.md`: "Sign-up paths" names tenant self-registration, "Abuse limits" lists `signup_request`, `signup_ip` and `altcha_solution`, "Tokens" lists the purpose `signup` with 24 hours; link ADR-0016.
-- [ ] 10.3 Update `docs/decisions/ADR-0002-tenancy-isolation-rls.md`: the `token` party inserts onboarding tenant orgs and `start` subscriptions; `tenant_signup` has no RLS; the platform-scope duplicate read in `*.redeem.ts`.
-- [ ] 10.4 Update `docs/decisions/ADR-0010-email-outbox-job-runner.md`: job `core.tax_id_check` in the job table and the two account emails.
-- [ ] 10.5 Update `docs/decisions/ADR-0011-frontend-routes-and-org-context.md`: `/signup` and `/signup/verify#<token>` in the sign-in and token pages row and the route map (RG-01, RG-02).
-- [ ] 10.6 Update `docs/reference/data-model.md`: `tenant_signup` (core, policy class none), the `org` and `app_user` columns with their checks and PD marks, the `org` and `tenant_subscription` policy notes, the new buckets, the "Tables by module" row, the ER diagram, and the retention rules (signup rows, name parts on anonymization).
-- [ ] 10.7 Update `docs/reference/api-routes.md`: the conflict reason `account_exists` in the error table, the 422 issue codes `disposable_email`, `tax_id_format`, `tax_id_checksum`, `tax_id_country`, `altcha_failed`, and a paragraph on the signup routes above the "Auth, me and invitations" table.
-- [ ] 10.8 Update `docs/explanation/mvp-scope.md`: a "Prospective tenant" story group RG-01 to RG-05, PL-01 (new tenants start in onboarding), PL-05 (signup rows and name parts), the security line on public sign-up, a resolved question on self-registration without approval.
-- [ ] 10.9 Update `docs/explanation/domain-glossary.md`: registration (Registrierung), tenant status onboarding and active, tax id (USt-IdNr, Steuernummer, W-IdNr, NIP).
-- [ ] 10.10 Write `docs/how-to/register-your-company.md` (type `how-to`): register, confirm the email, the duplicate hint, what to do when the link expired, what happens next.
-- [ ] 10.11 Update `docs/how-to/onboard-a-tenant.md`: tenants also register themselves, and a tenant created by the platform admin starts in onboarding.
-- [ ] 10.12 Run `pnpm docs:index` and `pnpm docs:check`; verify both pass.
+- [x] 10.1 Write `docs/decisions/ADR-0016-tenant-self-registration.md` (type `explanation`, tag `adr`) recording design decisions 2, 3, 6, 7, 8, 9, 10 and 12, with the research sources of the brief (OWASP Authentication and Forgot Password cheat sheets, CJEU C-394/23, OLG Frankfurt 9 U 92/20, the VIES REST specification, the CC0 list).
+- [x] 10.2 Update `docs/decisions/ADR-0003-authentication-self-built-sessions.md`: "Sign-up paths" names tenant self-registration, "Abuse limits" lists `signup_request`, `signup_ip` and `altcha_solution`, "Tokens" lists the purpose `signup` with 24 hours; link ADR-0016.
+- [x] 10.3 Update `docs/decisions/ADR-0002-tenancy-isolation-rls.md`: the `token` party inserts onboarding tenant orgs and `start` subscriptions; `tenant_signup` has no RLS; the platform-scope duplicate read in `*.redeem.ts`.
+- [x] 10.4 Update `docs/decisions/ADR-0010-email-outbox-job-runner.md`: job `core.tax_id_check` in the job table and the two account emails.
+- [x] 10.5 Update `docs/decisions/ADR-0011-frontend-routes-and-org-context.md`: `/signup` and `/signup/verify#<token>` in the sign-in and token pages row and the route map (RG-01, RG-02).
+- [x] 10.6 Update `docs/reference/data-model.md`: `tenant_signup` (core, policy class none), the `org` and `app_user` columns with their checks and PD marks, the `org` and `tenant_subscription` policy notes, the new buckets, the "Tables by module" row, the ER diagram, and the retention rules (signup rows, name parts on anonymization).
+- [x] 10.7 Update `docs/reference/api-routes.md`: the conflict reason `account_exists` in the error table, the 422 issue codes `disposable_email`, `tax_id_format`, `tax_id_checksum`, `tax_id_country`, `altcha_failed`, and a paragraph on the signup routes above the "Auth, me and invitations" table.
+- [x] 10.8 Update `docs/explanation/mvp-scope.md`: a "Prospective tenant" story group RG-01 to RG-05, PL-01 (new tenants start in onboarding), PL-05 (signup rows and name parts), the security line on public sign-up, a resolved question on self-registration without approval.
+- [x] 10.9 Update `docs/explanation/domain-glossary.md`: registration (Registrierung), tenant status onboarding and active, tax id (USt-IdNr, Steuernummer, W-IdNr, NIP).
+- [x] 10.10 Write `docs/how-to/register-your-company.md` (type `how-to`): register, confirm the email, the duplicate hint, what to do when the link expired, what happens next.
+- [x] 10.11 Update `docs/how-to/onboard-a-tenant.md`: tenants also register themselves, and a tenant created by the platform admin starts in onboarding.
+- [x] 10.12 Run `pnpm docs:index` and `pnpm docs:check`; verify both pass.
 
 ## 11. Integration
 

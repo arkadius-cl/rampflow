@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [glossary, domain, tenancy, booking, yard, safety, avis]
 status: draft
-updated: 2026-10-19
+updated: 2026-10-21
 ---
 
 # Domain glossary
@@ -47,6 +47,11 @@ The code uses the English term. The UI shows the localized term.
 | Entitlement | Berechtigung (Lizenz) | A feature flag or numeric limit a module declares. Packages are lists of entitlements. |
 | Package | Paket | A sellable bundle of entitlement values assigned to a tenant. |
 | Setting | Einstellung | A typed configuration value with a platform default that a tenant or site may override. |
+| Registration (`tenant_signup`) | Registrierung | A company's self-registration at `/signup`, waiting for its email link. Confirming the email creates the tenant and its first `tenant_admin`. Not the carrier registration through a public link (`carrier_registration`, CR-02). |
+| Tenant status: onboarding | Einrichtung | A tenant without an activation time (`org.activated_at` null). Every new tenant starts here, whether self-registered or created by the platform admin. Derived, never stored. |
+| Tenant status: active | Aktiv | A tenant with an activation time. Tenants that existed before change 02 were backfilled as active since their creation. |
+| Tax id (`tax_id_type`, `tax_id_value`) | Steuer-ID | The company's tax registration number, one of: `eu_vat`, the EU VAT number (USt-IdNr in Germany, NIP UE in Poland), confirmed against VIES; `de_stn`, a German Steuernummer (10, 11 or 13 digits) or Wirtschafts-Identifikationsnummer (W-IdNr, `DE` plus 14 digits); `pl_nip`, the Polish NIP (10 digits). |
+| Tax id status | Prüfstatus der Steuer-ID | `pending` until VIES answered for an `eu_vat`, `verified` or `unverified` by its answer, `unavailable` when VIES did not answer. `de_stn` and `pl_nip` stay `unverified`: no registry is queried. |
 
 ## Working hypotheses for the data model
 

@@ -5,8 +5,8 @@ type: reference
 audience: [agent, developer]
 tags: [database, data-model, tenancy, rls, booking, safety, yard]
 status: draft
-updated: 2026-10-20
-related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
+updated: 2026-10-21
+related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
 ---
 
 # Data model
@@ -36,13 +36,14 @@ The policy helpers in `apps/api/src/db/rls.ts` generate these ([ADR-0002](../dec
 | `booking-family` | all commands, site-scoped | `carrier`: `select` where `carrier_id = app.carrier_id()`. `carrier_at_tenant`: `select`, `insert` and `update` where `tenant_id = app.tenant_id() and carrier_id = app.carrier_id()`, on `booking` too: another carrier's bookings reach it only as load through the capacity read of [ADR-0004](../decisions/ADR-0004-booking-capacity-concurrency.md). `driver`: `select` where `booking_id = app.booking_id()` (`id` on `booking`), except on `avis` and `avis_reference`. |
 | `none` | RLS disabled; imports restricted to the owning directory by Biome | |
 
-SQL functions in schema `app` (baseline migration): the accessors `party()`, `user_id()`, `tenant_id()`, `carrier_id()`, `booking_id()`, `token_hash()`; the predicates `site_allowed(site)` and `linked_tenant(tenant)`; the security definer helpers `shares_org(user)` (the `app_user` policies) and `user_by_email(email)` (sign-in lookups by `anonymous`, `token` and `public`).
+SQL functions in schema `app` (baseline migration): the accessors `party()`, `user_id()`, `tenant_id()`, `carrier_id()`, `booking_id()`, `token_hash()`; the predicates `site_allowed(site)` and `linked_tenant(tenant)`; the security definer helpers `shares_org(user)` (the `app_user` policies) and `user_by_email(address citext)`, which returns `(id, password_hash, email_verified_at, disabled_at, locale)` to `anonymous`, `token` and `public` for lookups before sign-in. The custom migration `0008_02-tenant-self-registration-backfill.sql` added `locale` (change 02, the known-account email of a registration).
 
 ## Tables by module
 
 | Module | Tables | Schema file | Unit |
 |---|---|---|---|
 | core | `org`, `app_user`, `session`, `auth_token`, `rate_limit_event`, `membership`, `membership_site`, `invitation`, `tenant_subscription`, `entitlement_override`, `setting_value`, `site`, `hall`, `dock`, `tenant_carrier_link`, `job_run` | `core/schema.ts` | U1 |
+| core | `tenant_signup` | `core/schema.signup.ts` | 02 |
 | notify | `outbox_message` | `notify/schema.ts` | U1 |
 | booking | `bookable_resource`, `resource_dock`, `opening_hours`, `closure`, `load_type`, `load_type_resource` | `booking/schema.resources.ts` | U4 |
 | booking | `booking`, `booking_event` | `booking/schema.ts` | U6 |
@@ -63,6 +64,8 @@ erDiagram
   org ||--o{ membership : "has members"
   app_user ||--o{ membership : "belongs to"
   app_user ||--o{ session : "signs in with"
+  org |o--o{ tenant_signup : "created from"
+  app_user |o--o{ tenant_signup : "created from"
   membership ||--o{ membership_site : "limited to"
   org ||--o{ invitation : invites
   org ||--|| tenant_subscription : "tenant package"
@@ -113,10 +116,18 @@ Every party organisation: the single platform org, tenants and carriers.
 | `id` | uuid | no | |
 | `kind` | text | no | `platform`, `tenant`, `carrier` |
 | `name` | text | no | 1 to 120 characters |
-| `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) |
+| `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) and self-registered tenants (RG-01) |
+| `tax_id_type` | text | yes | tenants only: `eu_vat`, `de_stn`, `pl_nip` (`TaxIdType`) |
+| `tax_id_value` | text | yes | tenants only, normalized by `normalizeTaxId` |
+| `tax_id_status` | text | yes | tenants only: `pending`, `verified`, `unverified`, `unavailable` (`TaxIdStatus`); `pending` until the job `core.tax_id_check` asked VIES about an `eu_vat`, `unverified` from the start for `de_stn` and `pl_nip` |
+| `tax_id_checked_at` | timestamptz | yes | last VIES answer or failure |
+| `possible_duplicate` | boolean | no | default `false`; set when a registration matched another tenant's tax id or company email domain (RG-04) |
+| `activated_at` | timestamptz | yes | tenants only; null while the tenant is onboarding (`tenantStatus`: `onboarding`, `active`). Change 03 writes it; existing tenants were backfilled with `created_at` |
 
-- Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org.
-- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` and `token` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration; ids are generated in the app, because these parties cannot read the new row back).
+- Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org. Partial index `org_tax_id_value_idx` on `(tax_id_value)` where `kind = 'tenant'`, for the duplicate check.
+- Check `org_tenant_facts_check`: `kind = 'tenant'` or all of `tax_id_type`, `tax_id_value`, `tax_id_status`, `tax_id_checked_at` and `activated_at` are null and `possible_duplicate` is false. Check `org_tax_id_check`: type, value and status are all null or all set, each from its value set.
+- No column of `org` is **PD**; the tax id is a company's registration number.
+- RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration); `token` insert where `kind = 'carrier' or (kind = 'tenant' and activated_at is null)` (also an onboarding tenant created by a verified self-registration, RG-02). Ids are generated in the app, because these parties cannot read the new row back. Routes outside the platform and the tenant's own context never select the tenant facts.
 
 ### `app_user`
 
@@ -124,7 +135,9 @@ Every party organisation: the single platform org, tenants and carriers.
 |---|---|---|---|
 | `id` | uuid | no | |
 | `email` | citext | no | unique; **PD** |
-| `name` | text | no | **PD** |
+| `name` | text | no | **PD**; the display name; a self-registration writes `"<given_name> <family_name>"` |
+| `given_name`, `family_name` | text | yes | **PD**; set only by self-registration (RG-02), used only for email greetings |
+| `salutation` | text | yes | **PD**; `mr`, `ms` (`Salutation`), check `app_user_salutation_check`; never inferred |
 | `locale` | text | yes | `de`, `en`, `pl` |
 | `password_hash` | text | yes | `scrypt$N$r$p$salt$hash`; null for magic-link-only users |
 | `email_verified_at` | timestamptz | yes | sign-in requires it |
@@ -166,11 +179,35 @@ RLS: none.
 | Column | Type | Null | Notes |
 |---|---|---|---|
 | `id` | bigint | no | identity |
-| `bucket` | text | no | `login_failed`, `login_ip`, `magic_link_request`, `reset_request`, `driver_exchange`, `registration_request`, `registration_ip` (U7) |
+| `bucket` | text | no | `login_failed`, `login_ip`, `magic_link_request`, `reset_request`, `driver_exchange`, `registration_request`, `registration_ip` (U7), `signup_request` (3 per hour per email), `signup_ip` (20 per hour per address), `altcha_solution` (1 per 10 minutes per challenge signature) (02) |
 | `key_hash` | bytea | no | hash of email and IP, or IP |
 | `at` | timestamptz | no | |
 
 Index `(bucket, key_hash, at)`. RLS: none.
+
+### `tenant_signup`
+
+A self-registration waiting for its email link (RG-01, RG-02, [ADR-0016](../decisions/ADR-0016-tenant-self-registration.md)). Schema file `core/schema.signup.ts`.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | uuid | no | |
+| `status` | text | no | `pending_email`, `verified`, `superseded` (`SignupStatus`) |
+| `email` | citext | no | **PD** |
+| `salutation` | text | yes | **PD**; `mr`, `ms` |
+| `given_name`, `family_name` | text | no | **PD** |
+| `password_hash` | text | yes | scrypt; set to NULL by the claim |
+| `company_name` | text | no | 1 to 120 characters |
+| `country` | char(2) | no | EU-27 (`EuCountry`) |
+| `tax_id_type`, `tax_id_value` | text | no | normalized |
+| `locale` | text | yes | `de`, `en`, `pl` |
+| `token_hash` | bytea | no | unique, `sha256` of the `signup` token |
+| `expires_at` | timestamptz | no | 24 hours after creation; indexed for retention |
+| `verified_at` | timestamptz | yes | |
+| `tenant_id` | uuid | yes | FK `org` on delete cascade; indexed; the tenant the claim created |
+| `user_id` | uuid | yes | FK `app_user` on delete cascade; indexed |
+
+Partial unique index `tenant_signup_pending_email_key` on `(email)` where `status = 'pending_email'`: one pending registration per email; a new one marks the previous `superseded`. Checks: status, salutation, tax id type and locale from their value sets; a `pending_email` row has a `password_hash`; a `verified` row has `verified_at`. RLS: none (policy class `none`): no party owns a registration before the claim. Imports are restricted by Biome to `core/signup/` and `privacy/jobs/retention.ts`.
 
 ### `membership`
 
@@ -227,7 +264,7 @@ Partial unique `(org_id, email)` where `accepted_at is null and revoked_at is nu
 | `package` | text | no | `start`, `pro`, `enterprise` |
 | `updated_at`, `updated_by` | timestamptz, uuid | no | |
 
-RLS custom: `platform` all; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `tenant_id = app.tenant_id()`; `carrier` select where `app.linked_tenant(tenant_id)`.
+RLS custom: `platform` all; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `tenant_id = app.tenant_id()`; `carrier` select where `app.linked_tenant(tenant_id)`; `token` insert where `package = 'start'` (a verified self-registration, RG-02; every existing tenant already has its one row).
 
 ### `entitlement_override`
 
@@ -756,6 +793,7 @@ The retention job (PL-05) applies these rules per tenant with the resolved `priv
 | `driver_access` | delete rows past `expires_at` | `driver_link_hours` sets the expiry |
 | carrier users without sign-in | email notice 30 days ahead, then delete the user and empty carrier orgs | `carrier_inactive_days` |
 | `rate_limit_event`, used `auth_token` | delete after 24 hours | fixed |
+| `tenant_signup` | delete every row, in any status, 7 days after `expires_at` | fixed |
 | `outbox_message` | the worker empties `payload` when it sends; delete sent or failed rows after 7 days | fixed |
 
 Interpretations as built (U11):
@@ -774,5 +812,5 @@ As built (U11), in `apps/api/src/modules/privacy/retention/rules.ts` and `privac
 - The visit rule deletes bookings whose `starts_at` lies more than `visit_days` in the past, in any status. The children go by cascade, and `safety_acknowledgement.booking_id` becomes NULL.
 - An acknowledgement's retention ends at `coalesce(expires_at, completed_at) + safety_after_expiry_days`. Pseudonymization replaces `driver_name` with an empty string, because the column is `not null`.
 - Expired unused `auth_token` rows go 24 hours after `expires_at`, like used ones.
-- A carrier user is "without sign-in" when every membership is a carrier membership and `coalesce(last_seen_at, created_at)` is older than the limit. The notice is `privacy.inactive-notice` with `dedupe_key = inactive-notice:<user id>:<deadline>`, so a sign-in makes a new notice due. Deletion runs as the platform party. A user that a foreign key still references (for example `booking.created_by`) cannot be deleted. That user loses the memberships, `disabled_at` is set, and the email, name, locale and password are overwritten instead. A carrier org without members is deleted unless bookings or tenant links still reference it.
+- A carrier user is "without sign-in" when every membership is a carrier membership and `coalesce(last_seen_at, created_at)` is older than the limit. The notice is `privacy.inactive-notice` with `dedupe_key = inactive-notice:<user id>:<deadline>`, so a sign-in makes a new notice due. Deletion runs as the platform party. A user that a foreign key still references (for example `booking.created_by`) cannot be deleted. That user loses the memberships, `disabled_at` is set, and the email, name, locale and password are overwritten and `given_name`, `family_name` and `salutation` set to NULL instead. A carrier org without members is deleted unless bookings or tenant links still reference it.
 - `pnpm retention:run` runs one tick and prints the counts. The `job_run` row holds the same counts.
