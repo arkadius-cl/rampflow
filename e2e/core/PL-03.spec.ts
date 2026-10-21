@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, type Request, test } from '@playwright/test';
 import { Setting } from '../../packages/shared/src/values/keys.ts';
 import { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
@@ -8,8 +8,19 @@ import { setLocale } from '../support/u11.ts';
 // The platform level is shared by every tenant of the database, so each test that writes owns
 // keys no other spec reads, and puts them back afterwards.
 
-const topics = (page: import('@playwright/test').Page) =>
-  page.getByRole('navigation', { name: 'Settings topics' });
+/** The platform settings PATCHes the page sends from now on. */
+function patches(page: Page): Request[] {
+  const route = '/api/platform/settings';
+  const sent: Request[] = [];
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH' && new URL(r.url()).pathname === route) {
+      sent.push(r);
+    }
+  });
+  return sent;
+}
+
+const topics = (page: Page) => page.getByRole('navigation', { name: 'Settings topics' });
 
 test.describe('PL-03 Platform defaults', () => {
   test('the settings root opens the first topic, and the topic nav moves between topics', async ({
@@ -127,6 +138,7 @@ test.describe('PL-03 Platform defaults', () => {
     await resetPlatformSetting(request, w, key);
     try {
       await signInAs(context, w.platformAdmin);
+      const sent = patches(page);
       await page.goto('/platform/settings/privacy');
       const field = settingField(page, key);
       const input = page.getByRole('spinbutton', { name: 'Keep the audit log' });
@@ -141,10 +153,12 @@ test.describe('PL-03 Platform defaults', () => {
       await expect(dialog).toHaveCount(0);
       await expect(input).toHaveValue('360');
       await expect(page.getByText('Unsaved changes: 1')).toBeVisible();
+      expect(sent).toHaveLength(0);
 
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await dialog.getByRole('button', { name: 'Shorten and save' }).click();
       await expect(field).toContainText('Set for the platform');
+      expect(sent).toHaveLength(1);
       await page.reload();
       await expect(input).toHaveValue('360');
     } finally {

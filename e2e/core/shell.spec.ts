@@ -211,7 +211,7 @@ test.describe('Language menu on signed-out pages', () => {
     await page.getByLabel('Password', { exact: true }).fill(user.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
-    // Tenant A's default language is the product default, German.
+    // The browser prefers German, which would win over the tenant default; the device choice beats both.
     await expect(page).toHaveURL(new RegExp(`${settings}$`));
     await expect(page.getByRole('heading', { level: 1, name: 'Booking' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', StaffLocale.en);
