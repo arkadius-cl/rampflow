@@ -6,7 +6,7 @@ audience: [agent, developer]
 tags: [adr, booking, capacity, master-data, onboarding, postgres]
 status: stable
 updated: 2026-10-21
-related: [docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/explanation/mvp-scope.md, docs/explanation/research/domain-standards.md, openspec/changes/03-tenant-onboarding/design.md]
+related: [docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/explanation/mvp-scope.md, docs/explanation/research/domain-standards.md, openspec/changes/archive/2026-10-21-03-tenant-onboarding/design.md]
 ---
 
 # ADR-0017: Homogeneous pools and the dock profile
