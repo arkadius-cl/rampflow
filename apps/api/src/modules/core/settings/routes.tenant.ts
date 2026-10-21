@@ -114,7 +114,7 @@ export const tenant = new Hono<AppEnv>()
     op({
       id: 'core.settings.deleteSetting',
       stories: [StoryId.TN_02],
-      description: '`?siteId=`; "Reset to inherited"',
+      description: '`?siteId=`; drops the value of this level for one key (the web resets through the PATCH)',
       responses: { 204: noBody },
     }),
     validate(ValidationTarget.param, KeyParam),

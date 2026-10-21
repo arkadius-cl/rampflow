@@ -14852,7 +14852,7 @@
       "delete": {
         "operationId": "core.settings.deleteSetting",
         "summary": "Delete setting (core.settings)",
-        "description": "`?siteId=`; \"Reset to inherited\"",
+        "description": "`?siteId=`; drops the value of this level for one key (the web resets through the PATCH)",
         "tags": [
           "Tenant administration"
         ],

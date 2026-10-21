@@ -22,7 +22,7 @@ import { ApiError } from '../../../kernel/errors.ts';
 import { settingValue } from '../schema.ts';
 
 // Settings screens and writes (TN-02, PL-03; ADR-0007). A row per (tenant, site, key); deleting
-// the row is "Reset to inherited".
+// the row is "Use inherited value".
 
 /** Where a write lands: the platform, a tenant, or one site of a tenant. */
 export type SettingTarget =
@@ -232,7 +232,7 @@ export async function writeSettings(
   return settingsView(tx, target, entitlements);
 }
 
-/** "Reset to inherited": deletes the target's row. Unknown keys answer 400; a missing row is fine. */
+/** "Use inherited value" of one key: deletes the target's row. Unknown keys answer 400; a missing row is fine. */
 export async function resetSetting(tx: Tx, target: SettingTarget, key: string): Promise<void> {
   const known = requireSettingKey(key);
   await tx.delete(settingValue).where(and(rowOf(target), eq(settingValue.key, known)));

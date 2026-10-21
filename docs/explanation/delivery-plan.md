@@ -157,7 +157,7 @@ A unit report lists every deviation from the contract (routes, tables, permissio
 - **Goal.** Platform admins run tenants, packages, overrides and defaults; tenant admins run staff, settings and the logo; carrier admins run their users.
 - **Stories.** PL-01, PL-02, PL-03, PL-04, TN-01, TN-02, TN-05, CR-04.
 - **Owns.** `apps/api/src/modules/core/{platform,staff,settings,carrier-users}/`, `apps/api/src/modules/brand/`, `packages/shared/src/modules/core/{api.platform.ts,api.staff.ts,api.settings.ts}`, `packages/shared/src/modules/brand/api.ts`, `apps/web/src/routes/platform/{tenants,packages,settings}/`, `apps/web/src/routes/t/$orgId/{staff,settings,brand}/`, `apps/web/src/routes/c/$orgId/users/`, `apps/web/src/modules/{core,brand}/`, i18n parts `core/{platform,staff,settings-ui}.json` and `brand/*.json`, `e2e/core/{PL-01,PL-02,PL-03,PL-04,TN-01,TN-02,CR-04}.spec.ts`, `e2e/brand/TN-05.spec.ts`.
-- **Provides.** `createTenant` (also used by the seed route), the `SettingField` component (effective value, source badge, inherited hint, reset), `logoUrl(tenantId, sha)`.
+- **Provides.** `createTenant` (also used by the seed route), the `SettingField` component (since change 06: label, control, origin text with the inherited value, copy link), `logoUrl(tenantId, sha)`.
 - **Consumes.** U1 access and settings loading; U2 invitations and shell.
 - **Tests.**
   - PL-02: an override that raises and one that lowers a value change a gated route's answer on the next request; an expired override stops applying (clock); unknown and reserved keys answer 400.
