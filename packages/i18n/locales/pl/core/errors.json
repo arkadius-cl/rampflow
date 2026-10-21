@@ -6,6 +6,7 @@
   "not_found": "To nie istnieje lub nie jest dla Ciebie widoczne.",
   "conflict": {
     "default": "To koliduje ze zmianą wprowadzoną w międzyczasie. Odśwież i spróbuj ponownie.",
+    "docks": "Rampy: {{codes}}",
     "capacity_full": "Ten termin jest zajęty. Wybierz inny.",
     "daily_cap_reached": "Ten dzień jest w pełni zarezerwowany. Wybierz inny dzień.",
     "closed": "Lokalizacja jest wtedy zamknięta.",

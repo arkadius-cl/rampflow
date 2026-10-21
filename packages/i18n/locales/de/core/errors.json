@@ -6,6 +6,7 @@
   "not_found": "Das gibt es nicht oder es ist für Sie nicht sichtbar.",
   "conflict": {
     "default": "Das widerspricht einer zwischenzeitlichen Änderung. Laden Sie neu und versuchen Sie es erneut.",
+    "docks": "Rampen: {{codes}}",
     "capacity_full": "Diese Zeit ist ausgebucht. Wählen Sie eine andere.",
     "daily_cap_reached": "Dieser Tag ist ausgebucht. Wählen Sie einen anderen Tag.",
     "closed": "Der Standort ist zu dieser Zeit geschlossen.",

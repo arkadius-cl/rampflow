@@ -6,6 +6,7 @@
   "not_found": "This does not exist or is not visible to you.",
   "conflict": {
     "default": "This conflicts with a change made meanwhile. Reload and try again.",
+    "docks": "Docks: {{codes}}",
     "capacity_full": "That time is full. Choose another one.",
     "daily_cap_reached": "This day is fully booked. Choose another day.",
     "closed": "The site is closed at that time.",

@@ -57,7 +57,7 @@ test.describe('MD-03 Bookable resources', () => {
     await expect(page.getByText('belongs to this hall pool', { exact: false })).toBeVisible();
   });
 
-  test('a dock whose profile changed meanwhile is refused with the profile text', async ({
+  test('a dock whose profile changed meanwhile is refused with the profile text and the dock code', async ({
     page,
     context,
     request,
@@ -88,6 +88,7 @@ test.describe('MD-03 Bookable resources', () => {
     await expect(
       page.getByText('These docks have another door type, temperature zone or ADR setting'),
     ).toBeVisible();
+    await expect(page.getByText('Docks: D-02', { exact: true })).toBeVisible();
   });
 
   test('lowering capacity warns that bookings show as over capacity and cancels nothing', async ({

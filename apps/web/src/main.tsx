@@ -11,6 +11,7 @@ import { errorText } from '@/components/app-shell/form-errors';
 import { RouteError, RouteNotFound } from '@/components/app-shell/route-states';
 import { ApiFailure } from '@/lib/api';
 import { initI18n } from '@/lib/i18n';
+import { cachedDockCodes } from '@/modules/capacity/queries';
 import { routeTree } from '@/routeTree.gen';
 
 declare module '@tanstack/react-router' {
@@ -44,7 +45,12 @@ function onApiError(error: unknown, silent: boolean | undefined) {
     return;
   }
   if (error.status === 404) return;
-  toast.error(errorText(i18nInstance.getFixedT(null, 'core'), error));
+  const t = i18nInstance.getFixedT(null, 'core');
+  const codes = cachedDockCodes(queryClient, error.details.dockIds);
+  const description = codes.length
+    ? t(($) => $.errors.conflict.docks, { codes: codes.join(', ') })
+    : undefined;
+  toast.error(errorText(t, error), { description });
 }
 
 const queryClient = new QueryClient({

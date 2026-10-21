@@ -1,5 +1,6 @@
+import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { OrgKind } from '@rampflow/shared/values';
-import { queryOptions, useQueryClient } from '@tanstack/react-query';
+import { hashKey, type QueryClient, queryOptions, useQueryClient } from '@tanstack/react-query';
 import { api, call } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { onboardingKey } from '@/modules/core/queries';
@@ -39,6 +40,21 @@ export const siteQueries = {
         call(api.t[':orgId'].sites[':siteId'].docks.$get({ param: { orgId, siteId } })),
     }),
 };
+
+/**
+ * The codes of `dockIds` among the docks a sites screen has loaded, in the given order. A 409 on
+ * master data names the docks it concerns by id; the screen that caused it has them cached.
+ */
+export function cachedDockCodes(client: QueryClient, dockIds: unknown): string[] {
+  if (!Array.isArray(dockIds)) return [];
+  const codes = new Map<string, string>();
+  const cached = client.getQueriesData<{ items: DockView[] }>({
+    predicate: ({ queryKey: [, orgId, , , siteId], queryHash }) =>
+      queryHash === hashKey(siteQueries.docks(String(orgId), String(siteId)).queryKey),
+  });
+  for (const [, data] of cached) for (const d of data?.items ?? []) codes.set(d.id, d.code);
+  return dockIds.flatMap((id) => codes.get(id) ?? []);
+}
 
 export const capacityQueries = {
   resources: (orgId: string, siteId: string) =>
