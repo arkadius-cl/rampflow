@@ -147,6 +147,11 @@ describe('RG-01 a new email', () => {
   it('makes the page language the language of the verified account', async () => {
     const email = signupEmail('pl-verify');
     expect((await register(email, { extra: { locale: StaffLocale.pl } })).status).toBe(202);
+    // A tax id of its own, so the tenant it creates is no duplicate for the tests below.
+    await ownerDb()
+      .update(tenantSignup)
+      .set({ taxIdType: TaxIdType.eu_vat, taxIdValue: uniqueVat() })
+      .where(eq(tenantSignup.email, email));
     const [row] = await rowsOf(email);
     expect((await verify(deriveToken(TokenPurpose.signup, row?.id ?? ''))).status).toBe(200);
     expect((await usersWith(email)).map((u) => u.locale)).toEqual([StaffLocale.pl]);
