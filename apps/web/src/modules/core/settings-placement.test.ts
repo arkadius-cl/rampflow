@@ -43,8 +43,8 @@ describe('settings placement', () => {
       {
         topic: general,
         sections: [
-          { section: S.sites, keys: ['core.site_countries'] },
-          { section: S.language, keys: ['i18n.default_locale'] },
+          { section: S.sites, keys: [Setting.core.site_countries] },
+          { section: S.language, keys: [Setting.i18n.default_locale] },
         ],
       },
       {
@@ -53,19 +53,19 @@ describe('settings placement', () => {
           {
             section: S.rules,
             keys: [
-              'booking.slot_grid_minutes',
-              'booking.min_lead_minutes',
-              'booking.horizon_days',
-              'booking.cancel_cutoff_minutes',
-              'booking.close_on_public_holidays',
-              'booking.require_plate',
+              Setting.booking.slot_grid_minutes,
+              Setting.booking.min_lead_minutes,
+              Setting.booking.horizon_days,
+              Setting.booking.cancel_cutoff_minutes,
+              Setting.booking.close_on_public_holidays,
+              Setting.booking.require_plate,
             ],
           },
           {
             section: S.public_booking,
-            keys: ['booking.public_link_enabled', 'booking.public_registration_mode'],
+            keys: [Setting.booking.public_link_enabled, Setting.booking.public_registration_mode],
           },
-          { section: S.reminders, keys: ['notify.reminder_hours_before'] },
+          { section: S.reminders, keys: [Setting.notify.reminder_hours_before] },
         ],
       },
       {
@@ -74,10 +74,10 @@ describe('settings placement', () => {
           {
             section: S.requirements,
             keys: [
-              'avis.required_reference_types',
-              'avis.unique_references',
-              'avis.require_gross_weight',
-              'avis.require_driver_phone',
+              Setting.avis.required_reference_types,
+              Setting.avis.unique_references,
+              Setting.avis.require_gross_weight,
+              Setting.avis.require_driver_phone,
             ],
           },
         ],
@@ -88,9 +88,9 @@ describe('settings placement', () => {
           {
             section: S.briefing,
             keys: [
-              'safety.validity_days',
-              'safety.require_for_checkin',
-              'safety.quiz_pass_percent',
+              Setting.safety.validity_days,
+              Setting.safety.require_for_checkin,
+              Setting.safety.quiz_pass_percent,
             ],
           },
         ],
@@ -101,30 +101,30 @@ describe('settings placement', () => {
           {
             section: S.arrival,
             keys: [
-              'yard.early_tolerance_minutes',
-              'yard.grace_minutes',
-              'yard.no_show_after_minutes',
+              Setting.yard.early_tolerance_minutes,
+              Setting.yard.grace_minutes,
+              Setting.yard.no_show_after_minutes,
             ],
           },
-          { section: S.dwell, keys: ['yard.standgeld_flag_minutes'] },
+          { section: S.dwell, keys: [Setting.yard.standgeld_flag_minutes] },
         ],
       },
       {
         topic: privacy,
         sections: [
-          { section: S.notice, keys: ['privacy.notice_url'] },
+          { section: S.notice, keys: [Setting.privacy.notice_url] },
           {
             section: S.retention,
             keys: [
-              'privacy.retention.driver_phone_days',
-              'privacy.retention.driver_identity_days',
-              'privacy.retention.visit_days',
-              'privacy.retention.safety_after_expiry_days',
-              'privacy.retention.audit_log_days',
-              'privacy.retention.carrier_inactive_days',
+              Setting.privacy.retention.driver_phone_days,
+              Setting.privacy.retention.driver_identity_days,
+              Setting.privacy.retention.visit_days,
+              Setting.privacy.retention.safety_after_expiry_days,
+              Setting.privacy.retention.audit_log_days,
+              Setting.privacy.retention.carrier_inactive_days,
             ],
           },
-          { section: S.driver_access, keys: ['privacy.retention.driver_link_hours'] },
+          { section: S.driver_access, keys: [Setting.privacy.retention.driver_link_hours] },
         ],
       },
     ]);
