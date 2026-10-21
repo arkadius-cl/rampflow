@@ -215,6 +215,18 @@ export const EuCountry = {
 } as const;
 export type EuCountry = ValueOf<typeof EuCountry>;
 
+/** The groups of the admitted-countries editor (PL-03): EU member states and the rest. */
+export const CountryGroup = {
+  eu: 'eu',
+  other: 'other',
+} as const;
+export type CountryGroup = ValueOf<typeof CountryGroup>;
+
+const EU_COUNTRIES: ReadonlySet<SiteCountry> = new Set(Object.values(EuCountry));
+
+export const countryGroupOf = (code: SiteCountry): CountryGroup =>
+  EU_COUNTRIES.has(code) ? CountryGroup.eu : CountryGroup.other;
+
 /** `org.tax_id_type`: an EU VAT number, a German tax number or W-IdNr, a Polish NIP (RG-05). */
 export const TaxIdType = {
   eu_vat: 'eu_vat',
