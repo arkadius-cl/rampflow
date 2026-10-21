@@ -15,7 +15,7 @@ export const i18n = defineModule({
     'i18n.default_locale': {
       schema: z.enum(StaffLocale),
       default: 'de',
-      scopes: [SettingScope.platform, SettingScope.tenant, SettingScope.site],
+      scopes: [SettingScope.platform, SettingScope.tenant],
     },
   },
   nav: [],

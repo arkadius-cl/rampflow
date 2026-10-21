@@ -156,7 +156,7 @@ Generated from `packages/shared/src/registry.ts` and `packages.ts` by `pnpm docs
 | Setting | Default | Scopes | Requires |
 | --- | --- | --- | --- |
 | `core.site_countries` | `["AT","BE","BG","CY","CZ","DE","DK","EE","ES","FI","FR","GR","HR","HU","IE","IT","LT","LU","LV","MT","NL","PL","PT","RO","SE","SI","SK"]` | platform |  |
-| `i18n.default_locale` | `"de"` | platform, tenant, site |  |
+| `i18n.default_locale` | `"de"` | platform, tenant |  |
 | `privacy.notice_url` | `null` | platform, tenant, site |  |
 | `privacy.retention.driver_phone_days` | `7` | platform, tenant |  |
 | `privacy.retention.driver_identity_days` | `90` | platform, tenant |  |
@@ -437,7 +437,7 @@ Other pieces of the web shell (U2):
 | `api`, `call()`, `ApiFailure` | `lib/api.ts` | `call(api.t[':orgId'].sites.$get({ param }))` returns the JSON body or throws `ApiFailure` with `code`, `reason`, `issues`. Failed queries and mutations toast `core:errors.<code>` (or `core:errors.conflict.<reason>`) unless `meta: { silent: true }`; a 401 goes to `/login?redirect=`. |
 | `queryKeys` | `lib/query-keys.ts` | Keys start with `[area, orgId]`: `['tenant', orgId, '<module>', ...]`. |
 | `siteTime`, `useSiteTime()` | `lib/time.ts` | `<SiteTime {...siteTime(instant, site.timeZone, locale)} />`: site wall clock with zone label, plus the viewer's time when it differs. Delegates to `formatSiteTime` once U4's time module lands. |
-| `useLocale()`, `applyLocale()` | `lib/i18n.ts` | UI language: the user's `locale`, else the tenant's `i18n.default_locale`, else this device's choice, else the browser's, else `de`. Keys are typed: `t(($) => $.auth.login.title)`. |
+| `useLocale()`, `applyLocale()` | `lib/i18n.ts` | UI language: the user's `locale`, else this device's explicit choice, else the browser's, else the tenant's `i18n.default_locale` inside a tenant area, else `de` ([ADR-0009](../decisions/ADR-0009-i18n-catalogs.md), point 8). Keys are typed: `t(($) => $.auth.login.title)`. |
 | `useFragmentToken()`, `useExchangeOnce()` | `hooks/use-fragment-token.ts` | Token pages read `location.hash` once, strip it, and post the token exactly once. |
 | `applyServerIssues()`, `useFieldMessage()`, `errorText()` | `components/app-shell/form-errors.ts` | Puts 422 zod issues on form fields; field messages by zod issue code. |
 | `AuthLayout`, `AppShell`, `StationShell`, `NoAccess` | `components/app-shell/` | Area layouts render them; screens do not. |

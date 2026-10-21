@@ -45,7 +45,7 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 
 ## 4. Language setting scope (coordinator lands the manifest line)
 
-- [ ] 4.1 Report the manifest change `i18n.default_locale` → `scopes: [SettingScope.platform, SettingScope.tenant]` (`packages/shared/src/modules/i18n/manifest.ts`) to the coordinator, and rebase once it lands. Verify `pnpm docs:index` updates the catalog table in `docs/reference/module-contract.md`, and `pnpm docs:check` passes.
+- [x] 4.1 Report the manifest change `i18n.default_locale` → `scopes: [SettingScope.platform, SettingScope.tenant]` (`packages/shared/src/modules/i18n/manifest.ts`) to the coordinator, and rebase once it lands. Verify `pnpm docs:index` updates the catalog table in `docs/reference/module-contract.md`, and `pnpm docs:check` passes.
 - [ ] 4.2 Add to `settings.test.ts`:
   - a write of `i18n.default_locale` with a `siteId` answers 400 `scope_not_allowed` with `allowed: ['platform', 'tenant']`;
   - a site row inserted as the owner is ignored by the site view and by `access.setting` for that site.
