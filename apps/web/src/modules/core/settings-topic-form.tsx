@@ -404,10 +404,16 @@ function RetentionDialog({
 export function useSettingAnchor(keys: readonly SettingKey[]) {
   const hash = useLocation({ select: (l) => l.hash });
   // Navigating to the current URL only reloads the router, so choosing the same search result
-  // again counts resolved navigations rather than hash changes.
+  // again counts those navigations; a changed hash re-runs the effect by itself.
   const router = useRouter();
   const [visit, setVisit] = useState(0);
-  useEffect(() => router.subscribe('onResolved', () => setVisit((n) => n + 1)), [router]);
+  useEffect(
+    () =>
+      router.subscribe('onResolved', (e) => {
+        if (!e.hrefChanged) setVisit((n) => n + 1);
+      }),
+    [router],
+  );
   const known = keys.join(' ');
   // biome-ignore lint/correctness/useExhaustiveDependencies: `visit` re-opens the field on a navigation to the same URL
   useEffect(() => {
