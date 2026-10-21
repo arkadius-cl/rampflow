@@ -126,5 +126,20 @@
     "range_order": "Der Beginn liegt vor dem Ende.",
     "tiers": "Obergrenzen steigen an, und nur die letzte Stufe ist offen.",
     "country_admitted": "In diesem Land lässt die Plattform keine Standorte zu."
+  },
+  "hours": {
+    "legend": "Öffnungszeiten",
+    "description": "Außerhalb dieser Zeiten wird keine Startzeit angeboten. Sie können sie später unter „Öffnungszeiten und Schließungen“ ändern.",
+    "preview": "Zeiten der Vorlage",
+    "templates": {
+      "one_shift": "Eine Schicht",
+      "two_shifts": "Zwei Schichten",
+      "custom": "Eigene"
+    },
+    "template_hints": {
+      "one_shift": "Montag bis Freitag, 06:00 bis 14:00",
+      "two_shifts": "Montag bis Freitag, 06:00 bis 22:00",
+      "custom": "Mehrere Zeitfenster am Tag, zum Beispiel mit Mittagspause"
+    }
   }
 }

@@ -60,7 +60,8 @@
     "add_window_on": "Add a window on {{day}}",
     "midnight_hint": "Write 24:00 to stay open until midnight. A night shift is two windows: 22:00 to 24:00 and 00:00 to 06:00 the next day.",
     "save": "Save hours",
-    "saved": "Hours saved"
+    "saved": "Hours saved",
+    "none_open": "Add at least one window."
   },
   "closures": {
     "title": "Closures and public holidays",

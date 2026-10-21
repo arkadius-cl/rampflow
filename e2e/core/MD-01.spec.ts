@@ -17,6 +17,18 @@ test.describe('MD-01 Sites', () => {
 
     await page.getByRole('button', { name: 'New site' }).first().click();
     const sheet = page.getByRole('dialog');
+    await expect(sheet.getByRole('radio', { name: 'One shift' })).toBeChecked();
+    const preview = sheet.getByRole('definition');
+    await expect(preview).toHaveText([
+      '06:00–14:00',
+      '06:00–14:00',
+      '06:00–14:00',
+      '06:00–14:00',
+      '06:00–14:00',
+      'Closed',
+      'Closed',
+    ]);
+    await expectAccessible(page);
     await sheet.getByLabel('Name', { exact: true }).fill('Cluj Cross-Dock');
     await sheet.getByLabel('Street and number').fill('Strada Fabricii 12');
     await sheet.getByLabel('Postal code').fill('400632');
@@ -39,6 +51,48 @@ test.describe('MD-01 Sites', () => {
     await expect(
       page.getByRole('row', { name: /Cluj Cross-Dock.*Europe\/Bucharest/ }),
     ).toBeVisible();
+  });
+
+  test('a site with custom hours and a lunch break shows both Monday windows on its hours tab', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await signInAs(context, w.A.users.tenant_admin);
+    await page.goto(`/t/${w.A.tenantId}/sites?new=1`);
+    const sheet = page.getByRole('dialog');
+    await sheet.getByLabel('Name', { exact: true }).fill('Lübeck Süd');
+    await sheet.getByLabel('Street and number').fill('Hafenstraße 3');
+    await sheet.getByLabel('Postal code').fill('23568');
+    await sheet.getByLabel('City').fill('Lübeck');
+
+    await sheet.getByRole('radio', { name: 'Custom' }).click();
+    // Custom starts from the one-shift rows.
+    await expect(sheet.getByLabel('Monday opens')).toHaveValue('06:00');
+    await sheet.getByLabel('Monday closes').fill('05:00');
+    await sheet.getByRole('button', { name: 'Create site' }).click();
+    await expect(sheet.getByText('Opening comes before closing.')).toBeVisible();
+    await expect(page).toHaveURL(/\/sites\?new=1$/);
+
+    await sheet.getByLabel('Monday closes').fill('12:00');
+    await sheet.getByRole('button', { name: 'Add a window on Monday' }).click();
+    await sheet.getByLabel('Monday opens').nth(1).fill('12:30');
+    await sheet.getByLabel('Monday closes').nth(1).fill('18:00');
+    await sheet.getByRole('button', { name: 'Create site' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Lübeck Süd' })).toBeVisible();
+    await page
+      .getByRole('navigation', { name: 'Site sections' })
+      .getByRole('link', { name: 'Hours and closures' })
+      .click();
+    const opens = page.getByLabel('Monday opens');
+    await expect(opens).toHaveCount(2);
+    await expect(opens.nth(0)).toHaveValue('06:00');
+    await expect(page.getByLabel('Monday closes').nth(0)).toHaveValue('12:00');
+    await expect(opens.nth(1)).toHaveValue('12:30');
+    await expect(page.getByLabel('Monday closes').nth(1)).toHaveValue('18:00');
+    await expect(page.getByLabel('Tuesday closes')).toHaveValue('14:00');
   });
 
   test('the site beyond core.max_sites is refused and not created', async ({

@@ -54,10 +54,10 @@
 
 ## 7. Web: site form with opening hours
 
-- [ ] 7.1 Extract the week editor from `HoursEditor` in `apps/web/src/modules/capacity/hours.tsx` into `WeekWindowsField` (field array over `rows`, several windows per day, `XIcon` remove, add per day). Use it in `HoursEditor`. Verify the hours tab behaves as before in `pnpm dev` and `e2e/booking/MD-04.spec.ts` passes.
-- [ ] 7.2 Add the "Opening hours" `FieldSet` to the create mode of `modules/capacity/site-form.tsx`: a `RadioGroup` (shadcn, `pnpm dlx shadcn@latest add radio-group` if missing) with "One shift" preselected, "Two shifts" and "Custom", a read-only preview of the template rows, and `WeekWindowsField` for custom, validated by `CreateSite` through `zodResolver`. Add the strings to `core/sites.json` in de, en and pl. Verify in `pnpm dev` that a new site gets the chosen hours.
-- [ ] 7.3 Accept `?new=1` on `/t/$orgId/sites` (`validateSearch`) to open the "New site" sheet, and clear it on close. Verify by opening `/t/<acme>/sites?new=1` in `pnpm dev`.
-- [ ] 7.4 Update `e2e/core/MD-01.spec.ts`: the form shows "One shift" preselected with Monday to Friday 06:00 to 14:00; creating a site with custom hours including a lunch break shows both Monday windows on the hours tab; run axe on the form. Verify with `pnpm test:e2e e2e/core/MD-01.spec.ts`.
+- [x] 7.1 Extract the week editor from `HoursEditor` in `apps/web/src/modules/capacity/hours.tsx` into `WeekWindowsField` (field array over `rows`, several windows per day, `XIcon` remove, add per day). Use it in `HoursEditor`. Verify the hours tab behaves as before in `pnpm dev` and `e2e/booking/MD-04.spec.ts` passes.
+- [x] 7.2 Add the "Opening hours" `FieldSet` to the create mode of `modules/capacity/site-form.tsx`: a `RadioGroup` (shadcn, `pnpm dlx shadcn@latest add radio-group` if missing) with "One shift" preselected, "Two shifts" and "Custom", a read-only preview of the template rows, and `WeekWindowsField` for custom, validated by `CreateSite` through `zodResolver`. Add the strings to `core/sites.json` in de, en and pl. Verify in `pnpm dev` that a new site gets the chosen hours.
+- [x] 7.3 Accept `?new=1` on `/t/$orgId/sites` (`validateSearch`) to open the "New site" sheet, and clear it on close. Verify by opening `/t/<acme>/sites?new=1` in `pnpm dev`.
+- [x] 7.4 Update `e2e/core/MD-01.spec.ts`: the form shows "One shift" preselected with Monday to Friday 06:00 to 14:00; creating a site with custom hours including a lunch break shows both Monday windows on the hours tab; run axe on the form. Verify with `pnpm test:e2e e2e/core/MD-01.spec.ts`.
 
 ## 8. Web: pools and "Bookable for"
 

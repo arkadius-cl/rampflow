@@ -59,16 +59,23 @@ export async function apiCall<T>(
   return (await res.json()) as T;
 }
 
-/** The world's "Ramp pool" starts without docks; this puts D-01 and D-02 of the site into it. */
+/**
+ * The world's "Ramp pool" starts without docks or load types; this links the site's load type to
+ * it and puts D-01 and D-02 into it, since a pool with docks needs an active load type (MD-03).
+ */
 export async function poolWorldDocks(context: BrowserContext, w: World, n = 0): Promise<void> {
   const s = siteOf(w.A, n);
   await apiCall(
     context,
     HttpMethod.PUT,
+    `/t/${w.A.tenantId}/capacity/load-types/${s.loadTypeId}/resources`,
+    { resourceIds: [s.resourceId] },
+  );
+  await apiCall(
+    context,
+    HttpMethod.PUT,
     `/t/${w.A.tenantId}/capacity/resources/${s.resourceId}/docks`,
-    {
-      dockIds: s.dockIds,
-    },
+    { dockIds: s.dockIds },
   );
 }
 

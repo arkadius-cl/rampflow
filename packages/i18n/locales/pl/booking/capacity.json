@@ -60,7 +60,8 @@
     "add_window_on": "Dodaj okno: {{day}}",
     "midnight_hint": "Wpisz 24:00, aby mieć otwarte do północy. Nocna zmiana to dwa okna: 22:00 do 24:00 i następnego dnia 00:00 do 06:00.",
     "save": "Zapisz godziny",
-    "saved": "Zapisano godziny"
+    "saved": "Zapisano godziny",
+    "none_open": "Dodaj co najmniej jedno okno czasowe."
   },
   "closures": {
     "title": "Zamknięcia i święta",

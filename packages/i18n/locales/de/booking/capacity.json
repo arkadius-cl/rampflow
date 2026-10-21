@@ -60,7 +60,8 @@
     "add_window_on": "Ein Zeitfenster am {{day}} hinzufügen",
     "midnight_hint": "Schreiben Sie 24:00, um bis Mitternacht offen zu haben. Eine Nachtschicht sind zwei Fenster: 22:00 bis 24:00 und am Folgetag 00:00 bis 06:00.",
     "save": "Zeiten speichern",
-    "saved": "Öffnungszeiten gespeichert"
+    "saved": "Öffnungszeiten gespeichert",
+    "none_open": "Mindestens ein Zeitfenster eintragen."
   },
   "closures": {
     "title": "Schließungen und Feiertage",

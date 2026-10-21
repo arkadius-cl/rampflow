@@ -4,19 +4,37 @@ import {
   hoursTemplateRows,
   type SiteView,
 } from '@rampflow/shared/modules/core/api.sites';
+import { HoursTemplate } from '@rampflow/shared/modules/core/values';
 import { DisplayNamesType, StaffLocale, values } from '@rampflow/shared/values';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
-import { Controller, type Path, useForm, useWatch } from 'react-hook-form';
+import {
+  type Control,
+  Controller,
+  type Path,
+  type UseFormSetValue,
+  useForm,
+  useWatch,
+} from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type * as z from 'zod';
 import { applyServerIssues, errorText } from '@/components/app-shell/form-errors';
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Sheet,
   SheetContent,
@@ -27,10 +45,13 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiFailure, api, call } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { useIssueText } from './form';
 import { holidayRegionsQuery, siteCountriesQuery, useRefreshMasterData } from './queries';
+import { WeekWindowsField } from './week-windows';
 
-// MD-01: create or edit a site's name, address, region, time zone and default language.
+// MD-01: create or edit a site's name, address, region, time zone and default language. A new
+// site also gets its weekly hours, from a template the admin confirms or edits.
 
 type SiteValues = z.input<typeof CreateSite>;
 
@@ -81,7 +102,7 @@ export function SiteFormSheet({
   const admitted = useQuery({ ...siteCountriesQuery, enabled: open });
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent className={cn('w-full overflow-y-auto', site ? 'sm:max-w-md' : 'sm:max-w-xl')}>
         <SheetHeader>
           <SheetTitle>{site ? t(($) => $.sites.edit_site) : t(($) => $.sites.new_site)}</SheetTitle>
           <SheetDescription>{t(($) => $.sites.form_description)}</SheetDescription>
@@ -364,6 +385,7 @@ function SiteForm({
             </Field>
           )}
         />
+        {site ? null : <OpeningHours control={form.control} setValue={form.setValue} />}
         {text(
           'phone',
           t(($) => $.sites.fields.phone),
@@ -384,5 +406,54 @@ function SiteForm({
         </Button>
       </SheetFooter>
     </form>
+  );
+}
+
+/** The template rows the admin confirms, or the week editor for "Custom" (MD-01). */
+function OpeningHours({
+  control,
+  setValue,
+}: {
+  control: Control<SiteValues>;
+  setValue: UseFormSetValue<SiteValues>;
+}) {
+  const { t } = useTranslation();
+  const [template, setTemplate] = useState<HoursTemplate>(HoursTemplate.one_shift);
+  const choose = (next: HoursTemplate) => {
+    setTemplate(next);
+    // "Custom" starts from the rows of the template chosen last.
+    if (next !== HoursTemplate.custom)
+      setValue('hours', [...hoursTemplateRows[next]], {
+        shouldValidate: true,
+      });
+  };
+  return (
+    <FieldSet>
+      <FieldLegend>{t(($) => $.sites.hours.legend)}</FieldLegend>
+      <FieldDescription>{t(($) => $.sites.hours.description)}</FieldDescription>
+      <RadioGroup
+        value={template}
+        onValueChange={(v) => choose(v as HoursTemplate)}
+        aria-label={t(($) => $.sites.hours.legend)}
+      >
+        {values(HoursTemplate).map((v) => (
+          <Field key={v} orientation="horizontal">
+            <RadioGroupItem value={v} id={`site-hours-${v}`} />
+            <FieldContent>
+              <FieldLabel htmlFor={`site-hours-${v}`}>
+                {t(($) => $.sites.hours.templates[v])}
+              </FieldLabel>
+              <FieldDescription>{t(($) => $.sites.hours.template_hints[v])}</FieldDescription>
+            </FieldContent>
+          </Field>
+        ))}
+      </RadioGroup>
+      <WeekWindowsField
+        control={control}
+        name="hours"
+        readOnly={template !== HoursTemplate.custom}
+        label={t(($) => $.sites.hours.preview)}
+      />
+    </FieldSet>
   );
 }

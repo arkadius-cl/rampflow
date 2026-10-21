@@ -7,31 +7,24 @@ import {
 import { ResourceKind } from '@rampflow/shared/modules/booking/values';
 import type { DockView } from '@rampflow/shared/modules/core/api.sites';
 import { useMutation } from '@tanstack/react-query';
-import { PlusIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Controller,
-  type FieldError as HookFieldError,
-  useFieldArray,
-  useForm,
-} from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { applyServerIssues } from '@/components/app-shell/form-errors';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { api, call } from '@/lib/api';
 import { useLocale } from '@/lib/i18n';
-import { useIssueText } from './form';
 import { useRefreshMasterData } from './queries';
-import { weekdayName, zoneNames } from './time';
+import { zoneNames } from './time';
+import { WeekWindowsField } from './week-windows';
 
 // MD-04: weekly hours of the site, and narrower hours of one resource. Times are local wall
 // clock in the site zone; `24:00` closes at midnight. A resource without own rows uses the
@@ -40,7 +33,6 @@ import { weekdayName, zoneNames } from './time';
 const HoursForm = z.object({ rows: PutHours.shape.rows });
 type HoursValues = z.input<typeof HoursForm>;
 
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 const SITE = 'site';
 
 export function resourceLabel(r: ResourceView, docks: DockView[]): string {
@@ -124,14 +116,11 @@ function HoursEditor({
   rows: HoursRowView[];
 }) {
   const { t } = useTranslation('booking');
-  const locale = useLocale();
-  const message = useIssueText();
   const refresh = useRefreshMasterData(orgId);
   const saved: HoursValues = {
     rows: rows.map(({ weekday, opens, closes }) => ({ weekday, opens, closes })),
   };
   const form = useForm<HoursValues>({ resolver: zodResolver(HoursForm), defaultValues: saved });
-  const windows = useFieldArray({ control: form.control, name: 'rows' });
   const [ownHours, setOwnHours] = useState(resourceId === null || rows.length > 0);
   const save = useMutation({
     mutationFn: (v: HoursValues) =>
@@ -160,29 +149,6 @@ function HoursEditor({
     );
   }
 
-  const time = (
-    index: number,
-    part: keyof Pick<HoursValues['rows'][number], 'opens' | 'closes'>,
-    label: string,
-  ) => (
-    <Controller
-      name={`rows.${index}.${part}`}
-      control={form.control}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid} className="w-24">
-          <Input
-            {...field}
-            aria-label={label}
-            inputMode="numeric"
-            placeholder="HH:MM"
-            maxLength={5}
-            aria-invalid={fieldState.invalid}
-          />
-        </Field>
-      )}
-    />
-  );
-
   return (
     <form
       noValidate
@@ -202,68 +168,7 @@ function HoursEditor({
           <Label htmlFor="own-hours">{t(($) => $.capacity.hours.own_hours)}</Label>
         </div>
       ) : null}
-      <div className="divide-y rounded-lg border">
-        {WEEKDAYS.map((weekday) => {
-          const day = weekdayName(weekday, locale);
-          const entries = windows.fields
-            .map((f, index) => ({ f, index }))
-            .filter(({ f }) => f.weekday === weekday);
-          return (
-            <div key={weekday} className="flex flex-wrap items-start gap-3 px-3 py-2">
-              <div className="w-28 pt-1.5 text-sm font-medium">{day}</div>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                {entries.length === 0 ? (
-                  <span className="pt-1.5 text-sm text-muted-foreground">
-                    {t(($) => $.capacity.hours.closed)}
-                  </span>
-                ) : null}
-                {entries.map(({ f, index }) => {
-                  const err = form.formState.errors.rows?.[index];
-                  const issue: HookFieldError | undefined =
-                    err?.closes ?? err?.opens ?? (err?.type ? (err as HookFieldError) : undefined);
-                  return (
-                    <div key={f.id} className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        {time(
-                          index,
-                          'opens',
-                          t(($) => $.capacity.hours.opens_on, { day }),
-                        )}
-                        <span aria-hidden>–</span>
-                        {time(
-                          index,
-                          'closes',
-                          t(($) => $.capacity.hours.closes_on, { day }),
-                        )}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t(($) => $.capacity.hours.remove_window, { day })}
-                          onClick={() => windows.remove(index)}
-                        >
-                          <XIcon />
-                        </Button>
-                      </div>
-                      {issue ? <FieldError>{message(issue)}</FieldError> : null}
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label={t(($) => $.capacity.hours.add_window_on, { day })}
-                onClick={() => windows.append({ weekday, opens: '08:00', closes: '16:00' })}
-              >
-                <PlusIcon /> {t(($) => $.capacity.hours.add_window)}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-xs text-muted-foreground">{t(($) => $.capacity.hours.midnight_hint)}</p>
+      <WeekWindowsField control={form.control} name="rows" />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={() => form.reset(saved)}>
           {t(($) => $.capacity.resources.discard)}
