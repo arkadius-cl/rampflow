@@ -193,6 +193,25 @@ describe('TN-02, PL-03 saving a topic form in one request', () => {
     }
   });
 
+  it('overwrites a stored value in place, with the new who and when', async () => {
+    const yesterday = new Date(NOW.getTime() - 86_400_000);
+    await ownerDb()
+      .update(settingValue)
+      .set({ updatedBy: v.platformAdmin.id, updatedAt: yesterday })
+      .where(and(eq(settingValue.tenantId, v.B.tenantId), eq(settingValue.key, horizon)));
+    const res = await patch(v.B, { siteId: null, set: { [horizon]: 50 }, reset: [] });
+    expect(res.status).toBe(200);
+    expect(await rowsOf(v.B, horizon)).toEqual([
+      expect.objectContaining({
+        siteId: null,
+        value: wrapJson(50),
+        updatedBy: v.B.users.tenant_admin.id,
+        updatedAt: NOW,
+      }),
+    ]);
+    await patch(v.B, { siteId: null, set: { [horizon]: 45 }, reset: [] });
+  });
+
   it('stores nothing when one value is invalid, and names it under set', async () => {
     const res = await patch(v.B, { siteId: null, set: { [horizon]: 50, [lead]: -1 }, reset: [] });
     expect(res.status).toBe(422);
