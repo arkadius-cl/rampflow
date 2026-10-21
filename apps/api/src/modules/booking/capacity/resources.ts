@@ -128,7 +128,10 @@ async function siteOfResource(tx: Tx, tenantId: TenantId, id: ResourceId): Promi
   return (await requireResource(tx, tenantId, id)).siteId;
 }
 
-type MemberDock = PlacedDock & { holder: ResourceId | null };
+type MemberDock = PlacedDock & {
+  holder: ResourceId | null;
+  holderKind: ResourceRow['kind'] | null;
+};
 
 /** The named docks in request order, each on the site (422 at `dockIds[i]` otherwise). */
 async function docksOnSite(
@@ -148,6 +151,7 @@ async function docksOnSite(
       temperatureZone: dock.temperatureZone,
       adrAllowed: dock.adrAllowed,
       holder: resourceDock.resourceId,
+      holderKind: resourceDock.resourceKind,
     })
     .from(dock)
     .leftJoin(resourceDock, eq(resourceDock.dockId, dock.id))
@@ -158,6 +162,17 @@ async function docksOnSite(
     if (!row) throw invalid(['dockIds', i], 'No such dock on this site');
     return { ...row, id: row.id as DockId };
   });
+}
+
+/** Taking a dock out of a pool changes the pool, which needs `booking.pools` (ADR-0004). */
+function requirePoolsToLeave(
+  req: TenantRequest,
+  docks: readonly MemberDock[],
+  target: ResourceId | null,
+) {
+  for (const d of docks) {
+    if (d.holderKind && d.holder !== target) requirePools(req, d.holderKind);
+  }
 }
 
 /** A resource holds docks of one profile (ADR-0017): 409 naming the docks that differ. */
@@ -211,6 +226,7 @@ export async function createResource(
   const docks = await docksOnSite(tx, req.tenantId, siteId, input.dockIds);
   const [first] = docks;
   if (!first) throw invalid(['dockIds'], 'At least one dock');
+  requirePoolsToLeave(req, docks, null);
   requireProfile(docks, first);
   const [row] = await tx
     .insert(bookableResource)
@@ -279,6 +295,7 @@ export async function putResourceDocks(
     throw invalid(['dockIds'], 'A single resource has exactly one dock');
   }
   const docks = await docksOnSite(tx, req.tenantId, current.siteId, dockIds);
+  requirePoolsToLeave(req, docks, current.id);
   requireProfile(docks, current);
   requireHall(current, docks);
   const kept = new Set<string>(dockIds);

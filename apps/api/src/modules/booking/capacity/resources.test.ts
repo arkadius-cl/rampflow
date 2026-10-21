@@ -8,7 +8,7 @@ import {
 import { hoursTemplateRows } from '@rampflow/shared/modules/core/api.sites';
 import { TemperatureZone } from '@rampflow/shared/modules/core/values';
 import type { LocalDate } from '@rampflow/shared/time';
-import { ConflictReason, ErrorCode } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, Feature } from '@rampflow/shared/values';
 import { eq, inArray } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
@@ -289,6 +289,78 @@ describe('MD-03 booking a dock as a single resource or a pool member', () => {
         expect.objectContaining({ path: ['resourceId'] }),
       ]);
     }
+  });
+});
+
+describe('MD-03 without booking.pools no dock leaves a pool (ADR-0017)', () => {
+  // Its own world: switching pools off would change world A for the other tests.
+  let own: World;
+  beforeAll(async () => {
+    own = await world();
+  });
+  const api = (path: string) => `/api/t/${own.A.tenantId}/capacity${path}`;
+  const memberships = async (siteId: string) =>
+    Object.fromEntries(
+      (
+        (await (await admin(own.A).get(api(`/resources?siteId=${siteId}`))).json()) as {
+          items: { id: string; dockIds: string[] }[];
+        }
+      ).items.map((r) => [r.id, r.dockIds]),
+    );
+
+  it("answers 403 for a single or a single's docks taken out of a pool", async () => {
+    const s = await serviceSite(own.A, [
+      { code: 'T01', hall: 'Halle 1' },
+      { code: 'T02', hall: 'Halle 1' },
+      { code: 'T03', hall: 'Halle 2' },
+    ]);
+    const booked = await admin(own.A).put(api(`/docks/${s.docks.T03}/booking`), {
+      body: { as: ResourceKind.single },
+    });
+    const single = ((await booked.json()) as { resource: { id: string } }).resource.id;
+    await switchOff(own.A, Feature.booking.pools);
+    const before = await memberships(s.siteId);
+
+    const created = await admin(own.A).post(api('/resources'), {
+      body: {
+        siteId: s.siteId,
+        kind: ResourceKind.single,
+        name: 'T01',
+        directions: [Direction.inbound],
+        dockIds: [s.docks.T01],
+      },
+    });
+    expect(created.status).toBe(403);
+    expect(await error(created)).toMatchObject({ code: ErrorCode.entitlement_required });
+    const replaced = await admin(own.A).put(api(`/resources/${single}/docks`), {
+      body: { dockIds: [s.docks.T01] },
+    });
+    expect(replaced.status).toBe(403);
+    expect(await memberships(s.siteId)).toEqual(before);
+  });
+
+  it("replaces a single's dock, giving the removed dock a single of its own", async () => {
+    const s = await serviceSite(
+      own.A,
+      [
+        { code: 'S01', hall: 'Halle 1' },
+        { code: 'S02', hall: 'Halle 1' },
+      ],
+      { pools: false },
+    );
+    const byDock = async () =>
+      Object.entries(await memberships(s.siteId)).flatMap(([id, docks]) =>
+        docks.map((d) => [d, id] as const),
+      );
+    const s01 = (await byDock()).find(([d]) => d === s.docks.S01)?.[1] as string;
+    const res = await admin(own.A).put(api(`/resources/${s01}/docks`), {
+      body: { dockIds: [s.docks.S02] },
+    });
+    expect(res.status).toBe(200);
+    const after = await byDock();
+    expect(after.map(([d]) => d).sort()).toEqual([s.docks.S01, s.docks.S02].sort());
+    expect(Object.fromEntries(after)[s.docks.S02 as string]).toBe(s01);
+    expect(Object.fromEntries(after)[s.docks.S01 as string]).not.toBe(s01);
   });
 });
 

@@ -2,7 +2,7 @@ import { createServerI18n } from '@rampflow/i18n/server';
 import { Direction, ResourceKind } from '@rampflow/shared/modules/booking/values';
 import { DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { ConflictReason, ErrorCode, Feature, values } from '@rampflow/shared/values';
-import { and, eq, exists, inArray, isNull, max, notExists, sql } from 'drizzle-orm';
+import { and, eq, exists, inArray, isNull, max, ne, notExists, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { DockId, HallId, SiteId, TenantId } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
@@ -45,12 +45,12 @@ export const sameProfile = (a: DockProfile, b: DockProfile): boolean =>
 const NAME_MAX = 80;
 
 /** "Halle 2 · Tiefkühl": the hall plus each attribute off the standard profile. */
-async function defaultPoolName(tx: Tx, d: PlacedDock): Promise<string> {
+async function defaultPoolName(tx: Tx, tenantId: TenantId, d: PlacedDock): Promise<string> {
   const [row] = await tx
     .select({ hall: hall.name, locale: site.defaultLocale })
     .from(hall)
     .innerJoin(site, eq(site.id, hall.siteId))
-    .where(eq(hall.id, d.hallId as HallId));
+    .where(and(eq(hall.tenantId, tenantId), eq(hall.id, d.hallId as HallId)));
   if (!row) throw new Error(`hall ${d.hallId} not found`);
   const { t } = await createServerI18n(row.locale);
   const labels = [
@@ -100,15 +100,19 @@ export async function loadTypeIdsOf(
   return rows.map((r) => r.id);
 }
 
-const activeLoadTypeOf = (resourceId: AnyPgColumn) =>
-  sql`(select 1 from ${loadTypeResource} join ${loadType} on ${loadType.id} = ${loadTypeResource.loadTypeId} where ${loadTypeResource.resourceId} = ${resourceId} and ${loadType.active})`;
+const activeLoadTypeOf = (tenantId: TenantId, resourceId: AnyPgColumn) =>
+  sql`(select 1 from ${loadTypeResource} join ${loadType} on ${loadType.id} = ${loadTypeResource.loadTypeId} where ${loadTypeResource.tenantId} = ${tenantId} and ${loadType.tenantId} = ${tenantId} and ${loadTypeResource.resourceId} = ${resourceId} and ${loadType.active})`;
 
 async function hasActiveLoadType(tx: Tx, resource: ResourceRow): Promise<boolean> {
   const [row] = await tx
     .select({ id: bookableResource.id })
     .from(bookableResource)
     .where(
-      and(eq(bookableResource.id, resource.id), exists(activeLoadTypeOf(bookableResource.id))),
+      and(
+        eq(bookableResource.tenantId, resource.tenantId),
+        eq(bookableResource.id, resource.id),
+        exists(activeLoadTypeOf(resource.tenantId, bookableResource.id)),
+      ),
     );
   return row !== undefined;
 }
@@ -199,6 +203,8 @@ export async function singleFor(
         eq(bookableResource.kind, ResourceKind.single),
         eq(bookableResource.name, d.code),
         isNull(resourceDock.dockId),
+        // The resource the dock just left is never its new single (a single whose dock is replaced).
+        origin ? ne(bookableResource.id, origin.id) : undefined,
       ),
     )
     .limit(1);
@@ -206,7 +212,9 @@ export async function singleFor(
     ? await tx
         .update(bookableResource)
         .set({ active: true, ...profileOf(d), ...(directions ? { directions } : {}) })
-        .where(eq(bookableResource.id, reusable.id))
+        .where(
+          and(eq(bookableResource.tenantId, req.tenantId), eq(bookableResource.id, reusable.id)),
+        )
         .returning()
     : await tx
         .insert(bookableResource)
@@ -256,7 +264,7 @@ async function defaultPoolFor(tx: Tx, req: TenantRequest, d: PlacedDock): Promis
       tenantId: req.tenantId,
       siteId: d.siteId,
       kind: ResourceKind.pool,
-      name: await defaultPoolName(tx, d),
+      name: await defaultPoolName(tx, req.tenantId, d),
       directions: [...values(Direction)],
       sort: await nextSort(tx, req.tenantId, d.siteId),
       hallId: d.hallId,
@@ -316,7 +324,7 @@ export async function assertBookable(
       and(
         eq(resourceDock.tenantId, tenantId),
         inArray(resourceDock.resourceId, [...new Set(resourceIds)]),
-        notExists(activeLoadTypeOf(resourceDock.resourceId)),
+        notExists(activeLoadTypeOf(tenantId, resourceDock.resourceId)),
       ),
     )
     .orderBy(resourceDock.dockId);
