@@ -158,4 +158,27 @@ test.describe('MD-01 Sites', () => {
     await expect(page.getByText('No access')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Site sections' })).toHaveCount(0);
   });
+
+  test('the site tabs end with Settings, which opens the booking topic', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await signInAs(context, w.A.users.tenant_admin);
+    const site = `/t/${w.A.tenantId}/sites/${w.A.sites[0]?.id}`;
+    const tabs = page.getByRole('navigation', { name: 'Site sections' });
+
+    await page.goto(site);
+    await expect(tabs.getByRole('link').last()).toHaveText('Settings');
+    await tabs.getByRole('link').last().click();
+    await expect(page).toHaveURL(new RegExp(`${site}/settings/booking$`));
+    await expect(tabs.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Booking', exact: true }),
+    ).toBeVisible();
+  });
 });
