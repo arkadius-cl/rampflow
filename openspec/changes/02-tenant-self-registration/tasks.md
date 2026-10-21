@@ -63,10 +63,10 @@
 
 ## 9. Seed
 
-- [ ] 9.1 Extend `apps/api/scripts/seed/core.ts`: Acme's `eu_vat` `DE136695976` `verified` with `tax_id_checked_at`, `activated_at` set to `created_at` when null, Anna Lenz's given name, family name and salutation `ms`; extend `core.test.ts` so two runs converge.
-- [ ] 9.2 Add `apps/api/scripts/seed/signups.ts` with the tenants, accounts and registration rows of the design's "Seed data" table (found by org name, email and status; times reset each run; logs the Weser verification link) and register it in `SEEDS` in `apps/api/scripts/seed-dev.ts` right after `core`; add `signups.test.ts` so two runs converge (same row counts, one pending row for the Weser email, the expired Elbe row still expired).
-- [ ] 9.3 Add the accounts `admin@nordhafen.local`, `admin@acme-sued.local` and `admin@wisla-magazyny.local` (password `rampflow-demo`), the printed verification link and `VIES_URL` to `docs/how-to/run-locally.md`; verify the table matches `signups.ts`.
-- [ ] 9.4 On a fresh database run `pnpm db:seed` then `pnpm dev`; verify that `/platform/tenants` shows Nordhafen, Acme Süd and Wisła as "Onboarding" and Acme Logistics as "Active", that the printed link creates "Kühlhaus Weser GmbH" and lands on its tenant home, and that `admin@nordhafen.local` signs in to the Nordhafen tenant home.
+- [x] 9.1 Extend `apps/api/scripts/seed/core.ts`: Acme's `eu_vat` `DE136695976` `verified` with `tax_id_checked_at`, `activated_at` set to `created_at` when null, Anna Lenz's given name, family name and salutation `ms`; extend `core.test.ts` so two runs converge.
+- [x] 9.2 Add `apps/api/scripts/seed/signups.ts` with the tenants, accounts and registration rows of the design's "Seed data" table (found by org name, email and status; times reset each run; logs the Weser verification link) and register it in `SEEDS` in `apps/api/scripts/seed-dev.ts` right after `core`; add `signups.test.ts` so two runs converge (same row counts, one pending row for the Weser email, the expired Elbe row still expired).
+- [x] 9.3 Add the accounts `admin@nordhafen.local`, `admin@acme-sued.local` and `admin@wisla-magazyny.local` (password `rampflow-demo`), the printed verification link and `VIES_URL` to `docs/how-to/run-locally.md`; verify the table matches `signups.ts`.
+- [x] 9.4 On a fresh database run `pnpm db:seed` then `pnpm dev`; verify that `/platform/tenants` shows Nordhafen, Acme Süd and Wisła as "Onboarding" and Acme Logistics as "Active", that the printed link creates "Kühlhaus Weser GmbH" and lands on its tenant home, and that `admin@nordhafen.local` signs in to the Nordhafen tenant home.
 
 ## 10. Docs
 

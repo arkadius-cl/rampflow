@@ -76,8 +76,21 @@ related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/dec
    | `gate@acme.local` | Acme Logistics | `gate_operator` (all sites) |
    | `dock@acme.local` | Acme Logistics | `dock_operator` (all sites) |
    | `admin@trans-pol.local` | Trans-Pol Sp. z o.o. (carrier, linked to Acme) | `carrier_admin` |
+   | `admin@nordhafen.local` | Nordhafen Kühllogistik GmbH (tenant in onboarding, package start, W-IdNr unverified) | `tenant_admin` |
+   | `admin@acme-sued.local` | Acme Logistik Süd GmbH (tenant in onboarding, Acme's VAT number, possible duplicate) | `tenant_admin` |
+   | `admin@wisla-magazyny.local` | Wisła Magazyny Sp. z o.o. (tenant in onboarding, VAT number unavailable, Polish) | `tenant_admin` |
 
-   For a real installation, create only the first platform admin. There is no sign-up; this is the only way in.
+   The seed also leaves two registrations waiting for their email link (`apps/api/scripts/seed/signups.ts`): `kontakt@kuehlhaus-weser.local` with a link that works for 24 hours after the run, and `info@lagerhaus-elbe.local` with a link that expired 2 days before the run. `db:seed` prints the Weser link:
+
+   ```text
+   signups: verification link of Kühlhaus Weser GmbH: <APP_ORIGIN>/signup/verify#<token>
+   ```
+
+   Open it while `pnpm dev` runs and select "Create company": the page creates the tenant "Kühlhaus Weser GmbH", signs you in as its admin (password `rampflow-demo`) and opens its tenant home. Each `db:seed` run resets the link's expiry. The link is derived from `TOKEN_SECRET`, so it stops working when the secret changes.
+
+   `VIES_URL` is empty in `.env.example`, so the EU VAT number check job sends no request in development and seeded VAT numbers stay `pending`. Set `VIES_URL=https://ec.europa.eu/taxation_customs/vies/rest-api` in `.env` to check numbers against the EC's VIES service.
+
+   For a real installation, create only the first platform admin. Companies then register themselves at `/signup` ([Register your company](register-your-company.md)), or the platform admin creates tenants ([Onboard a tenant](onboard-a-tenant.md)).
 
    ```sh
    pnpm admin:create --email ops@example.com --name "Ops"
