@@ -1,110 +1,154 @@
 import { expect, test } from '@playwright/test';
+import { Setting } from '../../packages/shared/src/values/keys.ts';
+import { StaffLocale } from '../../packages/shared/src/values/locales.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
-import { resetPlatformSetting } from '../support/u3.ts';
+import { resetPlatformSetting, settingField } from '../support/u3.ts';
+import { setLocale } from '../support/u11.ts';
 
-// The platform level is shared by every tenant of the database, so this spec owns one key that
-// no other spec reads, and puts it back afterwards.
-const KEY = 'yard.standgeld_flag_minutes';
-const COUNTRIES = 'core.site_countries';
+// The platform level is shared by every tenant of the database, so each test that writes owns
+// keys no other spec reads, and puts them back afterwards.
+
+const topics = (page: import('@playwright/test').Page) =>
+  page.getByRole('navigation', { name: 'Settings topics' });
 
 test.describe('PL-03 Platform defaults', () => {
-  test('the platform admin edits a default; a tenant override keeps winning', async ({
+  test('the settings root opens the first topic, and the topic nav moves between topics', async ({
     page,
     context,
     request,
-    browser,
   }) => {
-    // Two browsers editing one setting at two levels.
-    test.slow();
     const w = await seedWorld(request);
-    await resetPlatformSetting(request, w, KEY);
-    const admin = await browser.newContext();
-    await signInAs(admin, w.A.users.tenant_admin);
-    const tenantPage = await admin.newPage();
-    await tenantPage.goto(`/t/${w.A.tenantId}/settings`);
-    const tenantField = tenantPage.getByTestId(`setting-${KEY}`);
-    await tenantField.getByRole('spinbutton').fill('90');
-    await tenantField.getByRole('button', { name: 'Save' }).click();
-    await expect(tenantField).toContainText('Set here (Tenant)');
+    await signInAs(context, w.platformAdmin);
 
+    await page.goto('/platform/settings');
+    await expect(page).toHaveURL(/\/platform\/settings\/general$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'General' })).toBeVisible();
+    await expect(topics(page).getByRole('link', { name: 'General' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expectAccessible(page);
+
+    await topics(page).getByRole('link', { name: 'Privacy' }).click();
+    await expect(page).toHaveURL(/\/platform\/settings\/privacy$/);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      'Privacy notice',
+      'Retention',
+      'Driver access',
+    ]);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/platform\/settings\/general$/);
+  });
+
+  test('a deep link focuses its field, so Tab reaches the input', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await signInAs(context, w.platformAdmin);
+    const key = Setting.privacy.retention.visit_days;
+
+    await page.goto(`/platform/settings/privacy#${key}`);
+    const field = settingField(page, key);
+    await expect(field.getByRole('heading', { name: 'Keep visits' })).toBeFocused();
+    await expect(field).toHaveAttribute('data-highlighted');
+    await expect(field.getByRole('heading', { name: 'Keep visits' })).toBeInViewport();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('spinbutton', { name: 'Keep visits' })).toBeFocused();
+  });
+
+  test('the search finds the driver link setting by a German word', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await setLocale(w.platformAdmin.id, StaffLocale.de);
+    await signInAs(context, w.platformAdmin);
+
+    await page.goto('/platform/settings/general');
+    await expect(page.getByRole('link', { name: 'Einstellungen', exact: true })).toHaveAttribute(
+      'href',
+      '/platform/settings',
+    );
+    await page.getByRole('button', { name: 'Einstellungen durchsuchen' }).click();
+    await page.getByRole('combobox').fill('Fahrerlink');
+    const result = page.getByRole('option', { name: /Fahrerlinks/ });
+    await expect(result).toHaveCount(1);
+    await expect(result).toContainText('Datenschutz › Fahrerzugang');
+    await result.click();
+    await expect(page).toHaveURL(
+      new RegExp(`/platform/settings/privacy#${Setting.privacy.retention.driver_link_hours}$`),
+    );
+    await expect(
+      settingField(page, Setting.privacy.retention.driver_link_hours).getByRole('heading'),
+    ).toBeFocused();
+  });
+
+  test('the admin un-admits Malta from the grouped country list', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const w = await seedWorld(request);
+    await resetPlatformSetting(request, w, Setting.core.site_countries);
     try {
       await signInAs(context, w.platformAdmin);
-      await page.goto('/platform/settings');
-      await expect(page.getByRole('heading', { name: 'Platform defaults' })).toBeVisible();
-      await expectAccessible(page);
-      const field = page.getByTestId(`setting-${KEY}`);
-      await expect(field).toContainText('Inherited from Default');
+      await page.goto('/platform/settings/general');
+      const field = settingField(page, Setting.core.site_countries);
+      await expect(field).toContainText('27 of 57 selected');
+      await expect(field.getByRole('checkbox', { name: 'EU member states' })).toBeChecked();
 
-      await field.getByRole('spinbutton').fill('5');
-      await field.getByRole('button', { name: 'Save' }).click();
-      await expect(field.getByRole('alert')).toHaveText('Enter a whole number from 30 to 1,440.');
+      await field.getByRole('checkbox', { name: 'Malta' }).click();
+      await expect(field).toContainText('26 of 57 selected');
+      await expect(field.getByRole('checkbox', { name: 'EU member states' })).toHaveAttribute(
+        'aria-checked',
+        'mixed',
+      );
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(field).toContainText('Set for the platform');
 
-      await field.getByRole('spinbutton').fill('180');
-      await field.getByRole('button', { name: 'Save' }).click();
-      await expect(field).toContainText('Set here (Platform)');
-      await expect(field.getByRole('button', { name: 'Reset to inherited (120)' })).toBeVisible();
-
-      await tenantPage.reload();
-      await expect(tenantField).toContainText('Set here (Tenant)');
-      await expect(tenantField.getByRole('spinbutton')).toHaveValue('90');
-      await expect(
-        tenantField.getByRole('button', { name: 'Reset to inherited (180)' }),
-      ).toBeVisible();
-
-      await field.getByRole('button', { name: 'Reset to inherited (120)' }).click();
-      await expect(field).toContainText('Inherited from Default');
-      await expect(field.getByRole('spinbutton')).toHaveValue('120');
+      await page.reload();
+      await expect(field).toContainText('26 of 57 selected');
+      await expect(field.getByRole('checkbox', { name: 'Malta' })).not.toBeChecked();
     } finally {
-      await resetPlatformSetting(request, w, KEY);
-      await admin.close();
+      await resetPlatformSetting(request, w, Setting.core.site_countries);
     }
   });
 
-  test('the platform admin admits a country found by name, and tenants can place sites there', async ({
+  test('lowering a retention period asks first and saves only on confirm', async ({
     page,
     context,
     request,
-    browser,
   }) => {
-    test.slow();
     const w = await seedWorld(request);
-    // Only adds a country outside the EU default, so specs creating EU sites meanwhile still pass.
-    await resetPlatformSetting(request, w, COUNTRIES);
+    const key = Setting.privacy.retention.audit_log_days;
+    await resetPlatformSetting(request, w, key);
     try {
       await signInAs(context, w.platformAdmin);
-      await page.goto('/platform/settings');
-      const field = page.getByTestId(`setting-${COUNTRIES}`);
-      await expect(field.getByRole('list', { name: 'Admitted countries' })).toContainText(
-        'Germany',
-      );
+      await page.goto('/platform/settings/privacy');
+      const field = settingField(page, key);
+      const input = page.getByRole('spinbutton', { name: 'Keep the audit log' });
+      await expect(input).toHaveValue('365');
+      await expect(field).toContainText('Product default');
 
-      await field.getByRole('searchbox').fill('norw');
-      await field.getByRole('button', { name: 'Add Norway' }).click();
-      await expect(field.getByRole('searchbox')).toHaveValue('');
-      await expect(field.getByRole('searchbox')).toBeFocused();
-      await expect(field.getByRole('button', { name: 'Remove Norway' })).toBeVisible();
-      await field.getByRole('button', { name: 'Save' }).click();
-      await expect(field).toContainText('Set here (Platform)');
-      await expectAccessible(page);
+      await input.fill('360');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      const dialog = page.getByRole('alertdialog');
+      await expect(dialog).toContainText('Keep the audit log: 365 → 360 days');
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(input).toHaveValue('360');
+      await expect(page.getByText('Unsaved changes: 1')).toBeVisible();
 
-      const admin = await browser.newContext();
-      await signInAs(admin, w.A.users.tenant_admin);
-      const tenantPage = await admin.newPage();
-      await tenantPage.goto(`/t/${w.A.tenantId}/sites`);
-      await tenantPage.getByRole('button', { name: 'New site' }).first().click();
-      const sheet = tenantPage.getByRole('dialog');
-      await sheet.getByLabel('Country').selectOption({ label: 'Norway' });
-      await expect(sheet.getByLabel('Country')).toHaveValue('NO');
-      await sheet.getByLabel('Name', { exact: true }).fill('Oslo Terminal');
-      await sheet.getByLabel('Street and number').fill('Havnegata 1');
-      await sheet.getByLabel('Postal code').fill('0150');
-      await sheet.getByLabel('City').fill('Oslo');
-      await sheet.getByLabel('Time zone').selectOption('Europe/Oslo');
-      await sheet.getByRole('button', { name: 'Create site' }).click();
-      await expect(tenantPage.getByRole('heading', { name: 'Oslo Terminal' })).toBeVisible();
-      await admin.close();
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Shorten and save' }).click();
+      await expect(field).toContainText('Set for the platform');
+      await page.reload();
+      await expect(input).toHaveValue('360');
     } finally {
-      await resetPlatformSetting(request, w, COUNTRIES);
+      await resetPlatformSetting(request, w, key);
     }
   });
 });
