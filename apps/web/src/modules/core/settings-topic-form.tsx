@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Controller, type FieldErrors, type Resolver, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { type OriginHref, SettingField, SettingOrigin } from '@/components/settings-field';
+import { SettingField, SettingOrigin } from '@/components/settings-field';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { ApiFailure } from '@/lib/api';
 import { controlOf, settingDef } from './setting-control';
 import { SettingInput, useSettingMessage, useValueText } from './setting-input';
+import type { OriginLink } from './settings-levels';
 import { sectionsOf, unitOf } from './settings-placement';
 
 // One topic of one settings level as one form (TN-02, PL-03; design decisions 4, 7, 9, 10).
@@ -52,8 +53,8 @@ export interface SettingsTopicFormProps {
   topic: SettingsTopic;
   /** Sends the PATCH and answers the level's new view; a 422 maps back to the fields. */
   save: (changes: SettingChanges) => Promise<SettingsView>;
-  /** Links an inherited value to its source level; build it with `originHrefFor`. */
-  originHref?: OriginHref;
+  /** Links an inherited value to its source level; build it with `originLinkFor`. */
+  originLink?: OriginLink;
 }
 
 /** react-hook-form reads dots in a name as nesting, so a field's name swaps them for slashes. */
@@ -100,12 +101,13 @@ function shortenings(entries: readonly SettingEntry[], drafts: Drafts, changed: 
   return found;
 }
 
-const labelKey = (key: SettingKey, part: LabelPart) => {
+/** The catalog key of a setting's label or description. */
+export const settingLabelKey = (key: SettingKey, part: LabelPart) => {
   const dot = key.indexOf('.');
   return `${key.slice(0, dot)}:settings.${key.slice(dot + 1)}.${part}`;
 };
 
-export function SettingsTopicForm({ view, topic, save, originHref }: SettingsTopicFormProps) {
+export function SettingsTopicForm({ view, topic, save, originLink }: SettingsTopicFormProps) {
   const { t } = useTranslation();
   const sections = useMemo(() => sectionsOf(topic, view.items), [topic, view.items]);
   const entries = useMemo(() => sections.flatMap((s) => s.items), [sections]);
@@ -204,7 +206,7 @@ export function SettingsTopicForm({ view, topic, save, originHref }: SettingsTop
                 entry={entry}
                 scope={view.scope}
                 form={form}
-                originHref={originHref}
+                originLink={originLink}
               />
             ))}
           </div>
@@ -269,18 +271,18 @@ function TopicField({
   entry,
   scope,
   form,
-  originHref,
+  originLink,
 }: {
   entry: SettingEntry;
   scope: SettingsView['scope'];
   form: ReturnType<typeof useForm<Drafts>>;
-  originHref?: OriginHref;
+  originLink?: OriginLink;
 }) {
   const { t } = useTranslation();
   const spec = controlOf(entry.key, settingDef(entry.key).schema);
   const display = useValueText(entry.key, spec);
   const message = useSettingMessage(spec);
-  const label = t(labelKey(entry.key, LabelPart.label) as never) as string;
+  const label = t(settingLabelKey(entry.key, LabelPart.label) as never) as string;
   const unit = unitOf(entry.key);
   return (
     <Controller
@@ -294,7 +296,7 @@ function TopicField({
           <SettingField
             settingKey={entry.key}
             label={label}
-            description={t(labelKey(entry.key, LabelPart.description) as never) as string}
+            description={t(settingLabelKey(entry.key, LabelPart.description) as never) as string}
             overridden={draft.kind === FieldDraftKind.own && entry.source === scope}
             error={message(fieldState.error)}
             control={
@@ -313,7 +315,7 @@ function TopicField({
                 scope={scope}
                 inheritedText={inheritedText}
                 pendingInherit={pendingInherit}
-                originHref={originHref}
+                originLink={originLink}
               />
             }
             action={
@@ -362,7 +364,7 @@ function RetentionDialog({
             return (
               <li key={key}>
                 {t(($) => $['settings-ui'].retention.change, {
-                  label: t(labelKey(key, LabelPart.label) as never) as string,
+                  label: t(settingLabelKey(key, LabelPart.label) as never) as string,
                   from,
                   to,
                   unit: unit ? t(($) => $['settings-ui'].unit_names[unit]) : '',

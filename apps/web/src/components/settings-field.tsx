@@ -1,7 +1,7 @@
 import type { SettingKey } from '@rampflow/shared';
 import type { SettingEntry } from '@rampflow/shared/modules/core/api.settings';
 import { SettingScope, SettingSource } from '@rampflow/shared/values';
-import { useLocation, useRouter } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { LinkIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,12 +9,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fieldIds } from '@/modules/core/setting-input';
+import type { OriginLink } from '@/modules/core/settings-levels';
 
 // One settings field (TN-02, PL-03, ADR-0020): the title is the field's anchor, the origin says
 // as text where the value comes from, and "Copy link" copies the deep link to it.
-
-/** The path of the same field on the level a value comes from, when the user may manage it. */
-export type OriginHref = (source: SettingSource, key: SettingKey) => string | undefined;
 
 export interface SettingOriginProps {
   entry: SettingEntry;
@@ -24,7 +22,8 @@ export interface SettingOriginProps {
   inheritedText: string;
   /** The field will drop its value on this level when the form is saved. */
   pendingInherit?: boolean;
-  originHref?: OriginHref;
+  /** Links a value from a level above to its source; build it with `originLinkFor`. */
+  originLink?: OriginLink;
 }
 
 /** Where the field's value comes from, relative to the page's level (design decision 6). */
@@ -33,18 +32,17 @@ export function SettingOrigin({
   scope,
   inheritedText,
   pendingInherit = false,
-  originHref,
+  originLink,
 }: SettingOriginProps) {
   const { t } = useTranslation();
-  const router = useRouter();
   const source = pendingInherit ? entry.inherited.source : entry.source;
   const setHere = source === scope;
   const fromText = (s: SettingSource) =>
     s === SettingSource.site
       ? t(($) => $['settings-ui'].origin.here.site)
       : t(($) => $['settings-ui'].origin[s]);
-  const href =
-    setHere || source === SettingSource.default ? undefined : originHref?.(source, entry.key);
+  const link =
+    setHere || source === SettingSource.default ? undefined : originLink?.(source, entry.key);
   const levelsHint =
     entry.scopes.length === 1 && entry.scopes[0] === SettingScope.platform
       ? t(($) => $['settings-ui'].levels.platform_only)
@@ -59,18 +57,13 @@ export function SettingOrigin({
           <span className="font-medium text-tone-planned">
             {t(($) => $['settings-ui'].origin.here[scope])}
           </span>
-        ) : href ? (
-          <a
-            href={href}
+        ) : link ? (
+          <Link
+            {...link}
             className="font-medium underline underline-offset-2 hover:text-foreground"
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-              e.preventDefault();
-              void router.navigate({ href });
-            }}
           >
             {fromText(source)}
-          </a>
+          </Link>
         ) : (
           <span className="font-medium">{fromText(source)}</span>
         )}

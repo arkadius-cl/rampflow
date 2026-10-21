@@ -19,3 +19,10 @@ window.matchMedia = (query: string) =>
     removeListener: () => {},
     dispatchEvent: () => false,
   }) as MediaQueryList;
+
+// cmdk measures its list; jsdom has no layout to observe.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

@@ -8,7 +8,7 @@ import { applyLocale, initI18n } from '@/lib/i18n';
 
 // Component tests render in English with the real catalogs, so they assert what users read.
 
-const i18n = await initI18n();
+export const i18n = await initI18n();
 await applyLocale(i18n, StaffLocale.en);
 
 export function Providers({ children }: { children: ReactNode }) {

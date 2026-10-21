@@ -6,7 +6,6 @@ import {
   type TenantList,
   TenantListQuery,
 } from '@rampflow/shared/modules/core/api.platform';
-import type { SettingsView } from '@rampflow/shared/modules/core/api.settings';
 import type { CarrierUserList, StaffList } from '@rampflow/shared/modules/core/api.staff';
 import { OrgKind } from '@rampflow/shared/values';
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
@@ -45,11 +44,6 @@ export const packagesQuery = queryOptions({
   staleTime: Number.POSITIVE_INFINITY,
 });
 
-export const platformSettingsQuery = queryOptions({
-  queryKey: platformKeys.settings(),
-  queryFn: () => call<SettingsView>(api.platform.settings.$get()),
-});
-
 export const onboardingKey = (orgId: string) => ['tenant', orgId, 'core', 'onboarding'] as const;
 
 /** The checklist of a tenant in onboarding (ON-01); master data writes invalidate it. */
@@ -73,17 +67,4 @@ export const carrierUsersQuery = (orgId: string) =>
   queryOptions({
     queryKey: carrierUsersKey(orgId),
     queryFn: () => call<CarrierUserList>(api.c[':orgId'].users.$get({ param: { orgId } })),
-  });
-
-/** `siteId` null is the tenant level. */
-export const tenantSettingsQuery = (orgId: string, siteId: string | null) =>
-  queryOptions({
-    queryKey: ['tenant', orgId, 'core', 'settings', siteId ?? 'tenant'] as const,
-    queryFn: () =>
-      call<SettingsView>(
-        api.t[':orgId'].settings.$get({
-          param: { orgId },
-          query: siteId ? { siteId } : {},
-        }),
-      ),
   });

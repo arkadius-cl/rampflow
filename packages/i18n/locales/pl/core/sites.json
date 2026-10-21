@@ -57,7 +57,8 @@
     "label": "Sekcje lokalizacji",
     "docks": "Hale, rampy i pule",
     "hours": "Godziny otwarcia i zamknięcia",
-    "load_types": "Rodzaje ładunku"
+    "load_types": "Rodzaje ładunku",
+    "settings": "Ustawienia"
   },
   "halls": {
     "new": "Nowa hala",

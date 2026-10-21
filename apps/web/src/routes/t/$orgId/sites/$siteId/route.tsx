@@ -1,3 +1,4 @@
+import type { SiteView } from '@rampflow/shared/modules/core/api.sites';
 import { Permission } from '@rampflow/shared/values';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
@@ -15,7 +16,7 @@ import { SiteFormSheet } from '@/modules/capacity/site-form';
 import { SiteNav } from '@/modules/capacity/site-nav';
 
 // MD-01 to MD-05: one site with its tabs (ADR-0011): halls, docks and pools; hours and closures;
-// load types. The left pane lists every site with the usage meters.
+// load types; settings (TN-02). The left pane lists every site with the usage meters.
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId')({
   beforeLoad: guard({ permission: Permission.core.manage_sites }),
@@ -24,6 +25,9 @@ export const Route = createFileRoute('/t/$orgId/sites/$siteId')({
       context.queryClient.ensureQueryData(siteQueries.list(params.orgId)),
       context.queryClient.ensureQueryData(siteQueries.site(params.orgId, params.siteId)),
     ]),
+  staticData: {
+    crumb: (match) => (match.loaderData as [unknown, SiteView] | undefined)?.[1].name,
+  },
   component: SiteLayout,
 });
 
@@ -97,6 +101,15 @@ function SiteLayout() {
                 {t(($) => $.sites.tabs.load_types)}
               </Link>
             </>
+          ) : null}
+          {can(Permission.core.manage_settings) ? (
+            <Link
+              to="/t/$orgId/sites/$siteId/settings"
+              params={{ orgId, siteId }}
+              className={tabClass}
+            >
+              {t(($) => $.sites.tabs.settings)}
+            </Link>
           ) : null}
         </nav>
         <Outlet />

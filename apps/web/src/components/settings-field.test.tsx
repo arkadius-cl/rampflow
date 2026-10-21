@@ -13,7 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { controlOf, settingDef } from '@/modules/core/setting-control';
 import { SettingInput } from '@/modules/core/setting-input';
-import { originHrefFor, type SettingsLevel } from '@/modules/core/settings-levels';
+import { originLinkFor, type SettingsLevel } from '@/modules/core/settings-levels';
 import { renderRoutes } from '@/test/router';
 import { type EntryOverride, settingsView } from '@/test/settings';
 import { SettingField, SettingOrigin } from './settings-field';
@@ -33,7 +33,7 @@ function entryOf(
 }
 
 function showOrigin(level: SettingsLevel, entry: SettingEntry) {
-  const href = originHrefFor(level, SettingsTopic.booking, tenantAdmin);
+  const href = originLinkFor(level, SettingsTopic.booking, tenantAdmin);
   renderRoutes(
     {
       '/': () => (
@@ -41,7 +41,7 @@ function showOrigin(level: SettingsLevel, entry: SettingEntry) {
           entry={entry}
           scope={level.scope}
           inheritedText={String(entry.inherited.value)}
-          originHref={href}
+          originLink={href}
         />
       ),
     },
