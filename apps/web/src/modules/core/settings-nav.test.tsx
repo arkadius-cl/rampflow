@@ -65,6 +65,14 @@ describe('SettingsTopicNav', () => {
 });
 
 describe('SettingsSearch', () => {
+  it('adds no heading to the page while closed, and names the open dialog', async () => {
+    openLevel(tenant, SettingsTopic.booking);
+    await screen.findByRole('button', { name: 'Search settings' });
+    expect(screen.queryByRole('heading', { name: 'Search settings' })).toBeNull();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Search settings' }));
+    expect(await screen.findByRole('dialog', { name: 'Search settings' })).toBeDefined();
+  });
+
   it('finds the cancellation cutoff by "storno" and opens its deep link', async () => {
     await applyLocale(i18n, StaffLocale.de);
     const { router } = openLevel(tenant, SettingsTopic.general);
