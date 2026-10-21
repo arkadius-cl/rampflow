@@ -104,5 +104,5 @@
 
 ## 12. Integration
 
-- [ ] 12.1 Run `pnpm verify`, `pnpm test:e2e` and `scripts/test-at-date.sh +40d`. Verify all are green.
-- [ ] 12.2 Write the report's deviations from the contract: the new error code `onboarding_incomplete`, the guard kind `GuardKind.active_tenant` and the `RouteCase.onboarding` field with `OnboardingCase`, the `org` update policy, the profile columns with defaults, the removed `none` variant of `DockBooking` and the changed `dock_in_resource` semantics, `CreateSite.hours`, `TenantContext.status`, the new `core/onboarding.json` part, and ADR-0017.
+- [x] 12.1 Run `pnpm verify`, `pnpm test:e2e` and `scripts/test-at-date.sh +40d`. Verify all are green.
+- [x] 12.2 Write the report's deviations from the contract: the new error code `onboarding_incomplete`, the guard kind `GuardKind.active_tenant` and the `RouteCase.onboarding` field with `OnboardingCase`, the `org` update policy, the profile columns with defaults, the removed `none` variant of `DockBooking` and the changed `dock_in_resource` semantics, `CreateSite.hours`, `TenantContext.status`, the new `core/onboarding.json` part, and ADR-0017.
