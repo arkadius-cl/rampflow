@@ -74,7 +74,8 @@ test.describe('PL-04 Usage', () => {
     const cells = row.getByRole('cell');
     await expect(cells.nth(0)).toContainText('Tenant A');
     await expect(cells.nth(1)).toHaveText('Pro');
-    await expect(cells.nth(2)).toHaveText('Onboarding');
+    // The world's tenants have docks, so they are active (ON-02).
+    await expect(cells.nth(2)).toHaveText('Active');
     await expect(cells.nth(3)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
     await expect(cells.nth(4)).toContainText('2 / 5');
     await expect(cells.nth(4)).toContainText('40 %');
