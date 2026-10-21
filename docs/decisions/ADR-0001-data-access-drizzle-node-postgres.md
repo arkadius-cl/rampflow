@@ -5,13 +5,13 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, database, drizzle, migrations, postgres]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 related: [docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
 # ADR-0001: Data access with Drizzle and node-postgres
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: one baseline holds every SQL function, `db:generate` and `db:regen` are one command, and test databases are per checkout.
+Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: one baseline holds every SQL function, `db:generate` and `db:regen` are one command, and test databases are per checkout. Amended 2026-10-21 by change 02: the coordinator-approved custom migration `0008_02-tenant-self-registration-backfill.sql` backfills `org.activated_at` and redefines `app.user_by_email` (point 6).
 
 ## Context
 
@@ -50,7 +50,7 @@ For migrations under parallel work:
    - `MIGRATION_DATABASE_URL` connects as the owner role. It runs migrations and owns every table. In dev this is the compose superuser `rampflow`.
    - `DATABASE_URL` connects as `rampflow_app`: `LOGIN NOBYPASSRLS`, owns nothing, and receives `SELECT, INSERT, UPDATE, DELETE` through default privileges.
    - `pnpm db:setup` (`apps/api/scripts/db-setup.ts`) creates or converges `rampflow_app` idempotently in dev and test and creates the checkout's database. Production provisions both roles outside the app. The API refuses to start as a superuser or a role with `rolbypassrls`.
-6. **Baseline migration.** U1 writes `0000_baseline.sql` by hand (`drizzle-kit generate --custom`). It creates the extensions (`btree_gist`, `pgcrypto`, `citext`), the `app` schema with every SQL function a policy calls ([ADR-0002](ADR-0002-tenancy-isolation-rls.md): the GUC accessors, `app.site_allowed`, `app.linked_tenant`, and the security definer helpers `app.shares_org` and `app.user_by_email`), and the default privileges for `rampflow_app`. It sets `check_function_bodies = off`, so `app.linked_tenant()` can name `tenant_carrier_link` before the generated migration creates it; a policy that calls a missing function would fail `CREATE POLICY`. There is no second custom migration. The test run migrates an empty template database every time, which proves a first `db:migrate` passes.
+6. **Baseline migration.** U1 writes `0000_baseline.sql` by hand (`drizzle-kit generate --custom`). It creates the extensions (`btree_gist`, `pgcrypto`, `citext`), the `app` schema with every SQL function a policy calls ([ADR-0002](ADR-0002-tenancy-isolation-rls.md): the GUC accessors, `app.site_allowed`, `app.linked_tenant`, and the security definer helpers `app.shares_org` and `app.user_by_email`), and the default privileges for `rampflow_app`. It sets `check_function_bodies = off`, so `app.linked_tenant()` can name `tenant_carrier_link` before the generated migration creates it; a policy that calls a missing function would fail `CREATE POLICY`. Later custom migrations exist only where point 8 allows them: `0008_02-tenant-self-registration-backfill.sql` (change 02) sets `org.activated_at = created_at` for existing tenants and drops and recreates `app.user_by_email(address citext)`, which now returns `(id, password_hash, email_verified_at, disabled_at, locale)`, so the known-account email of a registration goes out in the account's language. A function's new result column needs `DROP` and `CREATE`, which Drizzle cannot generate. The test run migrates an empty template database every time, which proves a first `db:migrate` passes.
 7. **Everything after the baseline is generated** from the TypeScript schema: tables, checks, partial and composite indexes, composite foreign keys, and RLS policies through `pgPolicy`, built by the helpers in `apps/api/src/db/rls.ts`. U1 lands every table of the data model in its module's `schema*.ts` with its policies; later units change those files only for the deviations their reports list. drizzle-kit 0.31 diffs policy expressions (`ALTER POLICY`), so a changed predicate needs no custom SQL.
 8. **No custom SQL on feature branches.** If a unit needs SQL that the Drizzle schema cannot express, it stops and the coordinator lands that SQL on main first. This keeps `db:regen` mechanical.
 9. **Parallel branches.**

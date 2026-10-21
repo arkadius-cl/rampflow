@@ -9,13 +9,14 @@ import {
   values,
 } from '@rampflow/shared/values';
 import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm';
-import type { AnyOrgId, UserId } from '../../../db/ids.ts';
+import type { AnyOrgId } from '../../../db/ids.ts';
 import { asScope, type Scope, type Tx } from '../../../db/scope.ts';
 import { loadAccess } from '../../../kernel/access.ts';
 import type { Clock } from '../../../kernel/clock.ts';
 import { forEachTenant, type Job, type JobContext, type JobStats } from '../../../kernel/jobs.ts';
 import { enqueueEmail } from '../../../kernel/outbox.ts';
-import { systemScope } from '../../../kernel/system.ts';
+import { platformSystemScope, systemScope } from '../../../kernel/system.ts';
+import { tenantSignup } from '../../core/schema.signup.ts';
 // biome-ignore lint/style/noRestrictedImports: retention purges every table by its rule (data model, "Retention"), the auth tables included; it deletes rows and reads none of their values
 import { appUser, authToken, membership, org, rateLimitEvent } from '../../core/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
@@ -30,12 +31,7 @@ const DAY_MS = 86_400_000;
 const NOTICE_DAYS = 30;
 const AUTH_ROWS_MS = DAY_MS;
 const OUTBOX_DAYS = 7;
-
-/** Carrier accounts are platform data; no user acts, so the scope carries the nil id. */
-const PLATFORM: Scope = {
-  party: ScopeParty.platform,
-  userId: '00000000-0000-0000-0000-000000000000' as UserId,
-};
+const SIGNUP_DAYS = 7;
 
 const isStaffLocale = (l: string | null): l is StaffLocale =>
   l !== null && (values(StaffLocale) as readonly string[]).includes(l);
@@ -61,7 +57,7 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
       null,
     ),
   );
-  return asScope(tx, PLATFORM, async () => {
+  return asScope(tx, platformSystemScope, async () => {
     const lastActive = sql<Date>`coalesce(${appUser.lastSeenAt}, ${appUser.createdAt})`;
     const carrierOnly = and(
       sql`exists (select 1 from ${membership} m where m.user_id = ${appUser.id} and m.org_kind = 'carrier')`,
@@ -126,6 +122,9 @@ async function inactiveCarrierUsers(tx: Tx, clock: Clock): Promise<JobStats> {
           .set({
             email: `deleted-${u.id}@invalid.rampflow`,
             name: '-',
+            givenName: null,
+            familyName: null,
+            salutation: null,
             locale: null,
             uiPrefs: {},
             passwordHash: null,
@@ -176,6 +175,18 @@ async function authRows(tx: Tx, now: Date): Promise<JobStats> {
   return { authTokensDeleted: tokens.length, rateLimitEventsDeleted: events.length };
 }
 
+/**
+ * Registrations 7 days past their link's expiry, whatever their status: a verified row's link
+ * expired 24 hours after the registration, so nothing of it outlives its purpose.
+ */
+async function signupRows(tx: Tx, now: Date): Promise<JobStats> {
+  const rows = await tx
+    .delete(tenantSignup)
+    .where(lt(tenantSignup.expiresAt, new Date(now.getTime() - SIGNUP_DAYS * DAY_MS)))
+    .returning({ id: tenantSignup.id });
+  return { signupsDeleted: rows.length };
+}
+
 /** Sent or failed outbox rows after 7 days; the worker emptied their payload when it sent. */
 function outboxRows(tx: Tx, now: Date): Promise<JobStats> {
   const before = new Date(now.getTime() - OUTBOX_DAYS * DAY_MS);
@@ -209,6 +220,7 @@ async function runRetention(ctx: JobContext): Promise<JobStats> {
     ...tenants,
     ...(await inactiveCarrierUsers(ctx.tx, ctx.clock)),
     ...(await authRows(ctx.tx, now)),
+    ...(await signupRows(ctx.tx, now)),
     ...(await outboxRows(ctx.tx, now)),
   };
 }

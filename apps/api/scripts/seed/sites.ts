@@ -97,7 +97,8 @@ async function seedSite(tx: Tx, req: TenantRequest, demo: DemoSite): Promise<boo
     .from(site)
     .where(and(eq(site.tenantId, req.tenantId), eq(site.name, demo.site.name)));
   if (existing) return false;
-  const row = await createSite(tx, req, systemClock, demo.site);
+  // The demo sites lie in EU countries, which `core.site_countries` admits by default.
+  const row = await createSite(tx, req, systemClock, demo.site, [demo.site.country]);
   const siteId = row.id as SiteId;
   const dockIds = new Map<string, string>();
   for (const [sort, h] of demo.halls.entries()) {

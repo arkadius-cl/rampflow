@@ -37,6 +37,7 @@ export const ConflictReason = {
   acknowledgement_invalid: 'acknowledgement_invalid',
   quiz_incomplete: 'quiz_incomplete',
   quiz_not_passed: 'quiz_not_passed',
+  account_exists: 'account_exists',
 } as const;
 export type ConflictReason = ValueOf<typeof ConflictReason>;
 

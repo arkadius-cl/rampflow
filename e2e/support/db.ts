@@ -24,6 +24,13 @@ export async function setPassword(userId: string, password: string): Promise<voi
   ]);
 }
 
+/** Marks a tenant active since its creation, as the 02 backfill does for older tenants. */
+export async function activateTenant(tenantId: string): Promise<void> {
+  await db().query("update org set activated_at = created_at where id = $1 and kind = 'tenant'", [
+    tenantId,
+  ]);
+}
+
 export async function addMembership(
   userId: string,
   orgId: string,
@@ -79,4 +86,46 @@ export async function sitesOfMember(email: string): Promise<string[]> {
     [email],
   );
   return rows.map((r) => r.site_id);
+}
+
+/** Gives a tenant a tax id, as a self-registered tenant has one (RG-04). */
+export async function setTaxId(tenantId: string, type: string, value: string): Promise<void> {
+  await db().query(
+    `update org set tax_id_type = $2, tax_id_value = $3, tax_id_status = 'unverified'
+     where id = $1 and kind = 'tenant'`,
+    [tenantId, type, value],
+  );
+}
+
+/** The registration rows of an email, newest first (RG-01 to RG-05). */
+export async function signupsOf(email: string) {
+  const { rows } = await db().query<{
+    status: string;
+    tax_id_value: string;
+    tenant_id: string | null;
+  }>(
+    'select status, tax_id_value, tenant_id from tenant_signup where email = $1 order by created_at desc',
+    [email],
+  );
+  return rows;
+}
+
+/** What exists under a registration's email and company name, for "nothing before the click". */
+export async function accountAndTenant(email: string, companyName: string) {
+  const { rows } = await db().query<{ users: number; orgs: number }>(
+    `select (select count(*)::int from app_user where email = $1) as users,
+            (select count(*)::int from org where name = $2) as orgs`,
+    [email, companyName],
+  );
+  return rows[0] as { users: number; orgs: number };
+}
+
+/** The flags RG-04 reads that no API exposes yet (the platform screens show them in 04). */
+export async function tenantFacts(tenantId: string) {
+  const { rows } = await db().query<{
+    possible_duplicate: boolean;
+    activated_at: Date | null;
+    tax_id_value: string | null;
+  }>('select possible_duplicate, activated_at, tax_id_value from org where id = $1', [tenantId]);
+  return rows[0];
 }

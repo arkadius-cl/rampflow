@@ -37,15 +37,16 @@
     "postal_code": "PLZ",
     "city": "Ort",
     "country": "Land",
-    "country_hint": "Zwei Buchstaben, zum Beispiel DE.",
     "subdivision": "Region",
-    "subdivision_hint": "Für Feiertage, zum Beispiel DE-BY.",
+    "subdivision_hint": "Bestimmt die regionalen Feiertage. Ohne Region gelten nur die landesweiten.",
+    "subdivision_none": "Keine Region",
     "time_zone": "Zeitzone",
     "time_zone_hint": "Slots, Öffnungszeiten und Schließungen folgen der Uhr dieser Zone.",
     "default_locale": "Standardsprache",
     "phone": "Telefon",
     "phone_hint": "Internationales Format, zum Beispiel +4940123456.",
-    "active": "Aktiv"
+    "active": "Aktiv",
+    "country_none": "Land wählen"
   },
   "locales": {
     "de": "Deutsch",
@@ -123,6 +124,7 @@
     "window_order": "Öffnen liegt vor Schließen.",
     "overlap": "Überschneidet sich mit einem anderen Zeitfenster des Tages.",
     "range_order": "Der Beginn liegt vor dem Ende.",
-    "tiers": "Obergrenzen steigen an, und nur die letzte Stufe ist offen."
+    "tiers": "Obergrenzen steigen an, und nur die letzte Stufe ist offen.",
+    "country_admitted": "In diesem Land lässt die Plattform keine Standorte zu."
   }
 }

@@ -1,5 +1,6 @@
 import { CarrierLinkSource, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { UiPrefs } from '@rampflow/shared/modules/core/ui-prefs';
+import { Salutation, TaxIdStatus, TaxIdType } from '@rampflow/shared/modules/core/values';
 import { Module, OrgKind, Role, SeedOrg, StaffLocale } from '@rampflow/shared/values';
 import { eq, sql } from 'drizzle-orm';
 import type { AnyOrgId, CarrierId, TenantId, UserId } from '../../src/db/ids.ts';
@@ -20,15 +21,22 @@ import { findOrg, type SeedContext } from './context.ts';
 
 export const DEMO_PASSWORD = 'rampflow-demo';
 export const ACME = 'Acme Logistics';
+/** Acme's VAT number, which the seeded "Acme Logistik Süd GmbH" shares (signups.ts). */
+export const ACME_VAT = 'DE136695976';
 export const TRANS_POL = 'Trans-Pol Sp. z o.o.';
 export const ADMIN_UI_PREFS: UiPrefs = {
   'platform.packages.openModules': [Module.booking, Module.yard],
 };
 
-interface DemoUser {
+export interface DemoAccount {
   email: string;
   name: string;
   locale: StaffLocale;
+  /** The name parts a registration records (person-names spec). */
+  parts?: { givenName: string; familyName: string; salutation: Salutation | null };
+}
+
+interface DemoUser extends DemoAccount {
   org: SeedOrg;
   role: Role;
 }
@@ -45,6 +53,7 @@ export const DEMO_USERS: readonly DemoUser[] = [
     email: 'admin@acme.local',
     name: 'Anna Lenz',
     locale: StaffLocale.de,
+    parts: { givenName: 'Anna', familyName: 'Lenz', salutation: Salutation.ms },
     org: SeedOrg.acme,
     role: Role.tenant_admin,
   },
@@ -100,7 +109,7 @@ async function platformOrg(ctx: SeedContext): Promise<AnyOrgId | null> {
 }
 
 /** Creates or converges one account: verified, enabled, and signing in with DEMO_PASSWORD. */
-async function ensureUser(ctx: SeedContext, u: DemoUser): Promise<UserId> {
+export async function ensureUser(ctx: SeedContext, u: DemoAccount): Promise<UserId> {
   const [existing] = await ctx.db
     .select({ id: appUser.id, passwordHash: appUser.passwordHash })
     .from(appUser)
@@ -116,10 +125,12 @@ async function ensureUser(ctx: SeedContext, u: DemoUser): Promise<UserId> {
       locale: u.locale,
       passwordHash,
       emailVerifiedAt: sql`now()`,
+      ...u.parts,
     })
     .onConflictDoUpdate({
       target: appUser.email,
       set: {
+        ...u.parts,
         passwordHash,
         disabledAt: null,
         emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, now())`,
@@ -145,6 +156,16 @@ export async function seed(ctx: SeedContext): Promise<void> {
       .values({ userId: id, orgId: orgs[u.org], orgKind: ORG_KIND[u.org], role: u.role })
       .onConflictDoNothing();
   }
+  await ctx.db
+    .update(org)
+    .set({
+      taxIdType: TaxIdType.eu_vat,
+      taxIdValue: ACME_VAT,
+      taxIdStatus: TaxIdStatus.verified,
+      taxIdCheckedAt: sql`coalesce(${org.taxIdCheckedAt}, now())`,
+      activatedAt: sql`coalesce(${org.activatedAt}, ${org.createdAt})`,
+    })
+    .where(eq(org.id, orgs.acme));
   const admin = users.get('admin@rampflow.local') as UserId;
   // Merged per key like PATCH /api/me, so keys the admin set by hand stay.
   await ctx.db

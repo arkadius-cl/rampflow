@@ -12,6 +12,7 @@ type Validation = keyof Resources['core']['sites']['validation'];
 const CUSTOM: Readonly<Record<string, Validation>> = {
   'Unknown IANA time zone': 'time_zone',
   'The subdivision must belong to the country': 'subdivision_country',
+  'The platform admits no sites in this country': 'country_admitted',
   'Opens before it closes': 'window_order',
   'Overlaps another window': 'overlap',
   'Starts before it ends': 'range_order',

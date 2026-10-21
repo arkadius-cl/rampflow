@@ -23,6 +23,7 @@
   "sections": {
     "avis": "Avis",
     "booking": "Buchungsregeln",
+    "core": "Standorte",
     "i18n": "Sprache",
     "notify": "Benachrichtigungen",
     "privacy": "Datenschutz und Aufbewahrung",
@@ -51,6 +52,15 @@
     "number_range": "Geben Sie eine ganze Zahl von {{min}} bis {{max}} ein.",
     "url": "Geben Sie einen Link ein, der mit https:// oder http:// beginnt.",
     "duplicate": "Jeder Typ darf nur einmal vorkommen.",
-    "invalid": "Dieser Wert ist nicht zulässig."
+    "invalid": "Dieser Wert ist nicht zulässig.",
+    "at_least_one": "Wählen Sie mindestens einen Eintrag."
+  },
+  "picker": {
+    "search": "Land suchen",
+    "search_label": "{{label}}: suchen",
+    "add": "Hinzufügen",
+    "add_named": "{{name}} hinzufügen",
+    "remove": "{{name}} entfernen",
+    "no_match": "Kein Treffer."
   }
 }

@@ -50,6 +50,20 @@
       "when": 1792530916339,
       "tag": "0006_00-central-value-sets",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792539339211,
+      "tag": "0007_02-tenant-self-registration",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792539340133,
+      "tag": "0008_02-tenant-self-registration-backfill",
+      "breakpoints": true
     }
   ]
 }

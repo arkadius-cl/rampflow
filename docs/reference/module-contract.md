@@ -155,6 +155,7 @@ Generated from `packages/shared/src/registry.ts` and `packages.ts` by `pnpm docs
 
 | Setting | Default | Scopes | Requires |
 | --- | --- | --- | --- |
+| `core.site_countries` | `["AT","BE","BG","CY","CZ","DE","DK","EE","ES","FI","FR","GR","HR","HU","IE","IT","LT","LU","LV","MT","NL","PL","PT","RO","SE","SI","SK"]` | platform |  |
 | `i18n.default_locale` | `"de"` | platform, tenant, site |  |
 | `privacy.notice_url` | `null` | platform, tenant, site |  |
 | `privacy.retention.driver_phone_days` | `7` | platform, tenant |  |

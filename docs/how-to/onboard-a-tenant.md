@@ -5,19 +5,19 @@ type: how-to
 audience: [platform-admin, tenant-admin, developer]
 tags: [tenancy, entitlements, settings, staff, branding]
 status: stable
-updated: 2026-10-20
-related: [docs/reference/api-routes.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md]
+updated: 2026-10-21
+related: [docs/how-to/register-your-company.md, docs/reference/api-routes.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md]
 ---
 
 # Onboard a tenant
 
-This guide takes a new warehouse operator from nothing to a working tenant. Steps 1 to 4 need a platform admin account (create the first one with `pnpm admin:create`, see [Run rampflow locally](run-locally.md)). Steps 5 to 7 need the tenant admin account that step 1 invites.
+This guide takes a new warehouse operator from nothing to a working tenant. A warehouse operator can also register its company itself at `/signup` ([Register your company](register-your-company.md)); its first admin then starts at step 5, and the platform admin can still adjust the tenant with steps 2 to 4. Steps 1 to 4 need a platform admin account (create the first one with `pnpm admin:create`, see [Run rampflow locally](run-locally.md)). Steps 5 to 7 need the tenant admin account that step 1 invites.
 
 ## 1. Create the tenant
 
 1. Open **Tenants** (`/platform/tenants`) and select **Create tenant**.
 2. Enter the company name, choose the package (Start, Pro or Enterprise) and enter the email of the person who will run the tenant.
-3. Confirm. The tenant gets the package's entitlements at once, and the admin email receives an invitation that is valid for 7 days.
+3. Confirm. The tenant gets the package's entitlements at once, and the admin email receives an invitation that is valid for 7 days. The tenant list shows the new tenant with the status **Onboarding**, like a self-registered one. Tenants that existed before self-registration show **Active**. This release records no activation for new tenants yet; the tenant onboarding of change 03 adds it.
 
 If the invitation expires or goes to the wrong address, open the tenant and send a new admin invitation. A new invitation to the same address replaces the old one, whose link then stops working.
 
@@ -41,7 +41,7 @@ The tenant list shows sites, docks, internal users and bookings this month again
 
 ![The tenant list with search, package filter, the created column and usage meters](../assets/screens/platform-tenants.png)
 
-- **Find a tenant.** Type part of the name into the search field; letter case does not matter. Use **Package** to show only some packages; each package shows how many tenants match the search. **Clear filters** removes both.
+- **Find a tenant.** Type part of the name into the search field; letter case does not matter. Use **Package** to show only some packages and **Status** to show only tenants in onboarding or active ones; each option shows how many tenants match the search and the other filter. **Clear filters** removes all of them.
 - **Order and page.** Select the **Tenant** or **Created** header to sort by name or by creation date, again to reverse. The list shows 25 tenants per page; change it under **Rows per page**.
 - **Share the view.** The address bar holds the search, filter, sort and page, so a copied link opens the same list for another platform admin, and the browser's back button returns to the previous list.
  A soft limit (bookings per month) above 100% is flagged but blocks nothing; raise it with an override or move the tenant to a larger package. Internal users count members plus invitations that are still open.

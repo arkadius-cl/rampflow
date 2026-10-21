@@ -5,13 +5,13 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, auth, security, sessions, invitations]
 status: stable
-updated: 2026-10-19
-related: [docs/explanation/research/tech-architecture.md, docs/explanation/mvp-scope.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
+updated: 2026-10-21
+related: [docs/explanation/research/tech-architecture.md, docs/explanation/mvp-scope.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md]
 ---
 
 # ADR-0003: Authentication with scrypt passwords and a session table instead of better-auth
 
-Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: emailed tokens are derived from their row id, a claim is one guarded statement, rate-limit events commit outside the request transaction, and the client address honors `TRUST_PROXY`. This amends the scope's security line "Passwords use better-auth scrypt": passwords still use scrypt, through `node:crypto`.
+Status: accepted, 2026-10-19. Revised 2026-10-19 during U1: emailed tokens are derived from their row id, a claim is one guarded statement, rate-limit events commit outside the request transaction, and the client address honors `TRUST_PROXY`. Amended 2026-10-21 by [ADR-0016](ADR-0016-tenant-self-registration.md): companies register their own tenant (RG-01 to RG-05), with the token purpose `signup` and the buckets `signup_request`, `signup_ip` and `altcha_solution`. This amends the scope's security line "Passwords use better-auth scrypt": passwords still use scrypt, through `node:crypto`.
 
 ## Context
 
@@ -22,7 +22,7 @@ The MVP needs:
 - Five failed passwords in 15 minutes for one email and IP return 429 (CR-03).
 - Password reset that revokes all other sessions (CR-03).
 - Invitations for staff, tenant admins, carrier users and carrier companies: single use, 7 days (PL-01, TN-01, TN-03, CR-01, CR-04).
-- No public sign-up except through an enabled public booking link (CR-02).
+- No public sign-up except through an enabled public booking link (CR-02). Amended by change 02: companies also register their own tenant at `/signup` (RG-01 to RG-05, [ADR-0016](ADR-0016-tenant-self-registration.md)).
 - Removing a member ends that user's access to the tenant at once (TN-01).
 
 The scope already decided that magic links and invitations are our own hashed token tables, not better-auth plugins. Memberships, orgs and roles are our own tables too ([ADR-0002](ADR-0002-tenancy-isolation-rls.md)). TypeScript 7 compatibility of better-auth's types is unverified, and its 2026 advisories cluster in exactly the plugins we would otherwise use.
@@ -58,9 +58,9 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 
 ### Tokens
 
-- Magic links, password resets, staff invitations, carrier invitations, registrations and driver links: `token = base64url(HMAC-SHA256(TOKEN_SECRET, "<purpose>:<row id>"))`, 256 bits (`deriveToken` in `apps/api/src/kernel/tokens.ts`; driver links follow [ADR-0008](ADR-0008-driver-token-pwa-delivery.md) with purpose `driver`). The link carries the raw token in the URL fragment (`/auth/magic#<token>`, `/auth/reset#<token>`, `/invite#<token>`). The page posts it to an exchange endpoint, as the driver PWA does, so tokens never appear in request lines, logs or `Referer` headers. The magic-link page first shows the account's email and posts the exchange only when the holder clicks "Continue as <email>", so a link to someone else's account cannot sign a browser in silently (login CSRF).
+- Magic links, password resets, staff invitations, carrier invitations, carrier registrations, tenant registrations (purpose `signup`) and driver links: `token = base64url(HMAC-SHA256(TOKEN_SECRET, "<purpose>:<row id>"))`, 256 bits (`deriveToken` in `apps/api/src/kernel/tokens.ts`; driver links follow [ADR-0008](ADR-0008-driver-token-pwa-delivery.md) with purpose `driver`). The link carries the raw token in the URL fragment (`/auth/magic#<token>`, `/auth/reset#<token>`, `/invite#<token>`, `/signup/verify#<token>`). The page posts it to an exchange endpoint, as the driver PWA does, so tokens never appear in request lines, logs or `Referer` headers. The magic-link page first shows the account's email and posts the exchange only when the holder clicks "Continue as <email>", so a link to someone else's account cannot sign a browser in silently (login CSRF).
 - Storage is `sha256(token)` only. Because the token derives from the row id, an outbox payload carries only the row id (`authTokenId`, `invitationId`, ...) and the template derives the link at send time; no table or backup holds a usable token, and the worker empties the payload once the email is sent. `TOKEN_SECRET` is required in production.
-- Lifetimes: magic link 15 minutes, reset 60 minutes, invitation 7 days. Each token is single use. The claim is one guarded statement that only one concurrent exchange can win, never a select followed by an update:
+- Lifetimes: magic link 15 minutes, reset 60 minutes, invitation 7 days, tenant registration (`signup`) 24 hours. Each token is single use. The claim is one guarded statement that only one concurrent exchange can win, never a select followed by an update:
 
   ```sql
   update auth_token set used_at = $now
@@ -79,6 +79,8 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 - `login_failed`: 5 per 15 minutes per `sha256(lower(email) + ip)`, then 429 `rate_limited` with `retryAfterSeconds`.
 - `login_ip`: 30 failed sign-ins per 15 minutes per `sha256(ip)`, whatever the email, then the same 429. A client rotating emails would otherwise never hit `login_failed` and could keep the scrypt threadpool busy. Both keys are locked, counted and recorded in the sign-in transaction, address first.
 - `magic_link_request` and `reset_request`: 5 per hour per email hash, then the API silently stops sending.
+- `signup_ip`: 20 registrations per hour per client address, and `signup_request`: 3 per hour per email. Over either limit, `POST /api/public/signups` still answers 202 and writes nothing ([ADR-0016](ADR-0016-tenant-self-registration.md)).
+- `altcha_solution`: 1 per 10 minutes per challenge signature, so a solved ALTCHA challenge works once; a second use answers 422 `altcha_failed`.
 - `driver_exchange`: 10 per minute per IP ([ADR-0008](ADR-0008-driver-token-pwa-delivery.md)).
 - The retention job deletes events older than 24 hours.
 
@@ -89,7 +91,11 @@ Build identity in `apps/api/src/modules/core/auth/` on `node:crypto`. No auth li
 
 ### Sign-up paths
 
-There is no sign-up endpoint. Users come into existence in exactly three places: invitation acceptance (staff, tenant admin, carrier user, carrier company) and public-link registration (CR-02). Each path is a separate handler with its own route cases.
+Users come into existence in exactly three places, each a separate handler with its own route cases:
+
+- invitation acceptance (staff, tenant admin, carrier user, carrier company);
+- public-link carrier registration (CR-02);
+- tenant self-registration (RG-01 to RG-05): `POST /api/public/signups` stores a pending `tenant_signup` row and emails a `signup` link; `POST /api/public/signups/verify` creates the user, a new onboarding tenant on the `start` package and the `tenant_admin` membership, and signs the user in. [ADR-0016](ADR-0016-tenant-self-registration.md) records its abuse controls.
 
 ## Consequences
 

@@ -1,0 +1,6 @@
+{
+  "site_countries": {
+    "label": "Zugelassene Länder",
+    "description": "Länder, in denen Mandanten Standorte anlegen dürfen. Bestehende Standorte behalten ihr Land, auch wenn es entfernt wird."
+  }
+}

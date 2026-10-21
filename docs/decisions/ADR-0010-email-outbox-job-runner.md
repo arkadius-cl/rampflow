@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, email, jobs, outbox, idempotency]
 status: stable
-updated: 2026-10-19
+updated: 2026-10-21
 related: [docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
@@ -37,7 +37,7 @@ Status: accepted, 2026-10-19.
 
   | Category | Templates |
   |---|---|
-  | `account` (always sent) | `core.invitation`, `core.magic-link`, `core.password-reset`, `booking.carrier-invitation`, `booking.registration-verify`, `booking.registration-approved`, `booking.registration-rejected`, `privacy.inactive-notice` |
+  | `account` (always sent) | `core.invitation`, `core.magic-link`, `core.password-reset`, `booking.carrier-invitation`, `booking.registration-verify`, `booking.registration-approved`, `booking.registration-rejected`, `core.signup-verify`, `core.signup-known-account`, `privacy.inactive-notice` |
   | `booking` (needs `notify.email`) | `booking.confirmed`, `booking.changed`, `booking.cancelled`, `booking.reminder`, `booking.no-show`, `driver.link` |
 
   U1's outbox test enqueues one template of each category with `notify.email` off and asserts that only the account email has a row.
@@ -66,6 +66,7 @@ Status: accepted, 2026-10-19.
 | `no_show` | `booking/jobs/no-show.ts` | 60 s | Transitions only `confirmed` bookings past `starts_at + yard.no_show_after_minutes`, through `transitionBooking`; runs only for tenants whose `yard` module is on |
 | `reminders` | `notify/jobs/reminders.ts` | 5 min | `dedupe_key = reminder:<booking id>:<starts_at>:<hash of the recipient address>` (as built in U11: without the recipient hash only one of several carrier admins of a staff booking would get the reminder); a reschedule creates a new key. Only bookings created before `starts_at - notify.reminder_hours_before` get one, so a booking made inside the window gets no reminder right after its confirmation |
 | `holiday_import` | `booking/jobs/holiday-import.ts` | daily, and on site create or subdivision change | Upserts on `(site_id, holiday_date)` and never resurrects a reopened date |
+| `core.tax_id_check` | `core/jobs/tax-id-check.ts` | 300 s | Under `platformSystemScope`, takes up to 50 `eu_vat` tenants that are `pending`, or `unavailable` with `tax_id_checked_at` older than 1 hour and `created_at` newer than 7 days, and writes `tax_id_status` and `tax_id_checked_at`; a checked tenant leaves the selection. `makeTaxIdCheckJob(client)` takes the VIES client, so tests pass a fake; with `VIES_URL` empty (dev, tests) the job returns at once ([ADR-0016](ADR-0016-tenant-self-registration.md)) |
 | `retention` | `privacy/jobs/retention.ts` | not scheduled in process | Each rule is a set-based update or delete on rows past their limit; a second run finds none |
 
 `pnpm --filter @rampflow/api retention:run` runs the retention job once and exits. Deployment schedules it daily (cron, systemd timer or the platform's scheduler).

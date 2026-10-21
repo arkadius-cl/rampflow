@@ -53,13 +53,22 @@ export const countActiveSites = (tenantId: TenantId) => async (tx: Tx) => {
   return row?.n ?? 0;
 };
 
+/** 422 unless the platform admits sites in the country (`core.site_countries`). */
+function requireSiteCountry(country: string, admitted: readonly string[]): void {
+  if (!admitted.includes(country)) {
+    throw invalid(['country'], 'The platform admits no sites in this country');
+  }
+}
+
 /** MD-01 and MD-05: a new site gets the seeded load types and its public holidays. */
 export async function createSite(
   tx: Tx,
   req: TenantRequest,
   clock: Clock,
   input: CreateSite,
+  admittedCountries: readonly string[],
 ): Promise<SiteRow> {
+  requireSiteCountry(input.country, admittedCountries);
   await withinLimit(
     tx,
     req.tenantId,
@@ -83,8 +92,13 @@ export async function updateSite(
   clock: Clock,
   siteId: SiteId,
   input: UpdateSite,
+  admittedCountries: readonly string[],
 ): Promise<SiteRow> {
   const current = await requireSite(tx, req.tenantId, siteId);
+  // A site keeps a country the platform no longer admits until someone changes it.
+  if (input.country !== undefined && input.country !== current.country) {
+    requireSiteCountry(input.country, admittedCountries);
+  }
   const country = input.country ?? current.country;
   const subdivision = input.subdivision === undefined ? current.subdivision : input.subdivision;
   if (subdivision && !subdivision.startsWith(`${country}-`)) {

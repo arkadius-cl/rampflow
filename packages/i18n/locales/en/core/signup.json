@@ -1,0 +1,95 @@
+{
+  "greeting": {
+    "mr": "Dear Mr {{family}},",
+    "ms": "Dear Ms {{family}},",
+    "none": "Hello {{given}} {{family}},"
+  },
+  "email": {
+    "verify": {
+      "subject": "Confirm the registration of {{company}} on rampflow",
+      "preview": "One click creates your company. The link works for 24 hours.",
+      "intro": "Confirm your email address to create {{company}} on rampflow. You become its administrator.",
+      "action": "Confirm and create company",
+      "expiry": "The link works once and for 24 hours.",
+      "ignore": "If you did not register, ignore this email. Nothing is created without the click."
+    },
+    "known_account": {
+      "subject": "You already have a rampflow account",
+      "preview": "Sign in with your existing account.",
+      "intro": "Someone registered a company on rampflow with this email address. This address already has an account, so no new company was created.",
+      "action": "Sign in",
+      "reset": "Forgot your password? Reset it on the sign-in page.",
+      "ignore": "If this was not you, ignore this email."
+    }
+  },
+  "form": {
+    "title": "Register your company",
+    "description": "Create your company on rampflow. You become its administrator; the Start package is free.",
+    "salutation": "Salutation",
+    "salutations": {
+      "none": "No answer",
+      "mr": "Mr",
+      "ms": "Ms"
+    },
+    "given_name": "First name",
+    "family_name": "Last name",
+    "email": "Work email",
+    "password": "Password",
+    "password_hint": "At least 10 characters.",
+    "company": "Company name",
+    "country": "Country",
+    "tax_id_type": "Type of tax number",
+    "tax_id_types": {
+      "eu_vat": "EU VAT number",
+      "de_stn": "Tax number or W-IdNr",
+      "pl_nip": "NIP"
+    },
+    "tax_id_value": "Tax number",
+    "tax_id_examples": {
+      "eu_vat": "Your VAT identification number, with or without the {{prefix}} prefix.",
+      "de_stn": "10, 11 or 13 digits, or a W-IdNr like DE123456789-00001.",
+      "pl_nip": "10 digits, for example 526-025-02-74."
+    },
+    "submit": "Register company",
+    "have_account": "Already have an account?",
+    "sign_in": "Sign in"
+  },
+  "sent": {
+    "title": "Check your inbox",
+    "body": "We sent a link to {{email}}. Open it within 24 hours to create your company.",
+    "no_email": "No email after a few minutes? Check your spam folder or send it again.",
+    "again": "Send again",
+    "again_done": "Sent again. Only the newest link works."
+  },
+  "verify": {
+    "title": "Create your company",
+    "loading": "Checking the link…",
+    "confirm": "Creating the company makes you its administrator and signs you in.",
+    "create": "Create company",
+    "create_anyway": "Create company anyway",
+    "duplicate_title": "Your company may already use rampflow.",
+    "duplicate": "Ask its admin to invite you.",
+    "invalid_title": "This link no longer works",
+    "invalid": "Registration links work once and for 24 hours. Register again to get a new one.",
+    "register_again": "Register again",
+    "account_exists_title": "You already have an account",
+    "account_exists": "This email address already has a rampflow account. Sign in instead.",
+    "sign_in": "Sign in"
+  },
+  "altcha": {
+    "label": "Automatic check against bots",
+    "loading": "Loading…",
+    "verifying": "Checking that you are not a bot…",
+    "verified": "Checked",
+    "error": "The check failed. Try again.",
+    "expired": "The check expired. Try again.",
+    "verification_required": "The automatic check is required.",
+    "wait": "Checking… please wait.",
+    "reload": "Reload",
+    "verify": "Check",
+    "secure_title": "Use a secure connection to register",
+    "secure_required": "The bot check needs HTTPS. Open the secure address to register.",
+    "open_localhost": "Open registration on localhost",
+    "dev_hint": "On the development machine, you can also open localhost. Other devices need the trusted HTTPS address."
+  }
+}

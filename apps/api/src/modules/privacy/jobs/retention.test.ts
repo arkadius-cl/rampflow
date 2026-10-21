@@ -4,6 +4,7 @@ import {
   BookingStatus,
   CreatedParty,
 } from '@rampflow/shared/modules/booking/values';
+import { Salutation, SignupStatus } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { EmailTemplate, OrgKind, Role, StaffLocale } from '@rampflow/shared/values';
 import { and, eq, sql } from 'drizzle-orm';
@@ -16,6 +17,7 @@ import { runJobTick } from '../../../kernel/jobs.ts';
 import { bookingRow, eventsOf, seedBooking, setSetting } from '../../booking/lifecycle/fixtures.ts';
 import { bookingEvent } from '../../booking/schema.ts';
 import { appUser, membership, org } from '../../core/schema.ts';
+import { pendingSignup } from '../../core/signup/fixtures.ts';
 import { driverAccess } from '../../driver/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { type BriefingFixture, seedBriefing } from '../../safety/authoring/fixtures.ts';
@@ -249,6 +251,9 @@ describe('PL-05 platform rules', () => {
       .values({
         email: `inactive-${randomUUID()}@example.test`,
         name: 'Inactive Carrier User',
+        givenName: 'Inactive',
+        familyName: 'User',
+        salutation: Salutation.ms,
         locale: StaffLocale.pl,
         lastSeenAt: ago(lastSeenDaysAgo, minutes),
         uiPrefs: { 'platform.tenant.openModules': ['yard'] },
@@ -295,6 +300,9 @@ describe('PL-05 platform rules', () => {
     expect(await userRow(referenced.user.id)).toMatchObject({
       email: `deleted-${referenced.user.id}@invalid.rampflow`,
       name: '-',
+      givenName: null,
+      familyName: null,
+      salutation: null,
       passwordHash: null,
     });
     expect((await userRow(referenced.user.id))?.uiPrefs).toEqual({});
@@ -341,5 +349,28 @@ describe('PL-05 platform rules', () => {
     expect(await ownerCount('rate_limit_event', sql`key_hash = ${Buffer.from(bucket)}`)).toBe(1);
     expect(await ownerCount('outbox_message', sql`id = ${oldMail?.id}`)).toBe(0);
     expect(await ownerCount('outbox_message', sql`id = ${newMail?.id}`)).toBe(1);
+  });
+
+  it('deletes registrations 7 days past their expiry, whatever their status', async () => {
+    // pendingSignup expires 24 hours after `now`.
+    const expiredAgo = (days: number) => pendingSignup(ownerDb(), { now: ago(days + 1) });
+    const old = await expiredAgo(8);
+    const recent = await expiredAgo(6);
+    const verified = await expiredAgo(8);
+    await ownerDb().execute(
+      sql`update tenant_signup set status = ${SignupStatus.verified}, verified_at = ${ago(9)}, password_hash = null where id = ${verified.id}`,
+    );
+    const left = async () =>
+      (
+        await ownerDb().execute<{ id: string }>(
+          sql`select id from tenant_signup where id in (${old.id}, ${recent.id}, ${verified.id})`,
+        )
+      ).rows.map((r) => r.id);
+
+    const stats = await run();
+    expect(stats.signupsDeleted).toBeGreaterThanOrEqual(2);
+    expect(await left()).toEqual([recent.id]);
+    expect((await run()).signupsDeleted).toBe(0);
+    expect(await left()).toEqual([recent.id]);
   });
 });

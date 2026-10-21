@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [mvp, scope, booking, yard, safety, avis, entitlements, settings, i18n, gdpr]
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 related: [docs/explanation/research/market-and-features.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/explanation/domain-glossary.md]
 ---
 
@@ -53,9 +53,17 @@ Active bookings count against their bookable resource for the planned slot. Phys
 
 Each story ID names one Playwright `describe` block. Criteria about races or time run as Vitest integration tests on real Postgres with an injectable clock.
 
+### Prospective tenant
+
+1. **RG-01 Register a company.** A visitor opens `/signup` from the sign-in page and enters salutation (optional, "No answer" by default), first and last name, email, password, company name, EU country and tax id. A solved proof-of-work challenge is required, disposable email domains are refused, and the answer is always "Check your inbox". Only a pending registration and the verification email exist afterwards.
+2. **RG-02 Confirm the email.** The emailed link `/signup/verify#<token>` shows the email and the company and creates, on one click, the tenant in onboarding on the `start` package, the user and the `tenant_admin` membership, and signs the user in. The link works once and for 24 hours.
+3. **RG-03 Known email.** Registering with an email that already has an account answers like any registration, writes no registration and sends a "you already have an account" email instead of a verification email.
+4. **RG-04 Possible duplicate.** When another tenant has the same tax id or a member with the same company email domain, the verify page says the company may already use rampflow, without naming the tenant. Creating the company stays possible, and the tenant is flagged for the platform admin.
+5. **RG-05 Tax id checks.** Format, country and check digit of the tax id are checked before sending. EU VAT numbers are confirmed against VIES in the background, and a VIES outage blocks nothing.
+
 ### Platform admin
 
-1. **PL-01 Create a tenant.** Creating tenant Acme with a package and an admin email gives Acme that package's entitlements and sends an invitation. Accepting it makes the user `tenant_admin` of Acme only.
+1. **PL-01 Create a tenant.** Creating tenant Acme with a package and an admin email gives Acme that package's entitlements and sends an invitation. Accepting it makes the user `tenant_admin` of Acme only. A new tenant starts in onboarding (no activation time), like a self-registered one (RG-02); the tenant list shows its status.
 2. **PL-02 Packages and overrides.** The admin sees the three packages read-only and sets per-tenant overrides with an optional expiry.
    - Both the packages page and the tenant's entitlements are grouped by module. Groups start collapsed, show per column how many of their features are on, and the open groups are stored per user, so they follow the admin to another computer.
    - Overrides can raise or lower a value, apply on the next request, and lapse at expiry.
@@ -191,7 +199,7 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
 
 1. **BK-07 Reminder.** With `notify.reminders`, the booking carrier user gets one email `notify.reminder_hours_before` the start, unless cancelled.
 2. **BK-08 No-show.** Without check-in by slot start plus `yard.no_show_after_minutes`, the booking becomes `no_show`, frees capacity and emails the carrier. A second run changes nothing.
-3. **PL-05 Retention job.** `retention:run` applies the `privacy.retention.*` settings and logs counts without personal data. A second run changes nothing. Deployment config schedules it.
+3. **PL-05 Retention job.** `retention:run` applies the `privacy.retention.*` settings and logs counts without personal data. A second run changes nothing. Deployment config schedules it. It deletes every registration 7 days after its link expired, and where it anonymizes a user it also clears the first name, last name and salutation.
 
 ## Modules and entitlements
 
@@ -295,6 +303,7 @@ Scopes are P (platform), T (tenant) and S (site). Resolution runs site, tenant, 
 | Ruling 6 features? | LATER; the core loop works without each. | Ruling 6 |
 | KPIs? | Market definitions, one dashboard, CSV. | Ruling 7 |
 | Retention? | Domain defaults, idempotent job, deployment schedules it. | Ruling 8; domain §5 |
+| Tenant self-registration with approval? | No approval step. Companies register at `/signup`, confirm the email and start in onboarding on `start`; proof of work, rate limits, refused disposable domains and the tax id checks guard the form, and a possible duplicate is flagged for the platform admin. | Product owner, shared brief decision 4; [ADR-0016](../decisions/ADR-0016-tenant-self-registration.md) |
 
 ## Out of scope (LATER)
 
@@ -330,7 +339,7 @@ Targets are p95 at design load. The MVP checks them with seeded data in integrat
 - Driver tokens have 256 random bits, travel in the fragment, and are exchanged by POST for an `HttpOnly; Secure; SameSite=Strict` cookie. The server stores SHA-256 hashes only and rate-limits exchange to 10 per minute per IP.
 - The driver PWA sends `Referrer-Policy: no-referrer` and loads no third-party scripts.
 - Magic-link, invitation and safety-pass tokens are hashed. Safety passes expire with their acknowledgement; the others are single use.
-- Passwords use better-auth scrypt with at least 10 characters and verified email. Public sign-up exists only through an enabled public link.
+- Passwords use scrypt ([ADR-0003](../decisions/ADR-0003-authentication-self-built-sessions.md)) with at least 10 characters and verified email. Public sign-up exists through an enabled public link (carriers, CR-02) and through tenant self-registration at `/signup` (RG-01 to RG-05): a self-hosted ALTCHA proof of work verified by the API, at most 3 registrations per hour per email and 20 per client address, refused disposable email domains, a 24-hour single-use link, and the same answer for known and new emails ([ADR-0016](../decisions/ADR-0016-tenant-self-registration.md)).
 - Mutating requests need a same-origin `Origin` header.
 - The API enforces entitlements and permissions and checks limits inside write transactions.
 - Logs hold no tokens, cookies, phones or plates. better-auth is pinned exactly.

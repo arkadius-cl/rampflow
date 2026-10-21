@@ -45,11 +45,12 @@ export default defineConfig({
     {
       // Test routes seed worlds; the job runner sends the outbox to Mailpit every 5 seconds.
       // TRUST_PROXY: each driver spec sends its own X-Forwarded-For, so the exchange limit of
-      // 10 per minute and address holds per spec, not for the whole run.
+      // 10 per minute and address holds per spec, not for the whole run. VIES_URL empty: the tax
+      // id check never calls the EC service.
       command: 'node --import tsx src/server.ts',
       cwd: 'apps/api',
       url: `http://localhost:${apiPort}/api/health`,
-      env: { ENABLE_TEST_ROUTES: '1', ENABLE_JOBS: '1', TRUST_PROXY: '1' },
+      env: { ENABLE_TEST_ROUTES: '1', ENABLE_JOBS: '1', TRUST_PROXY: '1', VIES_URL: '' },
       reuseExistingServer,
     },
     {

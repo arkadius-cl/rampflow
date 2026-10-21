@@ -9,6 +9,7 @@ interface Issue {
   readonly path: readonly PropertyKey[];
   readonly code: string;
   readonly message: string;
+  readonly params?: { readonly code?: unknown };
 }
 
 type ValidationResult =
@@ -17,14 +18,14 @@ type ValidationResult =
 
 /**
  * A bad path parameter is an unknown id, so it answers 404; a bad query or body answers 422 with
- * the zod issue paths.
+ * the zod issue paths. A refinement names its own code in `params.code` (`TaxIdCheck`).
  */
 function onInvalid(result: ValidationResult): void {
   if (result.success) return;
   if (result.target === ValidationTarget.param) throw new ApiError(ErrorCode.not_found);
-  const issues = result.error.issues.map(({ path, code, message }) => ({
+  const issues = result.error.issues.map(({ path, code, message, params }) => ({
     path: path.map((p) => (typeof p === 'symbol' ? String(p) : p)),
-    code,
+    code: typeof params?.code === 'string' ? params.code : code,
     message,
   }));
   throw new ApiError(ErrorCode.validation_failed, `Invalid ${result.target}`, { issues });

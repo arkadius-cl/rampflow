@@ -1,7 +1,11 @@
+import * as z from 'zod';
 import { defineModule } from '../../contract/module.ts';
+import { values } from '../../values/define.ts';
 import { EntitlementKind } from '../../values/entitlements.ts';
 import { LocaleSet } from '../../values/locales.ts';
 import { OrgKind, Role } from '../../values/roles.ts';
+import { SettingScope } from '../../values/settings.ts';
+import { EuCountry, SiteCountry } from './values.ts';
 
 export const core = defineModule({
   id: 'core',
@@ -23,7 +27,17 @@ export const core = defineModule({
     'core.manage_sites': { roles: [Role.tenant_admin] },
     'core.manage_carrier_users': { roles: [Role.carrier_admin] },
   },
-  settings: {},
+  settings: {
+    'core.site_countries': {
+      schema: z
+        .array(z.enum(SiteCountry))
+        .min(1)
+        .refine((codes) => new Set(codes).size === codes.length, 'Each country may appear once')
+        .readonly(),
+      default: values(EuCountry),
+      scopes: [SettingScope.platform],
+    },
+  },
   nav: [
     {
       id: 'tenants',

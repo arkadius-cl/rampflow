@@ -5,8 +5,8 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, frontend, routing, tenancy, entitlements, ux]
 status: stable
-updated: 2026-10-20
-related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md]
+updated: 2026-10-21
+related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0016-tenant-self-registration.md]
 ---
 
 # ADR-0011: Frontend route structure per area with the active org in the URL
@@ -31,7 +31,7 @@ One user can hold several memberships: a dispatcher at two tenants, or a carrier
 
 | Area | SPA path | API prefix | Party | Who |
 |---|---|---|---|---|
-| Sign-in and token pages | `/login`, `/auth/magic`, `/auth/reset`, `/invite`, `/carrier-invite`, `/carrier-registration` | `/api/auth`, `/api/public` | none, `token` | anyone with a link |
+| Sign-in and token pages | `/login`, `/auth/magic`, `/auth/reset`, `/invite`, `/carrier-invite`, `/carrier-registration`, `/signup`, `/signup/verify` | `/api/auth`, `/api/public` | none, `anonymous`, `token` | anyone with a link; anyone registering a company |
 | Org picker | `/` | `/api/me` | `user` | signed-in users |
 | Platform | `/platform/...` | `/api/platform/...` | `platform` | `platform_admin` |
 | Tenant | `/t/$orgId/...` | `/api/t/:orgId/...` | `tenant` | tenant staff |
@@ -64,6 +64,8 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 | `/carrier-invite#<token>` | Accept a carrier invitation | TN-03, CR-01 | email | U7 |
 | `/r/$slug` | Register through a public booking link | CR-02, TN-04 | link shared by the tenant | U7 |
 | `/carrier-registration#<token>` | Verify the registration email and sign in | CR-02 | email | U7 |
+| `/signup` | Register a company: person, email, password, company, country, tax id, ALTCHA; then "Check your inbox" | RG-01, RG-03, RG-05 | "Register your company" on `/login` | 02 |
+| `/signup/verify#<token>` | Show email, company and the duplicate hint; "Create company" creates the tenant, signs in and opens `/t/$orgId` | RG-02, RG-04 | email | 02 |
 | `/` | Org picker | | after sign-in; org menu | U2 |
 
 **Platform** (office shell with sidebar).

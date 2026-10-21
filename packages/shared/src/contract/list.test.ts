@@ -22,6 +22,7 @@ describe('list query (API)', () => {
     expect(query.parse(params(FULL))).toEqual({
       q: 'acme',
       package: [PackageId.start, PackageId.pro],
+      status: [],
       sort: TenantSortKey.createdAt,
       order: SortOrder.desc,
       page: 2,
@@ -34,6 +35,7 @@ describe('list query (API)', () => {
     expect(defaults).toEqual({
       q: '',
       package: [],
+      status: [],
       sort: TenantSortKey.name,
       order: SortOrder.asc,
       page: 1,

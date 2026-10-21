@@ -8,6 +8,7 @@ export const TokenPurpose = {
   carrier_invitation: 'carrier_invitation',
   registration: 'registration',
   driver: 'driver',
+  signup: 'signup',
 } as const;
 export type TokenPurpose = ValueOf<typeof TokenPurpose>;
 

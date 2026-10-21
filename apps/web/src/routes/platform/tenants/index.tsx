@@ -5,7 +5,7 @@ import {
   TenantListQuery,
   type TenantSummary,
 } from '@rampflow/shared/modules/core/api.platform';
-import { TenantSortKey, UsageKey } from '@rampflow/shared/modules/core/values';
+import { TenantSortKey, TenantStatus, UsageKey } from '@rampflow/shared/modules/core/values';
 import { PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -40,9 +40,10 @@ import { api, call } from '@/lib/api';
 import { useFormat } from '@/modules/core/format';
 import { Meter } from '@/modules/core/meter';
 import { platformKeys, tenantListQuery } from '@/modules/core/queries';
+import { TenantStatusBadge } from '@/modules/core/tenant-status';
 
-// PL-01, PL-04: the tenant list with search by name, the package filter, sort by name or
-// creation and paging, all in the URL (ADR-0015); usage against limits; "Create tenant".
+// PL-01, PL-04: the tenant list with search by name, the package and status filters, sort by
+// name or creation and paging, all in the URL (ADR-0015); usage against limits; "Create tenant".
 
 export const Route = createFileRoute('/platform/tenants/')({
   beforeLoad: guard({ permission: Permission.core.manage_tenants }),
@@ -90,6 +91,10 @@ function useColumns() {
           cell: ({ row }) => (
             <Badge variant="secondary">{t(($) => $.platform.packages[row.original.package])}</Badge>
           ),
+        }),
+        column.accessor('status', {
+          header: () => t(($) => $.platform.tenants.status),
+          cell: ({ row }) => <TenantStatusBadge status={row.original.status} />,
         }),
         column.accessor(TenantSortKey.createdAt, {
           header: ({ column: c }) => (
@@ -144,6 +149,13 @@ function TenantsPage() {
             options: values(PackageId).map((id) => ({
               value: id,
               label: t(($) => $.platform.packages[id]),
+            })),
+          },
+          status: {
+            title: t(($) => $.platform.tenants.status),
+            options: values(TenantStatus).map((status) => ({
+              value: status,
+              label: t(($) => $.platform.tenant_status[status]),
             })),
           },
         }}

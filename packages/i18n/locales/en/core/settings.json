@@ -1,0 +1,6 @@
+{
+  "site_countries": {
+    "label": "Admitted countries",
+    "description": "Countries in which tenants may create sites. Existing sites keep their country when it is removed."
+  }
+}

@@ -6,12 +6,19 @@ import {
   LinkVia,
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/values';
+import {
+  Salutation,
+  SignupStatus,
+  TaxIdStatus,
+  TaxIdType,
+} from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
 import { BlockKind, TranslationState, VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { EmailTemplate, Role, StaffLocale } from '@rampflow/shared/values';
+import { EmailTemplate, Role, StaffLocale, TokenPurpose } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { hashToken, wrapJson } from '../src/db/ids.ts';
+import { tokenHashFor } from '../src/kernel/tokens.ts';
 import {
   carrierInvitation,
   carrierRegistration,
@@ -24,7 +31,8 @@ import {
   resourceDock,
 } from '../src/modules/booking/schema.resources.ts';
 import { tenantLogo } from '../src/modules/brand/schema.ts';
-import { entitlementOverride, invitation, settingValue } from '../src/modules/core/schema.ts';
+import { type SignupId, tenantSignup } from '../src/modules/core/schema.signup.ts';
+import { entitlementOverride, invitation, org, settingValue } from '../src/modules/core/schema.ts';
 import { outboxMessage } from '../src/modules/notify/schema.ts';
 import { privacyRequestLog } from '../src/modules/privacy/schema.ts';
 import {
@@ -73,6 +81,35 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
       expiresAt,
     },
   ]);
+  // A self-registered tenant: tax id facts on its org and the used registration row.
+  await o
+    .update(org)
+    .set({
+      taxIdType: TaxIdType.eu_vat,
+      taxIdValue: 'DE136695976',
+      taxIdStatus: TaxIdStatus.verified,
+      taxIdCheckedAt: new Date(),
+      activatedAt: new Date(),
+    })
+    .where(eq(org.id, s.tenantId));
+  const signupId = randomUUID() as SignupId;
+  await o.insert(tenantSignup).values({
+    id: signupId,
+    status: SignupStatus.verified,
+    email: `signup-${label}-${randomUUID()}@model.test`,
+    salutation: Salutation.ms,
+    givenName: 'Anna',
+    familyName: 'Lenz',
+    companyName: `Tenant ${label}`,
+    country: 'DE',
+    taxIdType: TaxIdType.eu_vat,
+    taxIdValue: 'DE136695976',
+    tokenHash: tokenHashFor(TokenPurpose.signup, signupId),
+    expiresAt,
+    verifiedAt: new Date(),
+    tenantId: s.tenantId,
+    userId: s.users.tenant_admin.id,
+  });
   await o.insert(entitlementOverride).values({
     tenantId: s.tenantId,
     key: 'core.max_sites',

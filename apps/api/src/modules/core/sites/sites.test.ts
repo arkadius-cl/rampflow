@@ -1,4 +1,5 @@
 import { durationFor } from '@rampflow/shared/modules/booking/duration';
+import type { HolidayRegions, SiteCountries } from '@rampflow/shared/modules/core/api.sites';
 import { DockStatus, DoorType, TemperatureZone } from '@rampflow/shared/modules/core/values';
 import { ConflictReason, ErrorCode, PackageId } from '@rampflow/shared/values';
 import { and, count, eq } from 'drizzle-orm';
@@ -240,5 +241,63 @@ describe('site region changes', () => {
       .from(site)
       .where(eq(site.id, id as never));
     expect(row?.subdivision).toBe('DE-HH');
+  });
+});
+
+describe('holiday regions', () => {
+  const regionsOf = (country: string) =>
+    as(app, null).get(`/api/public/countries/${country}/holiday-regions`);
+
+  it('lists the subdivisions of a country with their own holidays, by native name', async () => {
+    const res = await regionsOf('DE');
+    expect(res.status).toBe(200);
+    const { items } = (await res.json()) as HolidayRegions;
+    expect(items).toHaveLength(16);
+    expect(items).toContainEqual({ code: 'DE-BY', name: 'Bayern' });
+  });
+
+  it('answers an empty list for a country without regional holidays', async () => {
+    const res = await regionsOf('RO');
+    expect(((await res.json()) as HolidayRegions).items).toEqual([]);
+  });
+
+  it('answers 404 for a country that is not ISO 3166-1 alpha-2', async () => {
+    expect((await regionsOf('de')).status).toBe(404);
+  });
+});
+
+describe('admitted site countries', () => {
+  const countries = () => as(app, null).get('/api/public/countries');
+  const admit = (value: string[]) =>
+    as(app, w.platformAdmin).put('/api/platform/settings/core.site_countries', { body: { value } });
+
+  it('admits the EU states by default', async () => {
+    const { items } = (await (await countries()).json()) as SiteCountries;
+    expect(items).toHaveLength(27);
+    expect(items).toEqual(expect.arrayContaining(['DE', 'AT', 'PL']));
+  });
+
+  it('admits no country outside Europe', async () => {
+    expect((await admit(['DE', 'US'])).status).toBe(422);
+  });
+
+  it('rejects a site in a country the platform does not admit, and keeps existing ones', async () => {
+    expect((await admit(['AT'])).status).toBe(200);
+    try {
+      expect(((await (await countries()).json()) as SiteCountries).items).toEqual(['AT']);
+
+      const created = await admin(w.B).post(sitesOf(w.B), { body: garching });
+      expect(created.status).toBe(422);
+      expect((await error(created)).details?.issues).toEqual([
+        expect.objectContaining({ path: ['country'] }),
+      ]);
+
+      const site = `${sitesOf(w.B)}/${w.B.sites[0].id}`;
+      expect((await admin(w.B).patch(site, { body: { name: 'Lager Nord' } })).status).toBe(200);
+      const moved = await admin(w.B).patch(site, { body: { country: 'CZ', subdivision: null } });
+      expect(moved.status).toBe(422);
+    } finally {
+      await as(app, w.platformAdmin).delete('/api/platform/settings/core.site_countries');
+    }
   });
 });

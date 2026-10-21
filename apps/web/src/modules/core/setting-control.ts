@@ -11,7 +11,11 @@ export type ControlSpec =
   | { kind: typeof SettingControl.select; options: readonly (string | number)[] }
   | { kind: typeof SettingControl.number; min: number; max: number }
   | { kind: typeof SettingControl.list; options: readonly string[] }
+  | { kind: typeof SettingControl.picker; options: readonly string[] }
   | { kind: typeof SettingControl.url };
+
+/** Beyond this many members a checkbox list gets too long to scan. */
+const PICKER_FROM = 20;
 
 export function controlOf(schema: z.ZodType): ControlSpec {
   if (schema instanceof z.ZodReadonly) return controlOf(schema.unwrap() as z.ZodType);
@@ -28,7 +32,9 @@ export function controlOf(schema: z.ZodType): ControlSpec {
     };
   }
   if (schema instanceof z.ZodArray && schema.element instanceof z.ZodEnum) {
-    return { kind: SettingControl.list, options: schema.element.options as string[] };
+    const options = schema.element.options as string[];
+    if (options.length > PICKER_FROM) return { kind: SettingControl.picker, options };
+    return { kind: SettingControl.list, options };
   }
   if (schema instanceof z.ZodNullable && schema.unwrap() instanceof z.ZodURL)
     return { kind: SettingControl.url };

@@ -8,6 +8,8 @@ export const EmailTemplate = {
   core_invitation: 'core.invitation',
   core_magic_link: 'core.magic-link',
   core_password_reset: 'core.password-reset',
+  core_signup_known_account: 'core.signup-known-account',
+  core_signup_verify: 'core.signup-verify',
   booking_cancelled: 'booking.cancelled',
   booking_carrier_invitation: 'booking.carrier-invitation',
   booking_changed: 'booking.changed',

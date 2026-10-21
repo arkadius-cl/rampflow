@@ -105,7 +105,8 @@ const fields: string[] = [];
 for (const ns of namespaces) {
   const files = readdirSync(join(LOCALES_DIR, SOURCE_LOCALE, ns))
     .filter((f) => f.endsWith('.json'))
-    .sort();
+    // By part name, as Biome orders the imports: `settings` before `settings-ui`.
+    .sort((a, b) => a.slice(0, -'.json'.length).localeCompare(b.slice(0, -'.json'.length)));
   if (files.length === 0) continue;
   const parts = files.map((file) => {
     const part = file.slice(0, -'.json'.length);

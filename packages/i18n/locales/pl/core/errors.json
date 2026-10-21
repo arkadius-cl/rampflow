@@ -26,7 +26,8 @@
     "acknowledgement_invalid": "To potwierdzenie instruktażu nie jest ważne dla tej wizyty.",
     "dock_inactive": "Ta rampa nie jest aktywna.",
     "not_due": "Ten krok nie jest jeszcze wymagalny.",
-    "quiz_not_passed": "Test nie został zaliczony. Przeczytaj zasady ponownie i spróbuj jeszcze raz."
+    "quiz_not_passed": "Test nie został zaliczony. Przeczytaj zasady ponownie i spróbuj jeszcze raz.",
+    "account_exists": "Konto z tym adresem e-mail już istnieje. Zaloguj się."
   },
   "limit_reached": "Osiągnięto limit Twojego pakietu.",
   "validation_failed": "Niektóre pola wymagają poprawy.",

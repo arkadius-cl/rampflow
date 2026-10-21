@@ -32,7 +32,12 @@
     "empty": "Noch keine Mandanten.",
     "created_at": "Angelegt",
     "no_match": "Keine Mandanten gefunden",
-    "search": "Mandanten nach Namen suchen"
+    "search": "Mandanten nach Namen suchen",
+    "status": "Status"
+  },
+  "tenant_status": {
+    "onboarding": "Onboarding",
+    "active": "Aktiv"
   },
   "packages": {
     "title": "Pakete",

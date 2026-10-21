@@ -5,7 +5,12 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
-  "plugins": [{ "path": "./lint/value-literals.grit", "includes": ["**", "!**/*.gen.ts"] }],
+  "plugins": [
+    {
+      "path": "./lint/value-literals.grit",
+      "includes": ["**", "!**/*.gen.ts"]
+    }
+  ],
   "files": {
     "includes": [
       "**",
@@ -56,6 +61,10 @@
                 "group": ["**/db/scope.ts"],
                 "importNamePattern": "asScope",
                 "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+              },
+              {
+                "group": ["**/schema.signup.ts"],
+                "message": "tenant_signup has no RLS; only core/signup/ and the retention job read it (ADR-0002)."
               }
             ]
           }
@@ -108,6 +117,10 @@
                     "group": ["**/db/scope.ts"],
                     "importNamePattern": "asScope",
                     "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/schema.signup.ts"],
+                    "message": "tenant_signup has no RLS; only core/signup/ and the retention job read it (ADR-0002)."
                   }
                 ]
               }
@@ -142,6 +155,10 @@
                     "group": ["**/db/scope.ts"],
                     "importNamePattern": "asScope",
                     "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/schema.signup.ts"],
+                    "message": "tenant_signup has no RLS; only core/signup/ and the retention job read it (ADR-0002)."
                   }
                 ]
               }
@@ -156,6 +173,82 @@
         "**/*.redeem.ts",
         "apps/api/src/modules/booking/capacity/**",
         "apps/api/src/modules/core/platform/usage.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/db/pool.ts"],
+                    "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/core/schema.ts"],
+                    "importNamePattern": "(session|authToken|rateLimitEvent|jobRun)",
+                    "message": "Tables without RLS are reachable only from their owning directory: core/auth/ for auth tables, kernel/ for job_run (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/booking/schema.carriers.ts"],
+                    "importNamePattern": "publicLink",
+                    "message": "public_link has no RLS; only modules/booking/ reads it (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/schema.signup.ts"],
+                    "message": "tenant_signup has no RLS; only core/signup/ and the retention job read it (ADR-0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/api/src/modules/core/signup/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/db/pool.ts"],
+                    "message": "Handlers use c.var.db, the request transaction. Only db/ and kernel/ touch the pool (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/core/schema.ts"],
+                    "importNamePattern": "(session|authToken|rateLimitEvent|jobRun)",
+                    "message": "Tables without RLS are reachable only from their owning directory: core/auth/ for auth tables, kernel/ for job_run (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/booking/schema.carriers.ts"],
+                    "importNamePattern": "publicLink",
+                    "message": "public_link has no RLS; only modules/booking/ reads it (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/kernel/system.ts"],
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  },
+                  {
+                    "group": ["**/db/scope.ts"],
+                    "importNamePattern": "asScope",
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/api/src/modules/core/signup/**/*.redeem.ts",
+        "apps/api/src/modules/privacy/jobs/retention.ts"
       ],
       "linter": {
         "rules": {

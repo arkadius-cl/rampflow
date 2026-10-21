@@ -7,7 +7,13 @@ import { as } from '../../test/http.ts';
 import { testClock } from './clock.ts';
 import type { AppEnv } from './env.ts';
 import { ApiError, onError } from './errors.ts';
-import { clientIp, rateLimit, rateLimitState, recordRateLimitEvent } from './rate-limit.ts';
+import {
+  clientIp,
+  consumeRateLimit,
+  rateLimit,
+  rateLimitState,
+  recordRateLimitEvent,
+} from './rate-limit.ts';
 import { scoped } from './scoped.ts';
 import { anonymousScope } from './scopes.ts';
 
@@ -43,6 +49,24 @@ describe('rate limits', () => {
     expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
     clock.advance(15 * 60_000 + 1000);
     expect((await as(app, null).post('/login')).status).toBe(401);
+  });
+
+  it('limits self-registration: 3 per email and 20 per address an hour, one use per ALTCHA', async () => {
+    const at = new Date('2026-11-02T10:00:00Z');
+    const limits = [
+      [RateLimitBucket.signup_request, 3, 60 * 60],
+      [RateLimitBucket.signup_ip, 20, 60 * 60],
+      [RateLimitBucket.altcha_solution, 1, 10 * 60],
+    ] as const;
+    for (const [bucket, limit, windowSeconds] of limits) {
+      const key = randomUUID();
+      for (let i = 0; i < limit; i++) await consumeRateLimit(bucket, key, at);
+      await expect(consumeRateLimit(bucket, key, at)).rejects.toMatchObject({
+        code: ErrorCode.rate_limited,
+      });
+      const later = new Date(at.getTime() + windowSeconds * 1000 + 1000);
+      await expect(consumeRateLimit(bucket, key, later)).resolves.toBeUndefined();
+    }
   });
 
   it('reports when the oldest attempt leaves the window', async () => {

@@ -1,0 +1,6 @@
+{
+  "site_countries": {
+    "label": "Dozwolone kraje",
+    "description": "Kraje, w których najemcy mogą zakładać lokalizacje. Istniejące lokalizacje zachowują swój kraj po jego usunięciu."
+  }
+}

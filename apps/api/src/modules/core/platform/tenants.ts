@@ -14,6 +14,8 @@ import type {
   TenantSummary,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
+import { tenantStatus } from '@rampflow/shared/modules/core/tenant-status';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import {
   EntitlementKind,
   EntitlementSource,
@@ -25,7 +27,7 @@ import {
   values,
   ZodIssueCode,
 } from '@rampflow/shared/values';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNotNull, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { type OrgId, type TenantId, type UserId, wrapJson } from '../../../db/ids.ts';
 import type { Tx } from '../../../db/scope.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -59,7 +61,8 @@ export interface NewTenant extends CreateTenant {
 
 /**
  * Creates the tenant org, its subscription and the first `tenant_admin` invitation with its email
- * (PL-01). Accepting the invitation makes the invitee admin of this tenant only.
+ * (PL-01). Accepting the invitation makes the invitee admin of this tenant only. The tenant
+ * starts in onboarding: `activated_at` stays null.
  */
 export async function createTenant(tx: Tx, input: NewTenant, now: Date): Promise<TenantId> {
   const id = randomUUID() as TenantId;
@@ -94,6 +97,7 @@ interface TenantRow {
   name: string;
   package: PackageId;
   createdAt: Date;
+  activatedAt: Date | null;
 }
 
 const TENANT_COLUMNS = {
@@ -101,6 +105,13 @@ const TENANT_COLUMNS = {
   name: org.name,
   package: tenantSubscription.package,
   createdAt: org.createdAt,
+  activatedAt: org.activatedAt,
+};
+
+/** The tenants in each status, as `tenantStatus` derives it. */
+const STATUS_WHERE: Record<TenantStatus, SQL> = {
+  [TenantStatus.onboarding]: isNull(org.activatedAt),
+  [TenantStatus.active]: isNotNull(org.activatedAt),
 };
 
 const asTenantRow = (r: { id: string } & Omit<TenantRow, 'id'>): TenantRow => ({
@@ -123,10 +134,12 @@ async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
   return rows.map((row) => {
     const u = usage.get(row.id);
     if (!u) throw new Error(`no usage for ${row.id}`);
+    const { activatedAt, ...rest } = row;
     return {
       summary: {
-        ...row,
+        ...rest,
         createdAt: row.createdAt.toISOString(),
+        status: tenantStatus({ activatedAt }),
         usage: u.usage,
       } satisfies TenantSummary,
       entitlements: u.entitlements,
@@ -137,26 +150,36 @@ async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
 export type TenantListState = ListStateOf<typeof TenantListQuery>;
 
 /**
- * PL-04: one page of tenants with their usage, the total and the package counts. Usage is
- * counted for the page rows only, so the work per request is bounded by the page size.
+ * PL-04: one page of tenants with their usage, the total and the package and status counts.
+ * Usage is counted for the page rows only, so the work per request is bounded by the page size.
  */
 export async function listTenants(tx: Tx, state: TenantListState, now: Date): Promise<TenantList> {
   const criteria = and(eq(org.kind, OrgKind.tenant), contains(state.q, org.name));
   const packages =
     state.package.length > 0 ? inArray(tenantSubscription.package, state.package) : undefined;
-  const where = and(criteria, packages);
+  const statuses =
+    state.status.length > 0 ? or(...state.status.map((s) => STATUS_WHERE[s])) : undefined;
+  const where = and(criteria, packages, statuses);
   const [totalRow] = await tx
     .select({ n: count() })
     .from(org)
     .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
     .where(where);
-  // The package counts ignore the package selection, so they show what another choice adds.
+  // Each facet's counts ignore its own selection, so they show what another choice adds.
   const byPackage = await tx
     .select({ value: tenantSubscription.package, count: count() })
     .from(org)
     .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
-    .where(criteria)
+    .where(and(criteria, statuses))
     .groupBy(tenantSubscription.package);
+  const [byStatus] = await tx
+    .select({
+      [TenantStatus.onboarding]: sql<number>`(count(*) filter (where ${STATUS_WHERE.onboarding}))::int`,
+      [TenantStatus.active]: sql<number>`(count(*) filter (where ${STATUS_WHERE.active}))::int`,
+    })
+    .from(org)
+    .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
+    .where(and(criteria, packages));
   const { limit, offset } = pageWindow(state);
   const rows = await tx
     .select(TENANT_COLUMNS)
@@ -169,7 +192,13 @@ export async function listTenants(tx: Tx, state: TenantListState, now: Date): Pr
   const items = (await summaries(tx, rows.map(asTenantRow), now)).map((s) => s.summary);
   return {
     ...pageOf(state, totalRow?.n ?? 0, items),
-    facets: { package: facetCounts(values(PackageId), byPackage) },
+    facets: {
+      package: facetCounts(values(PackageId), byPackage),
+      status: {
+        [TenantStatus.onboarding]: byStatus?.onboarding ?? 0,
+        [TenantStatus.active]: byStatus?.active ?? 0,
+      },
+    },
   };
 }
 

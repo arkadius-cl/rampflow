@@ -29,6 +29,8 @@ import * as invitations from './core/invitations/routes.public.ts';
 import * as me from './core/me/routes.user.ts';
 import * as platformAdmin from './core/platform/routes.platform.ts';
 import * as settings from './core/settings/routes.tenant.ts';
+import * as signup from './core/signup/routes.public.ts';
+import * as sitesPublic from './core/sites/routes.public.ts';
 import * as sites from './core/sites/routes.tenant.ts';
 import * as staff from './core/staff/routes.tenant.ts';
 import * as driverSessionDriver from './driver/session/routes.driver.ts';
@@ -86,6 +88,8 @@ const publicApi = new Hono<AppEnv>()
   .route('/carrier-invitations', bookingCarriersPublic.publicApi)
   .route('/driver-session', driverSessionPublic.publicApi)
   .route('/logos', brandLogoPublic.publicApi)
+  .route('/signups', signup.publicApi)
+  .route('/countries', sitesPublic.publicApi)
   .route('/', registration.publicApi);
 
 export const modulesApi = new Hono<AppEnv>()

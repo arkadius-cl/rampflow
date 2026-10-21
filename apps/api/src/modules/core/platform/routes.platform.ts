@@ -72,7 +72,7 @@ export const platform = new Hono<AppEnv>()
       id: 'core.platform.listTenants',
       stories: [StoryId.PL_01, StoryId.PL_04],
       description:
-        'One page of tenants: `{ items: [{ id, name, package, createdAt, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise } } }`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q` and `package`; `facets.package` counts per package the tenants matching `q`, ignoring `package`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
+        'One page of tenants: `{ items: [{ id, name, package, createdAt, status, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise }, status: { onboarding, active } } }`. `status` is `onboarding` while the tenant has no activation time, else `active`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `status` by a comma-separated list of statuses, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q`, `package` and `status`; `facets.package` counts per package the tenants matching `q` and `status`, ignoring `package`, and `facets.status` per status those matching `q` and `package`, ignoring `status`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
       responses: { 200: type<TenantList>() },
     }),
     tenants,
@@ -85,7 +85,7 @@ export const platform = new Hono<AppEnv>()
       id: 'core.platform.createTenant',
       stories: [StoryId.PL_01],
       description:
-        '`{ name, package, adminEmail }` → 201 tenant detail. Creates org, subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`',
+        '`{ name, package, adminEmail }` → 201 tenant detail. Creates org (status `onboarding`), subscription and a `tenant_admin` invitation, and enqueues `core.invitation` in the platform default locale. Service: `createTenant` in `core/platform/tenants.ts`',
       responses: { 201: type<TenantDetail>() },
     }),
     tenants,

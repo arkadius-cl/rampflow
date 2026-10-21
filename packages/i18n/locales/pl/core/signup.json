@@ -1,0 +1,95 @@
+{
+  "greeting": {
+    "mr": "Szanowny Panie,",
+    "ms": "Szanowna Pani,",
+    "none": "Dzień dobry {{given}} {{family}},"
+  },
+  "email": {
+    "verify": {
+      "subject": "Potwierdź rejestrację firmy {{company}} w rampflow",
+      "preview": "Jedno kliknięcie tworzy Twoją firmę. Link jest ważny 24 godziny.",
+      "intro": "Potwierdź swój adres e-mail, aby utworzyć firmę {{company}} w rampflow. Zostaniesz jej administratorem.",
+      "action": "Potwierdź i utwórz firmę",
+      "expiry": "Link działa jeden raz i przez 24 godziny.",
+      "ignore": "Jeśli to nie Ty się rejestrujesz, zignoruj tę wiadomość. Bez kliknięcia nic nie zostanie utworzone."
+    },
+    "known_account": {
+      "subject": "Masz już konto w rampflow",
+      "preview": "Zaloguj się na swoje istniejące konto.",
+      "intro": "Ktoś zarejestrował firmę w rampflow, podając ten adres e-mail. Dla tego adresu istnieje już konto, dlatego nie utworzono nowej firmy.",
+      "action": "Zaloguj się",
+      "reset": "Nie pamiętasz hasła? Zresetuj je na stronie logowania.",
+      "ignore": "Jeśli to nie Ty, zignoruj tę wiadomość."
+    }
+  },
+  "form": {
+    "title": "Zarejestruj firmę",
+    "description": "Załóż swoją firmę w rampflow. Zostaniesz jej administratorem; pakiet Start jest bezpłatny.",
+    "salutation": "Zwrot grzecznościowy",
+    "salutations": {
+      "none": "Bez odpowiedzi",
+      "mr": "Pan",
+      "ms": "Pani"
+    },
+    "given_name": "Imię",
+    "family_name": "Nazwisko",
+    "email": "Służbowy e-mail",
+    "password": "Hasło",
+    "password_hint": "Co najmniej 10 znaków.",
+    "company": "Nazwa firmy",
+    "country": "Kraj",
+    "tax_id_type": "Rodzaj numeru podatkowego",
+    "tax_id_types": {
+      "eu_vat": "Numer VAT UE",
+      "de_stn": "Niemiecki numer podatkowy lub W-IdNr",
+      "pl_nip": "NIP"
+    },
+    "tax_id_value": "Numer podatkowy",
+    "tax_id_examples": {
+      "eu_vat": "Twój numer VAT UE, z prefiksem {{prefix}} lub bez.",
+      "de_stn": "10, 11 lub 13 cyfr albo W-IdNr, np. DE123456789-00001.",
+      "pl_nip": "10 cyfr, na przykład 526-025-02-74."
+    },
+    "submit": "Zarejestruj firmę",
+    "have_account": "Masz już konto?",
+    "sign_in": "Zaloguj się"
+  },
+  "sent": {
+    "title": "Sprawdź skrzynkę",
+    "body": "Wysłaliśmy link na adres {{email}}. Otwórz go w ciągu 24 godzin, aby założyć firmę.",
+    "no_email": "Brak wiadomości po kilku minutach? Sprawdź folder spam lub wyślij ponownie.",
+    "again": "Wyślij ponownie",
+    "again_done": "Wysłano ponownie. Działa tylko najnowszy link."
+  },
+  "verify": {
+    "title": "Załóż firmę",
+    "loading": "Sprawdzanie linku…",
+    "confirm": "Po założeniu firmy zostaniesz jej administratorem i zostaniesz zalogowany.",
+    "create": "Załóż firmę",
+    "create_anyway": "Mimo to załóż firmę",
+    "duplicate_title": "Twoja firma może już korzystać z rampflow.",
+    "duplicate": "Poproś jej administratora o zaproszenie.",
+    "invalid_title": "Ten link już nie działa",
+    "invalid": "Linki rejestracyjne działają raz i przez 24 godziny. Zarejestruj się ponownie, aby otrzymać nowy.",
+    "register_again": "Zarejestruj się ponownie",
+    "account_exists_title": "Masz już konto",
+    "account_exists": "Ten adres e-mail ma już konto w rampflow. Zaloguj się.",
+    "sign_in": "Zaloguj się"
+  },
+  "altcha": {
+    "label": "Automatyczna weryfikacja przeciw botom",
+    "loading": "Ładowanie…",
+    "verifying": "Sprawdzanie, czy nie jesteś botem…",
+    "verified": "Sprawdzono",
+    "error": "Weryfikacja nie powiodła się. Spróbuj ponownie.",
+    "expired": "Weryfikacja wygasła. Spróbuj ponownie.",
+    "verification_required": "Automatyczna weryfikacja jest wymagana.",
+    "wait": "Sprawdzanie… proszę czekać.",
+    "reload": "Odśwież",
+    "verify": "Sprawdź",
+    "secure_title": "Rejestracja wymaga bezpiecznego połączenia",
+    "secure_required": "Sprawdzenie ochrony przed botami wymaga HTTPS. Otwórz bezpieczny adres, aby się zarejestrować.",
+    "open_localhost": "Otwórz rejestrację na localhost",
+    "dev_hint": "Na komputerze deweloperskim możesz też otworzyć localhost. Inne urządzenia potrzebują zaufanego adresu HTTPS."
+  }
+}

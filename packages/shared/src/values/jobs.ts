@@ -7,6 +7,7 @@ export const JobName = {
   no_show: 'no_show',
   retention: 'retention',
   booking_holiday_import: 'booking.holiday_import',
+  core_tax_id_check: 'core.tax_id_check',
 } as const;
 export type JobName = ValueOf<typeof JobName>;
 
@@ -22,6 +23,7 @@ export const SystemActorName = {
   invitation: 'invitation',
   carrier_invitation: 'carrier_invitation',
   registration: 'registration',
+  signup: 'signup',
   safety_pass: 'safety_pass',
   booking_carrier_names: 'booking_carrier_names',
   avis_unique_references: 'avis_unique_references',
