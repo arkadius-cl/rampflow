@@ -43,47 +43,59 @@ export function takesToken(e: Endpoint): boolean {
   return body !== undefined && 'shape' in body && 'token' in (body.shape as object);
 }
 
-/** The error statuses an operation can answer from its guards and validators alone. */
-export function errorStatuses(e: Endpoint): number[] {
-  const statuses: number[] = [];
-  if (SESSION_PARTIES.has(e.party) || takesToken(e)) statuses.push(401);
-  if (e.guards.length || MUTATING.has(e.method)) statuses.push(403);
-  if (e.path.includes('/:')) statuses.push(404);
-  if (e.meta.limits?.length) statuses.push(409);
-  if (e.validators.query || e.validators.json) statuses.push(422);
-  return statuses;
-}
-
-const ERROR_RESPONSES: Record<number, { name: string; code: ErrorCode; description: string }> = {
-  401: {
-    name: 'Unauthorized',
+const ERROR_RESPONSES = {
+  Unauthorized: {
     code: ErrorCode.unauthorized,
     description: '`unauthorized`: no valid session or driver link.',
   },
-  403: {
-    name: 'Forbidden',
+  Forbidden: {
     code: ErrorCode.forbidden,
     description:
       '`forbidden` without the permission or from a foreign `Origin`, `entitlement_required` when the package does not include the module or feature (`details.key`).',
   },
-  404: {
-    name: 'NotFound',
+  NotFound: {
     code: ErrorCode.not_found,
     description:
       '`not_found`: an unknown or malformed id, or an org the caller does not belong to.',
   },
-  409: {
-    name: 'LimitReached',
+  LimitReached: {
     code: ErrorCode.limit_reached,
     description: '`limit_reached` at a hard limit of the package (`details.key`, `details.limit`).',
   },
-  422: {
-    name: 'ValidationFailed',
+  OnboardingIncomplete: {
+    code: ErrorCode.onboarding_incomplete,
+    description:
+      '`onboarding_incomplete` while the tenant has no dock yet; the route opens with its first dock.',
+  },
+  LimitReachedOrOnboardingIncomplete: {
+    code: ErrorCode.limit_reached,
+    description:
+      '`limit_reached` at a hard limit of the package (`details.key`, `details.limit`), or `onboarding_incomplete` while the tenant has no dock yet.',
+  },
+  ValidationFailed: {
     code: ErrorCode.validation_failed,
     description:
       '`validation_failed` with the zod issues in `details.issues` (`path`, `code`, `message`).',
   },
-};
+} as const satisfies Record<string, { code: ErrorCode; description: string }>;
+type ErrorResponse = keyof typeof ERROR_RESPONSES;
+
+export const requiresActiveTenant = (e: Endpoint) =>
+  e.guards.some((g) => g.kind === GuardKind.active_tenant);
+
+/** The error responses an operation can answer from its guards and validators alone. */
+export function errorResponses(e: Endpoint): [status: number, response: ErrorResponse][] {
+  const out: [number, ErrorResponse][] = [];
+  if (SESSION_PARTIES.has(e.party) || takesToken(e)) out.push([401, 'Unauthorized']);
+  if (e.guards.length || MUTATING.has(e.method)) out.push([403, 'Forbidden']);
+  if (e.path.includes('/:')) out.push([404, 'NotFound']);
+  const limited = Boolean(e.meta.limits?.length);
+  if (limited && requiresActiveTenant(e)) out.push([409, 'LimitReachedOrOnboardingIncomplete']);
+  else if (limited) out.push([409, 'LimitReached']);
+  else if (requiresActiveTenant(e)) out.push([409, 'OnboardingIncomplete']);
+  if (e.validators.query || e.validators.json) out.push([422, 'ValidationFailed']);
+  return out;
+}
 
 const permissions = (guards: readonly Guard[]) =>
   guards.flatMap((g) => (g.kind === GuardKind.permission ? [g.key] : []));
@@ -123,8 +135,8 @@ function operation(op: Operation, statics: StaticResult, summary: string): Doc {
       responses[status] = { description: 'OK.', content: { 'application/json': { schema } } };
     }
   }
-  for (const status of errorStatuses(e)) {
-    responses[status] = { $ref: `#/components/responses/${ERROR_RESPONSES[status]?.name}` };
+  for (const [status, name] of errorResponses(e)) {
+    responses[status] = { $ref: `#/components/responses/${name}` };
   }
   const perms = permissions(e.guards);
   const ents = entitlements(e.guards);
@@ -141,6 +153,7 @@ function operation(op: Operation, statics: StaticResult, summary: string): Doc {
     ...(perms.length ? { 'x-permission': perms } : {}),
     ...(ents.length ? { 'x-entitlement': ents } : {}),
     ...(e.meta.limits?.length ? { 'x-limits': e.meta.limits } : {}),
+    ...(requiresActiveTenant(e) ? { 'x-requires-active-tenant': true } : {}),
     'x-stories': e.meta.stories,
     'x-router': op.file,
   };
@@ -239,7 +252,7 @@ export function buildDocument(ops: readonly Operation[], statics: StaticResult):
           .map((k) => [k, schemas[k]]),
       ),
       responses: Object.fromEntries(
-        Object.values(ERROR_RESPONSES).map(({ name, code, description }) => [
+        Object.entries(ERROR_RESPONSES).map(([name, { code, description }]) => [
           name,
           {
             description,

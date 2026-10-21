@@ -13,7 +13,11 @@ import { Feature, Permission, StoryId, ValidationTarget } from '@rampflow/shared
 import { Hono } from 'hono';
 import * as z from 'zod';
 import { idSchema, type SiteId } from '../../../db/ids.ts';
-import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
+import {
+  requireActiveTenant,
+  requireEntitlement,
+  requirePermission,
+} from '../../../kernel/access.ts';
 import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { validate } from '../../../kernel/validate.ts';
@@ -34,6 +38,7 @@ const SiteParam = z.object({ siteId: idSchema<'site'>() });
 
 const manage = requirePermission(Permission.booking.manage_carriers);
 const publicLinks = requireEntitlement(Feature.booking.public_link);
+const activeTenant = requireActiveTenant();
 
 /** Mounted at `/api/t/:orgId/carriers` by modules/index.ts (TN-03, TN-04). */
 export const tenant = new Hono<AppEnv>()
@@ -69,6 +74,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     requireEntitlement(Feature.booking.carrier_portal),
+    activeTenant,
     validate(ValidationTarget.json, CarrierInvitationBody),
     async (c) => {
       const { tenantId, userId, entitlements } = tenantRequest(c);
@@ -197,6 +203,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
+    activeTenant,
     validate(ValidationTarget.json, PublicLinkBody),
     async (c) => {
       const { tenantId } = tenantRequest(c);
@@ -215,6 +222,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     manage,
     publicLinks,
+    activeTenant,
     validate(ValidationTarget.param, SiteParam),
     async (c) => {
       const { tenantId } = tenantRequest(c);

@@ -30,7 +30,12 @@ import { and, eq } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import * as z from 'zod';
 import { type BookingId, type DockId, idSchema, type SiteId } from '../../db/ids.ts';
-import { requireEntitlement, requireModule, requirePermission } from '../../kernel/access.ts';
+import {
+  requireActiveTenant,
+  requireEntitlement,
+  requireModule,
+  requirePermission,
+} from '../../kernel/access.ts';
 import { op, type } from '../../kernel/describe.ts';
 import type { AppEnv } from '../../kernel/env.ts';
 import { validate } from '../../kernel/validate.ts';
@@ -188,6 +193,7 @@ export const tenant = new Hono<AppEnv>()
     }),
     gate,
     requirePermission(Permission.booking.walk_in),
+    requireActiveTenant(),
     validate(ValidationTarget.json, WalkInBody),
     async (c) => {
       const body = c.req.valid('json');

@@ -1066,6 +1066,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
+          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
           }
@@ -1077,6 +1080,7 @@
         "x-entitlement": [
           "booking.carrier_portal"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "BK-04",
           "AV-01"
@@ -6346,6 +6350,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
+          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
           }
@@ -6354,6 +6361,7 @@
         "x-permission": [
           "booking.staff_book"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "BK-02",
           "AV-01"
@@ -10294,6 +10302,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
+          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
           }
@@ -10305,6 +10316,7 @@
         "x-entitlement": [
           "booking.carrier_portal"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "TN-03"
         ],
@@ -10527,6 +10539,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
+          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
           }
@@ -10538,6 +10553,7 @@
         "x-entitlement": [
           "booking.public_link"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "TN-04"
         ],
@@ -10591,6 +10607,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
           }
         },
         "x-party": "tenant",
@@ -10600,6 +10619,7 @@
         "x-entitlement": [
           "booking.public_link"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "TN-04"
         ],
@@ -19527,6 +19547,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/OnboardingIncomplete"
+          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
           }
@@ -19539,6 +19562,7 @@
         "x-entitlement": [
           "yard"
         ],
+        "x-requires-active-tenant": true,
         "x-stories": [
           "YD-03"
         ],
@@ -26105,6 +26129,38 @@
       },
       "LimitReached": {
         "description": "`limit_reached` at a hard limit of the package (`details.key`, `details.limit`).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "limit_reached",
+                "message": "Package limit reached"
+              }
+            }
+          }
+        }
+      },
+      "OnboardingIncomplete": {
+        "description": "`onboarding_incomplete` while the tenant has no dock yet; the route opens with its first dock.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "onboarding_incomplete",
+                "message": "Finish onboarding first: add a site, a hall and a dock"
+              }
+            }
+          }
+        }
+      },
+      "LimitReachedOrOnboardingIncomplete": {
+        "description": "`limit_reached` at a hard limit of the package (`details.key`, `details.limit`), or `onboarding_incomplete` while the tenant has no dock yet.",
         "content": {
           "application/json": {
             "schema": {

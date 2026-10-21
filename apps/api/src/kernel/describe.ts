@@ -67,7 +67,8 @@ export interface OpMeta {
 export type Guard =
   | { kind: typeof GuardKind.permission; key: PermissionKey }
   | { kind: typeof GuardKind.entitlement; key: ImplementedFeatureKey }
-  | { kind: typeof GuardKind.module; id: ModuleId };
+  | { kind: typeof GuardKind.module; id: ModuleId }
+  | { kind: typeof GuardKind.active_tenant };
 
 export { ValidationTarget };
 

@@ -8,13 +8,16 @@ import {
   type PermissionKey,
   permissionsFor,
 } from '@rampflow/shared';
+import { OnboardingCase } from '@rampflow/shared/modules/core/values';
 import type { HttpMethod } from '@rampflow/shared/values';
 import {
   AccountCaseCheck,
   AccountCredential,
+  DescribedKind,
   EntitlementKind,
   ErrorCode,
   ForeignOutcome,
+  GuardKind,
   Role,
   RouteCaseActor,
   RouteCaseCheck,
@@ -24,8 +27,9 @@ import {
 } from '@rampflow/shared/values';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Hono } from 'hono';
-import { type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
-import { entitlementOverride } from '../src/modules/core/schema.ts';
+import { type OrgId, type TenantId, type UserId, wrapJson } from '../src/db/ids.ts';
+import { describedBy } from '../src/kernel/describe.ts';
+import { entitlementOverride, org } from '../src/modules/core/schema.ts';
 import { type OwnerDb, ownerDb } from './db.ts';
 import { type Actor, as, type RawBody } from './http.ts';
 import { world as seedWorld, type World, type WorldSide } from './world.ts';
@@ -56,6 +60,8 @@ export interface RouteCase {
   foreign: ForeignOutcome;
   /** A gate or dock operator of the tenant's other site gets 404 (TN-01). */
   siteScoped: boolean;
+  /** `blocked`: the route answers 409 `onboarding_incomplete` while A's tenant onboards (ON-03). */
+  onboarding?: OnboardingCase;
 }
 
 export function defineRouteCases(cases: readonly RouteCase[]): readonly RouteCase[] {
@@ -163,6 +169,30 @@ export function coverage(
     uncovered: [...handlers].filter((k) => !covered.has(k)).sort(),
     stale: [...covered].filter((k) => !handlers.has(k)).sort(),
   };
+}
+
+/**
+ * Routes whose `requireActiveTenant()` guard and route case disagree: a guarded route whose case
+ * lacks `onboarding: blocked`, or a case that declares it for a route without the guard.
+ */
+export function onboardingCoverage(
+  routes: readonly { method: string; path: string; handler: unknown }[],
+  cases: readonly Pick<RouteCase, 'method' | 'path' | 'onboarding'>[],
+): string[] {
+  const gated = new Set(
+    routes
+      .filter((r) => {
+        const d = describedBy(r.handler as never);
+        return d?.kind === DescribedKind.guard && d.guard.kind === GuardKind.active_tenant;
+      })
+      .map((r) => routeKey(r.method, r.path)),
+  );
+  return cases
+    .filter(
+      (c) => gated.has(routeKey(c.method, c.path)) !== (c.onboarding === OnboardingCase.blocked),
+    )
+    .map((c) => routeKey(c.method, c.path))
+    .sort();
 }
 
 /** `coverage` of `/api/me`, `/api/auth` and `/api/public` against the account cases. */
@@ -394,6 +424,28 @@ export async function checkRouteCase(
         call(actorOf(A, w, role), params),
       );
       report(RouteCaseCheck.entitlement, await expectError(res, 403, 'entitlement_required'));
+    }
+  }
+
+  // 5. Onboarding: A's tenant back in onboarding, as the owner; the route answers 409.
+  if (rc.onboarding === OnboardingCase.blocked) {
+    const tenant = eq(org.id, A.tenantId as string as OrgId);
+    const [{ activatedAt } = { activatedAt: null }] = await ownerDb()
+      .select({ activatedAt: org.activatedAt })
+      .from(org)
+      .where(tenant);
+    await ownerDb().update(org).set({ activatedAt: null }).where(tenant);
+    try {
+      report(
+        RouteCaseCheck.onboarding,
+        await expectError(
+          await call(actorOf(A, w, role), params),
+          409,
+          ErrorCode.onboarding_incomplete,
+        ),
+      );
+    } finally {
+      await ownerDb().update(org).set({ activatedAt }).where(tenant);
     }
   }
 

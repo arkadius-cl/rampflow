@@ -320,3 +320,9 @@ export const OnboardingStep = {
   dock: 'dock',
 } as const;
 export type OnboardingStep = ValueOf<typeof OnboardingStep>;
+
+/** What a route case expects from a tenant in onboarding (ON-03): the route answers 409. */
+export const OnboardingCase = {
+  blocked: 'blocked',
+} as const;
+export type OnboardingCase = ValueOf<typeof OnboardingCase>;

@@ -18,7 +18,7 @@ import {
   type SettingValue,
 } from '@rampflow/shared';
 import { tenantStatus } from '@rampflow/shared/modules/core/tenant-status';
-import type { TenantStatus } from '@rampflow/shared/modules/core/values';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import {
   DescribedKind,
   ErrorCode,
@@ -225,6 +225,20 @@ export function requireEntitlement(key: ImplementedFeatureKey): MiddlewareHandle
     kind: DescribedKind.guard,
     guard: { kind: GuardKind.entitlement, key },
   });
+}
+
+/**
+ * 409 `onboarding_incomplete` until the tenant's first dock exists (ON-03). Goes after the
+ * permission and entitlement guards, so a missing right still answers 403.
+ */
+export function requireActiveTenant(): MiddlewareHandler<AppEnv> {
+  const guard = createMiddleware<AppEnv>(async (c, next) => {
+    if (c.var.access.tenantStatus !== TenantStatus.active) {
+      throw new ApiError(ErrorCode.onboarding_incomplete);
+    }
+    await next();
+  });
+  return register(guard, { kind: DescribedKind.guard, guard: { kind: GuardKind.active_tenant } });
 }
 
 /** Mounts a router of a module that can be off. Needs a non-root prefix. */

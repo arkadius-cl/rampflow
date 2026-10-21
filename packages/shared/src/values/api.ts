@@ -15,6 +15,7 @@ export const GuardKind = {
   permission: 'permission',
   entitlement: 'entitlement',
   module: 'module',
+  active_tenant: 'active_tenant',
 } as const;
 export type GuardKind = ValueOf<typeof GuardKind>;
 

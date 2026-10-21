@@ -1,5 +1,5 @@
 import { ApiParty, GuardKind } from '@rampflow/shared/values';
-import { type Operation, takesToken } from './document.ts';
+import { type Operation, requiresActiveTenant, takesToken } from './document.ts';
 import { markers, SECTIONS, type Section } from './sections.ts';
 
 // The route tables of docs/reference/api-routes.md, rendered between markers (design D11).
@@ -31,6 +31,7 @@ function entitlementCell({ endpoint: e }: Operation): string {
         : [],
   );
   for (const key of e.meta.limits ?? []) parts.push(`limit ${code(key)}`);
+  if (requiresActiveTenant(e)) parts.push('active tenant');
   return parts.join('; ');
 }
 

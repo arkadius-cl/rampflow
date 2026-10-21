@@ -1,3 +1,4 @@
+import { OnboardingCase } from '@rampflow/shared/modules/core/values';
 import {
   Feature,
   ForeignOutcome,
@@ -78,6 +79,7 @@ export const cases = defineRouteCases([
   {
     method: HttpMethod.POST,
     path: '/api/t/:orgId/bookings',
+    onboarding: OnboardingCase.blocked,
     as: RouteCaseActor.dispatcher,
     permission: Permission.booking.staff_book,
     entitlement: null,

@@ -1,3 +1,4 @@
+import { OnboardingCase } from '@rampflow/shared/modules/core/values';
 import {
   ForeignOutcome,
   HttpMethod,
@@ -12,8 +13,10 @@ import {
   defineRouteCases,
   loadAccountCases,
   loadRouteCases,
+  onboardingCoverage,
 } from '../../test/route-cases.ts';
 import { app, createApp } from '../app.ts';
+import { requireActiveTenant } from './access.ts';
 import type { AppEnv } from './env.ts';
 
 describe('route coverage', () => {
@@ -24,6 +27,38 @@ describe('route coverage', () => {
     const cases = (await loadRouteCases()).map((l) => l.case);
     expect(coverage(app.routes, cases)).toEqual({ uncovered: [], stale: [] });
     expect(coverage(withDocs.routes, cases)).toEqual({ uncovered: [], stale: [] });
+  });
+
+  it('every route behind requireActiveTenant() declares onboarding: blocked, and only those', async () => {
+    const cases = (await loadRouteCases()).map((l) => l.case);
+    expect(onboardingCoverage(app.routes, cases)).toEqual([]);
+  });
+
+  it('names a gated route whose case leaves out the onboarding check, and a case without a guard', () => {
+    const toy = new Hono<AppEnv>()
+      .post('/api/t/:orgId/toys', requireActiveTenant(), (c) => c.json({}, 201))
+      .get('/api/t/:orgId/toys', (c) => c.json({ items: [] }));
+    const toyCase = {
+      as: RouteCaseActor.dispatcher,
+      permission: RouteCaseGrant.member,
+      entitlement: null,
+      params: () => ({}),
+      foreign: ForeignOutcome.empty,
+      siteScoped: false,
+    };
+    const cases = defineRouteCases([
+      { ...toyCase, method: HttpMethod.POST, path: '/api/t/:orgId/toys' },
+      {
+        ...toyCase,
+        method: HttpMethod.GET,
+        path: '/api/t/:orgId/toys',
+        onboarding: OnboardingCase.blocked,
+      },
+    ]);
+    expect(onboardingCoverage(toy.routes, cases)).toEqual([
+      'GET /api/t/:orgId/toys',
+      'POST /api/t/:orgId/toys',
+    ]);
   });
 
   it('every /api/me, /api/auth and /api/public route has an account case', async () => {

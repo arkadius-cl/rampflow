@@ -22,7 +22,11 @@ import {
 import { type Context, Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { BookingId, CarrierId, SiteId, TenantId } from '../../../db/ids.ts';
-import { requireEntitlement, requirePermission } from '../../../kernel/access.ts';
+import {
+  requireActiveTenant,
+  requireEntitlement,
+  requirePermission,
+} from '../../../kernel/access.ts';
 import { noBody, op, type } from '../../../kernel/describe.ts';
 import type { AppEnv } from '../../../kernel/env.ts';
 import { ApiError } from '../../../kernel/errors.ts';
@@ -174,6 +178,7 @@ export const carrierAtTenant = new Hono<AppEnv>()
     }),
     book,
     portal,
+    requireActiveTenant(),
     activeLink,
     validate(ValidationTarget.json, CreateCarrierBooking),
     async (c) => {

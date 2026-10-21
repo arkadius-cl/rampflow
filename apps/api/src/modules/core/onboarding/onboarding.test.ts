@@ -1,14 +1,24 @@
 import type { OnboardingView } from '@rampflow/shared/modules/core/api.onboarding';
-import { DockStatus, OnboardingStep, TenantStatus } from '@rampflow/shared/modules/core/values';
-import { ErrorCode, Limit } from '@rampflow/shared/values';
-import { count, eq } from 'drizzle-orm';
+import {
+  DockStatus,
+  OnboardingCase,
+  OnboardingStep,
+  TenantStatus,
+} from '@rampflow/shared/modules/core/values';
+import { ErrorCode, Limit, StaffLocale, TenantRole } from '@rampflow/shared/values';
+import { and, count, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ownerDb } from '../../../../test/db.ts';
 import { as } from '../../../../test/http.ts';
-import { onboardingTenant, WORLD_NOW } from '../../../../test/world.ts';
+import { loadRouteCases } from '../../../../test/route-cases.ts';
+import { onboardingTenant, WORLD_NOW, world } from '../../../../test/world.ts';
 import { createApp } from '../../../app.ts';
 import { type OrgId, type TenantId, wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
+import { publicLinkCount } from '../../booking/carriers/fixtures.ts';
+import { carrierInvitation } from '../../booking/schema.carriers.ts';
+import { booking } from '../../booking/schema.ts';
+import { outboxMessage } from '../../notify/schema.ts';
 import { dock, entitlementOverride, org } from '../schema.ts';
 import { onboardingSteps } from './fixtures.ts';
 
@@ -157,5 +167,116 @@ describe('ON-01 onboarding steps', () => {
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
       ErrorCode.forbidden,
     );
+  });
+});
+
+describe('ON-03 carrier-facing and booking actions wait for the first dock', () => {
+  const gated = (async () =>
+    (await loadRouteCases())
+      .map((l) => l.case)
+      .filter((rc) => rc.onboarding === OnboardingCase.blocked))();
+
+  /** Rows a gated route could write for the tenant: invitations, links, bookings, emails. */
+  const written = async (tenantId: TenantId) => {
+    const o = ownerDb();
+    const n = async (rows: Promise<{ n: number }[]>) => (await rows)[0]?.n ?? 0;
+    return {
+      invitations: await n(
+        o
+          .select({ n: count() })
+          .from(carrierInvitation)
+          .where(eq(carrierInvitation.tenantId, tenantId)),
+      ),
+      links: await publicLinkCount(o, tenantId),
+      bookings: await n(
+        o.select({ n: count() }).from(booking).where(eq(booking.tenantId, tenantId)),
+      ),
+      emails: await n(
+        o.select({ n: count() }).from(outboxMessage).where(eq(outboxMessage.tenantId, tenantId)),
+      ),
+    };
+  };
+
+  it('covers the six routes of design decision 4', async () => {
+    expect((await gated).map((rc) => `${rc.method} ${rc.path}`).sort()).toEqual([
+      'POST /api/c/:orgId/at/:tenantId/bookings',
+      'POST /api/t/:orgId/bookings',
+      'POST /api/t/:orgId/carriers/invitations',
+      'POST /api/t/:orgId/carriers/public-links',
+      'POST /api/t/:orgId/carriers/public-links/:siteId/regenerate',
+      'POST /api/t/:orgId/yard/walk-ins',
+    ]);
+  });
+
+  it('answers 409 onboarding_incomplete on each and writes nothing', async () => {
+    for (const rc of await gated) {
+      const w = await world();
+      await rc.setup?.(w, ownerDb());
+      await ownerDb()
+        .update(org)
+        .set({ activatedAt: null })
+        .where(eq(org.id, w.A.tenantId as string as OrgId));
+      const params = rc.params(w);
+      const path = rc.path.replace(/:([A-Za-z]+)/g, (_, k: string) => params[k] as string);
+      const query = rc.query ? `?${new URLSearchParams(rc.query(w))}` : '';
+      const actor = w.A.users[rc.as as keyof typeof w.A.users];
+      const before = await written(w.A.tenantId);
+      const res = await as(app, actor).request(rc.method, `${path}${query}`, {
+        body: rc.body?.(w),
+      });
+      expect({ route: rc.path, status: res.status }).toEqual({ route: rc.path, status: 409 });
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+        ErrorCode.onboarding_incomplete,
+      );
+      expect(await written(w.A.tenantId)).toEqual(before);
+    }
+  });
+
+  it('answers 403 to a gate operator inviting a carrier, before the onboarding check', async () => {
+    const t = await onboardingTenant();
+    const res = await as(app, t.users.gate_operator).post(
+      `/api/t/${t.tenantId}/carriers/invitations`,
+      { body: { companyName: 'Baltic Freight UAB', email: 'dispo@baltic.test' } },
+    );
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+      ErrorCode.forbidden,
+    );
+  });
+
+  it('sends the carrier invitation after the first dock, and a staff invitation during onboarding', async () => {
+    const t = await onboardingTenant();
+    const admin = as(app, t.users.tenant_admin);
+    const emailsTo = async (to: string) =>
+      (
+        await ownerDb()
+          .select({ n: count() })
+          .from(outboxMessage)
+          .where(and(eq(outboxMessage.tenantId, t.tenantId), eq(outboxMessage.toEmail, to)))
+      )[0]?.n;
+
+    const staff = await admin.post(`/api/t/${t.tenantId}/staff/invitations`, {
+      body: { email: 'lager@nordhafen.local', role: TenantRole.dispatcher },
+    });
+    expect(staff.status).toBe(201);
+    expect(await emailsTo('lager@nordhafen.local')).toBe(1);
+
+    const carrier = {
+      companyName: 'Baltic Freight UAB',
+      email: 'dispo@baltic.test',
+      locale: StaffLocale.en,
+    };
+    const blocked = await admin.post(`/api/t/${t.tenantId}/carriers/invitations`, {
+      body: carrier,
+    });
+    expect(blocked.status).toBe(409);
+    expect(await emailsTo(carrier.email)).toBe(0);
+
+    const steps = onboardingSteps(app, t.users.tenant_admin, t.tenantId);
+    const siteId = await steps.site();
+    expect((await steps.dock(siteId, await steps.hall(siteId))).status).toBe(201);
+    const sent = await admin.post(`/api/t/${t.tenantId}/carriers/invitations`, { body: carrier });
+    expect(sent.status).toBe(201);
+    expect(await emailsTo(carrier.email)).toBe(1);
   });
 });

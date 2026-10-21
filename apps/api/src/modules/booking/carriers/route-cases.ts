@@ -1,5 +1,5 @@
 import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { AuthTokenKind } from '@rampflow/shared/modules/core/values';
+import { AuthTokenKind, OnboardingCase } from '@rampflow/shared/modules/core/values';
 import {
   AccountCredential,
   Feature,
@@ -57,6 +57,7 @@ export const cases = defineRouteCases([
     ...base,
     method: HttpMethod.POST,
     path: `${P}/invitations`,
+    onboarding: OnboardingCase.blocked,
     entitlement: Feature.booking.carrier_portal,
     params: org,
     body: () => ({ companyName: 'Baltic Freight UAB', email: unique('case') }),
@@ -112,6 +113,7 @@ export const cases = defineRouteCases([
     ...base,
     method: HttpMethod.POST,
     path: `${P}/public-links`,
+    onboarding: OnboardingCase.blocked,
     entitlement: Feature.booking.public_link,
     params: org,
     body: (w) => ({ siteId: w.A.sites[0].id }),
@@ -120,6 +122,7 @@ export const cases = defineRouteCases([
     ...base,
     method: HttpMethod.POST,
     path: `${P}/public-links/:siteId/regenerate`,
+    onboarding: OnboardingCase.blocked,
     entitlement: Feature.booking.public_link,
     params: (w) => ({ ...org(w), siteId: w.A.sites[0].id }),
   },
