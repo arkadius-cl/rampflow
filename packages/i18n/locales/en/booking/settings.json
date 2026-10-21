@@ -1,18 +1,18 @@
 {
   "slot_grid_minutes": {
-    "label": "Slot grid (minutes)",
+    "label": "Slot grid",
     "description": "Start times are offered on this grid."
   },
   "min_lead_minutes": {
-    "label": "Minimum lead time (minutes)",
+    "label": "Minimum lead time",
     "description": "How long before the start carriers must book at the latest."
   },
   "horizon_days": {
-    "label": "Booking horizon (days)",
+    "label": "Booking horizon",
     "description": "How many days ahead carriers can book."
   },
   "cancel_cutoff_minutes": {
-    "label": "Change and cancel cutoff (minutes)",
+    "label": "Change and cancel cutoff",
     "description": "Carriers can change or cancel until this long before the start."
   },
   "close_on_public_holidays": {

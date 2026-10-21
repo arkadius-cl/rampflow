@@ -1,18 +1,18 @@
 {
   "slot_grid_minutes": {
-    "label": "Zeitraster (Minuten)",
+    "label": "Zeitraster",
     "description": "Startzeiten werden in diesem Raster angeboten."
   },
   "min_lead_minutes": {
-    "label": "Mindestvorlauf (Minuten)",
+    "label": "Mindestvorlauf",
     "description": "Wie lange vor dem Start Spediteure spätestens buchen müssen."
   },
   "horizon_days": {
-    "label": "Buchungshorizont (Tage)",
+    "label": "Buchungshorizont",
     "description": "Wie viele Tage im Voraus Spediteure buchen können."
   },
   "cancel_cutoff_minutes": {
-    "label": "Frist für Änderung und Storno (Minuten)",
+    "label": "Frist für Änderung und Storno",
     "description": "Spediteure können bis so lange vor dem Start ändern oder stornieren."
   },
   "close_on_public_holidays": {

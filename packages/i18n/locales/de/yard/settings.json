@@ -1,18 +1,18 @@
 {
   "early_tolerance_minutes": {
-    "label": "Toleranz für frühe Ankunft (Minuten)",
+    "label": "Toleranz für frühe Ankunft",
     "description": "Ankünfte bis zu so viel früher gelten als pünktlich."
   },
   "grace_minutes": {
-    "label": "Kulanz für späte Ankunft (Minuten)",
+    "label": "Kulanz für späte Ankunft",
     "description": "Ankünfte bis zu so viel später gelten als pünktlich."
   },
   "no_show_after_minutes": {
-    "label": "No-Show nach (Minuten)",
+    "label": "No-Show nach",
     "description": "Eine Buchung ohne Check-in wird so lange nach ihrem Start zum No-Show."
   },
   "standgeld_flag_minutes": {
-    "label": "Lange Standzeiten markieren ab (Minuten)",
+    "label": "Lange Standzeiten markieren ab",
     "description": "Besuche, die länger auf dem Gelände sind, werden für Standgeld markiert."
   }
 }

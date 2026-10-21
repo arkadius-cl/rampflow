@@ -1,6 +1,6 @@
 {
   "validity_days": {
-    "label": "Briefing validity (days)",
+    "label": "Briefing validity",
     "description": "How long a completed safety briefing stays valid."
   },
   "require_for_checkin": {
@@ -8,7 +8,7 @@
     "description": "The gate cannot check in a driver without a valid briefing."
   },
   "quiz_pass_percent": {
-    "label": "Quiz pass mark (%)",
+    "label": "Quiz pass mark",
     "description": "Share of correct answers needed to pass the quiz."
   }
 }

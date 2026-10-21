@@ -5,31 +5,31 @@
   },
   "retention": {
     "driver_phone_days": {
-      "label": "Przechowywanie numerów telefonów kierowców (dni)",
+      "label": "Przechowywanie numerów telefonów kierowców",
       "description": "Liczba dni po wizycie, po której numer telefonu kierowcy jest usuwany."
     },
     "driver_identity_days": {
-      "label": "Przechowywanie nazwisk kierowców i tablic (dni)",
+      "label": "Przechowywanie nazwisk kierowców i tablic",
       "description": "Liczba dni po wizycie, po której nazwisko kierowcy i tablica są pseudonimizowane."
     },
     "visit_days": {
-      "label": "Przechowywanie wizyt (dni)",
+      "label": "Przechowywanie wizyt",
       "description": "Liczba dni, po której zakończona rezerwacja i jej zdarzenia są usuwane."
     },
     "safety_after_expiry_days": {
-      "label": "Przechowywanie potwierdzeń po wygaśnięciu (dni)",
+      "label": "Przechowywanie potwierdzeń po wygaśnięciu",
       "description": "Liczba dni po wygaśnięciu potwierdzenia instruktażu, po której jest ono usuwane."
     },
     "audit_log_days": {
-      "label": "Przechowywanie dziennika audytu (dni)",
+      "label": "Przechowywanie dziennika audytu",
       "description": "Liczba dni, po której wpisy dziennika audytu są usuwane."
     },
     "driver_link_hours": {
-      "label": "Ważność linku kierowcy po wyjeździe (godziny)",
+      "label": "Ważność linku kierowcy po wyjeździe",
       "description": "Liczba godzin po wyjeździe, po której link kierowcy przestaje działać."
     },
     "carrier_inactive_days": {
-      "label": "Przechowywanie nieaktywnych kont przewoźników (dni)",
+      "label": "Przechowywanie nieaktywnych kont przewoźników",
       "description": "Liczba dni bez aktywności, po której konto przewoźnika jest usuwane."
     }
   }

@@ -5,31 +5,31 @@
   },
   "retention": {
     "driver_phone_days": {
-      "label": "Fahrer-Telefonnummern aufbewahren (Tage)",
+      "label": "Fahrer-Telefonnummern aufbewahren",
       "description": "Tage nach dem Besuch, bis die Telefonnummer des Fahrers gelöscht wird."
     },
     "driver_identity_days": {
-      "label": "Fahrernamen und Kennzeichen aufbewahren (Tage)",
+      "label": "Fahrernamen und Kennzeichen aufbewahren",
       "description": "Tage nach dem Besuch, bis Fahrername und Kennzeichen pseudonymisiert werden."
     },
     "visit_days": {
-      "label": "Besuche aufbewahren (Tage)",
+      "label": "Besuche aufbewahren",
       "description": "Tage, bis eine abgeschlossene Buchung mit ihren Ereignissen gelöscht wird."
     },
     "safety_after_expiry_days": {
-      "label": "Bestätigungen nach Ablauf aufbewahren (Tage)",
+      "label": "Bestätigungen nach Ablauf aufbewahren",
       "description": "Tage nach Ablauf einer Unterweisungsbestätigung, bis sie gelöscht wird."
     },
     "audit_log_days": {
-      "label": "Audit-Log aufbewahren (Tage)",
+      "label": "Audit-Log aufbewahren",
       "description": "Tage, bis Einträge im Audit-Log gelöscht werden."
     },
     "driver_link_hours": {
-      "label": "Gültigkeit des Fahrerlinks nach Abfahrt (Stunden)",
+      "label": "Gültigkeit des Fahrerlinks nach Abfahrt",
       "description": "Stunden nach der Abfahrt, bis der Fahrerlink nicht mehr funktioniert."
     },
     "carrier_inactive_days": {
-      "label": "Inaktive Spediteurskonten aufbewahren (Tage)",
+      "label": "Inaktive Spediteurskonten aufbewahren",
       "description": "Tage ohne Aktivität, bis ein Spediteurskonto gelöscht wird."
     }
   }

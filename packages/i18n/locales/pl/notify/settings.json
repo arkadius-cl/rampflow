@@ -1,6 +1,6 @@
 {
   "reminder_hours_before": {
-    "label": "Przypomnienie przed slotem (godziny)",
+    "label": "Przypomnienie przed slotem",
     "description": "Przewoźnicy otrzymują e-mail z przypomnieniem tyle godzin przed rozpoczęciem."
   }
 }
