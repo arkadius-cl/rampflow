@@ -5,21 +5,21 @@ Prerequisite: 03 is merged on `main`. 06 does not depend on 04 (`04-platform-ten
 ## 1. Docs: decisions and stories first
 
 - [x] 1.1 Resolve the merge-conflict markers in MD-01 of `docs/explanation/mvp-scope.md`. Keep both halves: the admitted-country sentence of HEAD and the opening-hours sentence and bullets of 03. Verify `git grep -n '^<<<<<<<\|^>>>>>>>' -- docs` prints nothing.
-- [ ] 1.2 Amend the stories in `docs/explanation/mvp-scope.md`:
+- [x] 1.2 Amend the stories in `docs/explanation/mvp-scope.md`:
   - **PL-03**: settings grouped in topics with their own URLs, deep links, admitted countries chosen from a grouped list, and confirmation before a shorter retention.
   - **TN-02**: one form per topic with Save and Discard; origin always shown; site settings in the site view; `?site=` redirects.
   - **MD-01**: the Settings tab of a site.
   - **Settings catalog**: `i18n.default_locale` scopes P T, with the note "people without a language of their own".
 
   Verify `pnpm docs:check` passes.
-- [ ] 1.3 Write `docs/decisions/ADR-0020-settings-information-architecture.md` (type `explanation`, tag `adr`) from design decisions 1 to 4, 6 and 7, with the options table (manifest field, topics = modules, card per setting, settings dialog, second sidebar). Verify `pnpm docs:check` passes.
-- [ ] 1.4 Update the other ADRs:
+- [x] 1.3 Write `docs/decisions/ADR-0020-settings-information-architecture.md` (type `explanation`, tag `adr`) from design decisions 1 to 4, 6 and 7, with the options table (manifest field, topics = modules, card per setting, settings dialog, second sidebar). Verify `pnpm docs:check` passes.
+- [x] 1.4 Update the other ADRs:
   - `docs/decisions/ADR-0007-settings-resolution.md`: key count 30, the batch write (decision 5) under "Write path", the origin display rule under "Read path", and a link to ADR-0020.
   - `docs/decisions/ADR-0011-frontend-routes-and-org-context.md`: route map rows `/platform/settings/$topic`, `/t/$orgId/settings/$topic` and `/t/$orgId/sites/$siteId/settings/$topic`, the index redirects and the `?site=` redirect.
   - `docs/decisions/ADR-0009-i18n-catalogs.md`: the UI language order (account, device choice, browser, tenant default, `de`), the language menu on every page, and the meaning of `i18n.default_locale`.
 
   Verify `pnpm docs:check` passes.
-- [ ] 1.5 Update the settings screens in `docs/explanation/ux-concept.md`: topic navigation per level, the field anatomy (title, description, control with unit, origin, copy link), the save bar, search, the retention dialog and the countries editor. Verify `pnpm docs:check` passes.
+- [x] 1.5 Update the settings screens in `docs/explanation/ux-concept.md`: topic navigation per level, the field anatomy (title, description, control with unit, origin, copy link), the save bar, search, the retention dialog and the countries editor. Verify `pnpm docs:check` passes.
 
 ## 2. Shared value sets and the placement map
 

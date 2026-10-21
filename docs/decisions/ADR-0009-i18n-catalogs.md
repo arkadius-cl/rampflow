@@ -5,13 +5,13 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, i18n, translations, testing]
 status: stable
-updated: 2026-10-20
+updated: 2026-10-21
 related: [docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/explanation/research/domain-standards.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md]
 ---
 
 # ADR-0009: i18n with i18next, one namespace per module, catalogs split into part files
 
-Status: accepted, 2026-10-19.
+Status: accepted, 2026-10-19. Updated 2026-10-21 by change 06: who chooses the UI language, and what `i18n.default_locale` means.
 
 ## Context
 
@@ -49,7 +49,9 @@ The staff and carrier UI ships in de, en and pl. The driver PWA, driver emails a
    `en` is the source locale for key sets. German is the product's primary language, but key structure is easier to review in one fixed source.
 7. **Types.** `apps/web` declares i18next `CustomTypeOptions` from the `en` catalogs with `enableSelector: "optimize"`, so a typo in a key fails `tsc`.
 8. **Choosing a locale.**
-   - Staff and carrier users: `app_user.locale`, else the site's or tenant's `i18n.default_locale`, else `de`.
+   - **The UI language belongs to the person.** Every page of the web app offers the language menu (de, en, pl), signed in or not: `AuthLayout` on the sign-in, sign-up, invitation, registration, magic link and reset pages and on `/r/$slug`, the user menu in every signed-in area. A switch changes the text at once, without reload, and keeps entered form values.
+   - **Order in the web app.** The account language (`app_user.locale`), else this device's last explicit choice (`localStorage`), else the browser's preferred languages matched against de, en and pl, else the tenant's `i18n.default_locale` inside a tenant area, else `de`. A choice made while signed in becomes the account language. A new account (invitation, carrier invitation, sign-up, public link registration) stores the page's current language.
+   - **`i18n.default_locale`** has the platform and tenant levels only. It is the language of invitations, emails and exports addressed to a person without an account language, and the last UI fallback in a tenant area. It never overrides a person's choice. A site's language is the site's `default_locale` column ([ADR-0007](ADR-0007-settings-resolution.md), point 2), not this setting.
    - Drivers: the browser's preferred languages matched against the 12, else `en`; the one-tap switcher stores the choice in `localStorage`.
    - Emails use the recipient's locale: the user's locale for users, the locale chosen in "email to driver" (CR-06) for drivers.
 9. **Formatting.** Numbers and dates go through `Intl` and date-fns locales. Times are always shown in the site's zone ([ADR-0012](ADR-0012-time-handling.md)). CSV delimiters follow the user's locale (`;` for de and pl, `,` for en, RP-02).

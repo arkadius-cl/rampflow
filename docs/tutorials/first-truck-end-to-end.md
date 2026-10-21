@@ -68,11 +68,11 @@ Look at the **Booked as** column. Every dock is in exactly one pool or booked on
 
 On the right, **Bookable resources** shows the pool Wareneingang with its dock profile, **Dock leveler · Ambient**, and the **Hall pool** badge, and lists its member docks. A carrier books the pool, and the dock operator picks a free member dock when the truck arrives.
 
-5. Select **Settings** in the sidebar, then the tab **Hamburg DC**.
+5. Select the tab **Settings** of Hamburg DC. The topic **Booking** opens.
 
 ![The settings of Hamburg DC, with the source of each value](../assets/screens/settings.png)
 
-Each setting shows where its value comes from. Most say **Inherited from Default**. **Public booking link** says **Set here (Site)**, because the seed switched it on for this site. The booking rules tell us what the carrier sees next: start times on a 30-minute grid, at least 120 minutes ahead.
+Each setting shows where its value comes from. **Booking horizon** says **From platform**, and **Change and cancel cutoff** says **From tenant**. **Slot grid** says **Set for this site** and shows the value it would inherit, **Inherited: 30 (Product default)**. **Public booking link** says **Set for this site** too, because the seed switched it on for this site. The booking rules tell us what the carrier sees next: start times on a 15-minute grid, at least 120 minutes ahead.
 
 ## Book a slot as the carrier
 
