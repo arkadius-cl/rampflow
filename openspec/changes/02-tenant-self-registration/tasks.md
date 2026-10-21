@@ -48,7 +48,7 @@
 
 ## 7. Retention
 
-- [ ] 7.1 Add the `tenant_signup` rule to `privacy/jobs/retention.ts` (delete rows whose `expires_at` is more than 7 days past, any status) and clear `given_name`, `family_name` and `salutation` where it anonymizes a user; verify in `retention.test.ts`: a row expired 8 days ago is deleted, one expired 6 days ago stays, a second run deletes nothing, and an anonymized user with names set has all three NULL.
+- [x] 7.1 Add the `tenant_signup` rule to `privacy/jobs/retention.ts` (delete rows whose `expires_at` is more than 7 days past, any status) and clear `given_name`, `family_name` and `salutation` where it anonymizes a user; verify in `retention.test.ts`: a row expired 8 days ago is deleted, one expired 6 days ago stays, a second run deletes nothing, and an anonymized user with names set has all three NULL.
 
 ## 8. Web
 
