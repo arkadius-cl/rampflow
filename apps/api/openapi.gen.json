@@ -14806,7 +14806,7 @@
       "post": {
         "operationId": "core.sites.createSite",
         "summary": "Create site",
-        "description": "seeds the three load types, imports holidays",
+        "description": "seeds the three load types, imports holidays, writes the weekly hours",
         "tags": [
           "Master data and capacity"
         ],

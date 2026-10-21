@@ -9,6 +9,7 @@ import type { Clock } from '../../../kernel/clock.ts';
 import { ApiError } from '../../../kernel/errors.ts';
 import { seedLoadTypes } from '../../booking/capacity/load-types.ts';
 import { syncHolidays } from '../../booking/jobs/holiday-import.ts';
+import { openingHours } from '../../booking/schema.resources.ts';
 import { site } from '../schema.ts';
 import { invalid, type TenantRequest } from './tenant.ts';
 
@@ -60,7 +61,7 @@ function requireSiteCountry(country: string, admitted: readonly string[]): void 
   }
 }
 
-/** MD-01 and MD-05: a new site gets the seeded load types and its public holidays. */
+/** MD-01 and MD-05: a new site gets its weekly hours, the seeded load types and its public holidays. */
 export async function createSite(
   tx: Tx,
   req: TenantRequest,
@@ -76,11 +77,15 @@ export async function createSite(
     Limit.core.max_sites,
     countActiveSites(req.tenantId),
   );
+  const { hours, ...fields } = input;
   const [row] = await tx
     .insert(site)
-    .values({ ...input, tenantId: req.tenantId })
+    .values({ ...fields, tenantId: req.tenantId })
     .returning();
   if (!row) throw new Error('site insert returned nothing');
+  await tx
+    .insert(openingHours)
+    .values(hours.map((h) => ({ tenantId: req.tenantId, siteId: row.id, resourceId: null, ...h })));
   await seedLoadTypes(tx, row);
   await syncHolidays(tx, row, clock.now());
   return row;

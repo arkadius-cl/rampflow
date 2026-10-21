@@ -70,7 +70,7 @@ export const tenant = new Hono<AppEnv>()
     op({
       id: 'core.sites.createSite',
       stories: [StoryId.MD_01, StoryId.MD_05],
-      description: 'seeds the three load types, imports holidays',
+      description: 'seeds the three load types, imports holidays, writes the weekly hours',
       limits: [Limit.core.max_sites],
       responses: { 201: type<SiteView>() },
     }),

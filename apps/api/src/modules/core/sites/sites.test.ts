@@ -107,6 +107,39 @@ describe('MD-01 sites', () => {
       .from(closure)
       .where(and(eq(closure.siteId, created.id as never), eq(closure.source, 'holiday')));
     expect(holidays?.n).toBeGreaterThan(10);
+
+    const hours = await admin(w.B).get(
+      `/api/t/${w.B.tenantId}/capacity/hours?siteId=${created.id}`,
+    );
+    expect(((await hours.json()) as { items: unknown[] }).items).toEqual(
+      hoursTemplateRows.one_shift.map((r) => ({ resourceId: null, ...r })),
+    );
+  });
+
+  it('answers 422 at the hours path and writes no site for missing, empty or overlapping hours', async () => {
+    const { hours: _, ...withoutHours } = garching;
+    const overlapping = [
+      { weekday: 1, opens: '06:00', closes: '14:00' },
+      { weekday: 1, opens: '13:00', closes: '22:00' },
+    ];
+    const cases = [
+      { body: withoutHours, path: ['hours'] },
+      { body: { ...garching, hours: [] }, path: ['hours'] },
+      { body: { ...garching, hours: overlapping }, path: ['hours', 1] },
+    ];
+    for (const [i, c] of cases.entries()) {
+      const name = `Ohne Zeiten ${i}`;
+      const res = await admin(w.B).post(sitesOf(w.B), { body: { ...c.body, name } });
+      expect(res.status).toBe(422);
+      expect((await error(res)).details?.issues).toEqual([
+        expect.objectContaining({ path: c.path }),
+      ]);
+      const [n] = await ownerDb()
+        .select({ n: count() })
+        .from(site)
+        .where(and(eq(site.tenantId, w.B.tenantId), eq(site.name, name)));
+      expect(n?.n).toBe(0);
+    }
   });
 
   it('lists only the sites a gate operator may see', async () => {
@@ -414,5 +447,44 @@ describe('admitted site countries', () => {
     } finally {
       await as(app, w.platformAdmin).delete('/api/platform/settings/core.site_countries');
     }
+  });
+});
+
+describe('MD-01 a new site with a dock offers slots', () => {
+  it('offers starts from 06:00 to 13:30 for "Parcel / van" under the one-shift template', async () => {
+    const f = await world();
+    const t = `/api/t/${f.A.tenantId}`;
+    const created = await admin(f.A).post(`${t}/sites`, {
+      body: { ...garching, name: 'Erste Slots' },
+    });
+    expect(created.status).toBe(201);
+    const siteId = ((await created.json()) as { id: string }).id;
+    const hall = await admin(f.A).post(`${t}/sites/${siteId}/halls`, { body: { name: 'Halle 1' } });
+    const hallId = ((await hall.json()) as { id: string }).id;
+    const dock = await admin(f.A).post(`${t}/sites/${siteId}/docks`, {
+      body: {
+        hallId,
+        code: 'T01',
+        doorType: DoorType.dock_leveler,
+        temperatureZone: TemperatureZone.ambient,
+      },
+    });
+    expect(dock.status).toBe(201);
+    const types = (await (
+      await admin(f.A).get(`${t}/capacity/load-types?siteId=${siteId}`)
+    ).json()) as { items: { id: string; name: { en: string } }[] };
+    const parcel = types.items.find((lt) => lt.name.en === 'Parcel / van');
+    if (!parcel) throw new Error('no Parcel / van');
+    // 2026-10-26 is a Monday after WORLD_NOW and no public holiday in Bremen or Bavaria.
+    const res = await admin(f.A).get(
+      `${t}/capacity/availability?siteId=${siteId}&date=2026-10-26&loadTypeId=${parcel.id}`,
+    );
+    expect(res.status).toBe(200);
+    const { starts } = (await res.json()) as { starts: { wallTime: string }[] };
+    const expected = Array.from({ length: 16 }, (_, i) => {
+      const minutes = 6 * 60 + i * 30;
+      return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${minutes % 60 === 0 ? '00' : '30'}`;
+    });
+    expect(starts.map((s) => s.wallTime)).toEqual(expected);
   });
 });

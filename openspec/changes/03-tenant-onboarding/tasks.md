@@ -35,9 +35,9 @@
 
 ## 4. Site hours at creation (API)
 
-- [ ] 4.1 Make `createSite` in `core/sites/sites.ts` insert `input.hours` as site rows (`resource_id` null) in its transaction, and update the `op` description of `POST /sites` ("seeds the three load types, imports holidays, writes the weekly hours"). Verify with `sites.test.ts`: the five one-shift windows come back from `GET /capacity/hours?siteId=` with `resourceId: null`, and a body without `hours` or with overlapping windows answers 422 at `["hours"]` or `["hours", 1]` with no site row.
-- [ ] 4.2 Add a test for "First slots": create a site with the one-shift template, a hall and a dock, and ask `GET /capacity/availability` for "Parcel / van" on a non-holiday Monday after `WORLD_NOW`. Verify the starts run from 06:00 to 13:30 site time.
-- [ ] 4.3 Pass `hours` in every other `createSite` caller (tests, e2e support `e2e/support/u4.ts` if it creates sites). Verify `pnpm typecheck` passes.
+- [x] 4.1 Make `createSite` in `core/sites/sites.ts` insert `input.hours` as site rows (`resource_id` null) in its transaction, and update the `op` description of `POST /sites` ("seeds the three load types, imports holidays, writes the weekly hours"). Verify with `sites.test.ts`: the five one-shift windows come back from `GET /capacity/hours?siteId=` with `resourceId: null`, and a body without `hours` or with overlapping windows answers 422 at `["hours"]` or `["hours", 1]` with no site row.
+- [x] 4.2 Add a test for "First slots": create a site with the one-shift template, a hall and a dock, and ask `GET /capacity/availability` for "Parcel / van" on a non-holiday Monday after `WORLD_NOW`. Verify the starts run from 06:00 to 13:30 site time.
+- [x] 4.3 Pass `hours` in every other `createSite` caller (tests, e2e support `e2e/support/u4.ts` if it creates sites). Verify `pnpm typecheck` passes.
 
 ## 5. Activation, status and the onboarding route (API)
 
