@@ -5,8 +5,8 @@ type: reference
 audience: [agent, developer]
 tags: [database, data-model, tenancy, rls, booking, safety, yard]
 status: draft
-updated: 2026-10-21
-related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0017-homogeneous-pools-dock-profile.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
+updated: 2026-10-22
+related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0018-tenant-suspension.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md, docs/decisions/ADR-0017-homogeneous-pools-dock-profile.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/reference/booking-lifecycle.md]
 ---
 
 # Data model
@@ -43,6 +43,7 @@ SQL functions in schema `app` (baseline migration): the accessors `party()`, `us
 | Module | Tables | Schema file | Unit |
 |---|---|---|---|
 | core | `org`, `app_user`, `session`, `auth_token`, `rate_limit_event`, `membership`, `membership_site`, `invitation`, `tenant_subscription`, `entitlement_override`, `setting_value`, `site`, `hall`, `dock`, `tenant_carrier_link`, `job_run` | `core/schema.ts` | U1 |
+| core | `tenant_note` | `core/schema.ts` | 04 |
 | core | `tenant_signup` | `core/schema.signup.ts` | 02 |
 | notify | `outbox_message` | `notify/schema.ts` | U1 |
 | booking | `bookable_resource`, `resource_dock`, `opening_hours`, `closure`, `load_type`, `load_type_resource` | `booking/schema.resources.ts` | U4 |
@@ -70,6 +71,7 @@ erDiagram
   org ||--o{ invitation : invites
   org ||--|| tenant_subscription : "tenant package"
   org ||--o{ entitlement_override : "tenant overrides"
+  org ||--o{ tenant_note : "platform notes"
   org ||--o{ setting_value : "tenant and site values"
   org ||--o{ site : "tenant owns"
   org ||--o{ tenant_carrier_link : "tenant side"
@@ -117,16 +119,18 @@ Every party organisation: the single platform org, tenants and carriers.
 | `id` | uuid | no | |
 | `kind` | text | no | `platform`, `tenant`, `carrier` |
 | `name` | text | no | 1 to 120 characters |
-| `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) and self-registered tenants (RG-01) |
+| `country` | char(2) | yes | ISO 3166-1, carriers (CR-02) and tenants (registration, editable by the platform). For a tenant one of `EuCountry` (EU-27), its legal seat, consistent with its tax id (409 `tax_id_country`) |
 | `tax_id_type` | text | yes | tenants only: `eu_vat`, `de_stn`, `pl_nip` (`TaxIdType`) |
 | `tax_id_value` | text | yes | tenants only, normalized by `normalizeTaxId` |
 | `tax_id_status` | text | yes | tenants only: `pending`, `verified`, `unverified`, `unavailable` (`TaxIdStatus`); `pending` until the job `core.tax_id_check` asked VIES about an `eu_vat`, `unverified` from the start for `de_stn` and `pl_nip` |
 | `tax_id_checked_at` | timestamptz | yes | last VIES answer or failure |
 | `possible_duplicate` | boolean | no | default `false`; set when a registration matched another tenant's tax id or company email domain (RG-04) |
 | `activated_at` | timestamptz | yes | tenants only; null while the tenant is onboarding (`tenantStatus`: `onboarding`, `active`). Set once, in the transaction that creates the tenant's first dock (ON-02), and never cleared; existing tenants were backfilled with `created_at` |
+| `suspended_at` | timestamptz | yes | tenants only; set while the platform suspends the tenant (PL-07, [ADR-0018](../decisions/ADR-0018-tenant-suspension.md)), cleared on reactivation. The reason is a `tenant_note`, never a column of `org` |
 
 - Unique `(id, kind)` for composite foreign keys. Partial unique index on `(kind)` where `kind = 'platform'`: exactly one platform org. Partial index `org_tax_id_value_idx` on `(tax_id_value)` where `kind = 'tenant'`, for the duplicate check.
-- Check `org_tenant_facts_check`: `kind = 'tenant'` or all of `tax_id_type`, `tax_id_value`, `tax_id_status`, `tax_id_checked_at` and `activated_at` are null and `possible_duplicate` is false. Check `org_tax_id_check`: type, value and status are all null or all set, each from its value set.
+- Check `org_tenant_facts_check`: `kind = 'tenant'` or all of `tax_id_type`, `tax_id_value`, `tax_id_status`, `tax_id_checked_at` and `activated_at` are null and `possible_duplicate` is false. Check `org_tax_id_check`: type, value and status are all null or all set, each from its value set. Check `org_suspended_tenant_only`: `suspended_at is null or kind = 'tenant'`.
+- The tenant status is derived, never stored (`tenantStatus`): `suspended` while `suspended_at` is set, else `onboarding` while `activated_at` is null, else `active`.
 - No column of `org` is **PD**; the tax id is a company's registration number.
 - RLS custom: `platform` all; `user` select where the user has a membership in it; `tenant`, `carrier_at_tenant`, `driver`, `public` select where `id = app.tenant_id()`; `tenant` also selects its linked carriers and the carrier org of each of its registrations (TN-04 shows the org a registration links); `carrier` select own org and linked tenants; `carrier_at_tenant` also selects its own carrier; `system` select; `user` insert where `kind = 'carrier'` (a carrier company created on acceptance or registration); `token` insert where `kind = 'carrier' or (kind = 'tenant' and activated_at is null)` (also an onboarding tenant created by a verified self-registration, RG-02); `tenant` update (`tenant_update_activate`) using `id = app.tenant_id() and activated_at is null`, with check `id = app.tenant_id() and activated_at is not null`. That policy lets `activateTenant` set `activated_at` when the tenant's first dock is created (ON-02). The tenant can change its own row once, only into the active state, and the policy matches no row after that. No tenant route writes any other column of `org`. Ids are generated in the app, because these parties cannot read the new row back. Routes outside the platform and the tenant's own context never select the tenant facts.
 
@@ -142,7 +146,7 @@ Every party organisation: the single platform org, tenants and carriers.
 | `locale` | text | yes | `de`, `en`, `pl` |
 | `password_hash` | text | yes | `scrypt$N$r$p$salt$hash`; null for magic-link-only users |
 | `email_verified_at` | timestamptz | yes | sign-in requires it |
-| `last_seen_at` | timestamptz | yes | drives `privacy.retention.carrier_inactive_days` |
+| `last_seen_at` | timestamptz | yes | written by the session check at most every 5 minutes, so the first request after a sign-in records it; drives `privacy.retention.carrier_inactive_days` and a tenant's last activity in PL-04 (latest value among its members) |
 | `disabled_at` | timestamptz | yes | |
 | `ui_prefs` | jsonb | no | default `{}`; check `jsonb_typeof(ui_prefs) = 'object'`. UI state only, keys from `UI_PREFS` in `packages/shared/src/modules/core/ui-prefs.ts`; written only by `PATCH /api/me`, merged per key; cleared when the retention job anonymizes the user ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) |
 
@@ -279,6 +283,21 @@ RLS custom: `platform` all; `tenant`, `carrier_at_tenant`, `driver`, `public` se
 | `updated_at`, `updated_by` | timestamptz, uuid | no | |
 
 Primary key `(tenant_id, key)`. RLS custom: `platform` all; `tenant` select where `tenant_id = app.tenant_id()`. The `note` is internal, so carriers, drivers and the public never read overrides; `loadAccess` resolves their tenant's entitlements as the tenant (actor `system:access`).
+
+### `tenant_note`
+
+The platform's internal history of a tenant (PL-08): free notes, and the entry each suspension and reactivation writes with its reason (PL-07, [ADR-0018](../decisions/ADR-0018-tenant-suspension.md)).
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | uuid | no | |
+| `tenant_id` | uuid | no | FK `org` on delete cascade |
+| `kind` | text | no | `note`, `suspended`, `reactivated` (`TenantNoteKind`), check `tenant_note_kind_check` |
+| `body` | text | no | 1 to 2,000 characters after trimming, check `tenant_note_body_length`; **PD** possible: free text can name a person |
+| `author_id` | uuid | yes | FK `app_user` on delete set null |
+
+- Index `tenant_note_tenant_created_idx` on `(tenant_id, created_at)`.
+- RLS custom: `platform` select and insert. No other party reads notes, and no party may update or delete them, so notes are append-only. A note goes only with its tenant, through the foreign key cascade. The suspension reason lives here and not on `org`, because `org` rows are readable by carriers, drivers and public visitors.
 
 ### `setting_value`
 
@@ -795,7 +814,7 @@ RLS: `tenant-private`.
 
 ## Retention
 
-The retention job (PL-05) applies these rules per tenant with the resolved `privacy.retention.*` settings. Every rule is set-based and idempotent.
+The retention job (PL-05) applies these rules per tenant with the resolved `privacy.retention.*` settings. Every rule is set-based and idempotent. It also runs for suspended tenants ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)).
 
 | Data | Rule | Setting |
 |---|---|---|
@@ -809,6 +828,7 @@ The retention job (PL-05) applies these rules per tenant with the resolved `priv
 | `rate_limit_event`, used `auth_token` | delete after 24 hours | fixed |
 | `tenant_signup` | delete every row, in any status, 7 days after `expires_at` | fixed |
 | `outbox_message` | the worker empties `payload` when it sends; delete sent or failed rows after 7 days | fixed |
+| `tenant_note` | deleted with its tenant (foreign key cascade); never deleted on its own | fixed |
 
 Interpretations as built (U11):
 
