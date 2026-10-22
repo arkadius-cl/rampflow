@@ -116,6 +116,20 @@ export async function suspendTenant(
   expect(res.status(), await res.text()).toBe(200);
 }
 
+/** Reactivates (PL-07) through the API. */
+export async function reactivateTenant(
+  request: APIRequestContext,
+  w: World,
+  tenantId: string,
+  reason: string,
+) {
+  const res = await request.post(`/api/platform/tenants/${tenantId}/reactivate`, {
+    headers: asPlatformAdmin(w),
+    data: { reason },
+  });
+  expect(res.status(), await res.text()).toBe(200);
+}
+
 /** The facts a registration (RG-05) or the VIES job write on a tenant, set as the owner. */
 export interface TenantFacts {
   country?: EuCountry | null;
