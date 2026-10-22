@@ -11,7 +11,8 @@ import {
   TriangleAlertIcon,
   WrenchIcon,
 } from 'lucide-react';
-import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
+import { OfficeShell } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

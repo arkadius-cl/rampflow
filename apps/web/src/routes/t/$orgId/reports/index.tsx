@@ -8,7 +8,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { BookingStatusBadge, PUNCTUALITY, StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';

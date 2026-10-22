@@ -3,7 +3,7 @@ import { isValueOf, Permission } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { guard } from '@/lib/access';
 import { BookingWizard, type WizardSearch } from '@/modules/portal/wizard';
 

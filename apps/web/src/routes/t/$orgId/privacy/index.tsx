@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { BookingStatusBadge } from '@/components/status-badge';
 import {

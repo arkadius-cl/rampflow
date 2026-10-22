@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 import { RouteNotFound } from '@/components/app-shell/route-states';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

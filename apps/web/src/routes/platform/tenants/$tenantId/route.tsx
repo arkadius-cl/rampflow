@@ -7,7 +7,7 @@ import { ArrowLeftIcon, CirclePauseIcon, CirclePlayIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NoAccess, RouteError } from '@/components/app-shell/route-states';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { guard } from '@/lib/access';

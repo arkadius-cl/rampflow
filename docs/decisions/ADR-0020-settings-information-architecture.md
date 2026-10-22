@@ -61,8 +61,8 @@ The route rows are in [ADR-0011](ADR-0011-frontend-routes-and-org-context.md#rou
 ### 3. Topic navigation is vertical on platform and tenant, a second tab row on a site
 
 - `SettingsTopicNav` renders real links. The current topic has `aria-current="page"`.
-- **Platform and tenant.** A vertical list in a 12rem column left of the form. The form is at most 48rem wide. GitHub and Vercel use this layout.
-- **Site.** A second row of tabs under the site tabs. The site view already has the app sidebar and the site list column, and a third vertical column would leave too little width for the form at 1920 px.
+- **Platform and tenant.** A vertical list in a 14rem column left of the form. The form is at most 64rem wide (ADR-0022, earlier 12rem and 48rem). GitHub and Vercel use this layout.
+- **Site.** Since [ADR-0022](ADR-0022-office-page-frame-and-navigation-levels.md) the same vertical list inside the site's settings tab. The earlier second tab row nested tabs, which ADR-0022 forbids; the content area is 1600 px at 1920 px, enough for the sidebar, the site list, the topic list and the form.
 
 ### 4. A topic page is one form
 

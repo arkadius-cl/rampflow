@@ -2,7 +2,8 @@ import { useNavigate, useRouteContext, useRouter } from '@tanstack/react-router'
 import { ChevronRightIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, PageHeader } from '@/components/shells/office-shell';
+import { NavLink } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from '@/components/ui/item';
 import type { AreaRouteContext } from '@/lib/access';
 import { NavIcon, useShellNav } from './nav';

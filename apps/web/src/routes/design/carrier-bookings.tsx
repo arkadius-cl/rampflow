@@ -9,7 +9,8 @@ import {
   SearchIcon,
   Share2Icon,
 } from 'lucide-react';
-import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
+import { OfficeShell } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTimeRange } from '@/components/site-time';
 import { BookingStatusBadge, SafetyBadge } from '@/components/status-badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

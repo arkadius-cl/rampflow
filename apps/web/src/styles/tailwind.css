@@ -98,6 +98,9 @@
   --spacing-touch: var(--touch-min);
   --spacing-gap: var(--gap);
   --spacing-pad: var(--pad);
+  /* Page width caps of the office shell (ADR-0022): max-w-page-wide, max-w-page-narrow. */
+  --container-page-wide: 100rem;
+  --container-page-narrow: 80rem;
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);

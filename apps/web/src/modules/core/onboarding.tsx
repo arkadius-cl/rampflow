@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {

@@ -76,6 +76,18 @@ export const Density = {
 } as const;
 export type Density = ValueOf<typeof Density>;
 
+/**
+ * How wide an office page may grow (ADR-0022). `full` fills the content area (lists, boards,
+ * matrices), `wide` stops at 100rem (entity pages, home, reports), `narrow` at 80rem (settings,
+ * wizards, pages that are one form). Above the cap the page centres.
+ */
+export const PageWidth = {
+  full: 'full',
+  wide: 'wide',
+  narrow: 'narrow',
+} as const;
+export type PageWidth = ValueOf<typeof PageWidth>;
+
 /** The appearance a user or device chose: light, dark, or whatever the OS prefers. */
 export const Theme = {
   light: 'light',

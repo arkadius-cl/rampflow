@@ -5,8 +5,8 @@ type: reference
 audience: [agent, developer]
 tags: [ux, design, tokens, accessibility, frontend]
 status: stable
-updated: 2026-10-21
-related: [docs/decisions/ADR-0021-design-system.md, docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/ux-concept.md]
+updated: 2026-10-22
+related: [docs/decisions/ADR-0021-design-system.md, docs/decisions/ADR-0022-office-page-frame-and-navigation-levels.md, docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/ux-concept.md]
 ---
 
 # Design system
@@ -309,6 +309,29 @@ Pick a pattern, do not design one. Every screen is one pattern from this catalog
 | Startseite je Rolle | Area home (`components/app-shell/area-home.tsx`) | Home of a role |
 | Sonderbaustein | Own component | Nothing fits. The product owner decides each case |
 
+### Page frame and width
+
+Every office page renders `Page` (`components/shells/page.tsx`, [ADR-0022](../decisions/ADR-0022-office-page-frame-and-navigation-levels.md)): title, description, actions, second-level navigation and content in one container. The width is a `PageWidth` chosen by the pattern.
+
+| `PageWidth` | Cap | Patterns |
+|---|---|---|
+| `full` | none | Objektliste, Kurzliste as a page, plan board, matrices |
+| `wide` | 100rem, centred above | Objektseite, Startseite je Rolle, reports |
+| `narrow` | 80rem, centred above | Einstellungsseite, Assistent, one-form and one-text pages |
+
+A page never sets `max-w-*` on its root. At 1920 × 1080 no office page shows a horizontal scrollbar.
+
+### Navigation levels
+
+| Level | Building block | For |
+|---|---|---|
+| 1. Sidebar | `navFor` | Areas of a role |
+| 2. Line tabs | `PageTabs` + `PageTab`, child routes | Topics of an Objektseite, at most six |
+| 3. Segmented | `Tabs` default | Views of one list with counts, ranges, filters |
+| 4. Vertical list | `SettingsTopicNav`, sibling switcher | Settings topics; switching objects of one kind beside the object |
+
+Tabs never nest. The breadcrumb carries the way back; no "Back" button. See [ADR-0022](../decisions/ADR-0022-office-page-frame-and-navigation-levels.md) for the full rules.
+
 ### Decision tree
 
 Ask from top to bottom. The first matching answer wins.
@@ -337,7 +360,7 @@ Never a form in a modal dialog. Never a form inline in a table.
 
 ### Steckbrief
 
-Every task with a screen has a `## Steckbrief` before anyone builds. It names the screen, the pattern, the largest expected count and a note. A list is shown with sample data in that count, in light and dark, and in the screen's density.
+Every task with a screen has a `## Steckbrief` before anyone builds. It names the screen, the pattern, the width, the navigation level it uses, the largest expected count and a note. A list is shown with sample data in that count, in light and dark, and in the screen's density.
 
 ## Rules
 
@@ -389,6 +412,17 @@ The status column says how firm a rule is.
 ### 3. Patterns
 
 The catalogue and the decision tree are in [Patterns](#patterns). Their status is decided (ADR-0021, ADR-0015, ADR-0020).
+
+| Rule | Status | Source |
+|---|---|---|
+| Every office page renders `Page`; title, actions, tabs and content share one container | decided | ADR-0022 |
+| The width is the pattern's `PageWidth`: lists and boards `full`, entity pages and home `wide` (100rem), settings and wizards `narrow` (80rem). No `max-w-*` on a page root | decided | ADR-0022 |
+| Four navigation levels: sidebar, line tabs for entity topics (child routes), segmented tabs for views and filters, vertical list for settings topics and sibling switchers. Tabs never nest | decided | ADR-0022 |
+| Entity topics as `PageTabs` with real links, at most six. The first is the index route | decided | ADR-0015, ADR-0022 |
+| Views of one list as segmented tabs with counts above the toolbar, state in search params | decided | ADR-0022 |
+| The breadcrumb carries the way back. No "Back" button on an entity page | decided | ADR-0022 |
+| At most one primary button right of the title. Controls that act on the content (expand all, search) stand in the actions | decided | ADR-0022 |
+| An office page shows no horizontal scrollbar at 1920 × 1080 with sample data. Tables fit through short dates and one line per cell | decided | ADR-0022 |
 
 ### 4. Lists and search
 

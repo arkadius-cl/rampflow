@@ -4,7 +4,7 @@ import { type AnyRouteMatch, Link, Outlet, useParams } from '@tanstack/react-rou
 import type { TFunction } from 'i18next';
 import { MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { buttonVariants } from '@/components/ui/button';
 import { useAccess } from '@/lib/access';
 import {

@@ -31,12 +31,15 @@ Before you build, write it in the task or report.
 ## Steckbrief
 Screen: <route>
 Pattern: <pattern from step 2>
+Width: <PageWidth from the pattern: full | wide | narrow>
+Navigation: <none | line tabs (entity topics) | segmented (views, filters) | vertical list (settings, siblings)>
 Largest count: <largest expected count after years in use>
 Note: <density, theme default, exceptions with product owner, date and reason>
 ```
 
 ## 4. Build
 
+- Every office page is `<Page width=... title=... actions=... tabs=...>` from `components/shells/page.tsx` (ADR-0022). No `max-w-*` on a page root. Entity topics are `PageTabs`, list views are segmented `Tabs`, settings topics the vertical list.
 - shadcn components with their variants. No new primitive. Report a new token or variant instead of adding it.
 - Token classes only. No hex, oklch, rgb or hsl, no `style={{ }}`, no `font-family`, no `bg-[#...]`.
 - Density through `useDensity` (`hooks/use-density.ts`) with the `Density` value set. It sets `data-density` on `<html>`. Office has none. Gate and dock use `halle`, the driver uses `fahrer`.

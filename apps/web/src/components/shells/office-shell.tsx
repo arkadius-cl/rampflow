@@ -182,7 +182,7 @@ export function OfficeShell({
             {toolbar}
           </div>
         </header>
-        <div className={cn('flex min-h-0 flex-1 flex-col', !flush && 'gap-4 p-4 lg:p-6')}>
+        <div className={cn('flex min-h-0 flex-1 flex-col', !flush && 'gap-4 p-4 lg:p-6 2xl:p-8')}>
           {children}
         </div>
       </SidebarInset>
@@ -336,27 +336,5 @@ function OrgSwitcher({ org, memberships }: { org: Membership; memberships: Membe
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  );
-}
-
-export function PageHeader({
-  title,
-  description,
-  actions,
-  className,
-}: {
-  title: string;
-  description?: string;
-  actions?: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn('flex flex-wrap items-end justify-between gap-3', className)}>
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
-      </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-    </div>
   );
 }

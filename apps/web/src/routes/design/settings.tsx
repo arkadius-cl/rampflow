@@ -3,7 +3,8 @@ import { PrototypeScreen, Setting, SettingSource } from '@rampflow/shared/values
 import { createFileRoute } from '@tanstack/react-router';
 import { Building2Icon, MapPinIcon } from 'lucide-react';
 import { UpsellHint } from '@/components/entitlement-gate';
-import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
+import { OfficeShell } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';

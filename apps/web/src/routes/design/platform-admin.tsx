@@ -1,7 +1,8 @@
 import { PackageId, PrototypeScreen } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { CalendarIcon, PlusIcon, TrashIcon, TriangleAlertIcon } from 'lucide-react';
-import { OfficeShell, PageHeader } from '@/components/shells/office-shell';
+import { OfficeShell } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

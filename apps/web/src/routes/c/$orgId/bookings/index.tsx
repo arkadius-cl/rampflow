@@ -13,7 +13,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';

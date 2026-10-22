@@ -27,7 +27,7 @@ import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-
 import { DataTable, type dataTableFeatures } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { canonicalSearch, useListState } from '@/components/data-table/use-list-state';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';

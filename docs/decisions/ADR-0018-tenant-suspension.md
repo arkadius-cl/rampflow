@@ -6,7 +6,7 @@ audience: [agent, developer]
 tags: [adr, tenancy, security, platform, jobs, auth]
 status: stable
 updated: 2026-10-22
-related: [docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0010-email-outbox-job-runner.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/how-to/onboard-a-tenant.md, openspec/changes/04-platform-tenant-views/design.md]
+related: [docs/decisions/ADR-0002-tenancy-isolation-rls.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0010-email-outbox-job-runner.md, docs/reference/data-model.md, docs/reference/api-routes.md, docs/how-to/onboard-a-tenant.md, openspec/changes/archive/2026-10-22-04-platform-tenant-views/design.md]
 ---
 
 # ADR-0018: Tenant suspension

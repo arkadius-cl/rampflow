@@ -6,7 +6,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ClipboardCheckIcon, DownloadIcon, SearchIcon } from 'lucide-react';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/office-shell';
+import { PageHeader } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Button } from '@/components/ui/button';
 import {
