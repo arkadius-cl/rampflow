@@ -1,11 +1,11 @@
 import type { SiteView } from '@rampflow/shared/modules/core/api.sites';
-import { Permission } from '@rampflow/shared/values';
+import { PageWidth, Permission } from '@rampflow/shared/values';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { PencilIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page, PageTab, PageTabs } from '@/components/shells/page';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -16,7 +16,8 @@ import { SiteFormSheet } from '@/modules/capacity/site-form';
 import { SiteNav } from '@/modules/capacity/site-nav';
 
 // MD-01 to MD-05: one site with its tabs (ADR-0011): halls, docks and pools; hours and closures;
-// load types; settings (TN-02). The left pane lists every site with the usage meters.
+// load types; settings (TN-02). The left pane lists every site with the usage meters (ADR-0022:
+// a sibling switcher, so the title stands in the content column).
 
 export const Route = createFileRoute('/t/$orgId/sites/$siteId')({
   beforeLoad: guard({ permission: Permission.core.manage_sites }),
@@ -30,9 +31,6 @@ export const Route = createFileRoute('/t/$orgId/sites/$siteId')({
   },
   component: SiteLayout,
 });
-
-const tabClass =
-  'inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm';
 
 function SiteLayout() {
   const { t } = useTranslation();
@@ -49,71 +47,57 @@ function SiteLayout() {
   });
   const capacity = can(Permission.booking.manage_resources);
   return (
-    <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className="mx-auto grid w-full max-w-page-wide gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <SiteNav orgId={orgId} sites={list.items} usage={list.usage} currentId={siteId} />
-      <div className="flex min-w-0 flex-col gap-4">
-        <PageHeader
-          title={site.name}
-          description={`${site.addressLine1}, ${site.postalCode} ${site.city} · ${site.timeZone}`}
-          actions={
-            <>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="site-active"
-                  checked={site.active}
-                  disabled={setActive.isPending}
-                  onCheckedChange={(active) => setActive.mutate(active)}
-                />
-                <Label htmlFor="site-active">{t(($) => $.sites.fields.active)}</Label>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                <PencilIcon /> {t(($) => $.sites.edit_site)}
-              </Button>
-            </>
-          }
-        />
-        <nav
-          aria-label={t(($) => $.sites.tabs.label)}
-          className="flex w-fit flex-wrap gap-1 rounded-lg bg-muted p-1"
-        >
-          <Link
-            to="/t/$orgId/sites/$siteId"
-            params={{ orgId, siteId }}
-            activeOptions={{ exact: true }}
-            className={tabClass}
-          >
-            {t(($) => $.sites.tabs.docks)}
-          </Link>
-          {capacity ? (
-            <>
-              <Link
-                to="/t/$orgId/sites/$siteId/hours"
-                params={{ orgId, siteId }}
-                className={tabClass}
-              >
-                {t(($) => $.sites.tabs.hours)}
-              </Link>
-              <Link
-                to="/t/$orgId/sites/$siteId/load-types"
-                params={{ orgId, siteId }}
-                className={tabClass}
-              >
-                {t(($) => $.sites.tabs.load_types)}
-              </Link>
-            </>
-          ) : null}
-          {can(Permission.core.manage_settings) ? (
-            <Link
-              to="/t/$orgId/sites/$siteId/settings"
+      <Page
+        width={PageWidth.full}
+        title={site.name}
+        description={`${site.addressLine1}, ${site.postalCode} ${site.city} · ${site.timeZone}`}
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="site-active"
+                checked={site.active}
+                disabled={setActive.isPending}
+                onCheckedChange={(active) => setActive.mutate(active)}
+              />
+              <Label htmlFor="site-active">{t(($) => $.sites.fields.active)}</Label>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <PencilIcon /> {t(($) => $.sites.edit_site)}
+            </Button>
+          </>
+        }
+        tabs={
+          <PageTabs label={t(($) => $.sites.tabs.label)}>
+            <PageTab
+              to="/t/$orgId/sites/$siteId"
               params={{ orgId, siteId }}
-              className={tabClass}
+              activeOptions={{ exact: true }}
             >
-              {t(($) => $.sites.tabs.settings)}
-            </Link>
-          ) : null}
-        </nav>
+              {t(($) => $.sites.tabs.docks)}
+            </PageTab>
+            {capacity ? (
+              <>
+                <PageTab to="/t/$orgId/sites/$siteId/hours" params={{ orgId, siteId }}>
+                  {t(($) => $.sites.tabs.hours)}
+                </PageTab>
+                <PageTab to="/t/$orgId/sites/$siteId/load-types" params={{ orgId, siteId }}>
+                  {t(($) => $.sites.tabs.load_types)}
+                </PageTab>
+              </>
+            ) : null}
+            {can(Permission.core.manage_settings) ? (
+              <PageTab to="/t/$orgId/sites/$siteId/settings" params={{ orgId, siteId }}>
+                {t(($) => $.sites.tabs.settings)}
+              </PageTab>
+            ) : null}
+          </PageTabs>
+        }
+      >
         <Outlet />
-      </div>
+      </Page>
       <SiteFormSheet orgId={orgId} site={site} open={editing} onOpenChange={setEditing} />
     </div>
   );

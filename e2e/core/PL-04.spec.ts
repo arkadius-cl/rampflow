@@ -105,7 +105,8 @@ test.describe('PL-04 Usage', () => {
     await expect(cells.nth(1)).toHaveText('Active');
     await expect(cells.nth(2)).toHaveText('Pro');
     await expect(cells.nth(5)).toContainText(w.A.users.tenant_admin.email);
-    await expect(cells.nth(7)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
+    // The short date of the list (ADR-0022); the hub shows the full instant with the zone.
+    await expect(cells.nth(7)).toContainText(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
     await expect(cells.nth(8)).toContainText('2 / 5');
     await expect(cells.nth(8)).toContainText('40 %');
     await expect(cells.nth(8)).not.toContainText('exceeded');

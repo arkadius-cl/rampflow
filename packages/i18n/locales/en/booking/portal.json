@@ -153,7 +153,6 @@
     }
   },
   "detail": {
-    "back": "All bookings",
     "where": "Site and load",
     "phone": "Site phone",
     "dock": "Dock",

@@ -1,9 +1,9 @@
-import { Permission, UiPref } from '@rampflow/shared/values';
+import { PageWidth, Permission, UiPref } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CheckIcon, MinusIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TableCell } from '@/components/ui/table';
 import { guard } from '@/lib/access';
@@ -39,54 +39,50 @@ function PackagesPage() {
   const valueIn = (p: (typeof items)[number], key: string) =>
     p.values.find((v) => v.key === key)?.value ?? false;
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.platform.packages.title)}
-        description={t(($) => $.platform.packages.description)}
-      />
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.platform.packages.title)}
+      description={t(($) => $.platform.packages.description)}
+      actions={packages.data ? <ToggleAllGroups state={state} /> : undefined}
+    >
       {packages.data ? (
-        <div className="flex max-w-5xl flex-col gap-2">
-          <div className="flex justify-end">
-            <ToggleAllGroups state={state} />
-          </div>
-          <div className="overflow-auto rounded-lg border bg-background">
-            <ModuleGroupTable
-              groups={groups}
-              state={state}
-              label={{ header: t(($) => $.platform.columns.entitlement) }}
-              columns={items.map((p) => ({
-                id: p.id,
-                header: t(($) => $.platform.packages[p.id]),
-                isOn: (row) => valueIn(p, row.key) === true,
-              }))}
-              renderCells={(row) =>
-                items.map((p) => {
-                  const value = valueIn(p, row.key);
-                  return (
-                    <TableCell key={p.id} className="tabular-nums">
-                      <span className="inline-flex items-center gap-1">
-                        {value === true ? (
-                          <CheckIcon className="size-4 text-tone-success" aria-hidden />
-                        ) : value === false ? (
-                          <MinusIcon className="size-4 text-muted-foreground" aria-hidden />
-                        ) : null}
-                        {valueText(value)}
-                        {row.soft ? (
-                          <span className="text-xs text-muted-foreground">
-                            {t(($) => $.platform.soft)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </TableCell>
-                  );
-                })
-              }
-            />
-          </div>
+        <div className="overflow-auto rounded-lg border bg-background">
+          <ModuleGroupTable
+            groups={groups}
+            state={state}
+            label={{ header: t(($) => $.platform.columns.entitlement) }}
+            columns={items.map((p) => ({
+              id: p.id,
+              header: t(($) => $.platform.packages[p.id]),
+              isOn: (row) => valueIn(p, row.key) === true,
+            }))}
+            renderCells={(row) =>
+              items.map((p) => {
+                const value = valueIn(p, row.key);
+                return (
+                  <TableCell key={p.id} className="tabular-nums">
+                    <span className="inline-flex items-center gap-1">
+                      {value === true ? (
+                        <CheckIcon className="size-4 text-tone-success" aria-hidden />
+                      ) : value === false ? (
+                        <MinusIcon className="size-4 text-muted-foreground" aria-hidden />
+                      ) : null}
+                      {valueText(value)}
+                      {row.soft ? (
+                        <span className="text-xs text-muted-foreground">
+                          {t(($) => $.platform.soft)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </TableCell>
+                );
+              })
+            }
+          />
         </div>
       ) : (
-        <Skeleton className="h-96 max-w-5xl" />
+        <Skeleton className="h-96" />
       )}
-    </div>
+    </Page>
   );
 }

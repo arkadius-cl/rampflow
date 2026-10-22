@@ -14,7 +14,7 @@ The tenant list at `/platform/tenants` SHALL show one row per tenant with these 
 - Country.
 - Tax id: the value with its check status.
 - Admin email.
-- Created: the tenant's creation instant in the viewer's time zone with the zone name.
+- Created: the tenant's creation date in the viewer's time zone, in the short date format (ADR-0022); the hub shows the full instant with the zone name.
 - Last activity.
 - One usage meter per usage key (`core.max_sites`, `core.max_docks`, `core.max_internal_users`, `booking.max_bookings_per_month`).
 - Actions: the row actions menu.
@@ -23,7 +23,7 @@ A click anywhere on the row outside the actions menu SHALL open the tenant hub, 
 
 #### Scenario: A row of the list
 - **WHEN** the platform admin opens `/platform/tenants?view=all&q=<name of Tenant A>`
-- **THEN** Tenant A's row shows its name as a link, its status, "Pro", its country, its tax id with the check status, its admin email, its creation date and time with the zone name, its last activity, and four meters
+- **THEN** Tenant A's row shows its name as a link, its status, "Pro", its country, its tax id with the check status, its admin email, its creation date, its last activity, and four compact meters
 
 #### Scenario: Row click opens the hub
 - **WHEN** the platform admin clicks the Package cell of Tenant A's row

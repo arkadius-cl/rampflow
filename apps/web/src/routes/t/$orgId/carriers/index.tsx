@@ -1,10 +1,10 @@
 import { CarriersTab } from '@rampflow/shared/modules/booking/values';
-import { Feature, Permission } from '@rampflow/shared/values';
+import { Feature, PageWidth, Permission } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { guard, useAccess } from '@/lib/access';
@@ -13,7 +13,8 @@ import { LinkedTab } from '@/modules/carriers/linked-tab';
 import { LinksTab } from '@/modules/carriers/links-tab';
 import { RegistrationsTab } from '@/modules/carriers/registrations-tab';
 
-// TN-03, TN-04: /t/$orgId/carriers?tab=linked|registrations|links (ADR-0011).
+// TN-03, TN-04: /t/$orgId/carriers?tab=linked|registrations|links (ADR-0011). The areas are
+// search params, so they are line tabs of one Tabs root until they become child routes (ADR-0022).
 
 const CarriersSearch = z.object({ tab: z.enum(CarriersTab).optional().catch(undefined) });
 
@@ -42,49 +43,51 @@ function CarriersPage() {
   const requested = Route.useSearch().tab ?? CarriersTab.linked;
   const tab: CarriersTab = publicLinks ? requested : CarriersTab.linked;
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
+    <Tabs
+      value={tab}
+      onValueChange={(value) =>
+        void navigate({ search: { tab: value as CarriersTab }, replace: true })
+      }
+    >
+      <Page
+        width={PageWidth.full}
         title={t(($) => $.carriers.title)}
         description={t(($) => $.carriers.description)}
         actions={has(Feature.booking.carrier_portal) ? <InviteCarrierDialog orgId={orgId} /> : null}
-      />
-      <Tabs
-        value={tab}
-        onValueChange={(value) =>
-          void navigate({ search: { tab: value as CarriersTab }, replace: true })
+        tabs={
+          <TabsList variant="line" className="flex w-full justify-start">
+            <TabsTrigger value="linked">{t(($) => $.carriers.tabs.linked)}</TabsTrigger>
+            {publicLinks ? (
+              <>
+                <TabsTrigger value="registrations">
+                  {t(($) => $.carriers.tabs.registrations)}
+                </TabsTrigger>
+                <TabsTrigger value="links">{t(($) => $.carriers.tabs.links)}</TabsTrigger>
+              </>
+            ) : null}
+          </TabsList>
         }
       >
-        <TabsList>
-          <TabsTrigger value="linked">{t(($) => $.carriers.tabs.linked)}</TabsTrigger>
-          {publicLinks ? (
-            <>
-              <TabsTrigger value="registrations">
-                {t(($) => $.carriers.tabs.registrations)}
-              </TabsTrigger>
-              <TabsTrigger value="links">{t(($) => $.carriers.tabs.links)}</TabsTrigger>
-            </>
-          ) : null}
-        </TabsList>
-        <TabsContent value="linked" className="pt-2">
+        <TabsContent value="linked">
           <Suspense fallback={<TabFallback />}>
             <LinkedTab orgId={orgId} />
           </Suspense>
         </TabsContent>
         {publicLinks ? (
           <>
-            <TabsContent value="registrations" className="pt-2">
+            <TabsContent value="registrations">
               <Suspense fallback={<TabFallback />}>
                 <RegistrationsTab orgId={orgId} />
               </Suspense>
             </TabsContent>
-            <TabsContent value="links" className="pt-2">
+            <TabsContent value="links">
               <Suspense fallback={<TabFallback />}>
                 <LinksTab orgId={orgId} />
               </Suspense>
             </TabsContent>
           </>
         ) : null}
-      </Tabs>
-    </div>
+      </Page>
+    </Tabs>
   );
 }

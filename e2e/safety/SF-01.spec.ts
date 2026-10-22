@@ -93,7 +93,7 @@ test.describe('SF-01 Author a briefing', () => {
     await page.getByRole('dialog').getByRole('button', { name: 'Create and edit' }).click();
     await expect(page.getByRole('heading', { name: 'Only rules' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'All briefings' }).click();
+    await page.goto(`/t/${w.A.tenantId}/safety/briefings`);
     await expect(page.getByText('1 of 1')).toBeVisible();
     await expect(
       page.getByText('Your package allows 1 briefings.', { exact: false }),

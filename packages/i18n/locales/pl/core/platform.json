@@ -18,6 +18,12 @@
     "users": "Użytkownicy wewnętrzni",
     "bookings": "Rezerwacje w tym miesiącu"
   },
+  "usage_short": {
+    "sites": "Lokalizacje",
+    "docks": "Rampy",
+    "users": "Użytkownicy",
+    "bookings": "Rezerwacje"
+  },
   "tenants": {
     "title": "Klienci",
     "description": "Wykorzystanie limitów pakietu w tym miesiącu. Miękkie limity powyżej 100 % są oznaczane i niczego nie blokują.",
@@ -66,7 +72,6 @@
     "enterprise": "Enterprise"
   },
   "tenant": {
-    "back": "Wszyscy klienci",
     "description": "Pakiet, nadpisania i zaproszenie administratora tego klienta.",
     "settings_title": "Dane podstawowe",
     "saved": "Klient zapisany.",

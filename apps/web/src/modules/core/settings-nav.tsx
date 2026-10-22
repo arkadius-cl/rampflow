@@ -20,41 +20,29 @@ import { availableTopics, sectionsOf } from './settings-placement';
 import { settingLabelKey } from './settings-topic-form';
 
 // The topic navigation and the settings search of one level (ADR-0020, design decisions 3, 8).
+// The topics are the vertical list of ADR-0022 (level 4) on platform, tenant and site alike.
 
-const verticalClass =
+const topicClass =
   'flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground';
-const horizontalClass =
-  'inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm';
 
 /** The level's topics as real links; the current one carries `aria-current="page"`. */
 export function SettingsTopicNav({
   level,
   view,
-  tabs = false,
   className,
 }: {
   level: SettingsLevel;
   view: SettingsView;
-  /** A tab row in the site view; otherwise a column beside the form on platform and tenant. */
-  tabs?: boolean;
   className?: string;
 }) {
   const { t } = useTranslation();
-  const vertical = !tabs;
   return (
     <nav
       aria-label={t(($) => $['settings-ui'].topics_label)}
-      className={cn(
-        vertical ? 'flex flex-col gap-0.5' : 'flex w-fit flex-wrap gap-1 rounded-lg bg-muted p-1',
-        className,
-      )}
+      className={cn('flex flex-col gap-0.5', className)}
     >
       {availableTopics(view.items).map((topic) => (
-        <Link
-          key={topic}
-          {...topicLink(level, topic)}
-          className={vertical ? verticalClass : horizontalClass}
-        >
+        <Link key={topic} {...topicLink(level, topic)} className={topicClass}>
           {t(($) => $['settings-ui'].topics[topic])}
         </Link>
       ))}

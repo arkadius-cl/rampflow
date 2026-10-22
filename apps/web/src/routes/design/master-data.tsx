@@ -72,7 +72,11 @@ function MasterDataScreen() {
       org={tenantMembership}
       memberships={memberships}
       nav={tenantNav(PrototypeScreen.master_data)}
-      breadcrumbs={['Administration', 'Sites and docks', site.name]}
+      breadcrumbs={[
+        { label: 'Administration' },
+        { label: 'Sites and docks' },
+        { label: site.name },
+      ]}
       user={dispatcherUser}
     >
       <PageHeader

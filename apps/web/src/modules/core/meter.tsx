@@ -1,12 +1,24 @@
 import type { UsageMeter } from '@rampflow/shared/modules/core/api.platform';
+import { UiSize } from '@rampflow/shared/values';
 import { TriangleAlertIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useFormat } from './format';
 
-/** Usage against a limit (PL-04). Over the limit shows an icon and words, not colour alone. */
-export function Meter({ meter, label }: { meter: UsageMeter; label: string }) {
+/**
+ * Usage against a limit (PL-04). Over the limit shows an icon and words, not colour alone. `sm` is
+ * the table cell: 4rem wide, the percentage only for screen readers, the icon when over.
+ */
+export function Meter({
+  meter,
+  label,
+  size = UiSize.md,
+}: {
+  meter: UsageMeter;
+  label: string;
+  size?: typeof UiSize.sm | typeof UiSize.md;
+}) {
   const { t } = useTranslation();
   const format = useFormat();
   const used = format.number(meter.used);
@@ -20,7 +32,7 @@ export function Meter({ meter, label }: { meter: UsageMeter; label: string }) {
   const percent =
     meter.limit > 0 ? Math.round((meter.used / meter.limit) * 100) : meter.over ? 100 : 0;
   return (
-    <div className="flex min-w-28 flex-col gap-1">
+    <div className={cn('flex flex-col gap-1', size === UiSize.sm ? 'w-fit min-w-14' : 'min-w-28')}>
       <div className="flex items-center justify-between gap-2 text-xs tabular-nums">
         <span>
           {used} <span className="text-muted-foreground">/ {format.number(meter.limit)}</span>
@@ -36,11 +48,13 @@ export function Meter({ meter, label }: { meter: UsageMeter; label: string }) {
           )}
         >
           {meter.over ? <TriangleAlertIcon className="size-3" aria-hidden /> : null}
-          {meter.over
-            ? meter.soft
-              ? t(($) => $.platform.over_soft, { percent })
-              : t(($) => $.platform.over_hard, { percent })
-            : t(($) => $.platform.percent, { percent })}
+          <span className={size === UiSize.sm ? 'sr-only' : undefined}>
+            {meter.over
+              ? meter.soft
+                ? t(($) => $.platform.over_soft, { percent })
+                : t(($) => $.platform.over_hard, { percent })
+              : t(($) => $.platform.percent, { percent })}
+          </span>
         </span>
       </div>
       <Progress

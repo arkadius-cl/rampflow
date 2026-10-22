@@ -101,6 +101,8 @@ export interface SettingFieldProps {
   action?: ReactNode;
   /** The control is a group of checkboxes, named by the title rather than by a label. */
   group?: boolean;
+  /** The control takes the whole row under the title: a long checklist in columns (ADR-0022). */
+  wide?: boolean;
 }
 
 /** One settings row: title and help on the left, control, origin and actions on the right. */
@@ -114,6 +116,7 @@ export function SettingField({
   origin,
   action,
   group = false,
+  wide = false,
 }: SettingFieldProps) {
   const { t } = useTranslation();
   const ids = fieldIds(settingKey);
@@ -143,7 +146,7 @@ export function SettingField({
           {description}
         </p>
       </div>
-      <div className="flex min-w-0 flex-col gap-1.5">
+      <div className={cn('flex min-w-0 flex-col gap-1.5', wide && 'md:col-span-2')}>
         {control}
         {error ? (
           <p id={ids.error} role="alert" className="text-sm text-destructive">

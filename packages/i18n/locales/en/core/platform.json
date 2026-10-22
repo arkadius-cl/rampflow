@@ -18,6 +18,12 @@
     "users": "Internal users",
     "bookings": "Bookings this month"
   },
+  "usage_short": {
+    "sites": "Sites",
+    "docks": "Docks",
+    "users": "Users",
+    "bookings": "Bookings"
+  },
   "tenants": {
     "title": "Tenants",
     "description": "Usage against package limits this month. Soft limits above 100 % are flagged and block nothing.",
@@ -66,7 +72,6 @@
     "enterprise": "Enterprise"
   },
   "tenant": {
-    "back": "All tenants",
     "description": "Package, overrides and the admin invitation of this tenant.",
     "settings_title": "Master data",
     "saved": "Tenant saved.",

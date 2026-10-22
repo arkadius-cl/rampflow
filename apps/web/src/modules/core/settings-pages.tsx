@@ -1,10 +1,10 @@
-import { SettingScope, type SettingsTopic } from '@rampflow/shared/values';
+import { PageWidth, SettingScope, type SettingsTopic } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { type AnyRouteMatch, Link, Outlet, useParams } from '@tanstack/react-router';
 import type { TFunction } from 'i18next';
 import { MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { buttonVariants } from '@/components/ui/button';
 import { useAccess } from '@/lib/access';
 import {
@@ -16,10 +16,11 @@ import {
 import { SettingsSearch, SettingsTopicNav } from './settings-nav';
 import { SettingsTopicForm } from './settings-topic-form';
 
-// The settings pages of the three levels (PL-03, TN-02, MD-01; ADR-0020). `data-settings-page`
+// The settings pages of the three levels (PL-03, TN-02, MD-01; ADR-0020, ADR-0022). On every
+// level the topics are a vertical list in a 14rem column left of the form. `data-settings-page`
 // gives the document the scroll padding of the sticky save bar (index.css, WCAG 2.4.11).
 
-/** Platform and tenant: the topic as title, search, and the topics in a column left of the form. */
+/** Platform and tenant: an Einstellungsseite with the topic as title and the search as action. */
 export function SettingsLayout({
   level,
 }: {
@@ -30,39 +31,42 @@ export function SettingsLayout({
   const topic = useParams({ strict: false, select: (p) => p.topic }) as SettingsTopic | undefined;
   const tenant = level.scope === SettingScope.tenant;
   return (
-    <div data-settings-page className="flex flex-col gap-4">
-      <PageHeader
-        title={topic ? t(($) => $['settings-ui'].topics[topic]) : t(($) => $['settings-ui'].title)}
-        description={
-          tenant
-            ? t(($) => $['settings-ui'].description)
-            : t(($) => $['settings-ui'].platform_description)
-        }
-        actions={
-          <>
-            {tenant ? (
-              <Link
-                to="/t/$orgId/sites"
-                params={{ orgId: level.orgId }}
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              >
-                <MapPinIcon />
-                {t(($) => $['settings-ui'].site_settings)}
-              </Link>
-            ) : null}
-            <SettingsSearch level={level} view={view} />
-          </>
-        }
-      />
-      <div className="grid items-start gap-6 lg:grid-cols-[12rem_minmax(0,48rem)]">
+    <Page
+      width={PageWidth.narrow}
+      title={topic ? t(($) => $['settings-ui'].topics[topic]) : t(($) => $['settings-ui'].title)}
+      description={
+        tenant
+          ? t(($) => $['settings-ui'].description)
+          : t(($) => $['settings-ui'].platform_description)
+      }
+      actions={
+        <>
+          {tenant ? (
+            <Link
+              to="/t/$orgId/sites"
+              params={{ orgId: level.orgId }}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <MapPinIcon />
+              {t(($) => $['settings-ui'].site_settings)}
+            </Link>
+          ) : null}
+          <SettingsSearch level={level} view={view} />
+        </>
+      }
+    >
+      <div
+        data-settings-page
+        className="grid items-start gap-6 lg:grid-cols-[14rem_minmax(0,64rem)]"
+      >
         <SettingsTopicNav level={level} view={view} className="lg:sticky lg:top-4" />
         <Outlet />
       </div>
-    </div>
+    </Page>
   );
 }
 
-/** The site's Settings tab: the topics as a second tab row, so the form keeps its width. */
+/** The site's Settings tab: the same topic list beside the form; the site page owns the h1. */
 export function SiteSettingsLayout({
   level,
 }: {
@@ -72,16 +76,15 @@ export function SiteSettingsLayout({
   const view = useSuspenseQuery(settingsQuery(level)).data;
   const topic = useParams({ strict: false, select: (p) => p.topic }) as SettingsTopic | undefined;
   return (
-    <div data-settings-page className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <SettingsTopicNav level={level} view={view} tabs />
-        <SettingsSearch level={level} view={view} />
-      </div>
-      <div className="flex max-w-3xl flex-col gap-4">
-        {/* The site's name is the page's h1; the topic names this tab's content. */}
-        {topic ? (
-          <h2 className="text-lg font-semibold">{t(($) => $['settings-ui'].topics[topic])}</h2>
-        ) : null}
+    <div data-settings-page className="grid items-start gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+      <SettingsTopicNav level={level} view={view} className="lg:sticky lg:top-4" />
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {topic ? (
+            <h2 className="text-lg font-semibold">{t(($) => $['settings-ui'].topics[topic])}</h2>
+          ) : null}
+          <SettingsSearch level={level} view={view} />
+        </div>
         <Outlet />
       </div>
     </div>

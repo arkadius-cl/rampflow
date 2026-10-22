@@ -14,7 +14,7 @@ import {
   TenantStatus,
   UsageKey,
 } from '@rampflow/shared/modules/core/values';
-import { PackageId, Permission, UiSize, values } from '@rampflow/shared/values';
+import { PackageId, PageWidth, Permission, UiSize, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -27,7 +27,7 @@ import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-
 import { DataTable, type dataTableFeatures } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { canonicalSearch, useListState } from '@/components/data-table/use-list-state';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
@@ -46,7 +46,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { guard } from '@/lib/access';
 import { api, call } from '@/lib/api';
-import { useCountryName } from '@/modules/carriers/format';
+import { useCountryName, useDate } from '@/modules/carriers/format';
 import { useFormat } from '@/modules/core/format';
 import { Meter } from '@/modules/core/meter';
 import { platformKeys, tenantListQuery, tenantQuery } from '@/modules/core/queries';
@@ -55,7 +55,7 @@ import { TenantRowActions } from '@/modules/core/tenant-row-actions';
 import {
   InvitedBadge,
   TaxIdStatusBadge,
-  TenantFlagBadge,
+  TenantFlagIcon,
   TenantStatusBadge,
 } from '@/modules/core/tenant-status';
 import { type SuspensionTarget, TenantSuspensionSheet } from '@/modules/core/tenant-suspension';
@@ -72,13 +72,26 @@ export const Route = createFileRoute('/platform/tenants/')({
   component: TenantsPage,
 });
 
+/** The meter's full label for assistive technology, and the short word for the column header. */
 function useUsageLabel() {
   const { t } = useTranslation();
-  const labels: Record<UsageKey, string> = {
-    'core.max_sites': t(($) => $.platform.usage.sites),
-    'core.max_docks': t(($) => $.platform.usage.docks),
-    'core.max_internal_users': t(($) => $.platform.usage.users),
-    'booking.max_bookings_per_month': t(($) => $.platform.usage.bookings),
+  const labels: Record<UsageKey, { full: string; short: string }> = {
+    'core.max_sites': {
+      full: t(($) => $.platform.usage.sites),
+      short: t(($) => $.platform.usage_short.sites),
+    },
+    'core.max_docks': {
+      full: t(($) => $.platform.usage.docks),
+      short: t(($) => $.platform.usage_short.docks),
+    },
+    'core.max_internal_users': {
+      full: t(($) => $.platform.usage.users),
+      short: t(($) => $.platform.usage_short.users),
+    },
+    'booking.max_bookings_per_month': {
+      full: t(($) => $.platform.usage.bookings),
+      short: t(($) => $.platform.usage_short.bookings),
+    },
   };
   return (key: UsageKey) => labels[key];
 }
@@ -87,7 +100,7 @@ const column = createColumnHelper<typeof dataTableFeatures, TenantSummary>();
 
 function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
   const { t } = useTranslation();
-  const format = useFormat();
+  const date = useDate();
   const countryName = useCountryName();
   const usageLabel = useUsageLabel();
   return useMemo(
@@ -107,7 +120,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
                 {row.original.name}
               </Link>
               {row.original.possibleDuplicate ? (
-                <TenantFlagBadge flag={TenantFlag.possible_duplicate} size={UiSize.sm} />
+                <TenantFlagIcon flag={TenantFlag.possible_duplicate} />
               ) : null}
             </div>
           ),
@@ -132,9 +145,12 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
           ),
           cell: ({ row }) =>
             row.original.country ? (
-              <span>
-                <span className="font-mono">{row.original.country}</span>{' '}
-                <span className="text-muted-foreground">{countryName(row.original.country)}</span>
+              <span className="whitespace-nowrap">
+                <span className="font-mono">{row.original.country}</span>
+                <span className="hidden text-muted-foreground 2xl:inline">
+                  {' '}
+                  {countryName(row.original.country)}
+                </span>
               </span>
             ) : (
               <span className="text-muted-foreground">{t(($) => $.platform.tenants.not_set)}</span>
@@ -153,7 +169,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
               );
             }
             return (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 whitespace-nowrap">
                 <span className="font-mono">{taxId.value}</span>
                 <TaxIdStatusBadge status={taxId.status} size={UiSize.sm} />
               </div>
@@ -168,7 +184,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
             if (!admin) return null;
             return (
               <div className="flex items-center gap-2">
-                <span className="max-w-56 truncate" title={admin.email}>
+                <span className="max-w-36 truncate" title={admin.email}>
                   {admin.email}
                 </span>
                 {admin.invited ? <InvitedBadge size={UiSize.sm} /> : null}
@@ -192,16 +208,20 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
             <DataTableColumnHeader column={c} title={t(($) => $.platform.tenants.created_at)} />
           ),
           cell: ({ row }) => (
-            <span className="whitespace-nowrap tabular-nums">
-              {format.instant(row.original.createdAt)}
-            </span>
+            <span className="whitespace-nowrap tabular-nums">{date(row.original.createdAt)}</span>
           ),
         }),
         ...values(UsageKey).map((key) =>
           column.display({
             id: key,
-            header: () => usageLabel(key),
-            cell: ({ row }) => <Meter meter={row.original.usage[key]} label={usageLabel(key)} />,
+            header: () => <span title={usageLabel(key).full}>{usageLabel(key).short}</span>,
+            cell: ({ row }) => (
+              <Meter
+                meter={row.original.usage[key]}
+                label={usageLabel(key).full}
+                size={UiSize.sm}
+              />
+            ),
           }),
         ),
         column.display({
@@ -210,7 +230,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
           cell: ({ row }) => <TenantRowActions tenant={row.original} onSuspension={onSuspension} />,
         }),
       ]),
-    [t, format, countryName, usageLabel, onSuspension],
+    [t, date, countryName, usageLabel, onSuspension],
   );
 }
 
@@ -234,28 +254,32 @@ function TenantsPage() {
   const views = tenants.data?.views;
   const count = (view: TenantListView) =>
     views ? <ViewCount active={state.view === view} count={views[view]} /> : null;
+  // The views are segmented tabs (ADR-0022 level 3): they change a search param, not the route.
+  const viewTabs = (
+    <Tabs
+      value={state.view}
+      onValueChange={(view) => controls.setParam(TenantListParam.view, view as TenantListView)}
+    >
+      <TabsList aria-label={t(($) => $.platform.tenants.title)}>
+        <TabsTrigger value={TenantListView.attention}>
+          {t(($) => $.platform.views.attention)}
+          {count(TenantListView.attention)}
+        </TabsTrigger>
+        <TabsTrigger value={TenantListView.all}>
+          {t(($) => $.platform.views.all)}
+          {count(TenantListView.all)}
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.platform.tenants.title)}
-        description={t(($) => $.platform.tenants.description)}
-        actions={create}
-      />
-      <Tabs
-        value={state.view}
-        onValueChange={(view) => controls.setParam(TenantListParam.view, view as TenantListView)}
-      >
-        <TabsList variant="line" aria-label={t(($) => $.platform.tenants.title)}>
-          <TabsTrigger value={TenantListView.attention}>
-            {t(($) => $.platform.views.attention)}
-            {count(TenantListView.attention)}
-          </TabsTrigger>
-          <TabsTrigger value={TenantListView.all}>
-            {t(($) => $.platform.views.all)}
-            {count(TenantListView.all)}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.platform.tenants.title)}
+      description={t(($) => $.platform.tenants.description)}
+      actions={create}
+      tabs={viewTabs}
+    >
       <DataTable
         controls={controls}
         query={tenants}
@@ -338,7 +362,7 @@ function TenantsPage() {
           onOpenChange={(open) => (open ? null : setSuspension(null))}
         />
       ) : null}
-    </div>
+    </Page>
   );
 }
 

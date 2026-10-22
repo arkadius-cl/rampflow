@@ -56,9 +56,9 @@ function TabsList({
 
 // Exported so routed page tabs (shells/page.tsx) draw exactly like a line tab.
 const tabTriggerClass = {
-  base: "relative inline-flex flex-1 items-center justify-center gap-2 px-3 text-base font-medium whitespace-nowrap text-muted-foreground transition-colors duration-150 ease-yrd outline-none group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:text-foreground aria-[current=page]:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-icon",
+  base: "relative inline-flex items-center justify-center gap-2 px-3 text-base font-medium whitespace-nowrap text-muted-foreground transition-colors duration-150 ease-yrd outline-none group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:text-foreground aria-[current=page]:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-icon",
   segmented:
-    "group-data-[variant=default]/tabs-list:h-[calc(var(--control-h)-4px)] group-data-[variant=default]/tabs-list:rounded-[calc(var(--radius)-2px)] group-data-[variant=default]/tabs-list:data-active:bg-background group-data-[variant=default]/tabs-list:data-active:shadow-sm",
+    "group-data-[variant=default]/tabs-list:flex-1 group-data-[variant=default]/tabs-list:h-[calc(var(--control-h)-4px)] group-data-[variant=default]/tabs-list:rounded-[calc(var(--radius)-2px)] group-data-[variant=default]/tabs-list:data-active:bg-background group-data-[variant=default]/tabs-list:data-active:shadow-sm",
   line: "-mb-px h-control rounded-t-sm border-b-2 border-transparent data-active:border-primary aria-[current=page]:border-primary",
 }
 

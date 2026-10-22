@@ -1,11 +1,13 @@
 import type { PortalAddress, PortalBookingView } from '@rampflow/shared/modules/booking/api.portal';
 import { BookingStatus } from '@rampflow/shared/modules/booking/values';
-import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { useMemo } from 'react';
+import { type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
+import { StaffLocale } from '@rampflow/shared/values';
+import { type ReactNode, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { encode } from 'uqr';
 import { SiteTime } from '@/components/site-time';
-import { useSiteTime } from '@/lib/time';
+import { useLocale } from '@/lib/i18n';
+import { type SiteTimeParts, useSiteTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { useDayLabel } from '@/modules/booking/display';
 
@@ -50,23 +52,96 @@ export function CodeQr({
   );
 }
 
-/** "Mon 2 Nov 2026, 09:00 CET – 10:00 CET" in the site's zone. */
+/** The short day of the design system ("Do 15.10."), for one-line table cells. */
+function useShortDayLabel() {
+  const locale = useLocale();
+  const format = new Intl.DateTimeFormat(locale === StaffLocale.en ? 'en-GB' : locale, {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'UTC',
+  });
+  return (day: LocalDate) => format.format(new Date(`${day}T00:00:00Z`));
+}
+
+/**
+ * Several times of one zone on one line, the zone and the viewer's time once:
+ * "09:30 – 10:30 CEST (07:30 – 08:30 your time)". A missing time reads "–".
+ */
+export function SiteTimes({
+  parts,
+  separator,
+  separatorLabel,
+  className,
+}: {
+  parts: (SiteTimeParts | null)[];
+  separator: string;
+  /** What a screen reader hears instead of the separator. */
+  separatorLabel: ReactNode;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  const zone = parts.find((p) => p !== null)?.zone;
+  const viewerTimes = parts.flatMap((p) => (p?.viewerTime ? [p.viewerTime] : []));
+  const viewer = viewerTimes.length > 0 ? viewerTimes.join(` ${separator} `) : null;
+  return (
+    <span className={cn('tabular-nums', className)}>
+      {parts.map((p, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: positions are the identity of a slot's ends
+        <span key={i}>
+          {i > 0 ? (
+            <>
+              <span aria-hidden> {separator} </span>
+              <span className="sr-only"> {separatorLabel} </span>
+            </>
+          ) : null}
+          {p ? <time>{p.time}</time> : <span className="text-muted-foreground">–</span>}
+        </span>
+      ))}
+      {zone ? (
+        <span className="ml-1 text-[0.8em] font-medium text-muted-foreground">{zone}</span>
+      ) : null}
+      {viewer ? (
+        <span className="ml-1 text-[0.8em] text-muted-foreground">
+          {t(($) => $.shell.viewer_time, { time: viewer })}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/** "Mon 2 Nov 2026, 09:00 CET – 10:00 CET" in the site's zone; `short` is the one-line table form. */
 export function SlotText({
   startsAt,
   endsAt,
   timeZone,
+  short = false,
 }: {
   startsAt: string;
   endsAt: string;
   timeZone: string;
+  short?: boolean;
 }) {
   const { t } = useTranslation('booking');
   const dayLabel = useDayLabel();
+  const shortDayLabel = useShortDayLabel();
   const siteTime = useSiteTime();
+  const day = siteDay(new Date(startsAt), timeZone as TimeZone);
+  if (short) {
+    return (
+      <span>
+        {shortDayLabel(day)},{' '}
+        <SiteTimes
+          parts={[siteTime(startsAt, timeZone), siteTime(endsAt, timeZone)]}
+          separator="–"
+          separatorLabel={t(($) => $.portal.slot.to)}
+        />
+      </span>
+    );
+  }
   return (
     <span>
-      {dayLabel(siteDay(new Date(startsAt), timeZone as TimeZone))},{' '}
-      <SiteTime {...siteTime(startsAt, timeZone)} />
+      {dayLabel(day)}, <SiteTime {...siteTime(startsAt, timeZone)} />
       <span aria-hidden> – </span>
       <span className="sr-only"> {t(($) => $.portal.slot.to)} </span>
       <SiteTime {...siteTime(endsAt, timeZone)} />

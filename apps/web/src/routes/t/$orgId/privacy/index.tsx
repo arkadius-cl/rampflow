@@ -8,6 +8,7 @@ import {
 import {
   EmailCategory,
   HtmlInputType,
+  PageWidth,
   Permission,
   UiSize,
   ZodIssueCode,
@@ -19,7 +20,7 @@ import { useState } from 'react';
 import { Controller, type FieldError as FormFieldError, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { BookingStatusBadge } from '@/components/status-badge';
 import {
@@ -111,30 +112,30 @@ function PrivacyPage() {
   const found = matches && (matches.bookings.length > 0 || matches.acknowledgements.length > 0);
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.requests.title)}
-        description={t(($) => $.requests.description)}
-        actions={
-          found && query ? (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={exported.isPending}
-                onClick={() => exported.mutate(query)}
-              >
-                {exported.isPending ? <Spinner /> : <DownloadIcon />}
-                {t(($) => $.requests.export)}
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setEraseOpen(true)}>
-                <EraserIcon />
-                {t(($) => $.requests.erase)}
-              </Button>
-            </>
-          ) : null
-        }
-      />
+    <Page
+      width={PageWidth.narrow}
+      title={t(($) => $.requests.title)}
+      description={t(($) => $.requests.description)}
+      actions={
+        found && query ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={exported.isPending}
+              onClick={() => exported.mutate(query)}
+            >
+              {exported.isPending ? <Spinner /> : <DownloadIcon />}
+              {t(($) => $.requests.export)}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEraseOpen(true)}>
+              <EraserIcon />
+              {t(($) => $.requests.erase)}
+            </Button>
+          </>
+        ) : null
+      }
+    >
       <form onSubmit={submit} noValidate className="rounded-xl border bg-card p-3">
         <FieldGroup className="grid gap-3 sm:grid-cols-3">
           {FIELDS.map((field) => (
@@ -201,7 +202,7 @@ function PrivacyPage() {
           onErased={() => search.mutate(query)}
         />
       ) : null}
-    </div>
+    </Page>
   );
 }
 

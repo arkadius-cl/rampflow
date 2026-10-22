@@ -44,7 +44,11 @@ function SettingsScreen() {
       org={startTenantMembership}
       memberships={memberships}
       nav={tenantNav(PrototypeScreen.settings)}
-      breadcrumbs={['Administration', 'Settings', 'Bremen Kühlhaus']}
+      breadcrumbs={[
+        { label: 'Administration' },
+        { label: 'Settings' },
+        { label: 'Bremen Kühlhaus' },
+      ]}
       user={dispatcherUser}
     >
       <PageHeader

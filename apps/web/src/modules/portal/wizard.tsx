@@ -234,7 +234,7 @@ export function BookingWizard({
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_17rem]">
+    <div className="grid w-full gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_17rem]">
       <Stepper current={step} />
       <div className="min-w-0">
         {step === BookingWizardStep.where ? (

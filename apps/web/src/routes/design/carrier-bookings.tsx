@@ -41,7 +41,7 @@ function CarrierBookingsScreen() {
       org={carrierMembership}
       memberships={memberships}
       nav={carrierNav(PrototypeScreen.bookings)}
-      breadcrumbs={['Bookings']}
+      breadcrumbs={[{ label: 'Bookings' }]}
       user={carrierUser}
     >
       <PageHeader

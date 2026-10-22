@@ -1,9 +1,9 @@
 import { BookingWizardStep } from '@rampflow/shared/modules/booking/values';
-import { isValueOf, Permission } from '@rampflow/shared/values';
+import { isValueOf, PageWidth, Permission } from '@rampflow/shared/values';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { guard } from '@/lib/access';
 import { BookingWizard, type WizardSearch } from '@/modules/portal/wizard';
 
@@ -31,9 +31,8 @@ function BookPage() {
   const navigate = Route.useNavigate();
   const go = useCallback((next: WizardSearch) => void navigate({ search: next }), [navigate]);
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title={t(($) => $.portal.wizard.title)} className="mx-auto w-full max-w-6xl" />
+    <Page width={PageWidth.narrow} title={t(($) => $.portal.wizard.title)} className="gap-6">
       <BookingWizard orgId={orgId} search={search} go={go} />
-    </div>
+    </Page>
   );
 }

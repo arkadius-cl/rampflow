@@ -73,8 +73,7 @@
     "locked_closed": "This booking is {{status}} and cannot change any more.",
     "timeline": "Timeline",
     "reason": "Reason: {{reason}}",
-    "moved_from": "Moved from",
-    "back": "Plan board"
+    "moved_from": "Moved from"
   },
   "sheet": {
     "title": "New booking",

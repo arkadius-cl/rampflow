@@ -7,25 +7,19 @@ import type {
 import { BookingDialog, ChangeLock } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { ConflictReason, ErrorCode, Permission, UiSize } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  ArrowLeftIcon,
-  BanIcon,
-  CalendarClockIcon,
-  CopyIcon,
-  PencilIcon,
-  RefreshCwIcon,
-} from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
+import { BanIcon, CalendarClockIcon, CopyIcon, PencilIcon, RefreshCwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { errorText } from '@/components/app-shell/form-errors';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { guard, useAccess } from '@/lib/access';
@@ -70,6 +64,8 @@ export const Route = createFileRoute('/t/$orgId/bookings/$bookingId')({
   beforeLoad: guard({ permission: Permission.booking.view }),
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(bookingQuery(params.orgId, params.bookingId)),
+  // The breadcrumb names the booking by its code and carries the way back (ADR-0022).
+  staticData: { crumb: (match) => (match.loaderData as BookingView | undefined)?.code },
   component: BookingPage,
 });
 
@@ -84,43 +80,15 @@ function BookingPage() {
   const siteTime = useSiteTime();
   const [dialog, setDialog] = useState<BookingDialog | null>(null);
   const day = siteDay(new Date(booking.startsAt), booking.timeZone as TimeZone);
+  const start = siteTime(booking.startsAt, booking.timeZone);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        to="/t/$orgId/plan"
-        params={{ orgId }}
-        search={{ site: booking.siteId, date: day, booking: booking.id }}
-        className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'w-fit' })}
-      >
-        <ArrowLeftIcon />
-        {t(($) => $.plan.detail.back)}
-      </Link>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-mono text-sm text-muted-foreground">{booking.code}</div>
-          <h1 className="text-xl font-semibold tracking-tight">{booking.carrierName}</h1>
-          <p className="text-sm text-muted-foreground">
-            {booking.site.name} · {dayLabel(day)}{' '}
-            <SiteTime {...siteTime(booking.startsAt, booking.timeZone)} />
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1">
-            <BookingStatusBadge status={booking.status} />
-            {booking.safety.status === SafetyStatus.not_required ? null : (
-              <BookingSafetyBadge status={booking.safety.status} />
-            )}
-            {booking.punctuality ? (
-              <PunctualityBadge
-                punctuality={booking.punctuality}
-                minutes={booking.punctualityMinutes}
-              />
-            ) : null}
-            {flagsOf(booking).map((f) => (
-              <BookingFlagBadge key={f} flag={f} />
-            ))}
-          </div>
-        </div>
-        {change.lock === ChangeLock.no_permission ? null : (
+    <Page
+      width={PageWidth.wide}
+      title={booking.carrierName}
+      description={`${booking.site.name} · ${dayLabel(day)} ${start.time} ${start.zone}`}
+      actions={
+        change.lock === ChangeLock.no_permission ? null : (
           <div className="flex max-w-sm flex-col items-end gap-1">
             <div className="flex gap-2">
               <Button
@@ -145,7 +113,26 @@ function BookingPage() {
             </div>
             {change.lock ? <LockReason lock={change.lock} status={booking.status} /> : null}
           </div>
-        )}
+        )
+      }
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-mono text-sm text-muted-foreground">{booking.code}</span>
+        <div className="flex flex-wrap gap-1">
+          <BookingStatusBadge status={booking.status} />
+          {booking.safety.status === SafetyStatus.not_required ? null : (
+            <BookingSafetyBadge status={booking.safety.status} />
+          )}
+          {booking.punctuality ? (
+            <PunctualityBadge
+              punctuality={booking.punctuality}
+              minutes={booking.punctualityMinutes}
+            />
+          ) : null}
+          {flagsOf(booking).map((f) => (
+            <BookingFlagBadge key={f} flag={f} />
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -183,7 +170,7 @@ function BookingPage() {
         open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
-    </div>
+    </Page>
   );
 }
 

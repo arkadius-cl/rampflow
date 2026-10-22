@@ -26,8 +26,13 @@ export function AppShell({
   const nav = useShellNav(access);
   const memberships = useMemberships(me);
   const theme = useAccountTheme();
+  // Every match with a crumb links to its own path, so the bar carries the way back (ADR-0022).
   const crumbs = useMatches({
-    select: (ms) => ms.flatMap((m) => m.staticData.crumb?.(m, t) ?? []),
+    select: (ms) =>
+      ms.flatMap((m) => {
+        const label = m.staticData.crumb?.(m, t);
+        return label ? [{ label, href: m.pathname }] : [];
+      }),
   });
   const orgId = access.area === OrgKind.platform ? 'platform' : access.orgId;
   const org = memberships.find((m) => m.id === orgId) ?? {
@@ -41,7 +46,11 @@ export function AppShell({
       org={org}
       memberships={memberships}
       nav={nav.groups}
-      breadcrumbs={[org.name, ...(nav.current ? [nav.current.label] : []), ...crumbs]}
+      breadcrumbs={[
+        { label: org.name },
+        ...(nav.current ? [{ label: nav.current.label, href: nav.current.href }] : []),
+        ...crumbs,
+      ]}
       user={{ name: me.user.name, initials: initialsOf(me.user.name) }}
       userMenu={<UserMenuItems me={me} theme={theme} />}
       search={false}

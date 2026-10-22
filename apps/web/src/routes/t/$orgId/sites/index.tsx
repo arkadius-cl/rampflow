@@ -1,10 +1,10 @@
-import { Permission } from '@rampflow/shared/values';
+import { PageWidth, Permission } from '@rampflow/shared/values';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { MapPinIcon, PlusIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,12 +55,12 @@ function SitesPage() {
     </Button>
   );
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.sites.title)}
-        description={t(($) => $.sites.description)}
-        actions={newSite}
-      />
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.sites.title)}
+      description={t(($) => $.sites.description)}
+      actions={newSite}
+    >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
         {items.length === 0 ? (
           <Empty className="border">
@@ -116,6 +116,6 @@ function SitesPage() {
         <UsageMeters orgId={orgId} usage={usage} className="self-start" />
       </div>
       <SiteFormSheet orgId={orgId} open={creating} onOpenChange={setCreating} />
-    </div>
+    </Page>
   );
 }

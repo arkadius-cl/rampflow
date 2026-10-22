@@ -1,12 +1,12 @@
 import type { RegisterFilter, RegisterItem } from '@rampflow/shared/modules/safety/api.register';
 import { AckStatus } from '@rampflow/shared/modules/safety/values';
-import { Permission, UiSize, values } from '@rampflow/shared/values';
+import { PageWidth, Permission, UiSize, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ClipboardCheckIcon, DownloadIcon, SearchIcon } from 'lucide-react';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Button } from '@/components/ui/button';
 import {
@@ -92,27 +92,27 @@ function RegisterPage() {
   const items = register.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.register.screen.title)}
-        description={t(($) => $.register.screen.description)}
-        actions={
-          <>
-            <Button variant="ghost" size="sm" onClick={() => setFilters(NO_FILTERS)}>
-              {t(($) => $.register.screen.filters.reset)}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={exportCsv.isPending}
-              onClick={() => exportCsv.mutate()}
-            >
-              {exportCsv.isPending ? <Spinner /> : <DownloadIcon />}
-              {t(($) => $.register.screen.export)}
-            </Button>
-          </>
-        }
-      />
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.register.screen.title)}
+      description={t(($) => $.register.screen.description)}
+      actions={
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setFilters(NO_FILTERS)}>
+            {t(($) => $.register.screen.filters.reset)}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={exportCsv.isPending}
+            onClick={() => exportCsv.mutate()}
+          >
+            {exportCsv.isPending ? <Spinner /> : <DownloadIcon />}
+            {t(($) => $.register.screen.export)}
+          </Button>
+        </>
+      }
+    >
       <div className="grid gap-3 rounded-xl border bg-card p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))]">
         <Field>
           <FieldLabel htmlFor="register-driver">
@@ -233,7 +233,7 @@ function RegisterPage() {
           {t(($) => $.register.screen.more)}
         </Button>
       ) : null}
-    </div>
+    </Page>
   );
 }
 

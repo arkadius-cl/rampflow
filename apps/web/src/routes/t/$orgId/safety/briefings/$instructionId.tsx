@@ -1,20 +1,21 @@
 import {
+  type Instruction,
   SafetyLocale,
   type VersionDetail,
   type VersionSummary,
 } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { Feature, Permission, UiSize } from '@rampflow/shared/values';
+import { Feature, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { ArrowLeftIcon, FilePlusIcon, LockIcon, SendIcon, TriangleAlertIcon } from 'lucide-react';
+import { FilePlusIcon, LockIcon, SendIcon, TriangleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
 import { RouteNotFound } from '@/components/app-shell/route-states';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { guard, tenantContextQuery, useAccess } from '@/lib/access';
@@ -47,6 +48,12 @@ const EditorSearch = z.object({
 export const Route = createFileRoute('/t/$orgId/safety/briefings/$instructionId')({
   validateSearch: EditorSearch,
   beforeLoad: guard({ permission: Permission.safety.manage_briefings }),
+  loader: async ({ context, params }) =>
+    (await context.queryClient.ensureQueryData(instructionsQuery(params.orgId))).items.find(
+      (i) => i.id === params.instructionId,
+    ),
+  // The breadcrumb names the briefing and carries the way back (ADR-0022).
+  staticData: { crumb: (match) => (match.loaderData as Instruction | undefined)?.name },
   component: EditorPage,
 });
 
@@ -84,23 +91,16 @@ function EditorPage() {
         .join(', ');
 
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        to="/t/$orgId/safety/briefings"
-        params={{ orgId }}
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit')}
-      >
-        <ArrowLeftIcon /> {t(($) => $.editor.back)}
-      </Link>
-      <PageHeader
-        title={instruction.name}
-        description={appliesTo}
-        actions={
-          version.data ? (
-            <VersionActions orgId={orgId} instructionId={instructionId} version={version.data} />
-          ) : null
-        }
-      />
+    <Page
+      width={PageWidth.wide}
+      title={instruction.name}
+      description={appliesTo}
+      actions={
+        version.data ? (
+          <VersionActions orgId={orgId} instructionId={instructionId} version={version.data} />
+        ) : null
+      }
+    >
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <div className="flex flex-col gap-4">
           <VersionNav
@@ -125,7 +125,7 @@ function EditorPage() {
           <Skeleton className="h-96 w-full" />
         )}
       </div>
-    </div>
+    </Page>
   );
 }
 

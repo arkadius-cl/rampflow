@@ -9,7 +9,8 @@ import { searchable } from '@/lib/search';
 
 // The admitted-countries editor (PL-03): every option as a checkbox in named groups, each group
 // with a select-all checkbox, and a filter. While filtering the group checkboxes are hidden, so no
-// click changes an option the admin cannot see.
+// click changes an option the admin cannot see. The options fill columns under their group's
+// legend (ADR-0022: never one column of 30 rows); the DOM order stays the reading order.
 
 export interface ChecklistGroup {
   id: string;
@@ -110,7 +111,7 @@ export function GroupedChecklist({
                 </span>
               )}
             </FieldLegend>
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-x-4 gap-y-1.5">
+            <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 xl:grid-cols-3">
               {group.shown.map((o) => (
                 <li key={o} className="flex min-h-6 items-center gap-2 text-sm">
                   <Checkbox

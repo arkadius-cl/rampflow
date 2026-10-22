@@ -99,7 +99,7 @@ function BookingWizardScreen() {
       org={carrierMembership}
       memberships={memberships}
       nav={carrierNav(PrototypeScreen.wizard)}
-      breadcrumbs={['New booking', STEPS[index]?.title ?? '']}
+      breadcrumbs={[{ label: 'New booking' }, { label: STEPS[index]?.title ?? '' }]}
       user={carrierUser}
     >
       <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_17rem]">

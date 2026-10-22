@@ -73,8 +73,7 @@
     "locked_closed": "Ta rezerwacja ma status {{status}} i nie można jej już zmienić.",
     "timeline": "Historia",
     "reason": "Powód: {{reason}}",
-    "moved_from": "Przeniesiono z",
-    "back": "Tablica planu"
+    "moved_from": "Przeniesiono z"
   },
   "sheet": {
     "title": "Nowa rezerwacja",

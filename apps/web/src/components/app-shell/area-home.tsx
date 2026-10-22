@@ -1,9 +1,10 @@
+import { PageWidth } from '@rampflow/shared/values';
 import { useNavigate, useRouteContext, useRouter } from '@tanstack/react-router';
 import { ChevronRightIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from '@/components/shells/office-shell';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from '@/components/ui/item';
 import type { AreaRouteContext } from '@/lib/access';
 import { NavIcon, useShellNav } from './nav';
@@ -25,12 +26,12 @@ export function AreaHome() {
   }, [first, navigate]);
   if (first) return null;
   return (
-    <div className="flex max-w-2xl flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.shell.home.title, { name: me.user.name })}
-        description={t(($) => $.shell.home.description)}
-      />
-      <div className="flex flex-col gap-2">
+    <Page
+      width={PageWidth.wide}
+      title={t(($) => $.shell.home.title, { name: me.user.name })}
+      description={t(($) => $.shell.home.description)}
+    >
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         {nav.items.map((item) => (
           <Item key={item.href} variant="outline" render={<NavLink href={item.href} />}>
             <ItemMedia variant="icon">
@@ -45,6 +46,6 @@ export function AreaHome() {
           </Item>
         ))}
       </div>
-    </div>
+    </Page>
   );
 }

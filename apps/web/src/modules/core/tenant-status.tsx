@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // The platform's status badge registries (PL-04, PL-06, PL-08): icon and tone per value set, the
 // label from the catalog, so no status relies on colour. Icons and tones follow the design of
@@ -83,6 +84,26 @@ export function TenantFlagBadge({ flag, ...props }: { flag: TenantFlag } & Badge
   const { t } = useTranslation();
   const label = t(($) => $.platform.tenant_flag[flag]);
   return <StatusBadge meta={{ ...TENANT_FLAG[flag], label }} {...props} />;
+}
+
+/** The flag as its icon alone, for a dense list cell. The word stays in the tooltip and for screen readers. */
+export function TenantFlagIcon({ flag }: { flag: TenantFlag }) {
+  const { t } = useTranslation();
+  const label = t(($) => $.platform.tenant_flag[flag]);
+  const Icon = TENANT_FLAG[flag].icon;
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span className="inline-flex size-5 items-center justify-center text-muted-foreground" />
+        }
+      >
+        <Icon className="size-3.5" aria-hidden />
+        <span className="sr-only">{label}</span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function TenantNoteKindBadge({ kind, ...props }: { kind: TenantNoteKind } & BadgeRest) {

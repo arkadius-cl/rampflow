@@ -1,13 +1,13 @@
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { EditMode, Permission, UiSize } from '@rampflow/shared/values';
+import { EditMode, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { EllipsisIcon, PlusIcon, ShieldCheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,42 +71,42 @@ function BriefingsPage() {
   const full = limit !== null && active.length >= limit;
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.briefings.title)}
-        description={t(($) => $.briefings.description)}
-        actions={
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.briefings.title)}
+      description={t(($) => $.briefings.description)}
+      actions={
+        <>
+          <div className="flex items-center gap-2">
+            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+            <Label htmlFor="show-archived">{t(($) => $.briefings.show_archived)}</Label>
+          </div>
           <Button size="sm" disabled={full} onClick={() => setDialog({ kind: EditMode.create })}>
             <PlusIcon /> {t(($) => $.briefings.new)}
           </Button>
-        }
-      />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
-          <Label htmlFor="show-archived">{t(($) => $.briefings.show_archived)}</Label>
-        </div>
-        {limit !== null ? (
-          <div className="w-64 rounded-lg border bg-background p-3 text-xs">
-            <div className="flex justify-between">
-              <span className="font-medium">{t(($) => $.briefings.usage)}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {t(($) => $.briefings.usage_value, { used: active.length, limit })}
-              </span>
-            </div>
-            <Progress
-              value={Math.min(100, (active.length / Math.max(limit, 1)) * 100)}
-              className="mt-1.5"
-              aria-label={t(($) => $.briefings.usage)}
-            />
-            <p className="mt-2 text-muted-foreground">
-              {full
-                ? t(($) => $.briefings.limit_reached, { limit })
-                : t(($) => $.briefings.usage_hint)}
-            </p>
+        </>
+      }
+    >
+      {limit !== null ? (
+        <div className="w-64 rounded-lg border bg-background p-3 text-xs">
+          <div className="flex justify-between">
+            <span className="font-medium">{t(($) => $.briefings.usage)}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {t(($) => $.briefings.usage_value, { used: active.length, limit })}
+            </span>
           </div>
-        ) : null}
-      </div>
+          <Progress
+            value={Math.min(100, (active.length / Math.max(limit, 1)) * 100)}
+            className="mt-1.5"
+            aria-label={t(($) => $.briefings.usage)}
+          />
+          <p className="mt-2 text-muted-foreground">
+            {full
+              ? t(($) => $.briefings.limit_reached, { limit })
+              : t(($) => $.briefings.usage_hint)}
+          </p>
+        </div>
+      ) : null}
 
       {instructions.isPending ? (
         <Skeleton className="h-40 w-full" />
@@ -173,7 +173,7 @@ function BriefingsPage() {
           }}
         />
       ) : null}
-    </div>
+    </Page>
   );
 }
 

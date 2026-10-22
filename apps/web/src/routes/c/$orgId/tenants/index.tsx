@@ -1,6 +1,6 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { BadgeTone, Permission, UiSize } from '@rampflow/shared/values';
+import { BadgeTone, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
@@ -11,7 +11,7 @@ import {
   WarehouseIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { buttonVariants } from '@/components/ui/button';
@@ -57,11 +57,11 @@ function WarehousesPage() {
     (tenant) => !tenant.link && tenant.registration?.status === RegistrationStatus.pending_approval,
   );
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.carriers.tenants.title)}
-        description={`${t(($) => $.carriers.tenants.description)} ${t(($) => $.carriers.tenants.free)}`}
-      />
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.carriers.tenants.title)}
+      description={`${t(($) => $.carriers.tenants.description)} ${t(($) => $.carriers.tenants.free)}`}
+    >
       {pending.map((tenant) => (
         <Alert key={tenant.tenantId}>
           <HourglassIcon />
@@ -109,7 +109,7 @@ function WarehousesPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </Page>
   );
 }
 

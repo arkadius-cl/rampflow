@@ -2,13 +2,13 @@ import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/val
 import { MAX_PERIOD_DAYS, ReportFilter, type VisitItem } from '@rampflow/shared/modules/report/api';
 import { KpiUnit, ReportExport } from '@rampflow/shared/modules/report/values';
 import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
-import { EmailCategory, Feature, Permission, UiSize } from '@rampflow/shared/values';
+import { EmailCategory, Feature, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { BookingStatusBadge, PUNCTUALITY, StatusBadge } from '@/components/status-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -72,19 +72,29 @@ function ReportsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const sites = useQuery(tenantContextQuery(orgId)).data?.sites;
   const site = sites?.find((s) => s.id === search.site) ?? sites?.[0];
+  const title = t(($) => $.screen.title);
+  const description = t(($) => $.screen.description);
 
-  if (!sites) return <Skeleton className="h-96 w-full" />;
+  if (!sites) {
+    return (
+      <Page width={PageWidth.wide} title={title} description={description}>
+        <Skeleton className="h-96 w-full" />
+      </Page>
+    );
+  }
   if (!site) {
     return (
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <MapPinIcon />
-          </EmptyMedia>
-          <EmptyTitle>{t(($) => $.screen.no_sites.title)}</EmptyTitle>
-          <EmptyDescription>{t(($) => $.screen.no_sites.description)}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <Page width={PageWidth.wide} title={title} description={description}>
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <MapPinIcon />
+            </EmptyMedia>
+            <EmptyTitle>{t(($) => $.screen.no_sites.title)}</EmptyTitle>
+            <EmptyDescription>{t(($) => $.screen.no_sites.description)}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </Page>
     );
   }
 
@@ -100,12 +110,12 @@ function ReportsPage() {
     void navigate({ search: (s: Search) => ({ ...s, ...patch }), replace: true });
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.screen.title)}
-        description={t(($) => $.screen.description)}
-        actions={<ExportButtons orgId={orgId} filter={filter} />}
-      />
+    <Page
+      width={PageWidth.wide}
+      title={title}
+      description={description}
+      actions={<ExportButtons orgId={orgId} filter={filter} />}
+    >
       <div className="grid gap-3 rounded-xl border bg-card p-3 sm:grid-cols-2 lg:grid-cols-5">
         <FilterSelect
           id="report-site"
@@ -171,7 +181,7 @@ function ReportsPage() {
           </AlertDescription>
         </Alert>
       )}
-    </div>
+    </Page>
   );
 }
 

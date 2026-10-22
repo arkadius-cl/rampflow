@@ -1,7 +1,7 @@
 import { CarriersTab } from '@rampflow/shared/modules/booking/values';
 import type { OnboardingStepState } from '@rampflow/shared/modules/core/api.onboarding';
 import { OnboardingStep, TenantStatus } from '@rampflow/shared/modules/core/values';
-import { Permission } from '@rampflow/shared/values';
+import { PageWidth, Permission } from '@rampflow/shared/values';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -45,13 +45,13 @@ export function OnboardingChecklist({ orgId }: { orgId: string }) {
   const active = view.status === TenantStatus.active;
   const done = view.steps.filter((s) => s.done).length;
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <PageHeader
-        title={active ? t(($) => $.onboarding.active.title) : t(($) => $.onboarding.title)}
-        description={
-          active ? undefined : t(($) => $.onboarding.progress, { done, total: view.steps.length })
-        }
-      />
+    <Page
+      width={PageWidth.narrow}
+      title={active ? t(($) => $.onboarding.active.title) : t(($) => $.onboarding.title)}
+      description={
+        active ? undefined : t(($) => $.onboarding.progress, { done, total: view.steps.length })
+      }
+    >
       {active && view.activatedAt ? (
         <ActiveSince orgId={orgId} at={view.activatedAt} siteId={view.steps[0]?.siteId ?? null} />
       ) : (
@@ -64,7 +64,7 @@ export function OnboardingChecklist({ orgId }: { orgId: string }) {
           </li>
         ))}
       </ol>
-    </div>
+    </Page>
   );
 }
 

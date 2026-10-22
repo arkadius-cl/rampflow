@@ -73,8 +73,7 @@
     "locked_closed": "Diese Buchung ist {{status}} und kann nicht mehr geändert werden.",
     "timeline": "Verlauf",
     "reason": "Grund: {{reason}}",
-    "moved_from": "Verschoben von",
-    "back": "Plantafel"
+    "moved_from": "Verschoben von"
   },
   "sheet": {
     "title": "Neue Buchung",

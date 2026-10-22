@@ -306,6 +306,7 @@ function TopicField({
             description={t(settingLabelKey(entry.key, LabelPart.description) as never) as string}
             overridden={draft.kind === FieldDraftKind.own && entry.source === scope}
             group={spec.kind === SettingControl.list || spec.kind === SettingControl.grouped_list}
+            wide={spec.kind === SettingControl.grouped_list}
             error={message(fieldState.error)}
             control={
               <SettingInput

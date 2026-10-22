@@ -7,14 +7,20 @@ import {
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { isValueOf, Permission, SortOrder, UiSize, values } from '@rampflow/shared/values';
+import {
+  isValueOf,
+  PageWidth,
+  Permission,
+  SortOrder,
+  UiSize,
+  values,
+} from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '@/components/shells/page';
-import { SiteTime } from '@/components/site-time';
+import { Page } from '@/components/shells/page';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -42,7 +48,7 @@ import { carrierContextQuery, guard, useAccess } from '@/lib/access';
 import { useSiteTime } from '@/lib/time';
 import { BookingStatusBadge, useLoadTypeName } from '@/modules/booking/display';
 import { linkedTenantsQuery } from '@/modules/carriers/queries';
-import { beforeCutoff, SlotText } from '@/modules/portal/booking-parts';
+import { beforeCutoff, SiteTimes, SlotText } from '@/modules/portal/booking-parts';
 import { type BookingFilters, portalBookingsQuery } from '@/modules/portal/queries';
 
 // CR-05: /c/$orgId/bookings, the carrier's bookings at every linked warehouse, each in its
@@ -109,32 +115,23 @@ function BookingsPage() {
   const canBook = access.can(Permission.booking.book);
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t(($) => $.portal.list.title)}
-        description={t(($) => $.portal.list.description)}
-        actions={
-          canBook ? (
-            <Link
-              to="/c/$orgId/book"
-              params={{ orgId }}
-              search={{ step: BookingWizardStep.where }}
-              className={buttonVariants()}
-            >
-              <PlusIcon /> {t(($) => $.portal.list.new)}
-            </Link>
-          ) : null
-        }
-      />
-      {pending.map((x) => (
-        <Alert key={x.tenantId}>
-          <HourglassIcon />
-          <AlertTitle>{t(($) => $.portal.list.pending_title, { name: x.name })}</AlertTitle>
-          <AlertDescription>{t(($) => $.portal.list.pending)}</AlertDescription>
-        </Alert>
-      ))}
-
-      <div className="flex flex-wrap items-end gap-2">
+    <Page
+      width={PageWidth.full}
+      title={t(($) => $.portal.list.title)}
+      description={t(($) => $.portal.list.description)}
+      actions={
+        canBook ? (
+          <Link
+            to="/c/$orgId/book"
+            params={{ orgId }}
+            search={{ step: BookingWizardStep.where }}
+            className={buttonVariants()}
+          >
+            <PlusIcon /> {t(($) => $.portal.list.new)}
+          </Link>
+        ) : null
+      }
+      tabs={
         <Tabs value={search.tab} onValueChange={(v) => set({ tab: v as CarrierBookingsTab })}>
           <TabsList aria-label={t(($) => $.portal.list.range)}>
             {values(CarrierBookingsTab).map((tab) => (
@@ -144,6 +141,17 @@ function BookingsPage() {
             ))}
           </TabsList>
         </Tabs>
+      }
+    >
+      {pending.map((x) => (
+        <Alert key={x.tenantId}>
+          <HourglassIcon />
+          <AlertTitle>{t(($) => $.portal.list.pending_title, { name: x.name })}</AlertTitle>
+          <AlertDescription>{t(($) => $.portal.list.pending)}</AlertDescription>
+        </Alert>
+      ))}
+
+      <div className="flex flex-wrap items-end gap-2">
         <Field className="w-48">
           <FieldLabel htmlFor={`${id}-tenant`} className="sr-only">
             {t(($) => $.portal.list.tenant)}
@@ -298,7 +306,7 @@ function BookingsPage() {
           {t(($) => $.portal.list.more)}
         </Button>
       ) : null}
-    </div>
+    </Page>
   );
 }
 
@@ -314,42 +322,39 @@ function Row({
   const { t } = useTranslation('booking');
   const loadTypeName = useLoadTypeName();
   const siteTime = useSiteTime();
-  const visit = (at: string | null) =>
-    at ? (
-      <SiteTime {...siteTime(at, b.timeZone)} />
-    ) : (
-      <span className="text-muted-foreground">–</span>
-    );
   const changeable = canBook && beforeCutoff(b);
   return (
     <TableRow>
-      <TableCell>
-        <SlotText startsAt={b.startsAt} endsAt={b.endsAt} timeZone={b.timeZone} />
+      <TableCell className="whitespace-nowrap">
+        <SlotText startsAt={b.startsAt} endsAt={b.endsAt} timeZone={b.timeZone} short />
       </TableCell>
-      <TableCell>
-        <div className="font-medium">{b.tenant.name}</div>
-        <div className="text-muted-foreground">{b.site.name}</div>
+      <TableCell className="max-w-64 truncate">
+        <span className="font-medium">{b.tenant.name}</span>
+        <span className="text-muted-foreground"> · {b.site.name}</span>
       </TableCell>
       <TableCell className="font-mono text-xs">{b.code}</TableCell>
-      <TableCell>
+      <TableCell className="max-w-80 truncate">
         {b.loadUnits} · {loadTypeName(b.loadType.name)}
         {b.plate || b.reference ? (
-          <div className="font-mono text-xs text-muted-foreground">
+          <span className="font-mono text-xs text-muted-foreground">
+            {' · '}
             {[b.plate, b.reference].filter(Boolean).join(' · ')}
-          </div>
+          </span>
         ) : null}
       </TableCell>
       <TableCell>
         <BookingStatusBadge status={b.status} size={UiSize.sm} />
       </TableCell>
-      <TableCell className="whitespace-nowrap tabular-nums">
+      <TableCell className="whitespace-nowrap">
         <span className="sr-only">{t(($) => $.portal.list.gate_in)} </span>
-        {visit(b.checkedInAt)}
-        <span aria-hidden className="mx-1 text-muted-foreground">
-          →
-        </span>
-        <span className="sr-only">, {t(($) => $.portal.list.gate_out)} </span>
-        {visit(b.departedAt)}
+        <SiteTimes
+          parts={[
+            b.checkedInAt ? siteTime(b.checkedInAt, b.timeZone) : null,
+            b.departedAt ? siteTime(b.departedAt, b.timeZone) : null,
+          ]}
+          separator="→"
+          separatorLabel={`, ${t(($) => $.portal.list.gate_out)}`}
+        />
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">

@@ -18,6 +18,12 @@
     "users": "Interne Nutzer",
     "bookings": "Buchungen diesen Monat"
   },
+  "usage_short": {
+    "sites": "Standorte",
+    "docks": "Rampen",
+    "users": "Nutzer",
+    "bookings": "Buchungen"
+  },
   "tenants": {
     "title": "Mandanten",
     "description": "Nutzung gegenüber den Paketlimits in diesem Monat. Weiche Limits über 100 % werden markiert und blockieren nichts.",
@@ -66,7 +72,6 @@
     "enterprise": "Enterprise"
   },
   "tenant": {
-    "back": "Alle Mandanten",
     "description": "Paket, Übersteuerungen und die Admin-Einladung dieses Mandanten.",
     "settings_title": "Stammdaten",
     "saved": "Mandant gespeichert.",

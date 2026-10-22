@@ -6,7 +6,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { isValueOf, Permission, UiSize } from '@rampflow/shared/values';
+import { isValueOf, PageWidth, Permission, UiSize } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react';
 import { de, enGB, pl } from 'react-day-picker/locale';
 import { useTranslation } from 'react-i18next';
 import * as z from 'zod';
+import { Page } from '@/components/shells/page';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -115,127 +116,132 @@ function PlanPage() {
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace });
 
   return (
-    // Exactly the viewport below the shell's 3rem header, so the board scrolls inside itself
-    // and its sticky resource header and time column stay in view.
-    <div className="-m-4 flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:-m-6">
-      <h1 className="sr-only">{t(($) => $.plan.title)}</h1>
-      <div className="flex flex-wrap items-center gap-2 border-b bg-background px-4 py-2">
-        <NativeSelect
-          aria-label={t(($) => $.plan.toolbar.site)}
-          size="sm"
-          className="w-44"
-          value={site.id}
-          onChange={(e) => set({ site: e.target.value, booking: undefined })}
-        >
-          {sites.map((s) => (
-            <NativeSelectOption key={s.id} value={s.id}>
-              {s.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <DayNav date={date} today={today} onChange={(d) => set({ date: d, booking: undefined })} />
-        <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
-        <ToggleGroup
-          value={[view]}
-          onValueChange={(v) => {
-            const next = v[0];
-            if (isValueOf(PlanView, next)) set({ view: next });
-          }}
-          variant="outline"
-          size="sm"
-          aria-label={t(($) => $.plan.toolbar.view)}
-        >
-          <ToggleGroupItem value="board">
-            <Columns3Icon />
-            {t(($) => $.plan.toolbar.board)}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="list">
-            <ListIcon />
-            {t(($) => $.plan.toolbar.list)}
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <div className="ml-auto flex items-center gap-2">
-          <Legend />
-          {walkIn || access.can(Permission.booking.staff_book) ? (
-            <OnboardingGate reason={tc(($) => $.onboarding.gate.bookings)}>
-              {(blocked) => (
-                <>
-                  {walkIn ? (
-                    blocked ? (
-                      <Button variant="outline" size="sm" disabled>
-                        <TruckIcon />
-                        {t(($) => $.plan.toolbar.walk_in)}
+    <Page width={PageWidth.full} title={t(($) => $.plan.title)} titleHidden>
+      {/* Exactly the viewport below the shell's 3rem header, so the board scrolls inside itself
+          and its sticky resource header and time column stay in view. */}
+      <div className="-m-4 flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:-m-6 2xl:-m-8">
+        <div className="flex flex-wrap items-center gap-2 border-b bg-background px-4 py-2">
+          <NativeSelect
+            aria-label={t(($) => $.plan.toolbar.site)}
+            size="sm"
+            className="w-44"
+            value={site.id}
+            onChange={(e) => set({ site: e.target.value, booking: undefined })}
+          >
+            {sites.map((s) => (
+              <NativeSelectOption key={s.id} value={s.id}>
+                {s.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+          <DayNav
+            date={date}
+            today={today}
+            onChange={(d) => set({ date: d, booking: undefined })}
+          />
+          <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
+          <ToggleGroup
+            value={[view]}
+            onValueChange={(v) => {
+              const next = v[0];
+              if (isValueOf(PlanView, next)) set({ view: next });
+            }}
+            variant="outline"
+            size="sm"
+            aria-label={t(($) => $.plan.toolbar.view)}
+          >
+            <ToggleGroupItem value="board">
+              <Columns3Icon />
+              {t(($) => $.plan.toolbar.board)}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list">
+              <ListIcon />
+              {t(($) => $.plan.toolbar.list)}
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <div className="ml-auto flex items-center gap-2">
+            <Legend />
+            {walkIn || access.can(Permission.booking.staff_book) ? (
+              <OnboardingGate reason={tc(($) => $.onboarding.gate.bookings)}>
+                {(blocked) => (
+                  <>
+                    {walkIn ? (
+                      blocked ? (
+                        <Button variant="outline" size="sm" disabled>
+                          <TruckIcon />
+                          {t(($) => $.plan.toolbar.walk_in)}
+                        </Button>
+                      ) : (
+                        <a
+                          href={`/t/${orgId}/gate?site=${site.id}&walkin=1`}
+                          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                        >
+                          <TruckIcon />
+                          {t(($) => $.plan.toolbar.walk_in)}
+                        </a>
+                      )
+                    ) : null}
+                    {access.can(Permission.booking.staff_book) ? (
+                      <Button size="sm" disabled={blocked} onClick={() => set({ new: 1 })}>
+                        <PlusIcon />
+                        {t(($) => $.plan.toolbar.new)}
                       </Button>
-                    ) : (
-                      <a
-                        href={`/t/${orgId}/gate?site=${site.id}&walkin=1`}
-                        className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                      >
-                        <TruckIcon />
-                        {t(($) => $.plan.toolbar.walk_in)}
-                      </a>
-                    )
-                  ) : null}
-                  {access.can(Permission.booking.staff_book) ? (
-                    <Button size="sm" disabled={blocked} onClick={() => set({ new: 1 })}>
-                      <PlusIcon />
-                      {t(($) => $.plan.toolbar.new)}
-                    </Button>
-                  ) : null}
-                </>
-              )}
-            </OnboardingGate>
+                    ) : null}
+                  </>
+                )}
+              </OnboardingGate>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+            {view === PlanView.board ? (
+              <BoardView
+                orgId={orgId}
+                siteId={site.id}
+                date={date}
+                now={now}
+                selectedId={search.booking}
+                onSelect={(id) => set({ booking: id })}
+              />
+            ) : (
+              <ListView
+                orgId={orgId}
+                siteId={site.id}
+                siteName={site.name}
+                date={date}
+                selectedId={search.booking}
+                onSelect={(id) => set({ booking: id })}
+              />
+            )}
+          </div>
+          {search.booking ? (
+            <SelectedPanel
+              orgId={orgId}
+              siteId={site.id}
+              date={date}
+              bookingId={search.booking}
+              onClose={() => set({ booking: undefined })}
+            />
           ) : null}
         </div>
-      </div>
 
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-          {view === PlanView.board ? (
-            <BoardView
-              orgId={orgId}
-              siteId={site.id}
-              date={date}
-              now={now}
-              selectedId={search.booking}
-              onSelect={(id) => set({ booking: id })}
-            />
-          ) : (
-            <ListView
-              orgId={orgId}
-              siteId={site.id}
-              siteName={site.name}
-              date={date}
-              selectedId={search.booking}
-              onSelect={(id) => set({ booking: id })}
-            />
-          )}
-        </div>
-        {search.booking ? (
-          <SelectedPanel
+        {access.can(Permission.booking.staff_book) ? (
+          <BookingSheet
             orgId={orgId}
             siteId={site.id}
+            timeZone={site.timeZone}
             date={date}
-            bookingId={search.booking}
-            onClose={() => set({ booking: undefined })}
+            open={search.new === 1}
+            onOpenChange={(open) => set({ new: open ? 1 : undefined })}
+            onCreated={(b) =>
+              set({ new: undefined, booking: b.id, date: siteDay(new Date(b.startsAt), zone) })
+            }
           />
         ) : null}
       </div>
-
-      {access.can(Permission.booking.staff_book) ? (
-        <BookingSheet
-          orgId={orgId}
-          siteId={site.id}
-          timeZone={site.timeZone}
-          date={date}
-          open={search.new === 1}
-          onOpenChange={(open) => set({ new: open ? 1 : undefined })}
-          onCreated={(b) =>
-            set({ new: undefined, booking: b.id, date: siteDay(new Date(b.startsAt), zone) })
-          }
-        />
-      ) : null}
-    </div>
+    </Page>
   );
 }
 

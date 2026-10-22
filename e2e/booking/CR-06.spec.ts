@@ -101,7 +101,7 @@ test.describe('CR-06 Share the driver link', () => {
     await page.getByLabel('Email to driver').fill(driver);
     await page.getByLabel("Driver's language").selectOption('pl');
     release();
-    await expect(page.getByRole('link', { name: 'All bookings' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: / · / })).toBeVisible();
     await expect(page.getByLabel('Email to driver')).toHaveValue(driver);
     await expect(page.getByLabel("Driver's language")).toHaveValue('pl');
     await page.getByRole('button', { name: 'Send' }).click();

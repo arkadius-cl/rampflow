@@ -5,26 +5,19 @@ import {
   BookingDialog,
   BookingStatus,
   BookingWizardStep,
-  CarrierBookingsTab,
 } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
-import { ErrorCode, Permission } from '@rampflow/shared/values';
+import { ErrorCode, PageWidth, Permission } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  ArrowLeftIcon,
-  BanIcon,
-  CalendarClockIcon,
-  PencilIcon,
-  PhoneIcon,
-  RefreshCwIcon,
-} from 'lucide-react';
+import { BanIcon, CalendarClockIcon, PencilIcon, PhoneIcon, RefreshCwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { errorText } from '@/components/app-shell/form-errors';
 import { RouteError, RouteNotFound } from '@/components/app-shell/route-states';
+import { Page } from '@/components/shells/page';
 import { SiteTime } from '@/components/site-time';
 import { TenantLogo } from '@/components/tenant-logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -64,6 +57,8 @@ export const Route = createFileRoute('/c/$orgId/bookings/$bookingId')({
   beforeLoad: guard({ permission: Permission.booking.view }),
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(portalBookingQuery(params.orgId, params.bookingId)),
+  // The breadcrumb names the booking by its code and carries the way back (ADR-0022).
+  staticData: { crumb: (match) => (match.loaderData as PortalBookingView | undefined)?.code },
   errorComponent: (props) =>
     isFailure(props.error, ErrorCode.not_found) ? <RouteNotFound /> : <RouteError {...props} />,
   component: BookingPage,
@@ -89,38 +84,12 @@ function BookingPage() {
       : null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        to="/c/$orgId/bookings"
-        params={{ orgId }}
-        search={{ tab: CarrierBookingsTab.upcoming }}
-        className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'w-fit' })}
-      >
-        <ArrowLeftIcon /> {t(($) => $.portal.detail.back)}
-      </Link>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <TenantLogo url={logoUrl} className="mb-2" />
-          <div className="font-mono text-sm text-muted-foreground">{booking.code}</div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {booking.tenant.name} · {booking.site.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            <SlotText
-              startsAt={booking.startsAt}
-              endsAt={booking.endsAt}
-              timeZone={booking.timeZone}
-            />
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1">
-            <BookingStatusBadge status={booking.status} />
-            {booking.safety === SafetyStatus.not_required ? null : (
-              <BookingSafetyBadge status={booking.safety} />
-            )}
-          </div>
-        </div>
-        {canBook ? (
-          <div className="flex max-w-sm flex-col items-end gap-1">
+    <Page
+      width={PageWidth.wide}
+      title={`${booking.tenant.name} · ${booking.site.name}`}
+      actions={
+        canBook ? (
+          <div className="flex flex-col items-end gap-1">
             <div className="flex flex-wrap justify-end gap-2">
               <Button
                 variant="outline"
@@ -159,7 +128,17 @@ function BookingPage() {
               </p>
             ) : null}
           </div>
-        ) : null}
+        ) : null
+      }
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <TenantLogo url={logoUrl} className="h-6" />
+        <span className="font-mono text-muted-foreground">{booking.code}</span>
+        <SlotText startsAt={booking.startsAt} endsAt={booking.endsAt} timeZone={booking.timeZone} />
+        <BookingStatusBadge status={booking.status} />
+        {booking.safety === SafetyStatus.not_required ? null : (
+          <BookingSafetyBadge status={booking.safety} />
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -246,7 +225,7 @@ function BookingPage() {
         open={dialog === BookingDialog.cancel}
         onOpenChange={(open) => setDialog(open ? 'cancel' : null)}
       />
-    </div>
+    </Page>
   );
 }
 

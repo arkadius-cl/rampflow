@@ -1,12 +1,12 @@
 import { LOGO_MAX_BYTES, type LogoResponse } from '@rampflow/shared/modules/brand/api';
 import { LogoContentType, LogoProblem } from '@rampflow/shared/modules/brand/values';
-import { ErrorCode, isValueOf, values, ZodIssueCode } from '@rampflow/shared/values';
+import { ErrorCode, isValueOf, PageWidth, values, ZodIssueCode } from '@rampflow/shared/values';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, TrashIcon, UploadIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
@@ -75,8 +75,11 @@ export function LogoScreen({ orgId }: { orgId: string }) {
 
   const current = logo.data?.logo;
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <PageHeader title={t(($) => $.logo.title)} description={t(($) => $.logo.description)} />
+    <Page
+      width={PageWidth.narrow}
+      title={t(($) => $.logo.title)}
+      description={t(($) => $.logo.description)}
+    >
       <Card>
         <CardHeader>
           <CardTitle>
@@ -173,6 +176,6 @@ export function LogoScreen({ orgId }: { orgId: string }) {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </Page>
   );
 }

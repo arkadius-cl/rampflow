@@ -93,7 +93,7 @@ function PlatformAdminScreen() {
       org={platformMembership}
       memberships={[platformMembership, ...memberships]}
       nav={platformNav(PrototypeScreen.tenants)}
-      breadcrumbs={['Tenants', tenant.name]}
+      breadcrumbs={[{ label: 'Tenants' }, { label: tenant.name }]}
       user={platformUser}
     >
       <PageHeader

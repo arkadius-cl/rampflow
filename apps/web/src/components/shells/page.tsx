@@ -1,5 +1,5 @@
 import { PageWidth } from '@rampflow/shared/values';
-import { Link } from '@tanstack/react-router';
+import { createLink } from '@tanstack/react-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { tabTriggerClass } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -85,6 +85,9 @@ export function PageTabs({ label, children }: { label: string; children: ReactNo
   );
 }
 
-export function PageTab({ className, ...props }: ComponentProps<typeof Link>) {
-  return <Link {...props} className={cn(tabTriggerClass.base, tabTriggerClass.line, className)} />;
+function PageTabAnchor({ className, ...props }: ComponentProps<'a'>) {
+  return <a {...props} className={cn(tabTriggerClass.base, tabTriggerClass.line, className)} />;
 }
+
+/** A typed router link that looks like a line tab; `to` and `params` check against the route tree. */
+export const PageTab = createLink(PageTabAnchor);

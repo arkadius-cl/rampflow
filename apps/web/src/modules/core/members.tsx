@@ -6,6 +6,7 @@ import {
   type MemberList,
   type MemberView,
 } from '@rampflow/shared/modules/core/api.staff';
+import { PageWidth } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
 import {
   MailPlusIcon,
@@ -20,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type * as z from 'zod';
 import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-errors';
-import { PageHeader } from '@/components/shells/page';
+import { Page } from '@/components/shells/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -91,16 +92,17 @@ export function MembersScreen<R extends string>({
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<MemberView<R> | null>(null);
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title={title}
-        description={description}
-        actions={
-          <Button size="sm" onClick={() => setInviting(true)}>
-            <MailPlusIcon /> {t(($) => $.staff.invite)}
-          </Button>
-        }
-      />
+    <Page
+      width={PageWidth.full}
+      title={title}
+      description={description}
+      actions={
+        <Button size="sm" onClick={() => setInviting(true)}>
+          <MailPlusIcon /> {t(($) => $.staff.invite)}
+        </Button>
+      }
+      className="gap-6"
+    >
       {admin.list ? (
         <>
           <MembersTable admin={admin} members={admin.list.members} onEdit={setEditing} />
@@ -119,7 +121,7 @@ export function MembersScreen<R extends string>({
           setEditing(null);
         }}
       />
-    </div>
+    </Page>
   );
 }
 

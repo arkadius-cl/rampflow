@@ -70,7 +70,7 @@ function PlanBoardScreen() {
       org={tenantMembership}
       memberships={memberships}
       nav={tenantNav(PrototypeScreen.board)}
-      breadcrumbs={['Operations', 'Plan board']}
+      breadcrumbs={[{ label: 'Operations' }, { label: 'Plan board' }]}
       user={dispatcherUser}
       flush
       toolbar={
