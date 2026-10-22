@@ -53,7 +53,7 @@ At 1920 px `full` and `wide` are identical. Above it, lists keep growing and tex
 Rules that follow:
 
 - Line tabs sit under the title, in the `tabs` slot of `Page`. Each is a real link with `aria-current="page"`. The first topic is the index route.
-- Segmented tabs sit at the top of the content, above the table toolbar. They change search params, not the route.
+- Segmented tabs sit in the `tabs` slot of `Page` too, above the table toolbar. They change search params, not the route.
 - A vertical list stands left of the content in a 14rem column. The column and the content form one grid; the title stands above the grid when it names the whole page (settings) and inside the content column when the list switches the object (sites).
 - Tabs never nest. A settings topic list inside an entity tab is a level-4 list under a level-2 tab, which is allowed. A second tab row under a tab row is not.
 - The breadcrumb bar carries the way back. An entity page has no "Back" button.
