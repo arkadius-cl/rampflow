@@ -16,6 +16,7 @@ const SEEDS: readonly string[] = [
   'core',
   'signups',
   'sites',
+  'platform',
   'safety',
   'booking',
   'carriers',
