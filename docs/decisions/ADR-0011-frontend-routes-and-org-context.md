@@ -5,8 +5,8 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, frontend, routing, tenancy, entitlements, ux]
 status: stable
-updated: 2026-10-21
-related: [docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0016-tenant-self-registration.md]
+updated: 2026-10-22
+related: [docs/decisions/ADR-0018-tenant-suspension.md, docs/decisions/ADR-0015-data-tables-and-entity-views.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0008-driver-token-pwa-delivery.md, docs/decisions/ADR-0016-tenant-self-registration.md]
 ---
 
 # ADR-0011: Frontend route structure per area with the active org in the URL
@@ -74,8 +74,12 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 
 | Path | Screen | Stories | Nav item or reached from | Unit |
 |---|---|---|---|---|
-| `/platform/tenants?q=&package=&sort=&order=&page=&pageSize=` | Tenants with usage meters against limits: search by name, package filter, sort by name or creation, paging | PL-01, PL-04 | nav `core.tenants` | U3 |
-| `/platform/tenants/$tenantId` | Package and overrides | PL-02 | row of the tenant list | U3 |
+| `/platform/tenants?view=&q=&status=&package=&country=&flag=&duplicateOf=&sort=&order=&page=&pageSize=` | Tenants with status, country, tax id, admin email, last activity and usage meters. Views "Needs attention" (default) and "All" as tabs with counts; search by name, tax id and admin email; facets status, package, country and flags; sort by name, creation, status, package, country and last activity; paging. `duplicateOf` shows a tenant and its possible duplicates. Row actions: view, suspend or reactivate | PL-01, PL-04, PL-07 | nav `core.tenants` | U3, 04 |
+| `/platform/tenants/$tenantId` | Tenant hub, Overview tab: status and suspension, onboarding progress, usage, tax id, flags, admins, and the master data card (name, country, package). The header suspends or reactivates | PL-06, PL-07 | row of the tenant list | 04 |
+| `/platform/tenants/$tenantId/members?q=&role=&state=&sort=&order=&page=&pageSize=` | Members and open invitations, read-only | PL-06 | tab bar of the tenant hub | 04 |
+| `/platform/tenants/$tenantId/sites?q=&active=&sort=&order=&page=&pageSize=` | Sites with hall and dock counts, read-only | PL-06 | tab bar of the tenant hub | 04 |
+| `/platform/tenants/$tenantId/entitlements` | Package, overrides, grouped entitlements and admin invitations | PL-02 | tab bar of the tenant hub | U3, 04 |
+| `/platform/tenants/$tenantId/notes?q=&kind=&sort=&order=&page=&pageSize=` | Notes and the suspension history, newest first; "Add note" | PL-08 | tab bar of the tenant hub | 04 |
 | `/platform/packages` | Packages, read-only | PL-02 | nav `core.packages` | U3 |
 | `/platform/settings` | Redirects with `replace` to the first available topic | PL-03 | nav `core.platform_settings` | U3, 06 |
 | `/platform/settings/$topic` | Platform settings of one topic, one form; `#<setting key>` focuses a field | PL-03 | topic navigation; settings search | 06 |
@@ -137,6 +141,7 @@ From [ADR-0015](ADR-0015-data-tables-and-entity-views.md):
 - The tenant layout's `beforeLoad` fetches `GET /api/t/:orgId/context` through `queryClient.ensureQueryData`:
   `{ org, status, role, permissions, entitlements, sites, settings }`. `status` is `onboarding` until the tenant's first dock exists, then `active` (ON-02). `settings` holds the resolved, available settings per site the user may see. The carrier and platform layouts fetch their own context (`permissions`, `org`, and for carriers the linked tenants with their `booking.carrier_portal` state).
 - A 404 from the context request (not a member, or no such org) renders the "no access" page, never a redirect that reveals whether the org exists.
+- A 403 `tenant_suspended` from any tenant request renders the suspended page in the tenant layout, with a link to `/` ([ADR-0018](ADR-0018-tenant-suspension.md)). The API client then invalidates the context query, so an open screen switches to that page on its next action.
 - `apps/web/src/lib/access.ts` exports `guard({ permission?, entitlement? })` for a route's `beforeLoad`, `useAccess()` with `can(permission)` and `has(feature)` for actions, and `useTenantStatus()` for the tenant's `status`.
 - While the status is `onboarding`, the office and station layouts show the onboarding notice, with a link to the checklist for users with `core.manage_sites`. `OnboardingGate` disables the actions whose API routes answer 409 `onboarding_incomplete` and shows the reason next to them (ON-03). Route files call `guard` with the same keys their API routes require.
 - The sidebar is `navFor(catalog, { area, permissions, entitlements })` from `@rampflow/shared`. Labels come from `<module>:nav.<id>`; icons are lucide names rendered through `lucide-react`'s dynamic icon.

@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [ux, design, booking, yard, safety, settings, entitlements, i18n, accessibility]
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 related: [docs/reference/design-system.md, docs/decisions/ADR-0021-design-system.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/domain-glossary.md, docs/explanation/research/market-and-features.md]
 ---
 
@@ -50,7 +50,7 @@ Navigation per role, as rendered by `navFor` from the manifests:
 | Onboarding checklist | ON-01, ON-02, ON-03 | desktop | `/t/$orgId/onboarding` | none |
 | Sites, halls, docks and pool editor | MD-01, MD-02, MD-03 | desktop | `/t/$orgId/sites` ("New site" form at `?new=1`), `/t/$orgId/sites/$siteId` | `/design/master-data` |
 | Settings per topic, with origin | TN-02, PL-03, MD-01 | desktop | `/platform/settings/$topic`, `/t/$orgId/settings/$topic`, `/t/$orgId/sites/$siteId/settings/$topic` | `/design/settings` (the earlier one-page layout) |
-| Platform tenants, usage, overrides | PL-01, PL-02, PL-04 | desktop | `/platform/tenants`, `/platform/tenants/$tenantId` | `/design/platform-admin` |
+| Platform tenants: list with views, tenant hub (Overview, Members, Sites, Entitlements, Notes), suspend and reactivate | PL-01, PL-02, PL-04, PL-06, PL-07, PL-08 | desktop | `/platform/tenants`, `/platform/tenants/$tenantId` and its tabs `members`, `sites`, `entitlements`, `notes` | `/design/platform-admin` (list and entitlements only) |
 | Not prototyped: hours and closures (MD-04), load types (MD-05), booking detail (BK-03, AV-02), staff (TN-01), carriers (TN-03, TN-04), warehouses (CR-02), safety authoring and register (SF-01, SF-02, SF-03), reports (RP-01, RP-02), logo (TN-05), privacy requests (TN-06), sign-in and token pages (CR-01, CR-03) | | desktop | see the route map | They reuse the office shell, `SettingField`, tables and forms shown here. |
 
 ## Key screens
@@ -186,9 +186,11 @@ Opening a deep link scrolls the field below the sticky header, highlights it for
 
 **Countries editor.** The platform's admitted countries (`core.site_countries`) are a checklist in two groups, "EU member states" and "Other countries", sorted by name in the UI language. Each group has a select-all checkbox that shows a mixed state when some of its countries are checked. The countries sit in a grid that reflows to one column on narrow screens. A filter above narrows the list by name or code; while it is active the group checkboxes are hidden, so no click changes a country the admin cannot see. A count below reads "27 of 57 selected" and always counts every country. Unchecking the last country shows "Select at least one country".
 
-### Platform admin (PL-01, PL-02, PL-04)
+### Platform admin (PL-01, PL-02, PL-04, PL-06 to PL-08)
 
-A data table of tenants: Tenant (link to the tenant view, sortable), Package, Created (instant in the viewer's zone with the zone name, sortable), and meters for sites, docks, users and bookings per month (not sortable). The toolbar searches the tenant name and filters by package with a count per package; "Clear filters" appears while either is set. 25 tenants per page by default, 10, 25, 50 or 100 to choose. "Create tenant" stays in the page header whatever the filters. A soft limit above 100 % shows a red "108 % soft" with a warning icon and blocks nothing. Below, the selected tenant's package select, an override table (key, package value, override with "higher" or "lower" and "soft", expiry, remove) and an add-override form whose key select contains only non-reserved keys.
+A data table of tenants under two view tabs with counts: "Needs attention" (default: onboarding, suspended, possible duplicate, tax id unverified) and "All". Columns: Tenant (link to the hub), Status, Package, Country, Tax id with its check status, Admin email (marked "Invited" while only an invitation exists), Created, Last activity, and meters for sites, docks, users and bookings per month (not sortable). Times show in the viewer's zone with the zone name. The toolbar searches name, tax id and admin email and filters by status, package, country and flags, each with counts; "Clear filters" appears while any is set. 25 tenants per page by default, 10, 25, 50 or 100 to choose. "Create tenant" in the page header opens a side sheet. A row's "…" menu offers View and Suspend or Reactivate. A soft limit above 100 % shows a red "108 % soft" with a warning icon and blocks nothing.
+
+The tenant hub has the tenant's name, status and package in its header, one action (Suspend or Reactivate), and the tabs Overview, Members, Sites, Entitlements and Notes. The Overview shows cards for status and suspension, onboarding progress, usage, tax id, flags and admins; only the master data card (name, country, package) is editable, per card. Members and Sites are read-only tables whose rows link nowhere. Entitlements holds the package select, the override table (key, package value, override with "higher" or "lower" and "soft", expiry, remove), the add-override form whose key select contains only non-reserved keys, and the admin invitations. Notes lists the notes and the suspension history, newest first, with "Add note" in a side sheet. Suspend and reactivate ask for a required reason in a side sheet, never a modal dialog.
 
 ## Interaction patterns
 
