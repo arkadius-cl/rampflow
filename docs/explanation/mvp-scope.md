@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [mvp, scope, booking, yard, safety, avis, entitlements, settings, i18n, gdpr]
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 related: [docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/research/market-and-features.md, docs/explanation/research/domain-standards.md, docs/explanation/research/tech-architecture.md, docs/explanation/domain-glossary.md]
 ---
 
@@ -74,10 +74,24 @@ Each story ID names one Playwright `describe` block. Criteria about races or tim
    - Every setting has a deep link (`/platform/settings/privacy#privacy.retention.visit_days`) that scrolls to the field and focuses it. A search in the settings header finds a setting by label, description or key.
    - The countries admitted for sites (`core.site_countries`) are chosen from a list grouped into "EU member states" and "Other countries", each group with a select-all checkbox, a filter and "N of M selected". At least one country stays admitted.
    - A save that shortens a `privacy.retention.*` period asks for confirmation first and names each old and new value. Settings layout: [ADR-0020](../decisions/ADR-0020-settings-information-architecture.md).
-4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing. The platform admin searches tenants by name, tax id and admin email, filters by status, package, country and flags (possible duplicate, tax id unverified), sorts by name, status, package, country, creation date or last activity and pages through the list; the list's state is in the URL ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)). Each row shows the status, the country, the tax id with its check status, the first admin's email and the last activity of any member. The list opens on the view "Needs attention" (onboarding, suspended, possible duplicate, tax id unverified); the view "All" shows every tenant, and both tabs show their counts.
-5. **PL-06 Tenant hub.** `/platform/tenants/$tenantId` is a hub with the tabs Overview, Members, Sites, Entitlements and Notes, each its own route. The Overview shows status, onboarding progress, usage, tax id and VIES status, flags, admin contacts, and edits name, country and package per card. Members and Sites are read-only data tables of the tenant's members with open invitations and of its sites with hall and dock counts. A possible duplicate links to the list filtered to its matches.
-6. **PL-07 Suspend and reactivate.** The platform admin suspends a tenant with a reason and reactivates it with a reason, from the hub or the list. While suspended, its staff and the carriers acting at it get 403 `tenant_suspended`, its driver links answer 401, its public booking links 404, and the reminder, no-show and holiday import jobs skip it; the retention job and the outbox still run, carriers keep reading their own bookings there, and the platform keeps full access. Every tenant admin gets an email on suspension (with the reason) and on reactivation. Nothing is revoked or deleted ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)).
-7. **PL-08 Tenant notes.** The platform admin keeps append-only notes on a tenant with author and time. Suspensions and reactivations write their own entries with the reason. Only the platform reads notes.
+4. **PL-04 Usage.** A tenant list shows sites, docks, internal users and bookings this month against limits. A soft limit above 100% is flagged and blocks nothing.
+   - Each row shows the status (onboarding, active, suspended), the country, the tax id with its check status, the first admin's email (or the open invitation's) and the last activity of any member.
+   - The admin searches by name, tax id and admin email, filters by status, package, country and flags (possible duplicate, tax id unverified) with counts, and sorts by name, creation date, status, package, country or last activity. The list's state is in the URL ([ADR-0015](../decisions/ADR-0015-data-tables-and-entity-views.md)).
+   - The list opens on the view "Needs attention" (onboarding, suspended, possible duplicate, tax id unverified). The view "All" shows every tenant. Both tabs show their counts.
+5. **PL-06 Tenant hub.** `/platform/tenants/$tenantId` is a hub with the tabs Overview, Members, Sites, Entitlements and Notes, each its own route.
+   - The Overview shows status, onboarding progress, usage, tax id with its VIES status, flags and admin contacts. Name, country and package are edited per card.
+   - Members lists the tenant's members and open invitations, and Sites its sites with hall and dock counts. Both are read-only data tables.
+   - Entitlements holds the cards of PL-02.
+   - A possible duplicate links to the list filtered to the tenant and its matches.
+6. **PL-07 Suspend and reactivate.** The admin suspends a tenant with a reason, from the hub or the list, and reactivates it with a reason ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)).
+   - While suspended, its staff and the carriers acting at it get 403 `tenant_suspended`, its driver links answer 401 and its public booking links 404.
+   - Carriers keep reading their own bookings there, and the platform keeps full access.
+   - The reminder, no-show and holiday import jobs skip the tenant. The retention job and the outbox still run.
+   - Every tenant admin gets an email on suspension, with the reason, and on reactivation.
+   - Nothing is revoked or deleted. Reactivation restores every session and link.
+7. **PL-08 Tenant notes.** The admin keeps notes on a tenant, with author and time.
+   - Suspensions and reactivations write their own entries with the reason.
+   - Notes are append-only, and only the platform reads them.
 
 ### Tenant admin
 
