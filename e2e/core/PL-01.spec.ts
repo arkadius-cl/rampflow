@@ -30,6 +30,12 @@ test.describe('PL-01 Create a tenant', () => {
 
     await expect(page.getByRole('heading', { name })).toBeVisible();
     const tenantId = /\/platform\/tenants\/([0-9a-f-]+)$/.exec(page.url())?.[1] as string;
+    // The hub opens on the Overview, which names the open admin invitation.
+    await expect(page.getByText(adminEmail)).toBeVisible();
+    await page
+      .getByRole('navigation', { name: 'Tenant areas' })
+      .getByRole('link', { name: 'Entitlements' })
+      .click();
     // Entitlement groups start collapsed (PL-02).
     await page.getByRole('button', { name: 'Expand all' }).click();
     await expect(page.getByTestId('entitlement-core.max_sites')).toContainText('5');
@@ -39,7 +45,7 @@ test.describe('PL-01 Create a tenant', () => {
 
     // A tenant the platform admin creates starts in onboarding.
     await page.goto(`/platform/tenants?${new URLSearchParams({ q: name })}`);
-    await expect(page.getByTestId(`tenant-${tenantId}`).getByRole('cell').nth(2)).toHaveText(
+    await expect(page.getByTestId(`tenant-${tenantId}`).getByRole('cell').nth(1)).toHaveText(
       'Onboarding',
     );
 
