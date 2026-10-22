@@ -3,6 +3,10 @@ import {
   InviteTenantAdmin,
   type OverrideView,
   type PackageList,
+  type PlatformMemberList,
+  PlatformMemberListQuery,
+  type PlatformSiteList,
+  PlatformSiteListQuery,
   PutOverride,
   type TenantDetail,
   type TenantList,
@@ -34,6 +38,8 @@ import type { AppEnv } from '../../../kernel/env.ts';
 import { validate } from '../../../kernel/validate.ts';
 import { resetSetting, settingsView, writeSetting, writeSettings } from '../settings/settings.ts';
 import { invitationView } from '../staff/invitations.ts';
+import { memberList } from './members.ts';
+import { siteList } from './tenant-reads.ts';
 import {
   createTenant,
   deleteOverride,
@@ -41,6 +47,7 @@ import {
   listTenants,
   packageList,
   putOverride,
+  requireTenant,
   tenantDetail,
   updateTenant,
 } from './tenants.ts';
@@ -73,7 +80,7 @@ export const platform = new Hono<AppEnv>()
       id: 'core.platform.listTenants',
       stories: [StoryId.PL_01, StoryId.PL_04],
       description:
-        'One page of tenants: `{ items: [{ id, name, package, createdAt, status, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise }, status: { onboarding, active } } }`. `status` is `onboarding` while the tenant has no activation time, else `active`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `status` by a comma-separated list of statuses, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q`, `package` and `status`; `facets.package` counts per package the tenants matching `q` and `status`, ignoring `package`, and `facets.status` per status those matching `q` and `package`, ignoring `status`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`',
+        "One page of tenants in a view: `{ items: [{ id, name, package, createdAt, status, country, taxId, admin, lastActivityAt, possibleDuplicate, usage }], total, page, pageSize, facets: { status, package, country, flag }, views: { attention, all } }`. `status` is `suspended` while `suspended_at` is set, else `onboarding` without an activation time, else `active`. `country` is the ISO code or `null`; `taxId` is `{ type, value, status }` as stored, or `null`; `admin` is `{ email, invited }`: the earliest `tenant_admin` member, else the newest open admin invitation with `invited: true`, else `null`; `lastActivityAt` is the latest `last_seen_at` of the tenant's members, `null` when nobody signed in. Query (all optional): `view` is `attention` (default: onboarding, suspended, possible duplicate or tax id `unverified`) or `all`; `q` searches the name, the tax id (spaces, dots, dashes and slashes ignored) and the emails of admin members and open admin invitations, case-insensitively as a substring; the facets take comma-separated values: `status`, `package`, `country` (EU-27 codes and `none` for no country) and `flag` (`possible_duplicate`, `tax_id_unverified`, OR-ed); `duplicateOf` (a tenant id) keeps that tenant and every tenant the registration's duplicate rule matches against it (equivalent tax id or a shared non-free-mail member email domain), an id that is not a tenant matches nothing; `sort` is `name` (default), `status`, `package` (both in their set order), `country`, `createdAt` or `lastActivityAt` (no country and never active last in both directions), `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the page's view under `q`, `duplicateOf` and every facet; `facets.<name>` counts per value within the view under the other filters, ignoring its own selection; `views` counts each view under `q`, `duplicateOf` and the facets. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`",
       responses: { 200: type<TenantList>() },
     }),
     tenants,
@@ -105,9 +112,9 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId',
     op({
       id: 'core.platform.getTenant',
-      stories: [StoryId.PL_02],
+      stories: [StoryId.PL_02, StoryId.PL_06],
       description:
-        '`{ id, name, package, usage, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. Reserved keys are left out; 404 for an id that is not a tenant',
+        "The list row's fields plus `{ activatedAt, taxId: { type, value, status, checkedAt } | null, suspension: { at, reason, by: { id, name } | null } | null, admins: [{ id, name, email }], onboarding: { status, activatedAt, steps } | null, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. `suspension` is the latest suspension note while the tenant is suspended; `admins` are the `tenant_admin` members by membership time; `onboarding` is the tenant's checklist (ON-01) while it is onboarding, read as the tenant with actor `system:platform_read`. Reserved keys are left out; 404 for an id that is not a tenant",
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
@@ -121,8 +128,9 @@ export const platform = new Hono<AppEnv>()
     '/tenants/:tenantId',
     op({
       id: 'core.platform.updateTenant',
-      stories: [StoryId.PL_02],
-      description: '`{ name?, package? }` → tenant detail',
+      stories: [StoryId.PL_02, StoryId.PL_06],
+      description:
+        '`{ name?, package?, country? }` → tenant detail. `country` is an EU-27 code or `null` to clear it (422 at `["country"]` otherwise). With a stored tax id, a country the tax id does not fit, or `null`, answers 409 `conflict` with reason `tax_id_country` and changes nothing; the tax id and its check status never change here',
       responses: { 200: type<TenantDetail>() },
     }),
     tenants,
@@ -135,6 +143,45 @@ export const platform = new Hono<AppEnv>()
       return c.json(await tenantDetail(c.var.db, tenantId, now), 200);
     },
   )
+  // PL-06 tenant hub lists (members and sites).
+  .get(
+    '/tenants/:tenantId/members',
+    op({
+      id: 'core.platform.listTenantMembers',
+      stories: [StoryId.PL_06],
+      description:
+        "One page of the tenant's members and open invitations: `{ items, total, page, pageSize, facets: { role, state } }`. A member row is `{ kind: 'member', id (membership), userId, name, email, role, state: 'member' | 'disabled', emailVerified, lastActivityAt, since }`, an invitation row `{ kind: 'invitation', id, name: null, email, role, state: 'invited' | 'expired', emailVerified: false, lastActivityAt: null, since, expiresAt }`; accepted and revoked invitations are left out. Query (all optional): `q` searches name and email, `role` (tenant roles) and `state` take comma-separated values, `sort` is `name` (default), `email`, `role`, `lastActivityAt` or `since` (no name and never active last in both directions), `order`, `page` and `pageSize` as for the tenant list. `facets.role` and `facets.state` count under the search and the other facet. 404 for an id that is not a tenant",
+      responses: { 200: type<PlatformMemberList>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.query, PlatformMemberListQuery.query),
+    async (c) => {
+      const tenantId = c.req.valid('param').tenantId as TenantId;
+      await requireTenant(c.var.db, tenantId);
+      const now = c.var.clock.now();
+      return c.json(await memberList(c.var.db, tenantId, c.req.valid('query'), now), 200);
+    },
+  )
+  .get(
+    '/tenants/:tenantId/sites',
+    op({
+      id: 'core.platform.listTenantSites',
+      stories: [StoryId.PL_06],
+      description:
+        "One page of the tenant's sites, master data only: `{ items: [{ id, name, city, country, timeZone, active, halls, docks, createdAt }], total, page, pageSize, facets: { active: { yes, no } } }`. `docks` counts active and maintenance docks. Query (all optional): `q` searches name and city, `active` takes `yes`, `no` or both, `sort` is `name` (default), `city` or `createdAt`, `order`, `page` and `pageSize` as for the tenant list. Read in the request transaction as the tenant with actor `system:platform_read`. 404 for an id that is not a tenant",
+      responses: { 200: type<PlatformSiteList>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.query, PlatformSiteListQuery.query),
+    async (c) => {
+      const tenantId = c.req.valid('param').tenantId as TenantId;
+      await requireTenant(c.var.db, tenantId);
+      return c.json(await siteList(c.var.db, tenantId, c.req.valid('query')), 200);
+    },
+  )
+  // End of the PL-06 tenant hub lists.
   .put(
     '/tenants/:tenantId/overrides/:key',
     op({

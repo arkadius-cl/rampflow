@@ -21,7 +21,7 @@ export function contains(q: string, ...columns: SQLWrapper[]): SQL | undefined {
 export function orderBy<S extends string>(
   state: { sort: S; order: SortOrder },
   columns: Record<S, AnyColumn | SQL>,
-  id: AnyColumn,
+  id: AnyColumn | SQL,
   options: { nullsLast?: readonly S[] } = {},
 ): SQL[] {
   const column = columns[state.sort];
@@ -31,6 +31,13 @@ export function orderBy<S extends string>(
     : directed;
   return [nullsLast, asc(id)];
 }
+
+/** The position of `expr` in a value set, so a sort follows the set's order, not the alphabet. */
+export const inOrderOf = (members: readonly string[], expr: SQLWrapper): SQL =>
+  sql`array_position(array[${sql.join(
+    members.map((m) => sql`${m}`),
+    sql`, `,
+  )}]::text[], ${expr})`;
 
 export function pageWindow(state: { page: number; pageSize: number }): {
   limit: number;
