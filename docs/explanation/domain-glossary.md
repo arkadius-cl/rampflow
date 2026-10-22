@@ -5,7 +5,7 @@ type: explanation
 audience: [agent, developer]
 tags: [glossary, domain, tenancy, booking, yard, safety, avis]
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 ---
 
 # Domain glossary
@@ -50,8 +50,12 @@ The code uses the English term. The UI shows the localized term.
 | Package | Paket | A sellable bundle of entitlement values assigned to a tenant. |
 | Setting | Einstellung | A typed configuration value with a platform default that a tenant or site may override. |
 | Registration (`tenant_signup`) | Registrierung | A company's self-registration at `/signup`, waiting for its email link. Confirming the email creates the tenant and its first `tenant_admin`. Not the carrier registration through a public link (`carrier_registration`, CR-02). |
+| Tenant status (`TenantStatus`) | Status des Mandanten | `onboarding`, `active` or `suspended`. Derived from `org.suspended_at` and `org.activated_at`, never stored. Suspended wins over the other two. |
 | Tenant status: onboarding | Onboarding | A tenant without an activation time (`org.activated_at` null). Every new tenant starts here, whether self-registered or created by the platform admin. Carrier invitations, public links and bookings wait until the tenant is active (ON-03). Derived, never stored. |
 | Tenant status: active | Aktiv | A tenant with an activation time. The transaction that creates the tenant's first dock sets it (ON-02). Activation is one-way. No later write clears it, and inactive docks or sites leave the tenant active. Tenants that existed before change 02 were backfilled as active since their creation. |
+| Tenant status: suspended | Gesperrt | A tenant whose `org.suspended_at` is set. Its staff and the carriers acting at it are refused, its driver links and public links stop working, and its business jobs skip it. Reactivation returns it to onboarding or active, whichever it was ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)). |
+| Suspension | Sperrung | The platform admin's act of setting a tenant to suspended, with a required reason. The reason is a tenant note, never a column of `org`. Nothing is revoked or deleted, so reactivation restores every session, link and membership. |
+| Tenant note (`tenant_note`) | Notiz | The platform's internal, append-only note on a tenant, with author and time. Kinds: `note`, `suspended`, `reactivated`. Only the platform reads notes. |
 | Tax id (`tax_id_type`, `tax_id_value`) | Steuer-ID | The company's tax registration number, one of: `eu_vat`, the EU VAT number (USt-IdNr in Germany, NIP UE in Poland), confirmed against VIES; `de_stn`, a German Steuernummer (10, 11 or 13 digits) or Wirtschafts-Identifikationsnummer (W-IdNr, `DE` plus 14 digits); `pl_nip`, the Polish NIP (10 digits). |
 | Tax id status | Prüfstatus der Steuer-ID | `pending` until VIES answered for an `eu_vat`, `verified` or `unverified` by its answer, `unavailable` when VIES did not answer. `de_stn` and `pl_nip` stay `unverified`: no registry is queried. |
 

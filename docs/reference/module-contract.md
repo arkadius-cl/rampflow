@@ -5,7 +5,7 @@ type: reference
 audience: [agent, developer]
 tags: [modules, entitlements, permissions, settings, navigation, api, frontend]
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 related: [docs/decisions/ADR-0006-module-manifest-entitlements-permissions.md, docs/decisions/ADR-0007-settings-resolution.md, docs/decisions/ADR-0011-frontend-routes-and-org-context.md, docs/reference/api-routes.md]
 ---
 
@@ -257,12 +257,12 @@ export interface Access {
   role: Role | null;                              // null for driver, token, public, user, system and system actors
   permissions: ReadonlySet<PermissionKey>;
   entitlements: Entitlements | null;              // the acting tenant's (tenant, carrier_at_tenant, driver, public); null otherwise
-  tenantStatus: TenantStatus | null;              // tenantStatus(org.activated_at) for tenant and carrier_at_tenant; null otherwise
+  tenantStatus: TenantStatus | null;              // onboarding, active or suspended for tenant, carrier_at_tenant, driver and public; null otherwise
   setting<K extends SettingKey>(key: K, siteId: SiteId | null): Promise<ResolvedSetting<SettingValue<K>>>;
 }
 ```
 
-`loadAccess` reads `tenant_subscription` and `entitlement_override` for the scope's tenant, parses overrides with `parseEntitlementOverride` (skipping and logging stale rows), and calls `resolveEntitlements` with `clock.now()`. For the `tenant` and `carrier_at_tenant` parties it also reads the tenant's `activated_at` and computes `tenantStatus` with `tenantStatus({ activatedAt })`. `setting()` loads the platform, tenant and site rows once per request and calls `resolveSetting`.
+`loadAccess` reads `tenant_subscription` and `entitlement_override` for the scope's tenant, parses overrides with `parseEntitlementOverride` (skipping and logging stale rows), and calls `resolveEntitlements` with `clock.now()`. For every party acting at one tenant (`tenant`, `carrier_at_tenant`, `driver`, `public`) it also reads the tenant's `activated_at` and `suspended_at` in one row and computes `tenantStatus` with `tenantStatus({ activatedAt, suspendedAt })`: `onboarding`, `active` or `suspended`. `scoped()` refuses a suspended tenant right after `loadAccess`: 403 `tenant_suspended` for a tenant user and for `carrier_at_tenant`, 401 `unauthorized` for `driver`. `openPublicLink` answers 404 for `public` ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)). `setting()` loads the platform, tenant and site rows once per request and calls `resolveSetting`.
 
 ### Middleware
 
@@ -471,7 +471,7 @@ export const Route = createFileRoute('/t/$orgId/gate/')({
 | `apps/api/src/modules/<id>/<area>/*.ts` | services and repositories: functions that take `tx` |
 | `apps/api/src/modules/<id>/<area>/route-cases.ts` | route cases |
 | `apps/api/src/modules/<id>/emails/<name>.tsx` | email templates, id `<id>.<name>` |
-| `apps/api/src/modules/<id>/jobs/<name>.ts` | jobs, discovered at startup |
+| `apps/api/src/modules/<id>/jobs/<name>.ts` | jobs, discovered at startup; a job that iterates tenants with `forEachTenant` skips suspended tenants by default (`SuspendedTenants.skip`) or passes `SuspendedTenants.include` ([ADR-0018](../decisions/ADR-0018-tenant-suspension.md)) |
 | `packages/i18n/locales/<locale>/<id>/<part>.json` | catalogs |
 | `apps/web/src/routes/<area>/...` | screens |
 | `apps/web/src/modules/<id>/` | screen components |
