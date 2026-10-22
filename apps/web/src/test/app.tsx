@@ -35,7 +35,10 @@ export const ORG = '00000000-0000-4000-8000-0000000000a1';
 export const SITE = '00000000-0000-4000-8000-0000000000b1';
 export const USER = '00000000-0000-4000-8000-0000000000c1';
 
-/** Answers of the fake API by `METHOD /path`; a function gets the request's search params. */
+/**
+ * Answers of the fake API by `METHOD /path`; a function gets the request's search params. A
+ * `Response` is sent as it is, anything else as a 200 JSON body.
+ */
 export type FakeApi = Record<string, unknown | ((search: URLSearchParams) => unknown)>;
 
 const me = (role: Role, orgKind: OrgKind, orgId: string): MeResponse => ({
@@ -112,7 +115,8 @@ export function renderApp(url: string, fake: FakeApi) {
       return Response.json({ error: { code: ErrorCode.not_found, message: key } }, { status: 404 });
     }
     const answer = fake[key];
-    return Response.json(typeof answer === 'function' ? answer(target.searchParams) : answer);
+    const value = typeof answer === 'function' ? answer(target.searchParams) : answer;
+    return value instanceof Response ? value : Response.json(value);
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createRouter({

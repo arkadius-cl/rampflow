@@ -25,18 +25,25 @@ export interface FacetOption {
 export function DataTableFacetedFilter({
   title,
   options,
+  hideZero = false,
   selected,
   counts,
   onChange,
 }: {
   title: string;
   options: readonly FacetOption[];
+  hideZero?: boolean;
   selected: readonly string[];
   counts: Readonly<Record<string, number>> | undefined;
   onChange: (selected: string[]) => void;
 }) {
   const { t } = useTranslation();
   const chosen = options.filter((o) => selected.includes(o.value));
+  // Before the first answer every count is unknown, so nothing is hidden yet.
+  const offered =
+    hideZero && counts
+      ? options.filter((o) => (counts[o.value] ?? 0) > 0 || selected.includes(o.value))
+      : options;
   const toggle = (value: string) =>
     onChange(
       options
@@ -71,7 +78,7 @@ export function DataTableFacetedFilter({
           <CommandList>
             <CommandEmpty>{t(($) => $['data-table'].no_values)}</CommandEmpty>
             <CommandGroup>
-              {options.map((o) => (
+              {offered.map((o) => (
                 <CommandItem
                   key={o.value}
                   value={o.label}

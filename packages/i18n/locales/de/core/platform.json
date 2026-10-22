@@ -32,10 +32,26 @@
     "empty": "Noch keine Mandanten.",
     "created_at": "Angelegt",
     "no_match": "Keine Mandanten gefunden",
-    "search": "Mandanten nach Namen suchen",
+    "search": "Nach Name, Steuernummer oder Admin-E-Mail suchen",
     "status": "Status",
     "country": "Land",
-    "flags": "Hinweise"
+    "flags": "Hinweise",
+    "invited": "Eingeladen",
+    "tax_id": "Steuernummer",
+    "admin": "Admin-E-Mail",
+    "last_activity": "Letzte Aktivität",
+    "never": "Nie",
+    "no_tax_id": "Keine",
+    "not_set": "Nicht gesetzt",
+    "actions": "Aktionen",
+    "actions_for": "Aktionen für {{name}}",
+    "view": "Ansehen",
+    "suspend": "Sperren",
+    "reactivate": "Freigeben",
+    "attention_empty": "Nichts braucht Aufmerksamkeit",
+    "show_all": "Alle Mandanten anzeigen",
+    "matching": "Passend zu {{name}}",
+    "stop_matching": "Abgleich mit {{name}} beenden"
   },
   "tenant_status": {
     "onboarding": "Onboarding",
@@ -51,9 +67,18 @@
   },
   "tenant": {
     "back": "Alle Mandanten",
-    "description": "Paket, Übersteuerungen und Admin-Einladung dieses Mandanten.",
-    "settings_title": "Name und Paket",
-    "saved": "Mandant gespeichert."
+    "description": "Paket, Übersteuerungen und die Admin-Einladung dieses Mandanten.",
+    "settings_title": "Stammdaten",
+    "saved": "Mandant gespeichert.",
+    "tabs_label": "Bereiche des Mandanten",
+    "tabs": {
+      "overview": "Übersicht",
+      "members": "Mitglieder",
+      "sites": "Standorte",
+      "entitlements": "Berechtigungen",
+      "notes": "Notizen"
+    },
+    "edit": "Bearbeiten"
   },
   "columns": {
     "entitlement": "Berechtigung",
@@ -117,5 +142,105 @@
   "tenant_flag": {
     "possible_duplicate": "Mögliches Duplikat",
     "tax_id_unverified": "Steuernummer nicht bestätigt"
+  },
+  "views": {
+    "attention": "Braucht Aufmerksamkeit",
+    "all": "Alle"
+  },
+  "tax_id_status": {
+    "pending": "Ausstehend",
+    "verified": "Geprüft",
+    "unverified": "Ungeprüft",
+    "unavailable": "Nicht verfügbar"
+  },
+  "note_kind": {
+    "note": "Notiz",
+    "suspended": "Gesperrt",
+    "reactivated": "Freigegeben"
+  },
+  "member_state": {
+    "member": "Mitglied",
+    "disabled": "Deaktiviert",
+    "invited": "Eingeladen",
+    "expired": "Einladung abgelaufen"
+  },
+  "overview": {
+    "status_title": "Status",
+    "suspended_at": "Gesperrt {{at}}",
+    "suspended_by": "durch {{name}}",
+    "reason": "Grund",
+    "onboarding_title": "Onboarding",
+    "steps": "{{done}} von {{total}} Schritten erledigt",
+    "open_steps": "Offen: {{steps}}",
+    "activated": "Aktiv seit {{at}}",
+    "usage_title": "Nutzung diesen Monat",
+    "tax_id_title": "Steuernummer",
+    "tax_id_type": "Art",
+    "tax_id_value": "Nummer",
+    "tax_id_checked": "Geprüft {{at}}",
+    "tax_id_unchecked": "Noch nicht geprüft",
+    "tax_id_none": "Keine Steuernummer hinterlegt.",
+    "flags_title": "Hinweise",
+    "flags_none": "Keine Hinweise.",
+    "show_matching": "Passende Mandanten anzeigen",
+    "admins_title": "Admins",
+    "admins_none": "Noch keine Admin-Person beigetreten.",
+    "invitation_open": "Einladung offen, läuft ab {{at}}",
+    "details_title": "Details",
+    "country": "Land",
+    "created": "Angelegt",
+    "last_activity": "Letzte Aktivität"
+  },
+  "suspension": {
+    "suspend_title": "{{name}} sperren",
+    "suspend_effect": "Mitarbeitende und Spediteure können rampflow bei dieser Organisation nicht mehr nutzen, bis sie freigegeben wird. Ihre Admins erhalten eine E-Mail mit dem Grund.",
+    "suspend_submit": "Mandant sperren",
+    "suspended": "{{name}} gesperrt.",
+    "reactivate_title": "{{name}} freigeben",
+    "reactivate_effect": "Mitarbeitende und Spediteure können rampflow bei dieser Organisation wieder nutzen. Ihre Admins erhalten eine E-Mail.",
+    "reactivate_submit": "Mandant freigeben",
+    "reactivated": "{{name}} freigegeben.",
+    "reason": "Grund"
+  },
+  "members": {
+    "name": "Name",
+    "email": "E-Mail",
+    "role": "Rolle",
+    "state": "Status",
+    "email_verified": "E-Mail bestätigt",
+    "last_activity": "Letzte Aktivität",
+    "since": "Seit",
+    "verified": "Bestätigt",
+    "unverified": "Nicht bestätigt",
+    "expires": "läuft ab {{at}}",
+    "search": "Nach Name oder E-Mail suchen",
+    "empty": "Noch keine Mitglieder.",
+    "no_match": "Keine Mitglieder gefunden"
+  },
+  "sites": {
+    "name": "Standort",
+    "city": "Ort",
+    "country": "Land",
+    "time_zone": "Zeitzone",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "halls": "Hallen",
+    "docks": "Rampen",
+    "search": "Nach Name oder Ort suchen",
+    "empty": "Dieser Mandant hat noch keinen Standort angelegt.",
+    "no_match": "Keine Standorte gefunden"
+  },
+  "notes": {
+    "add": "Notiz hinzufügen",
+    "add_description": "Nur für das Plattform-Team sichtbar.",
+    "body": "Notiz",
+    "added": "Notiz hinzugefügt.",
+    "time": "Zeit",
+    "kind": "Art",
+    "author": "Autor",
+    "deleted_user": "Gelöschter Nutzer",
+    "search": "Notizen durchsuchen",
+    "empty": "Noch keine Notizen.",
+    "no_match": "Keine Notizen gefunden"
   }
 }

@@ -186,5 +186,6 @@
     "keep": "Buchung behalten",
     "confirm": "Buchung stornieren",
     "done": "Buchung {{code}} storniert"
-  }
+  },
+  "unavailable": "Vorübergehend nicht verfügbar"
 }

@@ -186,5 +186,6 @@
     "keep": "Keep booking",
     "confirm": "Cancel booking",
     "done": "Booking {{code}} cancelled"
-  }
+  },
+  "unavailable": "Temporarily unavailable"
 }

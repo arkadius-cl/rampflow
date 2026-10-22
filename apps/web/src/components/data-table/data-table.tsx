@@ -53,6 +53,15 @@ export interface DataTableQuery<TData> {
 const NO_ROWS: never[] = [];
 const PLACEHOLDER_ROWS = 5;
 
+/**
+ * A click reaches the row unless a link, a button or the row actions cell took it. A menu in a
+ * portal bubbles through React to the row while its DOM sits outside it, hence the contains check.
+ */
+const ownsClick = (target: EventTarget | null, row: HTMLElement) =>
+  target instanceof Element &&
+  row.contains(target) &&
+  target.closest('a, button, [data-row-actions]') === null;
+
 const apply = <T,>(updater: Updater<T>, current: T): T =>
   typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
 
@@ -72,6 +81,8 @@ export function DataTable<
   rowTestId,
   empty,
   noMatchTitle,
+  onRowClick,
+  toolbarExtra,
 }: {
   controls: ListControls<S, F, P>;
   query: DataTableQuery<TData>;
@@ -86,6 +97,13 @@ export function DataTable<
   /** The list's "none yet" state with its primary action. */
   empty: ReactNode;
   noMatchTitle: string;
+  /**
+   * Opens the row's entity page on a click anywhere in the row, except on links, buttons and
+   * inside `[data-row-actions]` (ADR-0015). The name link stays the keyboard path.
+   */
+  onRowClick?: (row: TData) => void;
+  /** Rendered in the toolbar after the search, for example a chip of a reference filter. */
+  toolbarExtra?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { list, state } = controls;
@@ -196,7 +214,18 @@ export function DataTable<
       );
     }
     return table.getRowModel().rows.map((row) => (
-      <TableRow key={row.id} data-testid={rowTestId?.(row.original)}>
+      <TableRow
+        key={row.id}
+        data-testid={rowTestId?.(row.original)}
+        className={onRowClick ? 'cursor-pointer' : undefined}
+        onClick={
+          onRowClick
+            ? (e) => {
+                if (ownsClick(e.target, e.currentTarget)) onRowClick(row.original);
+              }
+            : undefined
+        }
+      >
         {row.getAllCells().map((cell) => (
           <TableCell key={cell.id}>
             <table.FlexRender cell={cell} />
@@ -214,6 +243,7 @@ export function DataTable<
         facetCounts={query.data?.facets}
         searchPlaceholder={searchPlaceholder}
         fetching={query.isFetching}
+        extra={toolbarExtra}
       />
       <div className="rounded-lg border bg-background">
         <Table aria-label={label} aria-busy={query.isFetching}>

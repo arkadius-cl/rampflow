@@ -59,5 +59,9 @@
     "carrier_admin": "Administrator przewoźnika",
     "carrier_user": "Użytkownik przewoźnika"
   },
-  "viewer_time": "({{time}} Twój czas)"
+  "viewer_time": "({{time}} Twój czas)",
+  "suspended": {
+    "title": "Organizacja zawieszona",
+    "description": "Ta organizacja została zawieszona przez platformę. Skontaktuj się z administratorem swojej organizacji."
+  }
 }

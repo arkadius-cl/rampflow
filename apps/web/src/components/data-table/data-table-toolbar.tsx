@@ -1,6 +1,6 @@
 import type { FacetSets, ParamSchemas, ValueSet } from '@rampflow/shared/contract/list';
 import { SearchIcon, XIcon } from 'lucide-react';
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
@@ -12,6 +12,8 @@ import type { ListControls } from './use-list-state';
 export interface FacetConfig {
   title: string;
   options: readonly FacetOption[];
+  /** Offer only values with a count above zero, plus the selected ones (long sets: countries). */
+  hideZero?: boolean;
 }
 
 /** The filter of each facet, keyed like the list's facets. */
@@ -31,12 +33,14 @@ export function DataTableToolbar<
   facetCounts,
   searchPlaceholder,
   fetching,
+  extra,
 }: {
   controls: ListControls<S, F, P>;
   facets: FacetConfigs<F>;
   facetCounts: Readonly<Record<string, Readonly<Record<string, number>>>> | undefined;
   searchPlaceholder: string;
   fetching: boolean;
+  extra?: ReactNode;
 }) {
   const { t } = useTranslation();
   const searchId = useId();
@@ -59,11 +63,13 @@ export function DataTableToolbar<
           onBlur={controls.endTyping}
         />
       </InputGroup>
+      {extra}
       {facetEntries(facets).map(([name, facet]) => (
         <DataTableFacetedFilter
           key={name}
           title={facet.title}
           options={facet.options}
+          hideZero={facet.hideZero}
           selected={controls.state[name] as readonly string[]}
           counts={facetCounts?.[name]}
           onChange={(selected) => controls.setFacet(name, selected)}

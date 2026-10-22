@@ -32,10 +32,26 @@
     "empty": "No tenants yet.",
     "created_at": "Created",
     "no_match": "No tenants match",
-    "search": "Search tenants by name",
+    "search": "Search by name, tax id or admin email",
     "status": "Status",
     "country": "Country",
-    "flags": "Flags"
+    "flags": "Flags",
+    "invited": "Invited",
+    "tax_id": "Tax id",
+    "admin": "Admin email",
+    "last_activity": "Last activity",
+    "never": "Never",
+    "no_tax_id": "None",
+    "not_set": "Not set",
+    "actions": "Actions",
+    "actions_for": "Actions for {{name}}",
+    "view": "View",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "attention_empty": "Nothing needs attention",
+    "show_all": "Show all tenants",
+    "matching": "Matching {{name}}",
+    "stop_matching": "Stop matching {{name}}"
   },
   "tenant_status": {
     "onboarding": "Onboarding",
@@ -52,8 +68,17 @@
   "tenant": {
     "back": "All tenants",
     "description": "Package, overrides and the admin invitation of this tenant.",
-    "settings_title": "Name and package",
-    "saved": "Tenant saved."
+    "settings_title": "Master data",
+    "saved": "Tenant saved.",
+    "tabs_label": "Tenant areas",
+    "tabs": {
+      "overview": "Overview",
+      "members": "Members",
+      "sites": "Sites",
+      "entitlements": "Entitlements",
+      "notes": "Notes"
+    },
+    "edit": "Edit"
   },
   "columns": {
     "entitlement": "Entitlement",
@@ -117,5 +142,105 @@
   "tenant_flag": {
     "possible_duplicate": "Possible duplicate",
     "tax_id_unverified": "Tax id unverified"
+  },
+  "views": {
+    "attention": "Needs attention",
+    "all": "All"
+  },
+  "tax_id_status": {
+    "pending": "Pending",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "unavailable": "Unavailable"
+  },
+  "note_kind": {
+    "note": "Note",
+    "suspended": "Suspended",
+    "reactivated": "Reactivated"
+  },
+  "member_state": {
+    "member": "Member",
+    "disabled": "Disabled",
+    "invited": "Invited",
+    "expired": "Invitation expired"
+  },
+  "overview": {
+    "status_title": "Status",
+    "suspended_at": "Suspended {{at}}",
+    "suspended_by": "by {{name}}",
+    "reason": "Reason",
+    "onboarding_title": "Onboarding",
+    "steps": "{{done}} of {{total}} steps done",
+    "open_steps": "Open: {{steps}}",
+    "activated": "Active since {{at}}",
+    "usage_title": "Usage this month",
+    "tax_id_title": "Tax id",
+    "tax_id_type": "Type",
+    "tax_id_value": "Number",
+    "tax_id_checked": "Checked {{at}}",
+    "tax_id_unchecked": "Not checked yet",
+    "tax_id_none": "No tax id stored.",
+    "flags_title": "Flags",
+    "flags_none": "No flags.",
+    "show_matching": "Show matching tenants",
+    "admins_title": "Admins",
+    "admins_none": "No admin has joined yet.",
+    "invitation_open": "Invitation open, expires {{at}}",
+    "details_title": "Details",
+    "country": "Country",
+    "created": "Created",
+    "last_activity": "Last activity"
+  },
+  "suspension": {
+    "suspend_title": "Suspend {{name}}",
+    "suspend_effect": "Staff and carriers can no longer use rampflow at this organisation until it is reactivated. Its admins get an email with the reason.",
+    "suspend_submit": "Suspend tenant",
+    "suspended": "{{name}} suspended.",
+    "reactivate_title": "Reactivate {{name}}",
+    "reactivate_effect": "Staff and carriers can use rampflow at this organisation again. Its admins get an email.",
+    "reactivate_submit": "Reactivate tenant",
+    "reactivated": "{{name}} reactivated.",
+    "reason": "Reason"
+  },
+  "members": {
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "state": "State",
+    "email_verified": "Email verified",
+    "last_activity": "Last activity",
+    "since": "Since",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "expires": "expires {{at}}",
+    "search": "Search by name or email",
+    "empty": "No members yet.",
+    "no_match": "No members match"
+  },
+  "sites": {
+    "name": "Site",
+    "city": "City",
+    "country": "Country",
+    "time_zone": "Time zone",
+    "active": "Active",
+    "inactive": "Inactive",
+    "halls": "Halls",
+    "docks": "Docks",
+    "search": "Search by name or city",
+    "empty": "This tenant has not created a site yet.",
+    "no_match": "No sites match"
+  },
+  "notes": {
+    "add": "Add note",
+    "add_description": "Visible to the platform team only.",
+    "body": "Note",
+    "added": "Note added.",
+    "time": "Time",
+    "kind": "Kind",
+    "author": "Author",
+    "deleted_user": "Deleted user",
+    "search": "Search notes",
+    "empty": "No notes yet.",
+    "no_match": "No notes match"
   }
 }

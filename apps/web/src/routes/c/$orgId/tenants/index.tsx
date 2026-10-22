@@ -1,9 +1,15 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { BadgeTone, Permission } from '@rampflow/shared/values';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { BadgeSize, BadgeTone, Permission } from '@rampflow/shared/values';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { CircleCheckIcon, HourglassIcon, PauseCircleIcon, WarehouseIcon } from 'lucide-react';
+import {
+  CircleCheckIcon,
+  CirclePauseIcon,
+  HourglassIcon,
+  PauseCircleIcon,
+  WarehouseIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/shells/office-shell';
 import { StatusBadge } from '@/components/status-badge';
@@ -25,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { guard, useAccess } from '@/lib/access';
+import { carrierContextQuery, guard, useAccess } from '@/lib/access';
 import { useDate } from '@/modules/carriers/format';
 import { linkedTenantsQuery } from '@/modules/carriers/queries';
 import { RegistrationStatusBadge } from '@/modules/carriers/status';
@@ -44,6 +50,9 @@ function WarehousesPage() {
   const { t } = useTranslation('booking');
   const { orgId } = Route.useParams();
   const { data } = useSuspenseQuery(linkedTenantsQuery(orgId));
+  // The context marks suspended warehouses (PL-07); the linked list carries no such flag.
+  const context = useQuery(carrierContextQuery(orgId)).data;
+  const suspended = new Set(context?.tenants.filter((x) => x.suspended).map((x) => x.id));
   const pending = data.items.filter(
     (tenant) => !tenant.link && tenant.registration?.status === RegistrationStatus.pending_approval,
   );
@@ -88,7 +97,12 @@ function WarehousesPage() {
               </TableHeader>
               <TableBody>
                 {data.items.map((tenant) => (
-                  <WarehouseRow key={tenant.tenantId} orgId={orgId} tenant={tenant} />
+                  <WarehouseRow
+                    key={tenant.tenantId}
+                    orgId={orgId}
+                    tenant={tenant}
+                    suspended={suspended.has(tenant.tenantId)}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -99,14 +113,36 @@ function WarehousesPage() {
   );
 }
 
-function WarehouseRow({ orgId, tenant }: { orgId: string; tenant: LinkedTenant }) {
+function WarehouseRow({
+  orgId,
+  tenant,
+  suspended,
+}: {
+  orgId: string;
+  tenant: LinkedTenant;
+  suspended: boolean;
+}) {
   const { t } = useTranslation('booking');
   const { can } = useAccess();
   const date = useDate();
   const { link, registration } = tenant;
   return (
     <TableRow>
-      <TableCell className="pl-6 font-medium">{tenant.name}</TableCell>
+      <TableCell className="pl-6 font-medium">
+        <span className="inline-flex items-center gap-2">
+          {tenant.name}
+          {suspended ? (
+            <StatusBadge
+              size={BadgeSize.sm}
+              meta={{
+                icon: CirclePauseIcon,
+                tone: BadgeTone.neutral,
+                label: t(($) => $.portal.unavailable),
+              }}
+            />
+          ) : null}
+        </span>
+      </TableCell>
       <TableCell>
         {link ? (
           <div className="flex flex-col gap-1">
@@ -150,7 +186,7 @@ function WarehouseRow({ orgId, tenant }: { orgId: string; tenant: LinkedTenant }
         ) : null}
       </TableCell>
       <TableCell className="pr-6 text-right">
-        {link?.status === CarrierLinkStatus.active && can(Permission.booking.book) ? (
+        {link?.status === CarrierLinkStatus.active && !suspended && can(Permission.booking.book) ? (
           <a
             href={`/c/${orgId}/book?tenant=${tenant.tenantId}`}
             className={buttonVariants({ size: 'sm', variant: 'outline' })}

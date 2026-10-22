@@ -186,5 +186,6 @@
     "keep": "Zachowaj rezerwację",
     "confirm": "Anuluj rezerwację",
     "done": "Rezerwacja {{code}} anulowana"
-  }
+  },
+  "unavailable": "Tymczasowo niedostępny"
 }

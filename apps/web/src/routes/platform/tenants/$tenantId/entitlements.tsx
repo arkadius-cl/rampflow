@@ -1,29 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  InviteTenantAdmin,
-  type TenantDetail,
-  UpdateTenant,
-} from '@rampflow/shared/modules/core/api.platform';
-import {
-  EntitlementSource,
-  ErrorCode,
-  PackageId,
-  Permission,
-  UiPref,
-  values,
-} from '@rampflow/shared/values';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeftIcon, MailPlusIcon } from 'lucide-react';
+import { InviteTenantAdmin, type TenantDetail } from '@rampflow/shared/modules/core/api.platform';
+import { EntitlementSource, UiPref } from '@rampflow/shared/values';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { MailPlusIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import type * as z from 'zod';
 import { applyServerIssues, useFieldMessage } from '@/components/app-shell/form-errors';
-import { NoAccess, RouteError } from '@/components/app-shell/route-states';
-import { PageHeader } from '@/components/shells/office-shell';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardAction,
@@ -34,12 +20,9 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { TableCell } from '@/components/ui/table';
-import { guard } from '@/lib/access';
-import { api, call, isFailure } from '@/lib/api';
+import { api, call } from '@/lib/api';
 import {
   groupByModule,
   ModuleGroupTable,
@@ -51,137 +34,28 @@ import { useFormat } from '@/modules/core/format';
 import { AddOverrideCard, OverridesCard } from '@/modules/core/overrides';
 import { platformKeys, tenantQuery } from '@/modules/core/queries';
 
-// PL-02 and PL-01: one tenant's package, name, entitlements with their source, overrides, and
-// pending admin invitations with a re-invite.
+// PL-02: the Entitlements tab of the tenant hub (PL-06): the overrides with the add form, the
+// grouped entitlements with their source, and the pending admin invitations with a re-invite.
+// Moved unchanged from the single detail page of 01; the master data form lives on the Overview.
 
-export const Route = createFileRoute('/platform/tenants/$tenantId')({
-  beforeLoad: guard({ permission: Permission.core.manage_tenants }),
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(tenantQuery(params.tenantId)),
-  // Here rather than in the platform layout, so "no access" shows inside the shell.
-  errorComponent: (props) =>
-    isFailure(props.error, ErrorCode.not_found) ? <NoAccess /> : <RouteError {...props} />,
-  component: TenantPage,
+export const Route = createFileRoute('/platform/tenants/$tenantId/entitlements')({
+  component: EntitlementsTab,
 });
 
-function TenantPage() {
-  const { t } = useTranslation();
+function EntitlementsTab() {
   const { tenantId } = Route.useParams();
-  const tenant = useQuery(tenantQuery(tenantId));
+  const tenant = useSuspenseQuery(tenantQuery(tenantId)).data;
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        to="/platform/tenants"
-        className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'self-start' })}
-      >
-        <ArrowLeftIcon /> {t(($) => $.platform.tenant.back)}
-      </Link>
-      {tenant.data ? <TenantDetailView tenant={tenant.data} /> : <Skeleton className="h-96" />}
-    </div>
-  );
-}
-
-function TenantDetailView({ tenant }: { tenant: TenantDetail }) {
-  const { t } = useTranslation();
-  return (
-    <>
-      <PageHeader
-        title={tenant.name}
-        description={t(($) => $.platform.tenant.description)}
-        actions={<Badge variant="secondary">{t(($) => $.platform.packages[tenant.package])}</Badge>}
-      />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <OverridesCard tenant={tenant} />
-          <EntitlementsCard tenant={tenant} />
-        </div>
-        <div className="flex flex-col gap-4">
-          <TenantForm key={`${tenant.name}-${tenant.package}`} tenant={tenant} />
-          <AddOverrideCard key={tenant.overrides.length} tenant={tenant} />
-          <AdminInvitationsCard tenant={tenant} />
-        </div>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <OverridesCard tenant={tenant} />
+        <EntitlementsCard tenant={tenant} />
       </div>
-    </>
-  );
-}
-
-const TenantFields = UpdateTenant.required();
-type TenantFields = z.infer<typeof TenantFields>;
-
-function TenantForm({ tenant }: { tenant: TenantDetail }) {
-  const { t } = useTranslation();
-  const message = useFieldMessage();
-  const queryClient = useQueryClient();
-  const form = useForm<TenantFields>({
-    resolver: zodResolver(TenantFields),
-    defaultValues: { name: tenant.name, package: tenant.package },
-  });
-  const save = useMutation({
-    mutationFn: (json: TenantFields) =>
-      call<TenantDetail>(
-        api.platform.tenants[':tenantId'].$patch({ param: { tenantId: tenant.id }, json }),
-      ),
-    onSuccess: async (updated) => {
-      queryClient.setQueryData(platformKeys.tenant(tenant.id), updated);
-      void queryClient.invalidateQueries({ queryKey: platformKeys.tenantLists() });
-      toast.success(t(($) => $.platform.tenant.saved));
-    },
-    onError: (e) => applyServerIssues(e, form.setError),
-  });
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>{t(($) => $.platform.tenant.settings_title)}</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          noValidate
-          className="flex flex-col gap-4"
-          onSubmit={form.handleSubmit((v) => save.mutate(v))}
-        >
-          <Controller
-            name="name"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="tenant-name">{t(($) => $.platform.tenants.name)}</FieldLabel>
-                <Input {...field} id="tenant-name" aria-invalid={fieldState.invalid} />
-                <FieldError>{message(fieldState.error)}</FieldError>
-              </Field>
-            )}
-          />
-          <Controller
-            name="package"
-            control={form.control}
-            render={({ field }) => (
-              <Field>
-                <FieldLabel htmlFor="tenant-package">
-                  {t(($) => $.platform.tenants.package)}
-                </FieldLabel>
-                <NativeSelect
-                  id="tenant-package"
-                  className="w-full"
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.value as PackageId)}
-                >
-                  {values(PackageId).map((id) => (
-                    <NativeSelectOption key={id} value={id}>
-                      {t(($) => $.platform.packages[id])}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </Field>
-            )}
-          />
-          <Button type="submit" disabled={save.isPending || !form.formState.isDirty}>
-            {save.isPending ? <Spinner /> : null}
-            {t(($) => $.platform.save)}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="flex flex-col gap-4">
+        <AddOverrideCard key={tenant.overrides.length} tenant={tenant} />
+        <AdminInvitationsCard tenant={tenant} />
+      </div>
+    </div>
   );
 }
 

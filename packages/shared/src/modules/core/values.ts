@@ -65,6 +65,13 @@ export const TenantListView = {
 } as const;
 export type TenantListView = ValueOf<typeof TenantListView>;
 
+/** The extra parameters of the tenant list next to its facets (PL-04, PL-06). */
+export const TenantListParam = {
+  view: 'view',
+  duplicateOf: 'duplicateOf',
+} as const;
+export type TenantListParam = ValueOf<typeof TenantListParam>;
+
 /** `tenant_note.kind`: a free note, or the entry a suspension or reactivation writes (PL-08). */
 export const TenantNoteKind = {
   note: 'note',

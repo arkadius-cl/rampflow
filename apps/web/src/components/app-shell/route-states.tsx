@@ -1,6 +1,6 @@
 import { ErrorCode } from '@rampflow/shared/values';
 import { type ErrorComponentProps, Link, useRouter } from '@tanstack/react-router';
-import { CircleAlertIcon, CompassIcon, LockIcon } from 'lucide-react';
+import { CircleAlertIcon, CirclePauseIcon, CompassIcon, LockIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -28,6 +28,30 @@ export function NoAccess() {
         </EmptyMedia>
         <EmptyTitle>{t(($) => $.shell.no_access.title)}</EmptyTitle>
         <EmptyDescription>{t(($) => $.shell.no_access.description)}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Link to="/" className={buttonVariants()}>
+          {t(($) => $.shell.no_access.action)}
+        </Link>
+      </EmptyContent>
+    </Empty>
+  );
+}
+
+/**
+ * The tenant area of a suspended organisation (PL-07). The reason stays with the admins' email;
+ * the page only says who to contact and leads back to the organisation picker.
+ */
+export function TenantSuspended() {
+  const { t } = useTranslation();
+  return (
+    <Empty className="min-h-[60svh]">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <CirclePauseIcon />
+        </EmptyMedia>
+        <EmptyTitle>{t(($) => $.shell.suspended.title)}</EmptyTitle>
+        <EmptyDescription>{t(($) => $.shell.suspended.description)}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Link to="/" className={buttonVariants()}>
