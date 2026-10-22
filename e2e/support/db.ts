@@ -9,7 +9,7 @@ import { OrgKind, TenantRole } from '../../packages/shared/src/values/roles.ts';
 // creates yet: passwords on seeded users, invitations (U3 creates them through its screens).
 
 let pool: pg.Pool | undefined;
-function db(): pg.Pool {
+export function db(): pg.Pool {
   const url = process.env.MIGRATION_DATABASE_URL;
   if (!url) throw new Error('MIGRATION_DATABASE_URL is not set; run through pnpm test:e2e');
   pool ??= new pg.Pool({ connectionString: url, max: 2 });

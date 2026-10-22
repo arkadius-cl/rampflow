@@ -89,7 +89,7 @@ test.describe('PL-02 Packages and overrides', () => {
     await expect(group(second, 'Yard')).toHaveAttribute('aria-expanded', 'true');
     await expect(second.locator('table button[aria-expanded="true"]')).toHaveCount(1);
 
-    await second.goto(`/platform/tenants/${w.A.tenantId}`);
+    await second.goto(`/platform/tenants/${w.A.tenantId}/entitlements`);
     await expect(group(second, 'Yard')).toHaveAttribute('aria-expanded', 'false');
     await expect(second.locator('table button[aria-expanded="true"]')).toHaveCount(0);
     await other.close();
@@ -113,10 +113,20 @@ test.describe('PL-02 Packages and overrides', () => {
       tenantPage.locator('[data-slot="sidebar-content"]').getByRole('link', { name: 'Logo' }),
     ).toBeVisible();
 
-    await page.goto(`/platform/tenants/${w.A.tenantId}`);
+    await page.goto(`/platform/tenants/${w.A.tenantId}/entitlements`);
     await expect(page.getByText('No overrides. The package applies as it is.')).toBeVisible();
     await expect(page.locator('table button[aria-expanded="true"]')).toHaveCount(0);
     await expectAccessible(page);
+    // The tenant's yard rows sit under their header on the Entitlements tab, with their source.
+    await group(page, 'Yard').click();
+    for (const key of ['yard.checkin_qr', 'yard.call_to_dock']) {
+      await expect(page.getByTestId(`entitlement-${key}`)).toContainText('Package');
+    }
+    await expect(page.locator('[data-testid="module-group-yard"] + tr')).toHaveAttribute(
+      'data-testid',
+      /^entitlement-yard\./,
+    );
+    await group(page, 'Yard').click();
 
     await page.getByLabel('Entitlement').selectOption('brand.logo');
     await page.getByLabel('Value').selectOption('false');
@@ -171,7 +181,7 @@ test.describe('PL-02 Packages and overrides', () => {
   }) => {
     const w = await seedWorld(request);
     await setPassword(w.platformAdmin.id, 'platform password 1');
-    const view = `/platform/tenants/${w.A.tenantId}`;
+    const view = `/platform/tenants/${w.A.tenantId}/entitlements`;
 
     await page.goto(view);
     await expect(page).toHaveURL(/\/login/);

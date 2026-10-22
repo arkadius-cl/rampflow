@@ -4,18 +4,36 @@ import {
   type TenantDetail,
   TenantListQuery,
 } from '../../packages/shared/src/modules/core/api.platform.ts';
-import { TenantSortKey, TenantStatus } from '../../packages/shared/src/modules/core/values.ts';
+import {
+  EuCountry,
+  TaxIdStatus,
+  TaxIdType,
+  TenantCountryFacet,
+  TenantFlag,
+  TenantListParam,
+  TenantListView,
+  TenantSortKey,
+  TenantStatus,
+} from '../../packages/shared/src/modules/core/values.ts';
 import { SortOrder } from '../../packages/shared/src/values/list.ts';
 import { PackageId } from '../../packages/shared/src/values/packages.ts';
 import { expectAccessible, seedWorld, signInAs } from '../support/auth.ts';
 import { activateTenant, uniqueEmail } from '../support/db.ts';
-import { asPlatformAdmin, putOverride } from '../support/u3.ts';
+import {
+  asPlatformAdmin,
+  createTenant,
+  expectAccessibleInBothThemes,
+  putOverride,
+  setTenantFacts,
+  suspendTenant,
+  uniqueDigits,
+} from '../support/u3.ts';
 
 const PACKAGES = [PackageId.start, PackageId.pro, PackageId.enterprise] as const;
 
 /** Presses Tab until `target` has the focus. */
 async function tabTo(page: Page, target: Locator) {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 80; i++) {
     const focused = await expect(target)
       .toBeFocused({ timeout: 100 })
       .then(() => true)
@@ -27,9 +45,18 @@ async function tabTo(page: Page, target: Locator) {
 }
 
 /** The tenant list's facet parameters, in declaration order. */
-const [FACET = '', STATUS_FACET = ''] = Object.keys(TenantListQuery.spec.facets);
+const [STATUS_FACET = '', FACET = '', COUNTRY_FACET = '', FLAG_FACET = ''] = Object.keys(
+  TenantListQuery.spec.facets,
+);
+const ALL = { [TenantListParam.view]: TenantListView.all };
 
 const search = (page: Page) => new URL(page.url()).searchParams;
+
+/** A facet's trigger in the toolbar, not the sortable column header of the same name. */
+const facetButton = (page: Page, title: string) =>
+  page
+    .getByRole('button', { name: new RegExp(`^${title}`) })
+    .and(page.locator('[data-slot="popover-trigger"]'));
 
 test.describe('PL-04 Usage', () => {
   test('the tenant list searches, filters, sorts and pages in the URL and shows usage against limits', async ({
@@ -64,38 +91,42 @@ test.describe('PL-04 Usage', () => {
     const table = page.getByRole('table', { name: 'Tenants' });
     const rows = table.getByRole('row').filter({ has: page.getByRole('cell') });
     const searchbox = page.getByRole('searchbox', { name: 'Search' });
-    const packageFilter = page.getByRole('button', { name: /^Package/ });
-    const statusFilter = page.getByRole('button', { name: /^Status/ });
+    const packageFilter = facetButton(page, 'Package');
+    const statusFilter = facetButton(page, 'Status');
     const range = (text: string) => page.getByText(text, { exact: true });
 
-    // Usage meters of one tenant, found by its name.
-    await page.goto(`/platform/tenants?${new URLSearchParams({ q: tenantA.name })}`);
+    // Usage meters of one tenant, found by its name; active without a flag, so only in "All".
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: tenantA.name })}`);
     const row = page.getByTestId(`tenant-${w.A.tenantId}`);
     const cells = row.getByRole('cell');
     await expect(cells.nth(0)).toContainText('Tenant A');
-    await expect(cells.nth(1)).toHaveText('Pro');
+    await expect(cells.nth(0).getByRole('link', { name: tenantA.name })).toBeVisible();
     // The world's tenants have docks, so they are active (ON-02).
-    await expect(cells.nth(2)).toHaveText('Active');
-    await expect(cells.nth(3)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
-    await expect(cells.nth(4)).toContainText('2 / 5');
-    await expect(cells.nth(4)).toContainText('40 %');
-    await expect(cells.nth(4)).not.toContainText('exceeded');
-    await expect(cells.nth(5)).toContainText('/ 60');
-    await expect(cells.nth(6)).toContainText('/ 75');
-    await expect(cells.nth(7)).toContainText('3 / 2');
-    await expect(cells.nth(7)).toContainText('150 %, soft limit exceeded');
+    await expect(cells.nth(1)).toHaveText('Active');
+    await expect(cells.nth(2)).toHaveText('Pro');
+    await expect(cells.nth(5)).toContainText(w.A.users.tenant_admin.email);
+    await expect(cells.nth(7)).toContainText(/\d{4}, \d{2}:\d{2} \S+/);
+    await expect(cells.nth(8)).toContainText('2 / 5');
+    await expect(cells.nth(8)).toContainText('40 %');
+    await expect(cells.nth(8)).not.toContainText('exceeded');
+    await expect(cells.nth(9)).toContainText('/ 60');
+    await expect(cells.nth(10)).toContainText('/ 75');
+    await expect(cells.nth(11)).toContainText('3 / 2');
+    await expect(cells.nth(11)).toContainText('150 %, soft limit exceeded');
     await expect(
       row.getByRole('progressbar', { name: /Bookings this month: 150 percent/ }),
     ).toBeVisible();
     await expect(table.getByRole('columnheader', { name: 'Sites' })).not.toHaveAttribute(
       'aria-sort',
     );
-    await expect(
-      table.getByRole('columnheader', { name: 'Sites' }).getByRole('button'),
-    ).toHaveCount(0);
+    for (const name of ['Sites', 'Tax id', 'Admin email']) {
+      const header = table.getByRole('columnheader', { name, exact: true });
+      await expect(header).not.toHaveAttribute('aria-sort');
+      await expect(header.getByRole('button')).toHaveCount(0);
+    }
 
     // A typing run is one history entry: one back press undoes the whole search.
-    await page.goto('/platform/tenants');
+    await page.goto(`/platform/tenants?${new URLSearchParams(ALL)}`);
     await expect(table.getByRole('columnheader', { name: /Tenant/ })).toHaveAttribute(
       'aria-sort',
       'ascending',
@@ -110,7 +141,7 @@ test.describe('PL-04 Usage', () => {
     await expect.poll(() => search(page).has('q')).toBe(false);
 
     // A facet selection is a history entry; the trigger names the selection.
-    await page.goto(`/platform/tenants?${new URLSearchParams({ q: prefix })}`);
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix })}`);
     await expect(range('1–12 of 12')).toBeVisible();
     await packageFilter.click();
     const pro = page.getByRole('option', { name: /^Pro/ });
@@ -122,7 +153,7 @@ test.describe('PL-04 Usage', () => {
     await expect(packageFilter).toContainText('Pro');
     await expect(range('1–4 of 4')).toBeVisible();
     await expect(rows).toHaveCount(4);
-    for (const cell of await rows.locator('td:nth-child(2)').all())
+    for (const cell of await rows.locator('td:nth-child(3)').all())
       await expect(cell).toHaveText('Pro');
     await page.goBack();
     await expect.poll(() => search(page).has(FACET)).toBe(false);
@@ -137,7 +168,7 @@ test.describe('PL-04 Usage', () => {
     await page.keyboard.press('Escape');
     await expect.poll(() => search(page).get(STATUS_FACET)).toBe(TenantStatus.onboarding);
     await expect(range('1–6 of 6')).toBeVisible();
-    for (const cell of await rows.locator('td:nth-child(3)').all())
+    for (const cell of await rows.locator('td:nth-child(2)').all())
       await expect(cell).toHaveText('Onboarding');
     await expect(rows.first()).toContainText(`${prefix} 02`);
     await page.goBack();
@@ -185,7 +216,7 @@ test.describe('PL-04 Usage', () => {
 
     // An outdated link falls back: the unknown package drops, the page size goes back to 25.
     await page.goto(
-      `/platform/tenants?${new URLSearchParams({ q: prefix, package: 'gold,pro', pageSize: '7' })}`,
+      `/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix, [FACET]: 'gold,pro', pageSize: '7' })}`,
     );
     await expect(packageFilter).toContainText('Pro');
     await expect(page.getByRole('combobox', { name: 'Rows per page' })).toHaveText(/25/);
@@ -193,7 +224,7 @@ test.describe('PL-04 Usage', () => {
     await expect.poll(() => search(page).get(FACET)).toBe(PackageId.pro);
     expect(search(page).has('pageSize')).toBe(false);
 
-    // No match, then "Clear filters" shows every tenant with a clean URL.
+    // No match, then "Clear filters" returns to the default view with a clean URL.
     await searchbox.fill('zzzz');
     await expect(table.getByText('No tenants match')).toBeVisible();
     await expect(table).toContainText('Search: “zzzz”');
@@ -204,7 +235,7 @@ test.describe('PL-04 Usage', () => {
     await expect(rows.first()).toBeVisible();
 
     // Keyboard only: search, filter, a sortable header and the paging controls.
-    await page.goto(`/platform/tenants?${new URLSearchParams({ q: prefix })}`);
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix })}`);
     await expect(range('1–12 of 12')).toBeVisible();
     await tabTo(page, searchbox);
     await tabTo(page, packageFilter);
@@ -225,7 +256,9 @@ test.describe('PL-04 Usage', () => {
     await page.keyboard.press('Enter');
     await page.getByRole('option', { name: '10', exact: true }).press('Enter');
     await expect.poll(() => search(page).get('pageSize')).toBe('10');
-    await page.goto(`/platform/tenants?${new URLSearchParams({ q: prefix, pageSize: '10' })}`);
+    await page.goto(
+      `/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix, pageSize: '10' })}`,
+    );
     const next = page.getByRole('button', { name: 'Next page' });
     await tabTo(page, next);
     await page.keyboard.press('Enter');
@@ -240,5 +273,174 @@ test.describe('PL-04 Usage', () => {
     await expect(
       page.locator('[data-slot="sidebar-content"]').getByRole('link', { name: 'Tenants' }),
     ).toBeVisible();
+  });
+
+  test('the views, the status, country and flag facets, last activity and the row actions', async ({
+    page,
+    context,
+    request,
+  }) => {
+    test.slow();
+    const w = await seedWorld(request);
+    const prefix = `Q7 ${randomUUID().slice(0, 8)}`;
+    const digits = uniqueDigits(9);
+    const DAY = 24 * 60 * 60 * 1000;
+    // One tenant per status and flag; only "Active" needs no attention.
+    const active = await createTenant(request, w, `${prefix} Active`);
+    await setTenantFacts(active.id, {
+      activated: true,
+      country: EuCountry.AT,
+      lastSeenAt: new Date(Date.now() - 40 * DAY),
+    });
+    const duplicate = await createTenant(request, w, `${prefix} Duplicate`);
+    await setTenantFacts(duplicate.id, {
+      activated: true,
+      country: EuCountry.DE,
+      possibleDuplicate: true,
+      lastSeenAt: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    const unverified = await createTenant(request, w, `${prefix} Unverified`);
+    await setTenantFacts(unverified.id, {
+      activated: true,
+      country: EuCountry.DE,
+      taxId: { type: TaxIdType.eu_vat, value: `DE${digits}`, status: TaxIdStatus.unverified },
+    });
+    const onboarding = await createTenant(request, w, `${prefix} Onboarding`);
+    const suspended = await createTenant(request, w, `${prefix} Suspended`);
+    await setTenantFacts(suspended.id, { activated: true, country: EuCountry.PL });
+    await suspendTenant(request, w, suspended.id, 'Unpaid since March');
+    await signInAs(context, w.platformAdmin);
+
+    const table = page.getByRole('table', { name: 'Tenants' });
+    const rows = table.getByRole('row').filter({ has: page.getByRole('cell') });
+    const names = () => rows.locator('td:first-child a').allTextContents();
+    const tab = (name: string) => page.getByRole('tab', { name: new RegExp(`^${name}`) });
+    const row = (t: { id: string }) => page.getByTestId(`tenant-${t.id}`);
+
+    // The default view: four need attention, five in all, no `view` in the URL.
+    await page.goto(`/platform/tenants?${new URLSearchParams({ q: prefix })}`);
+    await expect(tab('Needs attention')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab('Needs attention')).toHaveText('Needs attention4');
+    await expect(tab('All')).toHaveText('All5');
+    await expect(rows).toHaveCount(4);
+    await expect(row(active)).toHaveCount(0);
+    expect(search(page).has(TenantListParam.view)).toBe(false);
+    await tab('All').click();
+    await expect.poll(() => search(page).get(TenantListParam.view)).toBe(TenantListView.all);
+    expect(search(page).get('q')).toBe(prefix);
+    await expect(tab('All')).toHaveAttribute('aria-selected', 'true');
+    await expect(rows).toHaveCount(5);
+    await page.goBack();
+    await expect(tab('Needs attention')).toHaveAttribute('aria-selected', 'true');
+    await expect(rows).toHaveCount(4);
+    expect(search(page).has(TenantListParam.view)).toBe(false);
+
+    // The counts follow the search: the unflagged active tenant needs no attention.
+    await page.goto(`/platform/tenants?${new URLSearchParams({ q: `${prefix} Active` })}`);
+    await expect(tab('Needs attention')).toHaveText('Needs attention0');
+    await expect(tab('All')).toHaveText('All1');
+    await expect(table.getByText('No tenants match')).toBeVisible();
+
+    // Each status cell names its status in text.
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix })}`);
+    await expect(rows).toHaveCount(5);
+    await expect(row(active).getByRole('cell').nth(1)).toHaveText('Active');
+    await expect(row(onboarding).getByRole('cell').nth(1)).toHaveText('Onboarding');
+    await expect(row(suspended).getByRole('cell').nth(1)).toHaveText('Suspended');
+    await expect(row(unverified).getByRole('cell').nth(4)).toHaveText(`DE${digits}Unverified`);
+    await expect(row(duplicate).getByRole('cell').nth(0)).toContainText('Possible duplicate');
+    await expect(row(onboarding).getByRole('cell').nth(3)).toHaveText('Not set');
+    await expect(row(onboarding).getByRole('cell').nth(5)).toContainText('Invited');
+
+    // Two statuses.
+    const statusFilter = facetButton(page, 'Status');
+    await statusFilter.click();
+    await page.getByRole('option', { name: /^Onboarding/ }).click();
+    await page.getByRole('option', { name: /^Suspended/ }).click();
+    await page.keyboard.press('Escape');
+    await expect
+      .poll(() => search(page).get(STATUS_FACET))
+      .toBe(`${TenantStatus.onboarding},${TenantStatus.suspended}`);
+    await expect.poll(names).toEqual([`${prefix} Onboarding`, `${prefix} Suspended`]);
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix })}`);
+    await expect(rows).toHaveCount(5);
+
+    // Tenants without a country, with the Country filter open in both themes.
+    const countryFilter = facetButton(page, 'Country');
+    await countryFilter.click();
+    const notSet = page.getByRole('option', { name: /^Not set/ });
+    await expect(notSet).toContainText('1');
+    await expectAccessibleInBothThemes(page);
+    await notSet.click();
+    await page.keyboard.press('Escape');
+    await expect.poll(() => search(page).get(COUNTRY_FACET)).toBe(TenantCountryFacet.none);
+    await expect.poll(names).toEqual([`${prefix} Onboarding`]);
+    await page.goBack();
+    await expect(rows).toHaveCount(5);
+
+    // The flag "Tax id unverified".
+    await facetButton(page, 'Flags').click();
+    await page.getByRole('option', { name: /^Tax id unverified/ }).click();
+    await page.keyboard.press('Escape');
+    await expect.poll(() => search(page).get(FLAG_FACET)).toBe(TenantFlag.tax_id_unverified);
+    await expect.poll(names).toEqual([`${prefix} Unverified`]);
+
+    // The tax id with spaces and in lower case.
+    const spaced = `de ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: spaced })}`);
+    await expect.poll(names).toEqual([`${prefix} Unverified`]);
+
+    // Dormant tenants first, those never active last.
+    await page.goto(`/platform/tenants?${new URLSearchParams({ ...ALL, q: prefix })}`);
+    await table.getByRole('button', { name: /^Last activity/ }).click();
+    await expect.poll(() => search(page).get('sort')).toBe(TenantSortKey.lastActivityAt);
+    // Ascending is the default order, so the canonical URL leaves `order` out.
+    expect(search(page).get('order') ?? SortOrder.asc).toBe(SortOrder.asc);
+    expect(search(page).get(TenantListParam.view)).toBe(TenantListView.all);
+    await expect(table.getByRole('columnheader', { name: /Last activity/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    const order = await names();
+    expect(order.slice(0, 2)).toEqual([`${prefix} Active`, `${prefix} Duplicate`]);
+    expect(new Set(order.slice(2))).toEqual(
+      new Set([`${prefix} Onboarding`, `${prefix} Suspended`, `${prefix} Unverified`]),
+    );
+    expect(await rows.locator('td:nth-child(7)').allTextContents()).toEqual([
+      expect.not.stringMatching(/^Never$/),
+      expect.not.stringMatching(/^Never$/),
+      'Never',
+      'Never',
+      'Never',
+    ]);
+
+    // The row actions of an active and of a suspended tenant.
+    const menuOf = (t: { name: string }) =>
+      page.getByRole('button', { name: `Actions for ${t.name}` });
+    const menu = page.getByRole('menu');
+    await menuOf(suspended).click();
+    await expect(menu.getByRole('menuitem')).toHaveText(['View', 'Reactivate']);
+    await page.keyboard.press('Escape');
+    await menuOf(active).click();
+    await expect(menu.getByRole('menuitem')).toHaveText(['View', 'Suspend']);
+    // Opening the menu stays on the list.
+    await expect(page).toHaveURL(/\/platform\/tenants\?/);
+    await expectAccessibleInBothThemes(page);
+
+    // "Suspend" from the menu: the sheet over the list, then the row reads "Suspended".
+    await menu.getByRole('menuitem', { name: 'Suspend' }).click();
+    const sheet = page.getByRole('dialog', { name: `Suspend ${active.name}` });
+    await expect(sheet).toBeVisible();
+    // Behind the modal sheet the list is inert, so it is found by test id, not by role.
+    await expect(row(active)).toBeVisible();
+    await sheet.getByLabel('Reason').fill('Fake bookings reported by carriers');
+    await sheet.getByRole('button', { name: 'Suspend tenant' }).click();
+    await expect(sheet).toBeHidden();
+    await expect(page.getByText(`${active.name} suspended.`)).toBeVisible();
+    await expect(row(active).getByRole('cell').nth(1)).toHaveText('Suspended');
+
+    // A click on the Package cell opens the hub.
+    await row(duplicate).getByRole('cell').nth(2).click();
+    await expect(page).toHaveURL(new RegExp(`/platform/tenants/${duplicate.id}$`));
   });
 });
