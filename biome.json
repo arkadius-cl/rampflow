@@ -173,7 +173,8 @@
         "apps/api/src/modules/*/jobs/**",
         "**/*.redeem.ts",
         "apps/api/src/modules/booking/capacity/**",
-        "apps/api/src/modules/core/platform/usage.ts"
+        "apps/api/src/modules/core/platform/usage.ts",
+        "apps/api/src/modules/core/platform/tenant-reads.ts"
       ],
       "linter": {
         "rules": {

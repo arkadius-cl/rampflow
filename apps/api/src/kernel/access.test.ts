@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
+import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import {
+  CarrierRole,
   ErrorCode,
   Feature,
   Limit,
@@ -22,7 +25,7 @@ import { as } from '../../test/http.ts';
 import { onboardingTenant, type World, world } from '../../test/world.ts';
 import { type SiteId, wrapJson } from '../db/ids.ts';
 import { type Scope, withScope } from '../db/scope.ts';
-import { entitlementOverride, invitation, settingValue } from '../modules/core/schema.ts';
+import { entitlementOverride, invitation, org, settingValue } from '../modules/core/schema.ts';
 import {
   loadAccess,
   requireActiveTenant,
@@ -139,6 +142,41 @@ describe('requireActiveTenant', () => {
 });
 
 describe('loadAccess', () => {
+  it('reads a suspended tenant as suspended for every party acting at it', async () => {
+    const side = w.B;
+    const scopes: Scope[] = [
+      tenantOf(side),
+      {
+        party: ScopeParty.carrier_at_tenant,
+        carrierId: side.carrierId,
+        tenantId: side.tenantId,
+        userId: side.users.carrier_user.id,
+        role: CarrierRole.carrier_user,
+      },
+      {
+        party: ScopeParty.driver,
+        tenantId: side.tenantId,
+        bookingId: side.bookings.own.id,
+        channel: DriverChannel.link,
+      },
+      { party: ScopeParty.public, tenantId: side.tenantId, siteId: null },
+    ];
+    const statuses = () =>
+      Promise.all(
+        scopes.map((scope) =>
+          withScope(scope, async (tx) => (await loadAccess(tx, scope, systemClock)).tenantStatus),
+        ),
+      );
+    const tenantRow = eq(org.id, side.tenantId as never);
+    await ownerDb().update(org).set({ suspendedAt: new Date() }).where(tenantRow);
+    try {
+      expect(await statuses()).toEqual(scopes.map(() => TenantStatus.suspended));
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenantRow);
+    }
+    expect(await statuses()).toEqual(scopes.map(() => TenantStatus.active));
+  });
+
   it('stores JSON null: an override to unlimited and a setting cleared to null round-trip', async () => {
     await override(w.B.tenantId, 'core.max_sites', null);
     await ownerDb()

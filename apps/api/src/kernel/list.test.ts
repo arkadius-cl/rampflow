@@ -9,11 +9,15 @@ import { contains, facetCounts, orderBy, pageOf, pageWindow } from './list.ts';
 
 const prefix = `list-${randomUUID().slice(0, 8)} `;
 const NAMES = ['100% Cargo', '1000 Cargo', 'abc', 'a_c', 'Acme', 'back\\slash', 'same', 'same'];
+/** The other rows have no country. */
+const COUNTRY: Record<string, string> = { abc: 'DE', Acme: 'AT' };
 
 beforeAll(async () => {
   await ownerDb()
     .insert(org)
-    .values(NAMES.map((name) => ({ kind: OrgKind.carrier, name: prefix + name })));
+    .values(
+      NAMES.map((name) => ({ kind: OrgKind.carrier, name: prefix + name, country: COUNTRY[name] })),
+    );
 });
 
 afterAll(async () => {
@@ -58,6 +62,41 @@ describe('orderBy', () => {
     const ids = rows.map((r) => r.id as string);
     expect(ids).toHaveLength(2);
     expect(ids).toEqual([...ids].sort());
+  });
+});
+
+describe('orderBy nullsLast', () => {
+  type Country = typeof TenantSortKey.country;
+  const countries = async (order: SortOrder, nullsLast: readonly Country[]) => {
+    const rows = await ownerDb()
+      .select({ country: org.country })
+      .from(org)
+      .where(like(org.name, `${prefix}%`))
+      .orderBy(
+        ...orderBy<Country>(
+          { sort: TenantSortKey.country, order },
+          { country: org.country },
+          org.id,
+          {
+            nullsLast,
+          },
+        ),
+      );
+    return rows.map((r) => r.country);
+  };
+  const empty = Array<null>(NAMES.length - 2).fill(null);
+
+  it('puts rows without a value last in both directions', async () => {
+    expect(await countries(SortOrder.asc, [TenantSortKey.country])).toEqual(['AT', 'DE', ...empty]);
+    expect(await countries(SortOrder.desc, [TenantSortKey.country])).toEqual([
+      'DE',
+      'AT',
+      ...empty,
+    ]);
+  });
+
+  it('keeps the Postgres default for keys it does not list', async () => {
+    expect(await countries(SortOrder.desc, [])).toEqual([...empty, 'DE', 'AT']);
   });
 });
 

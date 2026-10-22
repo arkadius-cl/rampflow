@@ -41,6 +41,19 @@ export const cases = defineRouteCases([
     params: tenant,
     body: () => ({ name: 'Renamed tenant' }),
   },
+  // PL-06 tenant hub lists.
+  {
+    ...tenants,
+    method: HttpMethod.GET,
+    path: '/api/platform/tenants/:tenantId/members',
+    params: tenant,
+  },
+  {
+    ...tenants,
+    method: HttpMethod.GET,
+    path: '/api/platform/tenants/:tenantId/sites',
+    params: tenant,
+  },
   {
     ...tenants,
     method: HttpMethod.PUT,

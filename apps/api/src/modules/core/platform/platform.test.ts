@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { catalog } from '@rampflow/shared';
 import type {
   PackageList,
@@ -6,19 +5,18 @@ import type {
   TenantList,
 } from '@rampflow/shared/modules/core/api.platform';
 import type { SettingEntry, SettingsView } from '@rampflow/shared/modules/core/api.settings';
-import { TenantSortKey, TenantStatus } from '@rampflow/shared/modules/core/values';
+import { TenantListView, TenantStatus } from '@rampflow/shared/modules/core/values';
 import {
   BadRequestReason,
   EntitlementSource,
   ErrorCode,
   Feature,
   Limit,
-  OrgKind,
   PackageId,
   Role,
   Setting,
   SettingSource,
-  SortOrder,
+  SqlState,
 } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -31,7 +29,7 @@ import { testClock } from '../../../kernel/clock.ts';
 import { appUser, membership, org, settingValue, tenantSubscription } from '../schema.ts';
 import { errorOf, inviteeEmail, sentInvitation } from '../staff/fixtures.ts';
 
-// PL-01 to PL-04 through /api/platform against Postgres.
+// PL-01 to PL-04 through /api/platform against Postgres; the tenant list is in tenant-list.test.ts.
 
 const clock = testClock(new Date());
 const app = createApp({ clock });
@@ -325,204 +323,11 @@ describe('PL-03 platform defaults', () => {
   });
 });
 
-/**
- * Tenants with the given names and packages, created one minute apart in list order; `active`
- * ones are activated at creation, the others are onboarding.
- */
-async function seedTenants(
-  rows: readonly { name: string; package: PackageId; active?: boolean }[],
-) {
-  const ids: TenantId[] = [];
-  for (const [i, row] of rows.entries()) {
-    const createdAt = new Date(WORLD_NOW.getTime() + i * 60_000);
-    const [created] = await ownerDb()
-      .insert(org)
-      .values({
-        kind: OrgKind.tenant,
-        name: row.name,
-        createdAt,
-        activatedAt: row.active ? createdAt : null,
-      })
-      .returning({ id: org.id });
-    const tenantId = created?.id as string as TenantId;
-    await ownerDb().insert(tenantSubscription).values({
-      tenantId,
-      package: row.package,
-      updatedBy: w.platformAdmin.id,
-    });
-    ids.push(tenantId);
-  }
-  return ids;
-}
-
 async function list(query: Record<string, string>): Promise<TenantList> {
   const res = await platform().get(`/api/platform/tenants?${new URLSearchParams(query)}`);
   expect(res.status).toBe(200);
   return (await res.json()) as TenantList;
 }
-
-const uniquePrefix = () => `PL04 ${randomUUID().slice(0, 8)}`;
-
-describe('PL-04 tenant list', () => {
-  // `${search} …` tenants for search and facets; every name is unique to this file run.
-  const search = uniquePrefix();
-  const named = (rest: string) => `${search} ${rest}`;
-  const paged = uniquePrefix();
-  const twin = uniquePrefix();
-  let pagedIds: TenantId[];
-  let twinIds: TenantId[];
-
-  beforeAll(async () => {
-    await seedTenants([
-      { name: named('Acme Logistics'), package: PackageId.start, active: true },
-      { name: named('ACME Freight'), package: PackageId.start },
-      { name: named('acme pro'), package: PackageId.pro, active: true },
-      { name: named('Beta Freight'), package: PackageId.enterprise },
-      { name: named('100% Cargo'), package: PackageId.start },
-      { name: named('1000 Cargo'), package: PackageId.pro },
-    ]);
-    pagedIds = await seedTenants(
-      Array.from({ length: 30 }, (_, i) => ({
-        name: `${paged} ${String(i + 1).padStart(2, '0')}`,
-        package: PackageId.start,
-      })),
-    );
-    twinIds = await seedTenants(
-      Array.from({ length: 12 }, () => ({ name: twin, package: PackageId.pro })),
-    );
-  });
-
-  it('answers the first 25 tenants in name order without a query', async () => {
-    const page = await list({});
-    expect(page).toMatchObject({ page: 1, pageSize: 25 });
-    expect(page.items).toHaveLength(Math.min(25, page.total));
-    const first = await list({ q: paged });
-    expect(first).toMatchObject({ total: 30, page: 1, pageSize: 25 });
-    expect(first.items.map((t) => t.id)).toEqual(pagedIds.slice(0, 25));
-    expect(first.items[0]).toMatchObject({
-      name: `${paged} 01`,
-      package: PackageId.start,
-      createdAt: WORLD_NOW.toISOString(),
-    });
-    const second = await list({ q: paged, page: '2' });
-    expect(second.items.map((t) => t.id)).toEqual(pagedIds.slice(25));
-  });
-
-  it('searches the name case-insensitively with literal wildcards', async () => {
-    const acme = await list({ q: `${search.toUpperCase()} acme` });
-    expect(acme.items.map((t) => t.name)).toEqual([
-      named('ACME Freight'),
-      named('Acme Logistics'),
-      named('acme pro'),
-    ]);
-    const percent = await list({ q: `${search} 100%` });
-    expect(percent.items.map((t) => t.name)).toEqual([named('100% Cargo')]);
-  });
-
-  it('filters by several packages and combines the filter with the search', async () => {
-    const both = await list({ q: search, package: `${PackageId.start},${PackageId.pro}` });
-    expect(both.total).toBe(5);
-    expect(both.items.every((t) => t.package !== PackageId.enterprise)).toBe(true);
-    const pro = await list({ q: `${search} acme`, package: PackageId.pro });
-    expect(pro.items.map((t) => t.name)).toEqual([named('acme pro')]);
-    expect(pro.total).toBe(1);
-  });
-
-  it('counts each package under the search, ignoring the package selection', async () => {
-    const pro = await list({ q: `${search} acme`, package: PackageId.pro });
-    expect(pro.facets.package).toEqual({
-      [PackageId.start]: 2,
-      [PackageId.pro]: 1,
-      [PackageId.enterprise]: 0,
-    });
-  });
-
-  it('filters by status: onboarding answers only tenants without an activation time', async () => {
-    const onboarding = await list({ q: `${search} acme`, status: TenantStatus.onboarding });
-    expect(onboarding.items.map((t) => [t.name, t.status])).toEqual([
-      [named('ACME Freight'), TenantStatus.onboarding],
-    ]);
-    const active = await list({ q: `${search} acme`, status: TenantStatus.active });
-    expect(active.items.map((t) => [t.name, t.status])).toEqual([
-      [named('Acme Logistics'), TenantStatus.active],
-      [named('acme pro'), TenantStatus.active],
-    ]);
-    const both = await list({
-      q: `${search} acme`,
-      status: `${TenantStatus.onboarding},${TenantStatus.active}`,
-    });
-    expect(both.total).toBe(3);
-  });
-
-  it('counts each status under the search and the package filter, ignoring the status selection', async () => {
-    const page = await list({ q: `${search} acme`, status: TenantStatus.onboarding });
-    expect(page.facets.status).toEqual({
-      [TenantStatus.onboarding]: 1,
-      [TenantStatus.active]: 2,
-      [TenantStatus.suspended]: 0,
-    });
-    const start = await list({ q: `${search} acme`, package: PackageId.start });
-    expect(start.facets.status).toEqual({
-      [TenantStatus.onboarding]: 1,
-      [TenantStatus.active]: 1,
-      [TenantStatus.suspended]: 0,
-    });
-    expect(page.facets.package).toEqual({
-      [PackageId.start]: 1,
-      [PackageId.pro]: 0,
-      [PackageId.enterprise]: 0,
-    });
-  });
-
-  it('sorts by creation, newest first', async () => {
-    const page = await list({
-      q: search,
-      sort: TenantSortKey.createdAt,
-      order: SortOrder.desc,
-    });
-    const created = page.items.map((t) => t.createdAt);
-    expect(created).toHaveLength(6);
-    expect(created).toEqual([...created].sort().reverse());
-    expect(page.items[0]?.name).toBe(named('1000 Cargo'));
-  });
-
-  it('pages tenants with equal names without repeating or skipping one', async () => {
-    const one = await list({ q: twin, pageSize: '10' });
-    const two = await list({ q: twin, pageSize: '10', page: '2' });
-    expect(one.items).toHaveLength(10);
-    expect(two.items).toHaveLength(2);
-    const seen = [...one.items, ...two.items].map((t) => t.id);
-    expect(new Set(seen).size).toBe(12);
-    expect(seen).toEqual([...twinIds].sort());
-  });
-
-  it('answers a page past the end with no items and the total', async () => {
-    expect(await list({ q: twin, page: '5', pageSize: '10' })).toMatchObject({
-      items: [],
-      total: 12,
-      page: 5,
-      pageSize: 10,
-    });
-  });
-
-  it.each([
-    ['pageSize=7', ['pageSize']],
-    ['sort=usage', ['sort']],
-    ['package=gold', ['package', 0]],
-    ['status=closed', ['status', 0]],
-    ['tab=all', ['tab']],
-  ])('answers 422 for %s at its path', async (query, path) => {
-    const res = await platform().get(`/api/platform/tenants?${query}`);
-    expect(res.status).toBe(422);
-    expect((await errorOf(res)).details?.issues).toEqual([expect.objectContaining({ path })]);
-  });
-
-  it('is not reachable for a tenant admin, whatever the query', async () => {
-    const res = await as(app, w.A.users.tenant_admin).get('/api/platform/tenants?q=Tenant');
-    expect(res.status).toBe(404);
-    expect(await res.text()).not.toContain(search);
-  });
-});
 
 describe('PL-04 usage', () => {
   /** Tenant A's row, found by its name. */
@@ -531,7 +336,7 @@ describe('PL-04 usage', () => {
       await as(app, t.platformAdmin).get(`/api/platform/tenants/${t.A.tenantId}`)
     ).json()) as TenantDetail;
     const res = await as(app, t.platformAdmin).get(
-      `/api/platform/tenants?${new URLSearchParams({ q: detail.name })}`,
+      `/api/platform/tenants?${new URLSearchParams({ q: detail.name, view: TenantListView.all })}`,
     );
     const { items } = (await res.json()) as TenantList;
     return items.find((i) => i.id === t.A.tenantId);
@@ -568,5 +373,16 @@ describe('PL-04 usage', () => {
     const tenantId: TenantId = t.A.tenantId;
     expect((await invite(t.A)).status).toBe(201);
     expect((await as(app, t.A.users.dispatcher).get(`/api/t/${tenantId}/sites`)).status).toBe(200);
+  });
+});
+
+describe('PL-07 suspension column', () => {
+  it('refuses a suspension time on a carrier org', async () => {
+    await expect(
+      ownerDb()
+        .update(org)
+        .set({ suspendedAt: WORLD_NOW })
+        .where(eq(org.id, w.A.carrierId as never)),
+    ).rejects.toMatchObject({ cause: { code: SqlState.check_violation } });
   });
 });

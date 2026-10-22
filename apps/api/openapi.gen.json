@@ -4201,7 +4201,7 @@
       "get": {
         "operationId": "core.platform.listTenants",
         "summary": "List tenants",
-        "description": "One page of tenants: `{ items: [{ id, name, package, createdAt, status, usage }], total, page, pageSize, facets: { package: { start, pro, enterprise }, status: { onboarding, active } } }`. `status` is `onboarding` while the tenant has no activation time, else `active`. Query (all optional): `q` searches the name as a case-insensitive substring, `package` filters by a comma-separated list of package ids, `status` by a comma-separated list of statuses, `sort` is `name` (default) or `createdAt`, `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the tenants matching `q`, `package` and `status`; `facets.package` counts per package the tenants matching `q` and `status`, ignoring `package`, and `facets.status` per status those matching `q` and `package`, ignoring `status`. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`",
+        "description": "One page of tenants in a view: `{ items: [{ id, name, package, createdAt, status, country, taxId, admin, lastActivityAt, possibleDuplicate, usage }], total, page, pageSize, facets: { status, package, country, flag }, views: { attention, all } }`. `status` is `suspended` while `suspended_at` is set, else `onboarding` without an activation time, else `active`. `country` is the ISO code or `null`; `taxId` is `{ type, value, status }` as stored, or `null`; `admin` is `{ email, invited }`: the earliest `tenant_admin` member, else the newest open admin invitation with `invited: true`, else `null`; `lastActivityAt` is the latest `last_seen_at` of the tenant's members, `null` when nobody signed in. Query (all optional): `view` is `attention` (default: onboarding, suspended, possible duplicate or tax id `unverified`) or `all`; `q` searches the name, the tax id (spaces, dots, dashes and slashes ignored) and the emails of admin members and open admin invitations, case-insensitively as a substring; the facets take comma-separated values: `status`, `package`, `country` (EU-27 codes and `none` for no country) and `flag` (`possible_duplicate`, `tax_id_unverified`, OR-ed); `duplicateOf` (a tenant id) keeps that tenant and every tenant the registration's duplicate rule matches against it (equivalent tax id or a shared non-free-mail member email domain), an id that is not a tenant matches nothing; `sort` is `name` (default), `status`, `package` (both in their set order), `country`, `createdAt` or `lastActivityAt` (no country and never active last in both directions), `order` is `asc` (default) or `desc` with `id` as tiebreaker, `page` from 1 (default) to 10000, `pageSize` 10, 25 (default), 50 or 100; anything else is 422 at its path. `total` counts the page's view under `q`, `duplicateOf` and every facet; `facets.<name>` counts per value within the view under the other filters, ignoring its own selection; `views` counts each view under `q`, `duplicateOf` and the facets. A page past the end has no items. `usage` holds one meter `{ used, limit, soft, over }` per limit, counted for the page rows only: `core.max_sites` (active sites), `core.max_docks` (active and maintenance docks), `core.max_internal_users` (members plus invitations that still work) and `booking.max_bookings_per_month` (bookings created since the first of the UTC month). `over` is `used > limit` and blocks nothing. Counted in the request transaction as the tenant with actor `system:usage`",
         "tags": [
           "Platform administration"
         ],
@@ -4437,7 +4437,7 @@
       "get": {
         "operationId": "core.platform.getTenant",
         "summary": "Get tenant",
-        "description": "`{ id, name, package, usage, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. Reserved keys are left out; 404 for an id that is not a tenant",
+        "description": "The list row's fields plus `{ activatedAt, taxId: { type, value, status, checkedAt } | null, suspension: { at, reason, by: { id, name } | null } | null, admins: [{ id, name, email }], onboarding: { status, activatedAt, steps } | null, entitlements: [{ key, module, kind, soft, value, source, packageValue? }], overrides: [{ key, value, expiresAt, note, active }], adminInvitations: [{ id, email, expiresAt }] }`. `suspension` is the latest suspension note while the tenant is suspended; `admins` are the `tenant_admin` members by membership time; `onboarding` is the tenant's checklist (ON-01) while it is onboarding, read as the tenant with actor `system:platform_read`. Reserved keys are left out; 404 for an id that is not a tenant",
         "tags": [
           "Platform administration"
         ],
@@ -4478,14 +4478,15 @@
           "core.manage_tenants"
         ],
         "x-stories": [
-          "PL-02"
+          "PL-02",
+          "PL-06"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
       },
       "patch": {
         "operationId": "core.platform.updateTenant",
         "summary": "Update tenant",
-        "description": "`{ name?, package? }` → tenant detail",
+        "description": "`{ name?, package?, country? }` → tenant detail. `country` is an EU-27 code or `null` to clear it (422 at `[\"country\"]` otherwise). With a stored tax id, a country the tax id does not fit, or `null`, answers 409 `conflict` with reason `tax_id_country` and changes nothing; the tax id and its check status never change here",
         "tags": [
           "Platform administration"
         ],
@@ -4594,7 +4595,8 @@
           "core.manage_tenants"
         ],
         "x-stories": [
-          "PL-02"
+          "PL-02",
+          "PL-06"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
       }
@@ -4671,6 +4673,135 @@
         ],
         "x-stories": [
           "PL-01"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      }
+    },
+    "/api/platform/tenants/{tenantId}/members": {
+      "get": {
+        "operationId": "core.platform.listTenantMembers",
+        "summary": "List tenant members",
+        "description": "One page of the tenant's members and open invitations: `{ items, total, page, pageSize, facets: { role, state } }`. A member row is `{ kind: 'member', id (membership), userId, name, email, role, state: 'member' | 'disabled', emailVerified, lastActivityAt, since }`, an invitation row `{ kind: 'invitation', id, name: null, email, role, state: 'invited' | 'expired', emailVerified: false, lastActivityAt: null, since, expiresAt }`; accepted and revoked invitations are left out. Query (all optional): `q` searches name and email, `role` (tenant roles) and `state` take comma-separated values, `sort` is `name` (default), `email`, `role`, `lastActivityAt` or `since` (no name and never active last in both directions), `order`, `page` and `pageSize` as for the tenant list. `facets.role` and `facets.state` count under the search and the other facet. 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Case-insensitive substring"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "name",
+              "type": "string",
+              "enum": [
+                "name",
+                "email",
+                "role",
+                "lastActivityAt",
+                "since"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "number"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: tenant_admin, dispatcher, gate_operator, dock_operator"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: member, disabled, invited, expired"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformMemberList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-06"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
       }
@@ -5108,6 +5239,124 @@
         ],
         "x-stories": [
           "PL-07"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      }
+    },
+    "/api/platform/tenants/{tenantId}/sites": {
+      "get": {
+        "operationId": "core.platform.listTenantSites",
+        "summary": "List tenant sites",
+        "description": "One page of the tenant's sites, master data only: `{ items: [{ id, name, city, country, timeZone, active, halls, docks, createdAt }], total, page, pageSize, facets: { active: { yes, no } } }`. `docks` counts active and maintenance docks. Query (all optional): `q` searches name and city, `active` takes `yes`, `no` or both, `sort` is `name` (default), `city` or `createdAt`, `order`, `page` and `pageSize` as for the tenant list. Read in the request transaction as the tenant with actor `system:platform_read`. 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Case-insensitive substring"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "name",
+              "type": "string",
+              "enum": [
+                "name",
+                "city",
+                "createdAt"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "asc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "number"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: yes, no"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSiteList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-06"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
       }
@@ -23881,6 +24130,311 @@
         "required": [
           "role",
           "permissions"
+        ]
+      },
+      "PlatformInvitationRow": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "invitation"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "null"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "dispatcher",
+              "dock_operator",
+              "gate_operator",
+              "tenant_admin"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "expired",
+              "invited"
+            ]
+          },
+          "emailVerified": {
+            "type": "boolean",
+            "const": false
+          },
+          "lastActivityAt": {
+            "type": "null"
+          },
+          "since": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "email",
+          "role",
+          "state",
+          "emailVerified",
+          "lastActivityAt",
+          "since",
+          "expiresAt"
+        ]
+      },
+      "PlatformMemberList": {
+        "type": "object",
+        "properties": {
+          "facets": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "object",
+                "properties": {
+                  "tenant_admin": {
+                    "type": "number"
+                  },
+                  "dispatcher": {
+                    "type": "number"
+                  },
+                  "gate_operator": {
+                    "type": "number"
+                  },
+                  "dock_operator": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "tenant_admin",
+                  "dispatcher",
+                  "gate_operator",
+                  "dock_operator"
+                ]
+              },
+              "state": {
+                "type": "object",
+                "properties": {
+                  "expired": {
+                    "type": "number"
+                  },
+                  "member": {
+                    "type": "number"
+                  },
+                  "disabled": {
+                    "type": "number"
+                  },
+                  "invited": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "expired",
+                  "member",
+                  "disabled",
+                  "invited"
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "state"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformMemberView"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "facets",
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "PlatformMemberRow": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "member"
+          },
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "dispatcher",
+              "dock_operator",
+              "gate_operator",
+              "tenant_admin"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "member"
+            ]
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "lastActivityAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "since": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "userId",
+          "name",
+          "email",
+          "role",
+          "state",
+          "emailVerified",
+          "lastActivityAt",
+          "since"
+        ]
+      },
+      "PlatformMemberView": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PlatformInvitationRow"
+          },
+          {
+            "$ref": "#/components/schemas/PlatformMemberRow"
+          }
+        ]
+      },
+      "PlatformSiteList": {
+        "type": "object",
+        "properties": {
+          "facets": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "object",
+                "properties": {
+                  "yes": {
+                    "type": "number"
+                  },
+                  "no": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "yes",
+                  "no"
+                ]
+              }
+            },
+            "required": [
+              "active"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformSiteView"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "facets",
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "PlatformSiteView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "halls": {
+            "type": "number"
+          },
+          "docks": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "country",
+          "timeZone",
+          "active",
+          "halls",
+          "docks",
+          "createdAt"
         ]
       },
       "PortalAddress": {

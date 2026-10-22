@@ -7,7 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
 import { as } from '../../test/http.ts';
 import { WORLD_NOW, type World, world } from '../../test/world.ts';
-import { hall } from '../modules/core/schema.ts';
+import { appUser, hall } from '../modules/core/schema.ts';
 import { testClock } from './clock.ts';
 import type { AppEnv } from './env.ts';
 import { ApiError, onError, onNotFound } from './errors.ts';
@@ -20,7 +20,7 @@ beforeAll(async () => {
 });
 
 /** A toy app wired like modules/index.ts: clock, one scoped() per area, the error envelope. */
-function toyApp() {
+function toyApp(clock = testClock(WORLD_NOW)) {
   const writeHall = async (c: { var: AppEnv['Variables'] }, name: string) =>
     c.var.db.insert(hall).values({ tenantId: w.A.tenantId, siteId: w.A.sites[0].id, name });
   const tenant = new Hono<AppEnv>()
@@ -49,7 +49,7 @@ function toyApp() {
     .get('/scope', (c) => c.json(c.var.scope));
   return new Hono<AppEnv>()
     .use(async (c, next) => {
-      c.set('clock', testClock(WORLD_NOW));
+      c.set('clock', clock);
       await next();
     })
     .route('/api/t/:orgId', tenant)
@@ -156,5 +156,33 @@ describe('scope resolution', () => {
     });
     expect((await as(app, { driverToken: 'forged' }).get('/api/driver/scope')).status).toBe(401);
     expect((await as(app, null).get('/api/driver/scope')).status).toBe(401);
+  });
+});
+
+describe('last activity (PL-04)', () => {
+  it('records the first request after sign-in and then at most every 5 minutes', async () => {
+    const t = await world();
+    const user = t.A.users.dispatcher;
+    const clock = testClock(WORLD_NOW);
+    const app = toyApp(clock);
+    const lastSeen = async () =>
+      (
+        await ownerDb()
+          .select({ at: appUser.lastSeenAt })
+          .from(appUser)
+          .where(eq(appUser.id, user.id))
+      )[0]?.at;
+    const request = async () =>
+      expect((await as(app, user).get(`/api/t/${t.A.tenantId}/scope`)).status).toBe(200);
+
+    expect(await lastSeen()).toBeNull();
+    await request();
+    expect(await lastSeen()).toEqual(WORLD_NOW);
+    clock.advance(2 * 60_000);
+    await request();
+    expect(await lastSeen()).toEqual(WORLD_NOW);
+    clock.advance(4 * 60_000);
+    await request();
+    expect(await lastSeen()).toEqual(new Date(WORLD_NOW.getTime() + 6 * 60_000));
   });
 });
