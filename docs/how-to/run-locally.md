@@ -5,7 +5,7 @@ type: how-to
 audience: [developer, agent]
 tags: [setup, dev, testing, database, mail, worktrees, lan, api, openapi, swagger]
 status: stable
-updated: 2026-10-21
+updated: 2026-10-22
 related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/decisions/ADR-0002-tenancy-isolation-rls.md]
 ---
 
@@ -79,8 +79,11 @@ related: [docs/decisions/ADR-0001-data-access-drizzle-node-postgres.md, docs/dec
    | `admin@nordhafen.local` | Nordhafen Kühllogistik GmbH (tenant in onboarding, package start, W-IdNr unverified; site and hall done, dock open) | `tenant_admin` |
    | `admin@acme-sued.local` | Acme Logistik Süd GmbH (tenant in onboarding, Acme's VAT number, possible duplicate) | `tenant_admin` |
    | `admin@wisla-magazyny.local` | Wisła Magazyny Sp. z o.o. (tenant in onboarding, VAT number unavailable, Polish) | `tenant_admin` |
+   | `admin@rhein-lager.local` | Rhein Lager GmbH (suspended tenant, package start, VAT number verified) | `tenant_admin` |
 
    Signed in, each onboarding tenant lands on its onboarding checklist. Nordhafen has the site *Bremerhaven* with the hall *Halle 1*, so its checklist shows "Create a site" and "Add a hall" done and "Add a dock" open; carrier invitations and public links stay blocked until that dock exists. `admin@acme-sued.local` and `admin@wisla-magazyny.local` show an empty checklist with every step open.
+
+   Signing in as `admin@rhein-lager.local` shows the suspended page instead of the tenant area. As `admin@rampflow.local`, the platform tenant list shows Rhein Lager as suspended, and its hub shows the reason on the Overview and two entries under Notes. The seed also adds Elbe Cold Store GmbH, a tenant without country or tax id whose admin has only an open invitation to `ops@elbe-cold.local`, so the list shows "Not set", "Invited" and "Never" (`apps/api/scripts/seed/platform.ts`).
 
    The seed also leaves two registrations waiting for their email link (`apps/api/scripts/seed/signups.ts`): `kontakt@kuehlhaus-weser.local` with a link that works for 24 hours after the run, and `info@lagerhaus-elbe.local` with a link that expired 2 days before the run. `db:seed` prints the Weser link:
 
