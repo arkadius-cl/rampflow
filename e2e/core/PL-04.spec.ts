@@ -401,8 +401,10 @@ test.describe('PL-04 Usage', () => {
       'aria-sort',
       'ascending',
     );
+    await expect
+      .poll(async () => (await names()).slice(0, 2))
+      .toEqual([`${prefix} Active`, `${prefix} Duplicate`]);
     const order = await names();
-    expect(order.slice(0, 2)).toEqual([`${prefix} Active`, `${prefix} Duplicate`]);
     expect(new Set(order.slice(2))).toEqual(
       new Set([`${prefix} Onboarding`, `${prefix} Suspended`, `${prefix} Unverified`]),
     );
