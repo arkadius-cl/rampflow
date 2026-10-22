@@ -5,8 +5,8 @@ type: explanation
 audience: [agent, developer]
 tags: [adr, tenancy, security, rls, postgres, testing]
 status: stable
-updated: 2026-10-21
-related: [docs/decisions/ADR-0016-tenant-self-registration.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/reference/data-model.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md]
+updated: 2026-10-22
+related: [docs/decisions/ADR-0016-tenant-self-registration.md, docs/decisions/ADR-0018-tenant-suspension.md, docs/explanation/mvp-scope.md, docs/explanation/research/tech-architecture.md, docs/reference/data-model.md, docs/decisions/ADR-0004-booking-capacity-concurrency.md]
 ---
 
 # ADR-0002: Tenancy isolation with application scoping and row-level security
@@ -66,7 +66,7 @@ export function asScope<T>(tx: Tx, scope: Scope, fn: (tx: Tx) => Promise<T>): Pr
 
 - `sessionVariables(scope)` is a pure function from the scope to `app.party`, `app.user_id`, `app.tenant_id`, `app.carrier_id`, `app.site_ids` (`*` for all sites), `app.booking_id` and `app.token_hash` (hex). Unset variables are `''`.
 - **One scoped transaction per request.** `withScope` throws when called inside another scoped transaction (tracked with `AsyncLocalStorage`): a nested one would take a second pool connection while the first waits, and its commit would survive the outer rollback. The pool has `connectionTimeoutMillis: 5000`, so exhaustion fails loudly instead of hanging.
-- **`asScope(tx, scope, fn)`** re-issues `set_config` for `scope` inside the same transaction, runs `fn`, and restores the previous variables. RLS reads the variables per statement and row locks persist, so a switch is atomic with the rest of the request. Biome allows it only in `kernel/`, `modules/*/jobs/`, `*.redeem.ts`, `modules/booking/capacity/` and `modules/core/platform/usage.ts`.
+- **`asScope(tx, scope, fn)`** re-issues `set_config` for `scope` inside the same transaction, runs `fn`, and restores the previous variables. RLS reads the variables per statement and row locks persist, so a switch is atomic with the rest of the request. Biome allows it only in `kernel/`, `modules/*/jobs/`, `*.redeem.ts`, `modules/booking/capacity/`, `modules/core/platform/usage.ts` and `modules/core/platform/tenant-reads.ts`.
 
 The baseline migration defines one SQL accessor per variable in schema `app`: `app.party()`, `app.user_id()`, `app.tenant_id()`, `app.carrier_id()`, `app.booking_id()`, `app.token_hash()`. Each reads `nullif(current_setting('app.x', true), '')`, so a variable reset to `''` on a pooled connection reads as NULL and every comparison with it fails closed. Two predicates and two definer helpers complete the set:
 
@@ -115,11 +115,13 @@ export const scoped = (resolve: (c: Context<AppEnv>) => Promise<Scope>) =>
 
 ### How each context works
 
+A suspended tenant refuses its staff, the carriers acting at it, its drivers and its public links, while the platform and the carrier's cross-tenant reads keep working. [ADR-0018](ADR-0018-tenant-suspension.md) records the effect per party. `scoped()` refuses after scope resolution, right after `loadAccess` reads the tenant status.
+
 | Party | Entered by | Sees | Writes |
 |---|---|---|---|
 | `anonymous` | `/api/auth/*` before a session exists, and `POST /api/public/signups` | Platform setting rows; users only through `app.user_by_email()` | Outbox rows without a tenant (magic links, resets, registration emails) |
 | `user` | Any signed-in request without an org: `/api/me`, invitation acceptance by a signed-in user | Own `app_user` row, own memberships and their orgs, platform setting rows | Own profile; a new carrier org during acceptance |
-| `platform` | `/api/platform/*` for `platform_admin` members of the platform org | All orgs, users, memberships, subscriptions, overrides, platform settings, invitations | The same. It has no policy on operational tenant tables. |
+| `platform` | `/api/platform/*` for `platform_admin` members of the platform org | All orgs, users, memberships, subscriptions, overrides, platform settings, invitations, tenant notes | The same; tenant notes are insert-only. It has no policy on operational tenant tables. |
 | `tenant` | `/api/t/:orgId/*` after the server finds the caller's membership in `:orgId`. Gate and dock operators carry their site list; one without `membership_site` rows sees all sites. | Rows with `tenant_id = app.tenant_id()`; site-scoped tables also require `app.site_allowed(site_id)`. Users of the tenant and of its linked carriers. | Same rows. |
 | `carrier` | `/api/c/:orgId/*` after the membership check | Own bookings, avis, events and driver links at every tenant (`carrier_id = app.carrier_id()`); reference data (sites, halls, docks, resources, load types, logo, settings, subscription) of linked tenants, including deactivated links so old bookings stay readable; own org's users | Own org's users and invitations |
 | `carrier_at_tenant` | `/api/c/:orgId/at/:tenantId/*` after the carrier's link to the tenant is found; it must be active for create and reschedule | Reference data of that tenant (including hours, closures and resource membership); its **own** bookings and children there | Bookings, avis, events and driver links with `carrier_id = app.carrier_id()` and `tenant_id = app.tenant_id()`; outbox rows |
@@ -135,8 +137,8 @@ Rules that follow from the table:
 - **Locks need UPDATE policies.** `select ... for update` passes only rows that an UPDATE policy's `using` admits. The driver gets a lock-only policy on its booking (`using id = app.booking_id()`, `with check false`), so `transitionBooking`'s row lock works for `link_acknowledgement` without granting real updates. Capacity uses an advisory lock per site, which needs no policy.
 - **RETURNING and ON CONFLICT need SELECT.** A party without a SELECT policy on a table inserts without `.returning()` and generates ids in the application. `enqueueEmail` inserts with `on conflict do nothing` without a conflict target, which needs no SELECT policy.
 - **Overrides stay internal.** Only the tenant and the platform read `entitlement_override` (its `note` is the platform's reason). For a carrier at a tenant, a driver or a public visitor, `loadAccess` resolves the tenant's entitlements through `asScope` with actor `system:access`.
-- **Platform admins do not read tenant operations.** PL-04 usage counts switch per tenant with `asScope` to a `tenant` scope with actor `system:usage` and return counts only.
-- **Jobs work per tenant.** A tick runs in one transaction that holds the job lock ([ADR-0010](ADR-0010-email-outbox-job-runner.md)). `forEachTenant` lists tenants under `system`, then runs each tenant in a savepoint under `asScope` with a tenant scope and a system actor. RLS confines each step to one tenant, and one tenant's failure rolls back only its savepoint.
+- **Platform admins do not read tenant operations.** PL-04 usage counts and the tenant hub's site list and onboarding progress switch per tenant with `asScope` to a `tenant` scope. `platform/usage.ts` uses actor `system:usage` and returns counts only. `platform/tenant-reads.ts` uses actor `system:platform_read` and selects master data only (sites, halls, docks, opening hours), never bookings, carriers, visits or personal data.
+- **Jobs work per tenant.** A tick runs in one transaction that holds the job lock ([ADR-0010](ADR-0010-email-outbox-job-runner.md)). `forEachTenant` lists tenants under `system`, then runs each tenant in a savepoint under `asScope` with a tenant scope and a system actor. RLS confines each step to one tenant, and one tenant's failure rolls back only its savepoint. `forEachTenant` skips suspended tenants unless a job passes `SuspendedTenants.include`, as the retention job does ([ADR-0018](ADR-0018-tenant-suspension.md)).
 - **Token redemption is one transaction.** The handler claims the token under `token` with one statement, then switches with `asScope` to write the membership or carrier link under `tenant` with actor `system:invitation`, and commits once. A failed membership insert therefore leaves the token unused. The claim is always a single statement, never a select followed by an update:
 
   ```sql
