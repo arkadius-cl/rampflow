@@ -62,7 +62,7 @@ function GateScreen() {
       operator="M. Weber"
       toolbar={
         <>
-          <InputGroup className="h-12 max-w-xl flex-1 text-base">
+          <InputGroup className="max-w-xl flex-1 text-base">
             <InputGroupAddon>
               <ScanLineIcon className="size-5" />
             </InputGroupAddon>
@@ -77,7 +77,7 @@ function GateScreen() {
             </InputGroupAddon>
           </InputGroup>
           <Tabs defaultValue="expected" className="ml-auto">
-            <TabsList className="h-12">
+            <TabsList>
               <TabsTrigger value="expected" className="px-4">
                 Expected <span className="ml-1 text-muted-foreground">{expected.length}</span>
               </TabsTrigger>
@@ -89,7 +89,7 @@ function GateScreen() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button variant="outline" size="lg">
+          <Button variant="outline">
             <TruckIcon /> Walk-in
           </Button>
         </>
@@ -152,8 +152,7 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
       <BookingStatusBadge status={b.status} size={BadgeSize.lg} />
       <div className="flex gap-2">
         <Button
-          size="lg"
-          className="h-12 min-w-36"
+          className="min-w-36"
           nativeButton={false}
           render={<Link to="/design/gate" search={{ checkin: b.id }} />}
           variant={blocked ? 'outline' : 'default'}
@@ -168,7 +167,7 @@ function ExpectedRow({ booking: b }: { booking: Booking }) {
 function CheckInDialog({ booking: b }: { booking: Booking }) {
   const blocked = b.safety !== BriefingState.valid;
   return (
-    <DialogContent className="sm:max-w-2xl" data-density="touch">
+    <DialogContent className="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle className="text-xl">Check in {b.carrier}</DialogTitle>
         <DialogDescription>
@@ -180,11 +179,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="plate-seen">Plate as seen</FieldLabel>
-          <Input
-            id="plate-seen"
-            defaultValue={b.plate}
-            className="h-12 font-mono text-lg uppercase"
-          />
+          <Input id="plate-seen" defaultValue={b.plate} className="font-mono text-lg uppercase" />
         </Field>
         <div>
           <div className="text-sm font-medium">Arrival</div>
@@ -218,10 +213,10 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
               or run it on this device.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <Button variant="outline" size="lg" className="h-12 justify-start">
+              <Button variant="outline" className="justify-start">
                 <UserSearchIcon /> Find by driver name
               </Button>
-              <Button variant="outline" size="lg" className="h-12 justify-start">
+              <Button variant="outline" className="justify-start">
                 <PlayIcon /> Start briefing here (3 min)
               </Button>
             </div>
@@ -236,7 +231,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
       <div className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
         <Field className="w-64">
           <FieldLabel htmlFor="turn-reason">Turn away instead</FieldLabel>
-          <NativeSelect id="turn-reason" className="h-12">
+          <NativeSelect id="turn-reason">
             <NativeSelectOption value="">Choose a reason…</NativeSelectOption>
             <NativeSelectOption value="safety_not_completed">
               Safety briefing not completed
@@ -249,7 +244,7 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
             <NativeSelectOption value="other">Other</NativeSelectOption>
           </NativeSelect>
         </Field>
-        <Button variant="destructive" size="lg" className="h-12" disabled>
+        <Button variant="destructive" disabled>
           <OctagonXIcon /> Turn away
         </Button>
       </div>
@@ -262,13 +257,12 @@ function CheckInDialog({ booking: b }: { booking: Booking }) {
         ) : null}
         <Button
           variant="ghost"
-          size="lg"
           nativeButton={false}
           render={<Link to="/design/gate" search={{}} />}
         >
           Cancel
         </Button>
-        <Button size="lg" className="h-12 min-w-44" disabled={blocked}>
+        <Button size="lg" className="min-w-44" disabled={blocked}>
           <LogInIcon /> Check in now
         </Button>
       </DialogFooter>

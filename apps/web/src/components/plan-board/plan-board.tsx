@@ -91,6 +91,7 @@ export function PlanBoard({
     <div className="relative min-h-0 flex-1 overflow-auto rounded-lg border bg-background">
       <div
         className="grid min-w-max"
+        // design-check-ignore: runtime board geometry from the slot scale
         style={{
           gridTemplateColumns: `4.5rem ${resources
             .map((r) =>
@@ -106,6 +107,7 @@ export function PlanBoard({
           <ResourceHeader key={`h-${r.id}`} resource={r} />
         ))}
 
+        {/* design-check-ignore: runtime board geometry from the slot scale */}
         <div className="sticky left-0 z-20 border-r bg-background" style={{ height }} aria-hidden>
           {slots.map((min) => (
             <div
@@ -115,6 +117,7 @@ export function PlanBoard({
                 min === start ? 'translate-y-0.5' : '-translate-y-1/2',
                 min % 60 === 0 ? 'font-medium text-foreground' : 'text-muted-foreground',
               )}
+              // design-check-ignore: runtime board geometry from the slot scale
               style={{ top: (min - start) * scale }}
             >
               {fromMinutes(min)}
@@ -131,6 +134,7 @@ export function PlanBoard({
             <section
               key={`c-${r.id}`}
               className="relative border-r last:border-r-0"
+              // design-check-ignore: runtime board geometry from the slot scale
               style={{ height }}
               aria-label={r.name}
             >
@@ -151,6 +155,7 @@ export function PlanBoard({
                       min % 60 === 0 ? 'border-border' : 'border-border/50',
                       over && 'bg-tone-danger-bg/60',
                     )}
+                    // design-check-ignore: runtime board geometry from the slot scale
                     style={{ top: (min - start) * scale, height: gridMinutes * scale }}
                   >
                     {r.kind === ResourceKind.pool ? (
@@ -184,6 +189,7 @@ export function PlanBoard({
                     booking={b}
                     selected={b.id === selectedId}
                     onSelect={onSelect}
+                    // design-check-ignore: runtime board geometry from the slot scale
                     style={{
                       top: top + 2,
                       height: h - 4,
@@ -201,15 +207,16 @@ export function PlanBoard({
         {nowY !== undefined ? (
           <div
             className="pointer-events-none absolute left-0 right-0 z-10 flex items-center"
+            // design-check-ignore: runtime board geometry from the slot scale
             style={{ top: nowY + 41 }}
           >
             <span className="sr-only">
               Now {now} {zone}
             </span>
-            <span className="sticky left-0 ml-1 rounded-sm bg-signal px-1 text-[10px] font-semibold text-signal-foreground tabular-nums">
+            <span className="sticky left-0 ml-1 rounded-sm bg-status-called-solid px-1 text-[10px] font-semibold text-background tabular-nums">
               {now}
             </span>
-            <div className="h-px flex-1 bg-signal" />
+            <div className="h-px flex-1 bg-status-called-solid" />
           </div>
         ) : null}
       </div>

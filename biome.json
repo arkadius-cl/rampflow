@@ -15,6 +15,7 @@
     "includes": [
       "**",
       "!docs",
+      "!design",
       "!.audit",
       "!lint/fixtures",
       "!**/routeTree.gen.ts",

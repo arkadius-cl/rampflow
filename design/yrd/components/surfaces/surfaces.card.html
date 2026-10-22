@@ -1,0 +1,23 @@
+<!-- @dsCard group="Komponenten" viewport="700x440" name="Flächen: Card, Tabs, Dropdown Menu, Dialog, Sheet" subtitle="Dialog und Sheet per Klick öffnen" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Card, Tabs, DropdownMenu, Dialog, Sheet, Button, ThemeSwitch, Badge } = window.YrdDesignSystem_d6c60f;
+function Col({ dark }) {
+  const [tab, setTab] = React.useState("heute");
+  const [dlg, setDlg] = React.useState(false);
+  const [sheet, setSheet] = React.useState(false);
+  return <div className={(dark ? "dark " : "") + "relative bg-background text-foreground p-4 flex flex-col gap-4 min-h-[420px] overflow-hidden"}>
+    <div className="flex items-center justify-between gap-3">
+      <Tabs variant="segmented" tabs={[{ id: "heute", label: "Heute" }, { id: "morgen", label: "Morgen" }, { id: "woche", label: "Woche" }]} value={tab} onChange={setTab} />
+      <DropdownMenu trigger={<Button variant="ghost" icon="CircleUser" iconRight="ChevronDown">Sandra K.</Button>} items={[{ heading: "sandra.k@hollerbach.de" }, { id: "p", label: "Profil", icon: "User" }, { custom: <ThemeSwitch showLabel={false} value={dark ? "dark" : "light"} /> }, { separator: true }, { id: "o", label: "Abmelden", icon: "LogOut" }]} />
+    </div>
+    <Tabs tabs={[{ id: "a", label: "Eingangskorb", count: 3, icon: "Inbox" }, { id: "b", label: "Buchungen", count: 42 }, { id: "c", label: "Konflikte", count: 1 }]} />
+    <Card title="Entscheidungsfall" description="B-1043 · Trans-Pol Sp. z o.o. · angefragt" actions={<Badge variant="proposal">Vorschlag</Badge>} footer={<><Button size="sm" onClick={() => setDlg(true)}>Bestätigen</Button><Button size="sm" variant="outline" onClick={() => setSheet(true)}>Detail</Button></>}>
+      <p className="text-sm text-muted-foreground">Tiefkühl Anlieferung, Do 15.10., Anmeldung bis 14:15 Uhr. Das System schlägt Rampe 9 vor.</p>
+    </Card>
+    <Dialog open={dlg} onClose={() => setDlg(false)} title="Buchung bestätigen?" description="B-1043 erhält Rampenzeit 14:30 an Rampe 9. Der Carrier sieht nur „Anmeldung bis 14:15 Uhr“." footer={<><Button variant="ghost" onClick={() => setDlg(false)}>Abbrechen</Button><Button icon="Check" onClick={() => setDlg(false)}>Bestätigen</Button></>} className="!absolute" />
+    <Sheet open={sheet} onClose={() => setSheet(false)} title="B-1043 · Trans-Pol" description="Tiefkühl Anlieferung · Do 15.10." width={300} className="!absolute"><ul className="text-sm flex flex-col gap-2"><li><span className="text-muted-foreground tabular-nums">09:12</span> Angefragt durch Gast-Carrier</li><li><span className="text-muted-foreground tabular-nums">09:14</span> Vorschlag: Rampe 9</li></ul></Sheet>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2 gap-px bg-border"><Col /><Col dark /></div>);
+</script></body></html>

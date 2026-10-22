@@ -1,7 +1,9 @@
+import { Density } from '@rampflow/shared/values';
 import { type LucideIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { useDensity } from '@/hooks/use-density';
 import { cn } from '@/lib/utils';
 
 export interface TabletShellProps {
@@ -27,10 +29,9 @@ export interface TabletShellProps {
 }
 
 /**
- * Gate and dock tablets: always light, large type, 44 px targets, glanceable
- * header with the station, site time and connectivity. Dark mode is off here
- * on purpose: the devices sit in daylight and the colour tokens are tuned for
- * white surfaces.
+ * Gate and dock tablets in the hall density (ADR-0021): 56 px targets, one 72 px primary action,
+ * 18 px type, no hover, a glanceable header with the station, site time and connectivity. The
+ * device chooses light or dark in its menu; light is the default in daylight.
  */
 export function TabletShell({
   station,
@@ -48,12 +49,13 @@ export function TabletShell({
   className,
 }: TabletShellProps) {
   const { t } = useTranslation();
+  useDensity(Density.halle);
   return (
     <div
-      data-density="touch"
+      data-density={Density.halle}
       className={cn('flex min-h-svh flex-col bg-canvas text-foreground', className)}
     >
-      <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background px-5">
+      <header className="flex min-h-16 shrink-0 items-center gap-4 border-b bg-background px-pad py-2">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <StationIcon className="size-5" />
@@ -65,7 +67,7 @@ export function TabletShell({
         </div>
         <div className="ml-auto flex items-center gap-5">
           <div className="text-right leading-tight">
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-xl font-semibold tabular-nums">
               {clock} <span className="text-base font-medium text-muted-foreground">{zone}</span>
             </div>
             <div className="text-xs text-muted-foreground">{t(($) => $.shell.site_time)}</div>
@@ -73,20 +75,16 @@ export function TabletShell({
           <div
             role="status"
             className={cn(
-              'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium',
+              'flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm font-medium',
               online
-                ? 'border-tone-success-border bg-tone-success-bg text-tone-success'
-                : 'border-tone-danger-border bg-tone-danger-bg text-tone-danger',
+                ? 'bg-tone-success-bg text-tone-success'
+                : 'bg-tone-danger-bg text-tone-danger',
             )}
           >
             {online ? <WifiIcon className="size-4" /> : <WifiOffIcon className="size-4" />}
             {online ? t(($) => $.shell.live) : t(($) => $.shell.offline)}
           </div>
-          {userMenu ?? (
-            <Button variant="outline" size="lg">
-              {operator}
-            </Button>
-          )}
+          {userMenu ?? <Button variant="outline">{operator}</Button>}
         </div>
       </header>
       {notice ? (
@@ -97,7 +95,7 @@ export function TabletShell({
           {toolbar}
         </div>
       ) : null}
-      <main className="flex min-h-0 flex-1 flex-col gap-4 p-5">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col gap-gap p-pad">{children}</main>
     </div>
   );
 }

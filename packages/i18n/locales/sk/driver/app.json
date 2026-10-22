@@ -1,5 +1,11 @@
 {
   "language": "Jazyk",
+  "theme": {
+    "label": "Vzhľad",
+    "light": "Svetlý",
+    "dark": "Tmavý",
+    "system": "Podľa systému"
+  },
   "machine_badge": "auto",
   "machine_hint": "Tento jazyk bol preložený automaticky.",
   "loading": "Načítava sa rezervácia…",

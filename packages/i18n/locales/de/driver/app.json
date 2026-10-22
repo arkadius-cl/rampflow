@@ -1,5 +1,11 @@
 {
   "language": "Sprache",
+  "theme": {
+    "label": "Darstellung",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "Wie System"
+  },
   "machine_badge": "auto",
   "machine_hint": "Diese Sprache wurde automatisch übersetzt.",
   "loading": "Ihre Buchung wird geladen…",

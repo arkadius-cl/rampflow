@@ -1,5 +1,11 @@
 {
   "language": "Language",
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "machine_badge": "auto",
   "machine_hint": "This language was translated automatically.",
   "loading": "Loading your booking…",

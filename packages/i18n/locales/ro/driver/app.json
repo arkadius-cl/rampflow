@@ -1,5 +1,11 @@
 {
   "language": "Limba",
+  "theme": {
+    "label": "Aspect",
+    "light": "Luminos",
+    "dark": "Întunecat",
+    "system": "Ca sistemul"
+  },
   "machine_badge": "auto",
   "machine_hint": "Această limbă a fost tradusă automat.",
   "loading": "Se încarcă rezervarea…",

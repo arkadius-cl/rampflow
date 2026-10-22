@@ -9,10 +9,16 @@ Lets the platform admin stop a tenant's use of rampflow, for example for abuse, 
 ### Requirement: The platform admin suspends a tenant with a reason
 A platform admin with `core.manage_tenants` SHALL suspend a tenant with a reason of 1 to 500 characters. The suspension SHALL take effect with the tenant's next request. It SHALL record the time, and it SHALL write a note of kind "Suspended" with the reason, the author and the time to the tenant's notes. Tenants in onboarding and active tenants can both be suspended.
 
+The web SHALL ask for the reason in a side sheet, opened from the hub header or the list's row actions, not in a modal dialog. The sheet SHALL hold the required reason field, "Cancel" and one primary action "Suspend tenant" in the destructive style. On success the sheet SHALL close, a toast SHALL confirm the suspension, and the status SHALL read "Suspended" in the header and the list. An empty reason SHALL show its error at the field and keep the sheet open.
+
 #### Scenario: Suspend an active tenant
 - **WHEN** the platform admin suspends tenant A with the reason "Fake bookings reported by carriers"
 - **THEN** the response is 200 with the tenant's status "suspended"
 - **AND** tenant A's notes start with a "Suspended" note carrying that reason, the admin's name and the time
+
+#### Scenario: Suspend from the hub
+- **WHEN** the platform admin selects "Suspend" in the header of tenant A's hub
+- **THEN** a side sheet opens with the reason field, "Cancel" and "Suspend tenant", and the hub stays visible behind it
 
 #### Scenario: Reason missing
 - **WHEN** the platform admin sends a suspension with an empty reason
@@ -26,7 +32,7 @@ Suspending a tenant that is already suspended SHALL answer 200 and leave the sus
 - **THEN** tenant A has one "Suspended" note, keeps the first suspension time, and its admins got one email
 
 ### Requirement: The platform admin reactivates a tenant with a reason
-A platform admin SHALL reactivate a suspended tenant with a reason of 1 to 500 characters. The tenant SHALL return to "onboarding" if it was never activated, and to "active" otherwise. A note of kind "Reactivated" with the reason, the author and the time SHALL be written. Reactivating a tenant that is not suspended SHALL answer 200 and change nothing.
+A platform admin SHALL reactivate a suspended tenant with a reason of 1 to 500 characters. The tenant SHALL return to "onboarding" if it was never activated, and to "active" otherwise. A note of kind "Reactivated" with the reason, the author and the time SHALL be written. Reactivating a tenant that is not suspended SHALL answer 200 and change nothing. The web SHALL ask for the reason in the same kind of side sheet, with the primary action "Reactivate tenant" in the default style.
 
 #### Scenario: Reactivate an onboarding tenant
 - **WHEN** a tenant that had no dock yet was suspended and is reactivated

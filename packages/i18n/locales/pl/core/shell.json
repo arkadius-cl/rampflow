@@ -3,6 +3,12 @@
   "not_in_package": "Poza Twoim pakietem",
   "your_orgs": "Twoje organizacje",
   "language": "Język",
+  "theme": {
+    "label": "Wygląd",
+    "light": "Jasny",
+    "dark": "Ciemny",
+    "system": "Jak system"
+  },
   "sign_out": "Wyloguj się",
   "site_time": "Czas lokalizacji",
   "live": "Na żywo",

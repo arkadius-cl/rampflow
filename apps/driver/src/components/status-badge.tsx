@@ -3,53 +3,54 @@ import { BadgeTone, DriverBadgeSize } from '@rampflow/shared/values';
 import { cva, type VariantProps } from 'class-variance-authority';
 import {
   BanIcon,
-  BellRingIcon,
   CalendarCheckIcon,
   CircleCheckIcon,
-  DoorOpenIcon,
-  LogInIcon,
+  CircleMinusIcon,
+  ClockIcon,
+  ForkliftIcon,
   LogOutIcon,
   type LucideIcon,
-  OctagonXIcon,
+  MapPinIcon,
+  MegaphoneIcon,
   PackageOpenIcon,
-  SendIcon,
   UserXIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 // apps/web's BookingStatusBadge with the driver's translated labels: icon and label, the tone
-// only reinforces them (status never relies on colour alone).
+// only reinforces them (status never relies on colour alone). Icons and tones follow the yrd
+// design system (design/yrd/components/status/StatusBadge.jsx).
 
-const STATUS: Record<BookingStatus, { icon: LucideIcon; tone: BadgeTone }> = {
-  requested: { icon: SendIcon, tone: BadgeTone.neutral },
+const STATUS: Record<BookingStatus, { icon: LucideIcon; tone: BadgeTone; strike?: boolean }> = {
+  requested: { icon: ClockIcon, tone: BadgeTone.onsite },
   confirmed: { icon: CalendarCheckIcon, tone: BadgeTone.planned },
-  checked_in: { icon: LogInIcon, tone: BadgeTone.onsite },
-  called: { icon: BellRingIcon, tone: BadgeTone.active },
-  at_dock: { icon: DoorOpenIcon, tone: BadgeTone.active },
+  checked_in: { icon: MapPinIcon, tone: BadgeTone.onsite },
+  called: { icon: MegaphoneIcon, tone: BadgeTone.active },
+  at_dock: { icon: ForkliftIcon, tone: BadgeTone.active },
   loading: { icon: PackageOpenIcon, tone: BadgeTone.active },
   done: { icon: CircleCheckIcon, tone: BadgeTone.success },
   departed: { icon: LogOutIcon, tone: BadgeTone.neutral },
-  cancelled: { icon: BanIcon, tone: BadgeTone.neutral },
+  cancelled: { icon: CircleMinusIcon, tone: BadgeTone.neutral, strike: true },
   no_show: { icon: UserXIcon, tone: BadgeTone.danger },
-  turned_away: { icon: OctagonXIcon, tone: BadgeTone.danger },
+  turned_away: { icon: BanIcon, tone: BadgeTone.danger },
 };
 
 const badge = cva(
-  'inline-flex w-fit shrink-0 items-center gap-1 whitespace-nowrap rounded-md border font-medium',
+  'inline-flex w-fit shrink-0 items-center gap-2 whitespace-nowrap rounded-sm font-medium',
   {
     variants: {
       size: {
-        [DriverBadgeSize.lg]: 'h-8 px-2.5 text-sm [&>svg]:size-4',
-        [DriverBadgeSize.xl]: 'h-11 px-3.5 text-base [&>svg]:size-5',
+        [DriverBadgeSize.lg]: 'h-10 px-3.5 text-md [&>svg]:size-5',
+        [DriverBadgeSize.xl]: 'h-11 px-3.5 text-md [&>svg]:size-6',
       },
       tone: {
-        [BadgeTone.planned]: 'bg-tone-planned-bg text-tone-planned border-tone-planned-border',
-        [BadgeTone.onsite]: 'bg-tone-onsite-bg text-tone-onsite border-tone-onsite-border',
-        [BadgeTone.active]: 'bg-tone-active-bg text-tone-active border-tone-active-border',
-        [BadgeTone.success]: 'bg-tone-success-bg text-tone-success border-tone-success-border',
-        [BadgeTone.danger]: 'bg-tone-danger-bg text-tone-danger border-tone-danger-border',
-        [BadgeTone.neutral]: 'bg-tone-neutral-bg text-tone-neutral border-tone-neutral-border',
+        [BadgeTone.planned]: 'bg-tone-planned-bg text-tone-planned',
+        [BadgeTone.onsite]: 'bg-tone-onsite-bg text-tone-onsite',
+        [BadgeTone.active]: 'bg-tone-active-bg text-tone-active',
+        [BadgeTone.success]: 'bg-tone-success-bg text-tone-success',
+        [BadgeTone.danger]: 'bg-tone-danger-bg text-tone-danger',
+        [BadgeTone.neutral]: 'bg-tone-neutral-bg text-tone-neutral',
       },
     },
     defaultVariants: { size: DriverBadgeSize.lg },
@@ -62,9 +63,12 @@ export function BookingStatusBadge({
   className,
 }: { status: BookingStatus; className?: string } & Pick<VariantProps<typeof badge>, 'size'>) {
   const { t } = useTranslation();
-  const { icon: Icon, tone } = STATUS[status];
+  const { icon: Icon, tone, strike } = STATUS[status];
   return (
-    <span data-slot="status-badge" className={cn(badge({ size, tone }), className)}>
+    <span
+      data-slot="status-badge"
+      className={cn(badge({ size, tone }), strike && 'line-through decoration-1', className)}
+    >
       <Icon aria-hidden />
       {t(($) => $.app.status[status])}
     </span>

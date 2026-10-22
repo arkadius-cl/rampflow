@@ -55,11 +55,13 @@ test.describe('DR-02 Language', () => {
     await page.reload();
     await expect(page.getByText(slotLabel('ro'))).toBeVisible();
 
-    await page.getByRole('combobox').selectOption('pl');
+    // The theme switch is a second select; the language one is the select that offers the locales.
+    const language = page.getByRole('combobox').filter({ has: page.locator('option[value="pl"]') });
+    await language.selectOption('pl');
     await expect(page.getByText(slotLabel('pl'))).toBeVisible();
     await expect(page.getByTestId('machine-badge')).toContainText('auto');
 
-    await page.getByRole('combobox').selectOption('de');
+    await language.selectOption('de');
     await expect(page.getByText(slotLabel('de'))).toBeVisible();
     await expect(page.getByTestId('machine-badge')).toHaveCount(0);
   });

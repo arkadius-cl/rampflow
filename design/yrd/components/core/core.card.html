@@ -1,0 +1,22 @@
+<!-- @dsCard group="Komponenten" viewport="700x420" name="Core: Button, Toggle Group, Darstellung, Tooltip, Skeleton, Progress" subtitle="Hell und dunkel nebeneinander" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Button, ToggleGroup, ThemeSwitch, Tooltip, Skeleton, Progress } = window.YrdDesignSystem_d6c60f;
+function Col({ dark }) {
+  const [reasons, setReasons] = React.useState(["Kein Avis"]);
+  const [theme, setTheme] = React.useState(dark ? "dark" : "light");
+  return <div className={(dark ? "dark " : "") + "bg-background text-foreground p-4 flex flex-col gap-4"}>
+    <div className="flex flex-wrap gap-2 items-center">
+      <Button icon="Check">Bestätigen</Button><Button variant="secondary">Verschieben</Button><Button variant="outline" icon="Calendar">Do 15.10.</Button><Button variant="ghost">Abbrechen</Button><Button variant="destructive" icon="XCircle">Abweisen</Button><Button variant="link">Historie</Button>
+    </div>
+    <div className="flex flex-wrap gap-2 items-center">
+      <Button size="sm">Klein</Button><Tooltip content="Suchen (Strg+K)"><Button size="icon" variant="outline" icon="Search" aria-label="Suchen" /></Tooltip><Button loading>Speichern</Button><Button disabled>Deaktiviert</Button>
+      <span data-density="halle" className="inline-flex"><Button size="lg" icon="LogIn">Check-in</Button></span>
+    </div>
+    <ToggleGroup type="multiple" options={["Kein Avis", "Kennzeichen falsch", "Zu spät", "Falsche Buchungsart"]} value={reasons} onChange={setReasons} />
+    <ThemeSwitch value={theme} onChange={setTheme} />
+    <div className="grid grid-cols-2 gap-4 items-center"><Progress value={88} label="Auslastung Tiefkühl 14–15 Uhr" /><Skeleton lines={3} /></div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2"><Col /><Col dark /></div>);
+</script></body></html>

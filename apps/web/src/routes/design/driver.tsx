@@ -3,7 +3,6 @@ import { PrototypeDriverStep } from '@rampflow/shared/modules/driver/values';
 import { BadgeSize } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
-  BellRingIcon,
   CheckIcon,
   ChevronRightIcon,
   CircleCheckIcon,
@@ -12,6 +11,7 @@ import {
   HourglassIcon,
   LogOutIcon,
   MapPinIcon,
+  MegaphoneIcon,
   PhoneIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
@@ -71,7 +71,7 @@ function DriverScreen() {
           next ? (
             <Button
               size="lg"
-              className="h-13 w-full text-base"
+              className="w-full"
               nativeButton={false}
               render={<Link to="/design/driver" search={{ step: next }} />}
             >
@@ -188,7 +188,7 @@ function BriefingView() {
         <section className="flex flex-col gap-4 rounded-xl border bg-card p-4">
           <Field>
             <FieldLabel htmlFor="driver-name">Your name</FieldLabel>
-            <Input id="driver-name" placeholder="First and last name" className="h-12 text-base" />
+            <Input id="driver-name" placeholder="First and last name" />
           </Field>
           <label htmlFor="ack" className="flex items-start gap-3 text-base">
             <Checkbox id="ack" className="mt-1" />
@@ -329,8 +329,7 @@ function WaitingView() {
       </div>
       <Button
         variant="outline"
-        size="lg"
-        className="h-12 w-full"
+        className="w-full"
         nativeButton={false}
         render={<a href="tel:+494012345678" />}
       >
@@ -344,9 +343,9 @@ function CalledView() {
   if (!booking || !site) return null;
   return (
     <>
-      <section className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-signal p-6 text-center text-signal-foreground">
+      <section className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-status-called-solid p-6 text-center text-background">
         <div className="flex items-center gap-2 text-lg font-semibold uppercase tracking-wide">
-          <BellRingIcon className="size-6" /> Go to dock
+          <MegaphoneIcon className="size-6" /> Go to dock
         </div>
         <div className="text-[96px] font-black leading-none tabular-nums tracking-tight">A-03</div>
         <div className="text-2xl font-semibold">Hall A</div>
@@ -360,8 +359,7 @@ function CalledView() {
       </div>
       <Button
         variant="outline"
-        size="lg"
-        className="h-12 w-full"
+        className="w-full"
         nativeButton={false}
         render={<a href="tel:+494012345678" />}
       >

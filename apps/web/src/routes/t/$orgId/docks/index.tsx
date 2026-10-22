@@ -199,7 +199,7 @@ function QueueItem({
           {t(($) => $.docks.queue.waiting_label)}
         </div>
       </div>
-      <Button size="lg" className="h-12 w-full" disabled={!online} onClick={onCall}>
+      <Button className="w-full" disabled={!online} onClick={onCall}>
         <BellRingIcon /> {t(($) => $.docks.call.confirm_none)}
       </Button>
     </li>
@@ -274,8 +274,7 @@ function DockCard({
           <div className="mt-auto flex flex-wrap gap-2 pt-3">
             {works && truck.status === BookingStatus.called ? (
               <Button
-                size="lg"
-                className="h-11 flex-1"
+                className="flex-1"
                 disabled={disabled}
                 onClick={() => progress.mutate(DockStep.dock)}
               >
@@ -284,8 +283,7 @@ function DockCard({
             ) : null}
             {works && truck.status === BookingStatus.at_dock ? (
               <Button
-                size="lg"
-                className="h-11 flex-1"
+                className="flex-1"
                 disabled={disabled}
                 onClick={() => progress.mutate(DockStep.loading)}
               >
@@ -293,20 +291,13 @@ function DockCard({
               </Button>
             ) : null}
             {works && truck.status !== BookingStatus.called ? (
-              <Button
-                size="lg"
-                className="h-11 flex-1"
-                disabled={disabled}
-                onClick={() => onComplete(truck)}
-              >
+              <Button className="flex-1" disabled={disabled} onClick={() => onComplete(truck)}>
                 <CircleCheckIcon /> {t(($) => $.docks.progress.done)}
               </Button>
             ) : null}
             {truck.status === BookingStatus.called ? (
               <Button
-                size="lg"
                 variant="outline"
-                className="h-11"
                 disabled={disabled}
                 onClick={() => progress.mutate(DockStep.uncall)}
               >
@@ -314,21 +305,14 @@ function DockCard({
               </Button>
             ) : null}
             {truck.status === BookingStatus.called && access.can(Permission.yard.call) ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-11"
-                disabled={disabled}
-                onClick={() => onReassign(truck)}
-              >
+              <Button variant="outline" disabled={disabled} onClick={() => onReassign(truck)}>
                 <ArrowLeftRightIcon /> {t(($) => $.docks.progress.reassign)}
               </Button>
             ) : null}
             {truck.driverPhone ? (
               <Button
                 variant="outline"
-                size="lg"
-                className="h-11 min-w-11 px-3"
+                size="icon"
                 aria-label={t(($) => $.docks.dock.call_driver, { phone: truck.driverPhone })}
                 nativeButton={false}
                 render={<a href={`tel:${truck.driverPhone}`} />}
@@ -373,7 +357,7 @@ function CompleteDialog({
     },
   );
   return (
-    <DialogContent className="sm:max-w-lg" data-density="touch" showCloseButton={false}>
+    <DialogContent className="sm:max-w-lg" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.docks.complete.title, { carrier: truck.carrierName })}
@@ -389,7 +373,7 @@ function CompleteDialog({
           type="number"
           min={0}
           inputMode="numeric"
-          className="h-12 text-lg"
+          className="text-lg"
           value={units}
           aria-invalid={!valid}
           onChange={(e) => setUnits(e.target.value)}
@@ -408,12 +392,12 @@ function CompleteDialog({
         />
       </Field>
       <DialogFooter>
-        <Button variant="ghost" size="lg" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone}>
           {t(($) => $.docks.call.cancel)}
         </Button>
         <Button
           size="lg"
-          className="h-12 min-w-40"
+          className="min-w-40"
           disabled={!valid || !online || complete.isPending}
           onClick={() => complete.mutate(undefined)}
         >

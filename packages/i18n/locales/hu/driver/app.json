@@ -1,5 +1,11 @@
 {
   "language": "Nyelv",
+  "theme": {
+    "label": "Megjelenés",
+    "light": "Világos",
+    "dark": "Sötét",
+    "system": "Rendszer szerint"
+  },
   "machine_badge": "auto",
   "machine_hint": "Ez a nyelv automatikus fordítás.",
   "loading": "Foglalás betöltése…",

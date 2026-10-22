@@ -3,6 +3,12 @@
   "not_in_package": "Not in your package",
   "your_orgs": "Your organisations",
   "language": "Language",
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "sign_out": "Sign out",
   "site_time": "Site time",
   "live": "Live",

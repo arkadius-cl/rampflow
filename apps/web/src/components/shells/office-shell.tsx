@@ -115,7 +115,7 @@ export function OfficeShell({
 }: OfficeShellProps) {
   const { t } = useTranslation();
   return (
-    <SidebarProvider data-density="compact" className="bg-canvas" defaultOpen={!flush}>
+    <SidebarProvider className="bg-canvas" defaultOpen={!flush}>
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <OrgSwitcher org={org} memberships={memberships} />

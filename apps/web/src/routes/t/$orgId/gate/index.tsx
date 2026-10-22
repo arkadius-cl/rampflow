@@ -153,7 +153,7 @@ function Gate({ siteId }: { siteId: string }) {
               setQ(input.trim());
             }}
           >
-            <InputGroup className="h-12 text-base">
+            <InputGroup className="text-base">
               <InputGroupAddon>
                 <ScanLineIcon className="size-5" />
               </InputGroupAddon>
@@ -169,7 +169,7 @@ function Gate({ siteId }: { siteId: string }) {
               <InputGroupAddon align="inline-end">
                 {q !== '' ? (
                   <InputGroupButton
-                    className="size-11"
+                    className="size-control-sm"
                     aria-label={t(($) => $.gate.search.clear)}
                     onClick={() => {
                       setInput('');
@@ -180,7 +180,7 @@ function Gate({ siteId }: { siteId: string }) {
                   </InputGroupButton>
                 ) : (
                   <InputGroupButton
-                    className="size-11"
+                    className="size-control-sm"
                     type="submit"
                     aria-label={t(($) => $.gate.search.label)}
                   >
@@ -196,7 +196,7 @@ function Gate({ siteId }: { siteId: string }) {
           onValueChange={(value) => setSearch({ tab: value as GateTab })}
           className="ml-auto"
         >
-          <TabsList className="h-12">
+          <TabsList>
             {values(GateTab).map((id) => (
               <TabsTrigger key={id} value={id} className="px-4">
                 {t(($) => $.gate.tab[id])}
@@ -209,8 +209,6 @@ function Gate({ siteId }: { siteId: string }) {
           {(blocked) => (
             <Button
               variant="outline"
-              size="lg"
-              className="h-12"
               disabled={!online || blocked}
               onClick={() => setSearch({ walkin: 1 })}
             >
@@ -343,7 +341,7 @@ function TruckRow({
     <li
       data-testid="gate-row"
       className={cn(
-        'grid min-h-16 grid-cols-[9.5rem_minmax(0,1fr)_auto] items-center gap-4 rounded-lg border bg-background px-4 py-3 lg:grid-cols-[9.5rem_minmax(0,1fr)_auto_auto]',
+        'grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-lg border bg-background px-4 py-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_auto]',
         b.status === BookingStatus.no_show && 'opacity-80',
       )}
     >
@@ -393,8 +391,7 @@ function TruckRow({
       <div className="flex flex-wrap justify-end gap-2">
         {EXPECTED.has(b.status) ? (
           <Button
-            size="lg"
-            className="h-12 min-w-36"
+            className="min-w-36"
             variant={blocked ? 'outline' : 'default'}
             disabled={!online}
             onClick={onOpen}
@@ -403,17 +400,17 @@ function TruckRow({
           </Button>
         ) : null}
         {b.status === BookingStatus.checked_in && canCall ? (
-          <Button size="lg" variant="outline" className="h-12" disabled={!online} onClick={onCall}>
+          <Button variant="outline" disabled={!online} onClick={onCall}>
             <BellRingIcon /> {t(($) => $.docks.call.confirm_none)}
           </Button>
         ) : null}
         {b.status === BookingStatus.checked_in ? (
-          <Button size="lg" variant="outline" className="h-12" disabled={!online} onClick={onOpen}>
+          <Button variant="outline" disabled={!online} onClick={onOpen}>
             <OctagonXIcon /> {t(($) => $.gate.action.turn_away)}
           </Button>
         ) : null}
         {onSite ? (
-          <Button size="lg" className="h-12" disabled={!online} onClick={onCheckOut}>
+          <Button disabled={!online} onClick={onCheckOut}>
             <LogOutIcon /> {t(($) => $.gate.action.check_out)}
           </Button>
         ) : null}

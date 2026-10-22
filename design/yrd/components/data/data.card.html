@@ -1,0 +1,26 @@
+<!-- @dsCard group="Komponenten" viewport="700x420" name="Daten: Data Table, Chart" subtitle="Tabelle der Disposition mit Status und Pünktlichkeit" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Table, Chart, StatusBadge, PunctualityChip } = window.YrdDesignSystem_d6c60f;
+const rows = [
+  { id: "B-1042", arrival: "13:45", dock: "14:00 · R8", carrier: "Spedition Müller GmbH", type: "Tiefkühl Anlieferung", plate: "WGM 4KX21", status: "checked-in", p: "on-time", d: -4 },
+  { id: "B-1043", arrival: "14:15", dock: "14:30 · R9", carrier: "Trans-Pol Sp. z o.o.", type: "Tiefkühl Anlieferung", plate: "GZ TR 2210", status: "requested", p: null },
+  { id: "B-1039", arrival: "12:30", dock: "12:45 · R3", carrier: "Kowalski Transporte", type: "Trockenware Anlieferung", plate: "A KT 4471", status: "at-dock", p: "late-tolerance", d: 12 },
+  { id: "B-1037", arrival: "11:00", dock: "11:15 · R1", carrier: "Spedition Müller GmbH", type: "Abholung Versand", plate: "A SM 882", status: "done", p: "early", d: -18 },
+  { id: "B-1035", arrival: "10:15", dock: "–", carrier: "Kowalski Transporte", type: "Kühlware Anlieferung", plate: "A KT 1180", status: "no-show", p: "late", d: 60 },
+];
+const cols = [
+  { key: "id", label: "Buchung", mono: true, sortable: true }, { key: "arrival", label: "Pforte bis", sortable: true }, { key: "dock", label: "Rampenzeit", mono: true },
+  { key: "carrier", label: "Carrier" }, { key: "plate", label: "Kennzeichen", mono: true },
+  { key: "status", label: "Status", render: (r) => <StatusBadge status={r.status} size="sm" /> }, { key: "p", label: "Pünktlichkeit", render: (r) => r.p ? <PunctualityChip value={r.p} deltaMin={r.d} size="sm" /> : <span className="text-muted-foreground">–</span> },
+];
+function Col({ dark }) {
+  const [sel, setSel] = React.useState("B-1042");
+  const [sort, setSort] = React.useState({ key: "arrival", dir: "asc" });
+  return <div className={(dark ? "dark " : "") + "bg-background text-foreground p-4 flex flex-col gap-4"}>
+    <Table columns={cols} rows={rows} selectedKey={sel} onRowClick={(r) => setSel(r.id)} sort={sort} onSort={setSort} caption="Buchungen heute" />
+    <Chart series={[{ name: "Anlieferungen", values: [42, 51, 38, 56, 47] }, { name: "Abholungen", values: [18, 22, 15, 24, 19] }]} labels={["Mo", "Di", "Mi", "Do", "Fr"]} height={100} />
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-1 gap-px bg-border"><Col /><Col dark /></div>);
+</script></body></html>

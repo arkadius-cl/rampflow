@@ -1,5 +1,7 @@
+import { Density } from '@rampflow/shared/values';
 import { LanguagesIcon, WifiOffIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useDensity } from '@/hooks/use-density';
 import { cn } from '@/lib/utils';
 
 export interface DriverShellProps {
@@ -17,7 +19,8 @@ export interface DriverShellProps {
 
 /**
  * Driver PWA shell: one column, no account, one sticky primary action.
- * Uses touch density and system colour scheme (drivers often use dark mode at night).
+ * Driver density (ADR-0021): 44 px targets, a 56 px primary action, 17 px type; the appearance
+ * follows the phone unless the driver chose one (drivers often use dark mode at night).
  */
 export function DriverShell({
   tenantName,
@@ -28,9 +31,10 @@ export function DriverShell({
   children,
   className,
 }: DriverShellProps) {
+  useDensity(Density.fahrer);
   return (
     <div
-      data-density="touch"
+      data-density={Density.fahrer}
       className={cn('flex min-h-full flex-1 flex-col bg-background text-foreground', className)}
     >
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">

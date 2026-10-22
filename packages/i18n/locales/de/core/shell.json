@@ -3,6 +3,12 @@
   "not_in_package": "Nicht in Ihrem Paket",
   "your_orgs": "Ihre Organisationen",
   "language": "Sprache",
+  "theme": {
+    "label": "Darstellung",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "Wie System"
+  },
   "sign_out": "Abmelden",
   "site_time": "Standortzeit",
   "live": "Live",

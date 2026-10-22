@@ -192,7 +192,7 @@ export function WalkInDialog({
             id={`walk-in-${name}`}
             type={o.type ?? 'text'}
             autoComplete="off"
-            className={o.mono ? 'h-12 font-mono uppercase' : 'h-12'}
+            className={o.mono ? 'font-mono uppercase' : undefined}
             aria-invalid={fieldState.invalid}
           />
           <FieldError>{message(fieldState.error)}</FieldError>
@@ -217,7 +217,6 @@ export function WalkInDialog({
             {...field}
             value={String(field.value ?? '')}
             id={`walk-in-${name}`}
-            className="h-12"
             aria-invalid={fieldState.invalid}
           >
             {options.map((o) => (
@@ -238,11 +237,7 @@ export function WalkInDialog({
   const choose = { value: '', label: t(($) => $.gate.walk_in.choose) };
 
   return (
-    <DialogContent
-      className="max-h-[95svh] overflow-y-auto sm:max-w-3xl"
-      data-density="touch"
-      showCloseButton={false}
-    >
+    <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-3xl" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">{t(($) => $.gate.walk_in.title)}</DialogTitle>
         <DialogDescription>{t(($) => $.gate.walk_in.description)}</DialogDescription>
@@ -328,8 +323,6 @@ export function WalkInDialog({
             <Button
               type="button"
               variant="destructive"
-              size="lg"
-              className="h-12"
               disabled={!online || walkIn.isPending}
               onClick={() => submit(WalkInOutcome.turn_away)}
             >
@@ -342,13 +335,13 @@ export function WalkInDialog({
         {!online ? (
           <span className="mr-auto text-sm text-tone-danger">{t(($) => $.gate.offline)}</span>
         ) : null}
-        <Button variant="ghost" size="lg" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone}>
           {t(($) => $.gate.check_in.cancel)}
         </Button>
         {safetyMissing ? null : (
           <Button
             size="lg"
-            className="h-12 min-w-44"
+            className="min-w-44"
             disabled={!online || walkIn.isPending}
             onClick={() => submit(WalkInOutcome.check_in)}
           >

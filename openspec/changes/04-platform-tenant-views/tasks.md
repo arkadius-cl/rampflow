@@ -1,6 +1,10 @@
 # Tasks
 
-Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` and `tenant-lifecycle` exist in `openspec/specs/`, and `contract/list.ts`, `kernel/list.ts`, `tenant-status.ts`, `tax-id.ts`, the core value sets of 01 to 03 (`TenantSortKey`, `TenantStatus`, `TaxIdType`, `TaxIdStatus`, `EuCountry` in `packages/shared/src/modules/core/values.ts`), `Access.tenantStatus` and `core/onboarding/onboarding.ts` exist in the code. New value sets go into the same `values.ts` (ADR-0019).
+Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` and `tenant-lifecycle` exist in `openspec/specs/`, and `contract/list.ts`, `kernel/list.ts`, `tenant-status.ts`, `tax-id.ts`, the core value sets of 01 to 03 (`TenantSortKey`, `TenantStatus`, `TaxIdType`, `TaxIdStatus`, `EuCountry` in `packages/shared/src/modules/core/values.ts`), `Access.tenantStatus` and `core/onboarding/onboarding.ts` exist in the code. New value sets go into the same `values.ts` (ADR-0019). The design system (07) is merged: the tokens in `apps/web/src/styles/`, `BadgeTone` on the status tokens, `Density` and `Theme` in `packages/shared/src/values/ui.ts`, the `ThemeSwitch`, `docs/reference/design-system.md`, ADR-0021 and the `rampflow-design` skill.
+
+## 0. Design system
+
+- [ ] 0.1 Load the `rampflow-design` skill and read `docs/reference/design-system.md` and `docs/decisions/ADR-0021-design-system.md` before the first screen task (4.1). Check each screen of the design's "UI patterns and design system" section against the reference's pattern catalogue and rule table, and write every difference into the report as a finding instead of building it silently.
 
 ## 1. Data model: suspension column and tenant notes
 
@@ -42,7 +46,8 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - extend `TenantListQuery` with the facets `country: TenantCountryFacet` and `flag: TenantFlag`;
   - the status facet gains `suspended` through `TenantStatus` (task 2.1);
   - add the optional `duplicateOf` (tenant id) to `TenantListQuery` (design decision 6);
-  - extend `TenantSummary` with `country`, `taxId`, `admin`, `lastActivityAt` and `possibleDuplicate`, and `TenantList.facets` with the new facets.
+  - add the value set `TenantListView` (`attention`, `all`) to `packages/shared/src/modules/core/values.ts`, and `view` to `TenantListQuery` with the default `TenantListView.attention` for the API and the URL (design decision 1);
+  - extend `TenantSummary` with `country`, `taxId`, `admin`, `lastActivityAt` and `possibleDuplicate`, `TenantList.facets` with the new facets, and `TenantList` with `views: Record<TenantListView, number>`.
 
   Verify `pnpm typecheck` passes.
 - [ ] 3.3 Extend `listTenants` in `core/platform/tenants.ts` as in design decision 1:
@@ -50,7 +55,8 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - the activity subquery;
   - the lateral admin subquery;
   - the search over name, normalized tax id and admin emails;
-  - the facet counts;
+  - the view condition and the view counts (search, facets and `duplicateOf`, without the view);
+  - the facet counts, within the view;
   - the sort by `array_position` for status and package;
   - `nullsLast` for country and last activity.
 
@@ -64,26 +70,41 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - `duplicateOf` (after splitting `duplicateMatch(identity)` out of 02's `core/signup/duplicates.redeem.ts`, with 02's duplicate tests still green): same tax id, `pl_nip` against its `eu_vat` form, a shared admin domain with different tax ids, and a shared free-mail domain that does not match;
   - admin email of the first admin and of an open invitation;
   - last activity "never" and its sort last in both directions;
-  - 422 for `status=paused`.
+  - the default view: an onboarding, a suspended, a possible-duplicate, an unverified and an unflagged active tenant give `views` `{ attention: 4, all: 5 }`, and the default page lists the first four;
+  - `view=all` lists all five; a search for the unflagged tenant gives `{ attention: 0, all: 1 }`;
+  - 422 for `status=paused` and for `view=urgent`.
+
+  Update 01's existing list tests that expect every tenant to pass `view: TenantListView.all`.
 - [ ] 3.4 Run `pnpm api:docs`. Verify `openapi.gen.json` and the platform table in `docs/reference/api-routes.md` show the new query parameters and fields, and update the `op()` description of `core.platform.listTenants` (stories `StoryId.PL_01`, `StoryId.PL_04`).
 
 ## 4. Tenant list web
 
 - [ ] 4.1 In `apps/web/src/routes/platform/tenants/index.tsx`, add these columns:
-  - Status, with `modules/core/tenant-status.tsx` (text and icon);
+  - Status, with the `TenantStatus` badge registry in `modules/core/tenant-status.tsx` (icon, label and `BadgeTone`: onboarding `onsite`, active `success`, suspended `danger`), per the design's "Status badge registries";
   - Country ("Not set");
-  - Tax id, with a status badge per label;
-  - Admin email, with an "Invited" badge;
+  - Tax id in `font-mono`, with the `TaxIdStatus` badge;
+  - Admin email, with the neutral "Invited" badge;
   - Last activity: relative time in a `time` element, with the exact instant and zone in a `Tooltip` reachable by focus.
 
-  Add the facets Country (hide zero counts except selected values) and Flags. Add the labels to `core/platform.json` in de, en and pl. Verify `pnpm typecheck`, `pnpm lint` and `packages/i18n/src/catalogs.test.ts` pass.
+  Add the facets Country (hide zero counts except selected values) and Flags, with the `TenantFlag` badges (neutral, icon) in the flag cells. Use tabular numerals for dates and meters, 36 px rows, no zebra stripes. Add the labels to `core/platform.json` in de, en and pl. Verify `pnpm typecheck`, `pnpm lint`, `pnpm design:check` and `packages/i18n/src/catalogs.test.ts` pass.
 - [ ] 4.2 Extend `e2e/core/PL-04.spec.ts`:
   - a suspended, an onboarding and an active tenant with a unique prefix: the status cells by text, and `status=onboarding,suspended` in the URL;
   - `country=none`;
   - the flag "Tax id unverified";
   - search by tax id with spaces;
   - sort by last activity ascending with "Never" last;
-  - `expectAccessible` with the Country filter open.
+  - `expectAccessible` with the Country filter open, in light and in dark.
+
+  Use `view=all` in every step that needs active tenants without a flag. Verify with `pnpm test:e2e e2e/core/PL-04.spec.ts`.
+- [ ] 4.3 Add the views to the tenant list: shadcn `Tabs` above the toolbar with "Needs attention" and "All", each with its count from `TenantList.views`, bound to `view` in the URL through `use-list-state.ts` (the default left out). Switching the view resets the page to 1. The empty "Needs attention" view says "Nothing needs attention" and links to "All". Make a row click outside the actions cell navigate to the hub, while the name stays a real `Link`. Build the duplicate link with `view: TenantListView.all`. Add the strings to `core/platform.json` in de, en and pl. Verify `pnpm typecheck`, the catalog test, and in `pnpm dev` that `/platform/tenants` opens on "Needs attention".
+- [ ] 4.4 Add `modules/core/tenant-row-actions.tsx`: a ghost icon button with `aria-label` "Actions for <tenant name>" that opens a shadcn `DropdownMenu` with "View" (`Eye`, 14 px), a separator, and "Suspend" (`CirclePause`, `variant="destructive"`, last) or "Reactivate" (`CirclePlay`). "Suspend" and "Reactivate" open the reason sheet of task 7.8. Opening the menu does not trigger the row click. Verify `pnpm typecheck` and the catalog test.
+- [ ] 4.5 Replace 01's `CreateTenantDialog` in `index.tsx` with a `Sheet` of size `md` (same fields, `Field` components, footer "Cancel" and "Create tenant"), keeping 01's behaviour after creation. Verify `e2e/core/PL-01.spec.ts` still passes.
+- [ ] 4.6 Extend `e2e/core/PL-04.spec.ts`:
+  - five tenants with the prefix "Q7" (onboarding, suspended, possible duplicate, unverified, unflagged active): `/platform/tenants?q=Q7` selects "Needs attention" with the counts 4 and 5 and no `view` in the URL; the tab "All" writes `view=all` and lists five; back returns;
+  - the row actions menu of an active tenant offers "View" and "Suspend", of a suspended one "View" and "Reactivate";
+  - "Suspend" from the menu opens the reason sheet, and after "Suspend tenant" the row reads "Suspended";
+  - a click on the Package cell opens the hub;
+  - `expectAccessible` on the list with the menu open, in light and in dark.
 
   Verify with `pnpm test:e2e e2e/core/PL-04.spec.ts`.
 
@@ -117,8 +138,8 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
 
 - [ ] 6.1 Replace `apps/web/src/routes/platform/tenants/$tenantId.tsx` with `$tenantId/route.tsx`:
   - the loader from 01;
-  - the header with name, status, package and the suspend or reactivate button;
-  - the tab links with `aria-current="page"`, following `t/$orgId/sites/$siteId/route.tsx`;
+  - the header with name, the `TenantStatus` badge, package and one action: "Suspend" (`variant="destructive"`) or "Reactivate" (`variant="default"`), both opening the reason sheet of task 7.8;
+  - the tab links with `aria-current="page"`, following `t/$orgId/sites/$siteId/route.tsx`, styled as the design's underline tabs;
   - a comment where 05's Billing tab goes.
 
   Also create `entitlements.tsx`, holding the existing `OverridesCard`, `EntitlementsCard`, `AddOverrideCard` and `AdminInvitationsCard` unchanged. Run `pnpm --filter @rampflow/web routes:gen`. Verify `pnpm typecheck` passes and that `/platform/tenants/<id>/entitlements` shows the cards in `pnpm dev`.
@@ -130,10 +151,10 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - flags, with the "Show matching tenants" link built by `TenantListQuery.toQuery({ duplicateOf })`, and the removable "Matching <tenant name>" chip on the list;
   - admins and open admin invitations;
   - country, created and last activity;
-  - `TenantForm` with the country `NativeSelect`.
+  - the master data card (name, country with `NativeSelect`, package), built from `TenantForm`: read mode by default, "Edit" in the card header turns only this card into the form with "Cancel" and "Save" in the card, `zodResolver(UpdateTenant)`, field errors (422 and the 409 `tax_id_country`) at their fields, a toast on success, one card in edit mode at a time.
 
-  Verify in `pnpm dev` with Acme Logistik Süd that the duplicate link lists both Acme tenants.
-- [ ] 6.3 Create `members.tsx` and `sites.tsx` on `components/data-table/`, with `validateSearch` from their list queries, the empty states, and rows without links. Add the strings to `core/platform.json` in de, en and pl. Verify the catalog test passes, and that a copied `members?role=tenant_admin` URL opens the same state.
+  Cards have a 1 px border and no shadow; meters and times use tabular numerals; badges come from the registries of the design's "UI patterns and design system". Verify in `pnpm dev` with Acme Logistik Süd that the duplicate link lists both Acme tenants in the view "All", and that "Cancel" restores the shown values without a request.
+- [ ] 6.3 Create `members.tsx` and `sites.tsx` on `components/data-table/` (Objektliste, design's Steckbriefe), with `validateSearch` from their list queries, the empty states, rows without links and without row actions, and the member state as a `PlatformMemberState` badge. Add the strings to `core/platform.json` in de, en and pl. Verify the catalog test passes, and that a copied `members?role=tenant_admin` URL opens the same state.
 - [ ] 6.4 Update `e2e/core/PL-02.spec.ts` to open `/platform/tenants/<id>/entitlements`. Verify with `pnpm test:e2e e2e/core/PL-02.spec.ts`.
 - [ ] 6.5 Write `e2e/core/PL-06.spec.ts` with `describe('PL-06 Tenant hub')`:
   - deep link to `/sites`, with the tab selected and `aria-current`;
@@ -144,7 +165,8 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - the role filter in the URL;
   - the Sites tab counts docks;
   - the duplicate link;
-  - `expectAccessible` on Overview, Members and Sites.
+  - the master data card: "Edit", change the name, "Save", the toast and the new name in the header; "Edit" and "Cancel" send no request;
+  - `expectAccessible` on Overview (also in edit mode), Members and Sites, in light and in dark.
 
   Verify with `pnpm test:e2e e2e/core/PL-06.spec.ts`.
 - [ ] 6.6 Update the platform rows of the route map in `docs/decisions/ADR-0011-frontend-routes-and-org-context.md` (`/platform/tenants/$tenantId` Overview, and `/members`, `/sites`, `/entitlements`, `/notes` reached from the tab bar, with their search params), bump `updated`, and update the platform row of the screen inventory in `docs/explanation/ux-concept.md`. Verify `pnpm docs:check` passes.
@@ -186,13 +208,13 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
 - [ ] 7.8 Web:
   - add `TenantSuspended` to `components/app-shell/route-states.tsx` and render it from the `errorComponent` of `routes/t/$orgId/route.tsx`;
   - in `lib/api.ts` `call`, invalidate the area context and the router on `ErrorCode.tenant_suspended`;
-  - add the suspend and reactivate dialog (`modules/core/tenant-suspension.tsx`: required reason `Textarea` with `Field`, `zodResolver(SuspensionBody)`);
-  - add "Temporarily unavailable" with an icon on `routes/c/$orgId/tenants/` and drop suspended tenants from the booking wizard's choice;
+  - add the suspend and reactivate sheet (`modules/core/tenant-suspension.tsx`): a shadcn `Sheet` of size `sm` (384 px, full width on phones), a sentence on the effect, the required reason `Textarea` with `Field` and `FieldError`, `zodResolver(SuspensionBody)`, footer "Cancel" and one primary action ("Suspend tenant" with `variant="destructive"`, "Reactivate tenant" with `variant="default"`), a toast on success; opened from the hub header and from the row actions (4.4). No `Dialog` or `AlertDialog`;
+  - add "Temporarily unavailable" as a neutral badge with the icon `CirclePause` on `routes/c/$orgId/tenants/` and drop suspended tenants from the booking wizard's choice;
   - add the strings to `core/shell.json`, `core/platform.json` and `booking/portal.json` in de, en and pl.
 
   Verify `pnpm typecheck`, `pnpm lint` and the catalog test pass.
 - [ ] 7.9 Write `e2e/core/PL-07.spec.ts` with `describe('PL-07 Suspend and reactivate')`:
-  - suspend with a reason from the hub;
+  - suspend with a reason from the hub: the side sheet opens, an empty reason shows the field error, "Suspend tenant" closes it and a toast confirms;
   - the status in the header and the list;
   - the Mailpit email to the tenant admin with the reason;
   - the dispatcher sees the suspended page on `/t/<id>/plan`;
@@ -200,7 +222,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - the driver link shows the invalid-link screen (Pixel project);
   - the public link shows not available;
   - reactivate, then the dispatcher's plan board loads with the same session, and the reactivation email arrives;
-  - `expectAccessible` on the dialog and the suspended page.
+  - `expectAccessible` on the open reason sheet and the suspended page, in light and in dark.
 
   Verify with `pnpm test:e2e e2e/core/PL-07.spec.ts`.
 - [ ] 7.10 Write `docs/decisions/ADR-0018-tenant-suspension.md` (type `explanation`, tag `adr`) per design decision 12. In `docs/decisions/ADR-0002-tenancy-isolation-rls.md`:
@@ -220,12 +242,12 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - search in the body;
   - a deleted author reads as `author: null`;
   - a carrier org id answers 404.
-- [ ] 8.2 Create `$tenantId/notes.tsx` with `modules/core/tenant-notes.tsx`: the add form (`Textarea`, `Field`, `zodResolver(NewTenantNote)`) above the data table (time with zone, kind with icon and text, author or "Deleted user", body). Add the strings to `core/platform.json` in de, en and pl. Verify `pnpm typecheck` and the catalog test pass.
+- [ ] 8.2 Create `$tenantId/notes.tsx` with `modules/core/tenant-notes.tsx`: an "Add note" button above the data table opens a `Sheet` of size `sm` with one `Textarea` (`Field`, `FieldError`, `zodResolver(NewTenantNote)`), footer "Cancel" and "Add note", and a toast on success. The data table shows time with zone, kind as a `TenantNoteKind` badge (icon, label, tone), author or "Deleted user", and body; no row actions. Add the strings to `core/platform.json` in de, en and pl. Verify `pnpm typecheck` and the catalog test pass.
 - [ ] 8.3 Write `e2e/core/PL-08.spec.ts` with `describe('PL-08 Tenant notes')`:
-  - add a note, which is listed first with the author;
+  - add a note through the sheet, which closes with a toast, and the note is listed first with the author;
   - suspend and reactivate, then filter `kind=suspended` in the URL;
-  - an empty note shows the field error;
-  - `expectAccessible`.
+  - an empty note shows the field error and keeps the sheet open;
+  - `expectAccessible` on the tab and on the open sheet, in light and in dark.
 
   Verify with `pnpm test:e2e e2e/core/PL-08.spec.ts`.
 
@@ -259,7 +281,7 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - bump `updated`.
 - [ ] 10.3 Add "Tenant status" (onboarding, active, suspended) and "Suspension" to `docs/explanation/domain-glossary.md`, or extend 02's and 03's entries if they exist.
 - [ ] 10.4 Add the suspension check to the request path in `docs/explanation/architecture-overview.md` ("Every request runs in one scoped transaction"), and the tenant status to `loadAccess` in `docs/reference/module-contract.md` ("Request environment").
-- [ ] 10.5 Run `pnpm docs:screens` against `pnpm dev` with the dev seed to refresh `platform-tenants`. Verify the screenshot shows the new columns at 1920 × 1080.
+- [ ] 10.5 Run `pnpm docs:screens` against `pnpm dev` with the dev seed to refresh `platform-tenants`. Verify the screenshot shows the view tabs and the new columns at 1920 × 1080.
 - [ ] 10.6 Run `pnpm docs:index` and `pnpm docs:check`. Verify both pass and `docs/INDEX.md` lists ADR-0018.
 
 ## 11. Integration
@@ -278,4 +300,15 @@ Prerequisite: 01, 02 and 03 are merged and archived, so `platform-tenant-list` a
   - the `nullsLast` option in 01's `kernel/list.ts`;
   - `biome.json`, `kernel/scoped.ts`, `kernel/jobs.ts` and `kernel/scopes.ts` edits;
   - `CarrierContextTenant.suspended`;
-  - the driver 401.
+  - the driver 401;
+  - the default view "Needs attention" as a behaviour change of 01's list;
+  - 01's `CreateTenantDialog` replaced by a sheet;
+  - every icon and tone of the design's badge registries that is marked as a proposal;
+  - any difference to `docs/reference/design-system.md` found in task 0.1.
+- [ ] 11.4 Prove the screens. With the dev seed plus 2,000 generated tenants of mixed status, flags, countries and packages, inserted into the dev database by a throwaway script in the scratchpad (not committed), open at 1920 × 1080 in light and in dark: the tenant list in both views, the row actions menu, the hub's five tabs, the master data card in edit mode, the suspend sheet and the add-note sheet. Verify per screen: no horizontal scroll, the view counts and paging read correctly at that count, every status reads by text and icon, and the focus ring shows on the row actions, the tabs and the sheet fields. Note each screen and theme in the report.
+
+## 12. Follow-up after 04
+
+Not part of 04. Leave unticked when 04 is archived; it is the follow-up the Entitlements tab's Ausnahme names.
+
+- [ ] 12.1 Follow-up after 04: convert the Entitlements tab's inline add-override and re-invite forms to a `Sheet` `sm` each, opened from a button in the card header, so the tab follows the reference's "Where a form goes" (create is a Sheet; never a form inline in a table). Remove the Ausnahme from the Steckbrief. Verify with `pnpm test:e2e e2e/core/PL-02.spec.ts` and `pnpm design:check`.

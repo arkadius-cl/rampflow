@@ -1,0 +1,31 @@
+<!-- @dsCard group="Proben" viewport="700x520" name="Probe Fahrer: Status-Karte DE und PL" subtitle="Status ganz oben, „Anmeldung an der Pforte bis 13:45 Uhr“, keine Fachbegriffe, Sprache + Darstellung" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Icon, StatusBadge, Button, ThemeSwitch } = window.YrdDesignSystem_d6c60f;
+const T = {
+  de: { status: "Bestätigt", gate: "Anmeldung an der Pforte bis", time: "13:45 Uhr", date: "Do 15.10.", where: "Frischelager Hollerbach, Augsburg", what: "Tiefkühl Anlieferung · 5 Paletten Schinken", truck: "Lkw", trailer: "Anhänger", eta: "Ich komme später", nav: "Navigation", lang: "Deutsch", hint: "Die Rampe erfahren Sie beim Aufruf." },
+  pl: { status: "Potwierdzone", gate: "Zgłoszenie na bramie do", time: "godz. 13:45", date: "czw. 15.10.", where: "Frischelager Hollerbach, Augsburg", what: "Dostawa mrożonek · 5 palet szynki", truck: "Ciężarówka", trailer: "Naczepa", eta: "Spóźnię się", nav: "Nawigacja", lang: "Polski", hint: "Numer rampy otrzymasz przy wezwaniu." },
+};
+function Phone({ lang, dark }) {
+  const t = T[lang];
+  return <div data-density="fahrer" className={(dark ? "dark " : "") + "bg-background text-foreground w-[340px] min-h-[500px] flex flex-col"}>
+    <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground border-b border-border"><span className="font-semibold text-foreground">yrd</span><span className="flex items-center gap-3"><span className="inline-flex items-center gap-1.5"><Icon name="Languages" size={16} />{t.lang}</span><Icon name={dark ? "Moon" : "Sun"} size={16} /></span></div>
+    <div className="p-4 flex flex-col gap-4">
+      <div className="rounded-xl bg-status-scheduled text-status-scheduled-foreground p-4 flex flex-col gap-1">
+        <div className="flex items-center gap-2 text-md font-semibold"><Icon name="CalendarCheck" size={22} />{t.status}</div>
+        <div className="mt-2 text-sm opacity-90">{t.gate}</div>
+        <div className="text-2xl font-semibold tabular-nums leading-tight">{t.time}</div>
+        <div className="text-md">{t.date}</div>
+      </div>
+      <div className="flex flex-col gap-3 text-base">
+        <div className="flex gap-3"><Icon name="MapPin" size={22} className="text-muted-foreground mt-0.5" /><span>{t.where}</span></div>
+        <div className="flex gap-3"><Icon name="Package" size={22} className="text-muted-foreground mt-0.5" /><span>{t.what}</span></div>
+        <div className="flex gap-3"><Icon name="Truck" size={22} className="text-muted-foreground mt-0.5" /><span><span className="font-mono">WGM 4KX21</span> · <span className="text-muted-foreground">{t.trailer}</span> <span className="font-mono">WGM 77Y3</span></span></div>
+        <div className="flex gap-3 text-sm text-muted-foreground"><Icon name="Info" size={20} className="mt-0.5" /><span>{t.hint}</span></div>
+      </div>
+      <div className="mt-auto flex flex-col gap-3 pt-2"><Button size="lg" icon="Navigation" block>{t.nav}</Button><Button size="lg" variant="outline" icon="Clock" block>{t.eta}</Button></div>
+    </div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2 gap-px bg-border justify-items-center"><Phone lang="de" /><Phone lang="pl" dark /></div>);
+</script></body></html>

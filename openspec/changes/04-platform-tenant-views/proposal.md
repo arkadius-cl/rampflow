@@ -19,7 +19,8 @@ With self-registration (02) tenants appear without the platform admin creating t
   - The platform is not affected.
   - Each tenant admin gets an email on suspension (with the reason) and on reactivation.
 - **Tenant notes**: new table `tenant_note`, readable and writable by the platform party only, append-only. The platform admin adds notes with author and time. Suspension and reactivation write a note of their own kind, which holds the reason. The Notes tab shows the history.
-- **BREAKING** (internal API): `GET /api/platform/tenants` returns more fields per row and more facets, and takes new facet and sort values on 01's paged contract. `/platform/tenants/$tenantId` becomes a layout route with child routes, and the entitlement cards move to `/platform/tenants/$tenantId/entitlements`.
+- **Screens follow the yrd design system** (ADR-0021, `docs/reference/design-system.md`), in office density and in light and dark: status badges with icon, text and tone; the tenant list as an Objektliste with views as tabs and a "…" row actions menu; the hub as an Objektseite whose Overview edits per card; suspend, reactivate, add note and create tenant as forms in a side sheet, never a modal dialog. **Behaviour change of the list:** `/platform/tenants` opens on the view "Needs attention" (onboarding, suspended, possible duplicate, tax id unverified) instead of all tenants; the tab "All" shows every tenant, and both tabs show their counts.
+- **BREAKING** (internal API): `GET /api/platform/tenants` returns more fields per row, more facets and the view counts, takes new facet and sort values and the `view` parameter on 01's paged contract, and without `view` answers the view "Needs attention" instead of every tenant. `/platform/tenants/$tenantId` becomes a layout route with child routes, and the entitlement cards move to `/platform/tenants/$tenantId/entitlements`.
 - Stories in `docs/explanation/mvp-scope.md`: PL-04 is amended with the new columns and facets, and PL-06 (tenant hub), PL-07 (suspend and reactivate) and PL-08 (notes) are new. PL-05 is already the retention job, so the brief's "PL-05.." starts at PL-06.
 
 ## Capabilities
@@ -32,7 +33,7 @@ With self-registration (02) tenants appear without the platform admin creating t
 
 ### Modified Capabilities
 
-- `platform-tenant-list` (created by 01): new columns (status, country, tax id, admin email, last activity), the facets status, country and flags, search by tax id and admin email, and sort by status, package, country and last activity. The requirements for columns, search, status (02) and sort are modified. The country and flags facets and the definitions of country, tax id, admin email and last activity are added.
+- `platform-tenant-list` (created by 01): new columns (status, country, tax id, admin email, last activity), the facets status, country and flags, search by tax id and admin email, sort by status, package, country and last activity, the default view "Needs attention", row click and the row actions menu. The requirements for columns, search, status (02), package filter, paging and sort are modified. The views, the row actions, the country and flags facets and the definitions of country, tax id, admin email and last activity are added.
 - `tenant-lifecycle` (created by 02): the derived status gains `suspended`, which wins over `onboarding` and `active`, and only tenants can carry a suspension time.
 - `entitlement-overview`: the tenant entitlements card moves from `/platform/tenants/$tenantId` to the Entitlements tab `/platform/tenants/$tenantId/entitlements`. Grouping, summaries and stored open groups stay the same.
 
@@ -48,7 +49,7 @@ With self-registration (02) tenants appear without the platform admin creating t
 - **Web:**
   - `apps/web/src/routes/platform/tenants/index.tsx`.
   - `$tenantId.tsx` becomes `$tenantId/route.tsx` plus `index.tsx`, `members.tsx`, `sites.tsx`, `entitlements.tsx` and `notes.tsx`.
-  - `apps/web/src/modules/core/queries.ts` and new `apps/web/src/modules/core/tenant-*.tsx` components.
+  - `apps/web/src/modules/core/queries.ts` and new `apps/web/src/modules/core/tenant-*.tsx` components (status badge registries, overview cards, reason sheet, notes, row actions), built on the design system of 07.
   - `components/app-shell/route-states.tsx` (suspended page) and `routes/t/$orgId/route.tsx`.
   - The carrier warehouses page `routes/c/$orgId/tenants/` and the booking wizard's tenant choice.
 - **i18n:**
@@ -58,7 +59,7 @@ With self-registration (02) tenants appear without the platform admin creating t
 - **Tests:**
   - New `ORACLE` rule for `tenant_note` in `apps/api/src/db/rls.test.ts` and model rows in `apps/api/test/model.ts`. `policies.test.ts` checks that notes are append-only.
   - Route cases for every new route.
-  - E2E: new `e2e/core/PL-06.spec.ts`, `PL-07.spec.ts` and `PL-08.spec.ts`. `PL-04.spec.ts` gets the new columns and facets, and `PL-02.spec.ts` the new entitlements path.
+  - E2E: new `e2e/core/PL-06.spec.ts`, `PL-07.spec.ts` and `PL-08.spec.ts`. `PL-04.spec.ts` gets the new columns, facets, views and row actions, `PL-02.spec.ts` the new entitlements path, and `PL-01.spec.ts` stays green with the create sheet. Axe runs on each story's main screen in light and dark.
 - **Data model:** yes.
   - New column `org.suspended_at` (check: tenants only).
   - New table `tenant_note` (kinds `note`, `suspended`, `reactivated`; RLS platform select and insert only).

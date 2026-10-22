@@ -107,6 +107,7 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
     >
       <div
         className="grid min-w-max"
+        // design-check-ignore: runtime board geometry from the slot scale
         style={{
           gridTemplateColumns: `4.5rem ${board.resources
             .map((r) =>
@@ -122,6 +123,7 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
           <ResourceHeader key={`h-${r.id}`} resource={r} />
         ))}
 
+        {/* design-check-ignore: runtime board geometry from the slot scale */}
         <div className="sticky left-0 z-20 border-r bg-background" style={{ height }} aria-hidden>
           {rows.map((s, i) => (
             <div
@@ -133,6 +135,7 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
                   ? 'font-medium text-foreground'
                   : 'text-muted-foreground',
               )}
+              // design-check-ignore: runtime board geometry from the slot scale
               style={{ top: y(Date.parse(s.startsAt)) }}
             >
               {s.wallTime}
@@ -157,17 +160,17 @@ export function PlanBoard({ board, now, selectedId, onSelect, scale = 1.6 }: Pla
 
         {showsNow ? (
           <div
-            className="pointer-events-none relative z-10"
-            style={{ gridColumn: '1 / -1', gridRow: 2 }}
+            className="pointer-events-none relative z-10 col-span-full row-start-2"
             data-testid="now-line"
           >
+            {/* design-check-ignore: runtime board geometry from the slot scale */}
             <div className="absolute inset-x-0 flex items-center" style={{ top: y(nowAt) }}>
               <SiteTime
                 {...siteTime(now, board.timeZone)}
                 viewerTime={undefined}
-                className="sticky left-0 ml-1 -translate-y-1/2 rounded-sm bg-signal px-1 text-[10px] font-semibold text-signal-foreground [&>span]:text-signal-foreground"
+                className="sticky left-0 ml-1 -translate-y-1/2 rounded-sm bg-status-called-solid px-1 text-[10px] font-semibold text-background [&>span]:text-background"
               />
-              <div className="h-px flex-1 -translate-y-1/2 bg-signal" />
+              <div className="h-px flex-1 -translate-y-1/2 bg-status-called-solid" />
             </div>
           </div>
         ) : null}
@@ -228,6 +231,7 @@ function ResourceColumn({
   return (
     <section
       className="relative border-r last:border-r-0"
+      // design-check-ignore: runtime board geometry from the slot scale
       style={{ height }}
       aria-label={resource.name}
     >
@@ -246,6 +250,7 @@ function ResourceColumn({
               closed && 'bg-muted/60',
               over && 'bg-tone-danger-bg/60',
             )}
+            // design-check-ignore: runtime board geometry from the slot scale
             style={{ top: y(Date.parse(s.startsAt)), height: gridMinutes * scale }}
           >
             {resource.kind === ResourceKind.pool && !closed ? (
@@ -282,6 +287,7 @@ function ResourceColumn({
             selected={b.id === selectedId}
             dimmed={isFinal(b)}
             onSelect={onSelect}
+            // design-check-ignore: runtime board geometry from the slot scale
             style={{
               top: top + 2,
               height: Math.max(h - 4, 18),

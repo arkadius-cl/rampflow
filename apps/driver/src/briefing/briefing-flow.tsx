@@ -190,7 +190,7 @@ export default function BriefingFlow({ shell, onClose, onDone }: Props) {
 function CloseButton({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   return (
-    <Button variant="outline" size="lg" className="h-12 w-full" onClick={onClose}>
+    <Button variant="outline" className="w-full" onClick={onClose}>
       {t(($) => $.briefing.close)}
     </Button>
   );
@@ -216,16 +216,12 @@ function Rules(p: {
       {...p.shell}
       footer={
         last ? (
-          <Button size="lg" className="h-13 w-full text-base" onClick={p.onRead}>
+          <Button size="lg" className="w-full" onClick={p.onRead}>
             {p.quiz ? t(($) => $.briefing.to_quiz) : t(($) => $.briefing.to_confirm)}
             <ChevronRightIcon aria-hidden />
           </Button>
         ) : (
-          <Button
-            size="lg"
-            className="h-13 w-full text-base"
-            onClick={() => p.onIndex(p.index + 1)}
-          >
+          <Button size="lg" className="w-full" onClick={() => p.onIndex(p.index + 1)}>
             {t(($) => $.briefing.next)}
             <ChevronRightIcon aria-hidden />
           </Button>
@@ -305,7 +301,7 @@ function Quiz(p: {
       footer={
         <Button
           size="lg"
-          className="h-13 w-full text-base"
+          className="w-full"
           disabled={!complete || busy}
           onClick={() => void check()}
         >
@@ -397,7 +393,7 @@ function Confirm(p: {
           type="submit"
           form="briefing-confirm"
           size="lg"
-          className="h-13 w-full text-base"
+          className="w-full"
           disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? <Spinner /> : <CheckIcon aria-hidden />}
@@ -426,7 +422,6 @@ function Confirm(p: {
                   id="driver-name"
                   autoComplete="name"
                   placeholder={t(($) => $.briefing.confirm.name_placeholder)}
-                  className="h-12 text-base"
                   aria-invalid={fieldState.invalid}
                 />
                 <FieldError>

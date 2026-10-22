@@ -90,11 +90,7 @@ export function CheckInDialog({
   });
 
   return (
-    <DialogContent
-      className="max-h-[95svh] overflow-y-auto sm:max-w-2xl"
-      data-density="touch"
-      showCloseButton={false}
-    >
+    <DialogContent className="max-h-[95svh] overflow-y-auto sm:max-w-2xl" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.gate.check_in.title, { carrier: truck.carrierName })}
@@ -114,7 +110,7 @@ export function CheckInDialog({
               id="plate-seen"
               value={plate}
               onChange={(e) => setPlate(e.target.value)}
-              className="h-12 font-mono text-lg uppercase"
+              className="font-mono text-lg uppercase"
               autoComplete="off"
             />
           </Field>
@@ -152,7 +148,6 @@ export function CheckInDialog({
             </FieldLabel>
             <NativeSelect
               id="turn-reason"
-              className="h-12"
               value={reason}
               onChange={(e) => setReason(e.target.value as TurnAwayReason | '')}
             >
@@ -168,8 +163,6 @@ export function CheckInDialog({
           </Field>
           <Button
             variant="destructive"
-            size="lg"
-            className="h-12"
             disabled={reason === '' || !online || turnAway.isPending}
             onClick={() => reason !== '' && turnAway.mutate(reason)}
           >
@@ -186,13 +179,13 @@ export function CheckInDialog({
             {t(($) => $.gate.check_in.blocked)}
           </span>
         ) : null}
-        <Button variant="ghost" size="lg" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone}>
           {t(($) => $.gate.check_in.cancel)}
         </Button>
         {canCheckIn ? (
           <Button
             size="lg"
-            className="h-12 min-w-44"
+            className="min-w-44"
             disabled={blocked || !online || checkIn.isPending}
             onClick={() => checkIn.mutate(undefined)}
           >
@@ -269,7 +262,7 @@ function SafetySection({
           >
             <Field>
               <FieldLabel htmlFor="driver-name">{t(($) => $.gate.check_in.driver_name)}</FieldLabel>
-              <InputGroup className="h-12">
+              <InputGroup>
                 <InputGroupAddon>
                   <UserSearchIcon className="size-5" />
                 </InputGroupAddon>
@@ -281,7 +274,7 @@ function SafetySection({
                 />
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
-                    className="h-11 min-w-11"
+                    className="size-control-sm"
                     type="submit"
                     disabled={!online || name.trim().length < 2}
                   >
@@ -316,15 +309,13 @@ function SafetySection({
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              size="lg"
-              className="h-12"
               disabled={!online || session.isPending}
               onClick={() => session.mutate()}
             >
               <PlayIcon /> {t(($) => $.gate.check_in.start_briefing)}
             </Button>
             {opened ? (
-              <Button variant="ghost" size="lg" className="h-12" onClick={() => void refresh()}>
+              <Button variant="ghost" onClick={() => void refresh()}>
                 <RefreshCwIcon /> {t(($) => $.gate.check_in.refresh)}
               </Button>
             ) : null}
@@ -360,7 +351,7 @@ function Candidate({
           {t(($) => $.gate.check_in.candidate, { instruction: candidate.instruction.name, date })}
         </div>
       </div>
-      <Button variant="outline" size="lg" disabled={disabled} onClick={onLink}>
+      <Button variant="outline" disabled={disabled} onClick={onLink}>
         <LinkIcon /> {t(($) => $.gate.check_in.link)}
       </Button>
     </li>

@@ -128,8 +128,7 @@ function DockScreen() {
                     </div>
                   </div>
                   <Button
-                    size="lg"
-                    className="h-12 w-full"
+                    className="w-full"
                     nativeButton={false}
                     render={<Link to="/design/dock" search={{ call: b.id }} />}
                   >
@@ -201,8 +200,7 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
             {booking.driverPhone ? (
               <Button
                 variant="outline"
-                size="lg"
-                className="h-11 px-3"
+                size="icon"
                 aria-label="Call driver"
                 nativeButton={false}
                 render={<a href={`tel:${booking.driverPhone}`} />}
@@ -222,18 +220,18 @@ function DockCard({ dock, booking }: { dock: Dock; booking?: Booking }) {
 function ProgressButton({ status }: { status: Booking['status'] }) {
   if (status === BookingStatus.called)
     return (
-      <Button size="lg" className="h-11 flex-1">
+      <Button className="flex-1">
         <DoorOpenIcon /> At dock
       </Button>
     );
   if (status === BookingStatus.at_dock)
     return (
-      <Button size="lg" className="h-11 flex-1">
+      <Button className="flex-1">
         <PackageOpenIcon /> Loading
       </Button>
     );
   return (
-    <Button size="lg" className="h-11 flex-1">
+    <Button className="flex-1">
       <CircleCheckIcon /> Done
     </Button>
   );
@@ -251,7 +249,7 @@ function CallDialog({ booking: b }: { booking: Booking }) {
   const outsidePool =
     chosen !== undefined && resource !== undefined && !resource.dockIds.includes(chosen.id);
   return (
-    <DialogContent className="sm:max-w-2xl" data-density="touch">
+    <DialogContent className="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle className="text-xl">Call {b.carrier} to a dock</DialogTitle>
         <DialogDescription>
@@ -288,7 +286,7 @@ function CallDialog({ booking: b }: { booking: Booking }) {
                 <span
                   className={cn(
                     'text-xs font-normal',
-                    active ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                    active ? 'text-primary-foreground' : 'text-muted-foreground',
                   )}
                 >
                   {occ
@@ -313,8 +311,7 @@ function CallDialog({ booking: b }: { booking: Booking }) {
         {b.driverPhone ? (
           <Button
             variant="outline"
-            size="lg"
-            className="mr-auto h-12"
+            className="mr-auto"
             nativeButton={false}
             render={<a href={`tel:${b.driverPhone}`} />}
           >
@@ -323,13 +320,12 @@ function CallDialog({ booking: b }: { booking: Booking }) {
         ) : null}
         <Button
           variant="ghost"
-          size="lg"
           nativeButton={false}
           render={<Link to="/design/dock" search={{}} />}
         >
           Cancel
         </Button>
-        <Button size="lg" className="h-12 min-w-44" disabled={!chosen}>
+        <Button size="lg" className="min-w-44" disabled={!chosen}>
           <BellRingIcon /> Call to {chosen?.code ?? 'dock'}
         </Button>
       </DialogFooter>

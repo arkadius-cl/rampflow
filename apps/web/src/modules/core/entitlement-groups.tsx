@@ -1,5 +1,5 @@
 import { catalog, type ModuleId } from '@rampflow/shared';
-import type { UiPrefKey } from '@rampflow/shared/modules/core/ui-prefs';
+import type { OpenModulesPrefKey } from '@rampflow/shared/modules/core/ui-prefs';
 import { EntitlementKind } from '@rampflow/shared/values';
 import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
@@ -56,7 +56,7 @@ export interface ModuleGroupsState {
 
 /** Which of `modules` are open, from the user's preference `prefKey`; none stored = all closed. */
 export function useModuleGroups(
-  prefKey: UiPrefKey,
+  prefKey: OpenModulesPrefKey,
   modules: readonly ModuleId[],
 ): ModuleGroupsState {
   const [stored, setOpen] = useUiPref(prefKey);

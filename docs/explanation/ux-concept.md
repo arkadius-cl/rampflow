@@ -6,7 +6,7 @@ audience: [agent, developer]
 tags: [ux, design, booking, yard, safety, settings, entitlements, i18n, accessibility]
 status: draft
 updated: 2026-10-21
-related: [docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/domain-glossary.md, docs/explanation/research/market-and-features.md]
+related: [docs/reference/design-system.md, docs/decisions/ADR-0021-design-system.md, docs/decisions/ADR-0020-settings-information-architecture.md, docs/explanation/mvp-scope.md, docs/explanation/domain-glossary.md, docs/explanation/research/market-and-features.md]
 ---
 
 # UX concept
@@ -15,7 +15,7 @@ This document explains how rampflow looks and behaves for each role, and why. Th
 
 ## Design principles
 
-1. **Three devices, three densities.** The office desktop is dense and keyboard-first. Office screens (carrier, tenant office roles such as dispatcher and tenant admin, platform admin) are laid out for 1920 × 1080 at 100 % zoom; narrower windows scroll a wide table instead of breaking the page. Gate and dock tablets are glanceable with 44 px targets and gloves in mind. The driver phone shows one thing at a time with one thumb-sized action. The same components serve all three through a `data-density` attribute, so implementation does not fork.
+1. **Three devices, three densities.** The office desktop is dense and keyboard-first. Office screens (carrier, tenant office roles such as dispatcher and tenant admin, platform admin) are laid out for 1920 × 1080 at 100 % zoom; narrower windows scroll a wide table instead of breaking the page. Gate and dock tablets are glanceable with 56 px targets and gloves in mind (`halle`). The driver phone shows one thing at a time with one thumb-sized action (`fahrer`). The same components serve all three through a `data-density` attribute, so implementation does not fork.
 2. **Status is icon plus label, never colour alone.** Every booking, safety and punctuality state renders from one registry (`status-badge.tsx`) with a Lucide icon, a text label and a tone. Tones reinforce, they do not carry meaning. This satisfies the WCAG 2.2 AA requirement in the scope and keeps the board readable in daylight and in greyscale.
 3. **Site time, labelled, everywhere.** Every time shows the site wall clock with its zone abbreviation ("08:30 CET"). When the viewer sits in another zone, the viewer time follows in parentheses. The `SiteTime` component is the only way to render a time.
 4. **The booking is the spine.** Dispatcher, gate, dock, carrier and driver all look at the same booking, in different clothes. The booking code and the status badge look identical on every screen, so a phone call between gate and carrier can refer to "K7MQ-4D2P, checked in" and both sides see the same thing.
@@ -74,7 +74,7 @@ Navigation per role, as rendered by `navFor` from the manifests:
 - One column per bookable resource, time down the side, 48 px per 30 min slot. Pool columns split into capacity lanes. Each grid slot in a pool shows `booked/capacity`; a full slot turns the counter amber, an over-booked slot tints the row red and the extra card gets a dashed red border with a warning icon (MD-03 "over capacity").
 - Final states (departed, cancelled, no-show, turned away) render dimmed in a lane of their own. Live bookings are placed first and finals fill the free lanes after them, so a cancellation never moves a live card and never covers one. A dispatcher still sees the cancelled or no-show slot next to its neighbours, which a separate strip would hide.
 - The resource header row and the time column stay in view while the board scrolls. On today the board opens at the current time; on other days at the opening time.
-- A signal-orange "now" line with the site time crosses all columns.
+- A blue "now" line (`status-called-solid`) with the site time crosses all columns.
 - The sidebar collapses to icons on this screen to give the board room. The detail panel opens on card click and offers Edit, Cancel and the timeline with actors (BK-03). After check-in both buttons disable with a one-line reason.
 - List view (Tabs: Board | List) shows the same bookings as a table for keyboard and screen-reader users.
 - Loading: skeleton columns with the real headers. Empty: the grid with "No bookings on this day" centred and the "New booking" button. Error: an Alert above the grid with retry. Live updates (30 s) replace cards in place and announce "Board updated" to screen readers.
@@ -131,7 +131,7 @@ The call dialog shows all docks as large buttons: free member docks of the pool 
 - **Briefing.** Progress bar "1 / 4", one rule per screen with a large pictogram, title and body in 18 px, Back and Next. The last rule adds the typed name and the confirmation checkbox. The language button shows "auto" when the locale is machine translated (DR-02).
 - **Quiz.** All questions on one scrolling page with large radio rows. After "Check answers" wrong questions turn red with "Read rule 2 again and retry", correct ones green. Retries are unlimited.
 - **Waiting.** A hourglass, "Please wait", the checked-in badge, checked-in time and waiting minutes, the briefing validity line, and "Call the site". Offline shows a yellow bar "Offline. Showing status from 10:31."
-- **Called.** A full-height signal-orange card with "GO TO DOCK", the dock code at 96 px, the hall, the call time, a vibration note and "Call the dock". The orange is used nowhere else so the change is unmistakable from a cab.
+- **Called.** A full-height card in the `status-called` tone with "GO TO DOCK", the dock code in `text-display`, the hall, the call time, a vibration note and "Call the dock". The full-height card and the Megaphone icon make the change unmistakable from a cab.
 - **Done.** Green check, "Loading done. Please drive to the gate." and the link expiry notice.
 - Invalid, expired or revoked token: one neutral screen "This link is no longer valid. Ask your dispatcher for a new one." with no further detail.
 
@@ -143,7 +143,7 @@ The checklist has no forms. An open step is a link to the master data screen tha
 
 While the tenant is in onboarding, every office screen shows a notice: "Your company is still being set up. Carriers and bookings open once the first dock exists." For a member with `core.manage_sites`, it ends with "Open the setup checklist". The notice reads the tenant status from the context query, so it disappears without a reload once the dock dialog saves the first dock.
 
-The actions that need a dock stay visible but disabled: "Invite carrier", "Create link" on the public links tab, "New booking" and "Walk-in now" on the plan board, and "Walk-in" at the gate. A disabled button gets no hover or focus, so the reason never hides in a tooltip. A line with a lock icon next to the button says why, for example "Carriers can be invited once the first dock exists.", and adds "Finish setup" for a member with `core.manage_sites`. On the gate screen that link has a 44 px target.
+The actions that need a dock stay visible but disabled: "Invite carrier", "Create link" on the public links tab, "New booking" and "Walk-in now" on the plan board, and "Walk-in" at the gate. A disabled button gets no hover or focus, so the reason never hides in a tooltip. A line with a lock icon next to the button says why, for example "Carriers can be invited once the first dock exists.", and adds "Finish setup" for a member with `core.manage_sites`. On the gate screen that link has a 56 px target (`halle`).
 
 ### Sites, halls, docks and pools (MD-01 to MD-03)
 
@@ -204,24 +204,26 @@ A data table of tenants: Tenant (link to the tenant view, sortable), Package, Cr
 
 ## Visual language
 
-- **Colour tokens** (`apps/web/src/index.css`, oklch). Primary deep blue `oklch(0.43 0.15 258)` on a cool off-white canvas, dark navy sidebar. Six status tones, each with foreground, surface and border: planned (blue), onsite (amber), active (violet), success (green), danger (red), neutral (grey). `signal` orange `oklch(0.7 0.19 48)` is reserved for the dock call and the now line.
-- **Booking state to tone.** confirmed planned; checked_in onsite; called, at_dock, loading active; done success; departed and cancelled neutral; no_show and turned_away danger. Safety: valid success, missing and expired danger, outdated onsite. Punctuality: early neutral, on time success, late onsite.
-- **Typography.** Geist Variable for everything, tabular numerals for times, codes and counts, monospace for plates and booking codes. Office 14 px base, tablet 17 px base, phone 17 px base with 30 px slot times and 96 px dock code.
-- **Spacing and density.** Office uses shadcn's compact sizes (32 px controls). `data-density="touch"` lifts every control to at least 44 px and buttons to 16 px text. Radios, checkboxes and switches keep a 24 px glyph inside a 44 px label row.
-- **Dark mode.** Not in the MVP. Every screen runs light, so the axe contrast checks cover one theme. The dark tokens stay defined for later.
-- **Radius and elevation.** 8 px radius, 1 px borders, shadows only on cards that float (board cards on hover, dialogs).
+The visual language is the yrd design system ([ADR-0021](../decisions/ADR-0021-design-system.md)). Tokens, type scale, densities and rules are in [Design system](../reference/design-system.md). This section explains the choices.
+
+- **Colour.** One accent, Petrol, on cool neutrals. Status colours follow meaning. Amber waits, blue is active, green is done, red is a problem, grey is gone or without effect. Each has a surface, a foreground and a solid. There is no separate signal colour. The dock call and the now line use the solid blue of `called`.
+- **Booking state to tone.** confirmed planned; requested and checked_in onsite; called, at_dock, loading active; done success; departed and cancelled neutral; no_show and turned_away danger. Safety: valid success, missing and expired danger, outdated onsite. Punctuality uses its own early, on time and late tokens.
+- **Typography.** IBM Plex Sans and IBM Plex Mono, self-hosted, with Cyrillic for the driver locales. Tabular numerals everywhere, mono for plates and booking codes. Body text is 14 px in the office, 18 px under `halle` and 17 px under `fahrer`.
+- **Densities.** Office is the default. `halle` serves the gate and dock stations with 56 px controls, a 72 px primary action and no hover. `fahrer` serves the driver with 48 px controls and a 56 px primary action.
+- **Dark mode.** In scope. Light and dark are equal token sets with the same status meanings, and every screen is checked in both. Office users choose in the user menu, stations and drivers per device.
+- **Radius and elevation.** 6 px controls in the office, 10 px under `halle` and `fahrer`, 10 px cards. Surfaces in the page have a 1 px border and no shadow. Only floating layers (menus, dialogs, sheets, toasts) cast one.
 
 ## shadcn component mapping
 
 | Screen | shadcn components | Custom |
 |---|---|---|
-| Office shell | Sidebar, DropdownMenu (org switcher), Breadcrumb, Button, Kbd, Avatar, Tooltip, Separator | none |
+| Office shell | Sidebar, DropdownMenu (org switcher, user menu with `ThemeSwitch`), Breadcrumb, Button, Kbd, Avatar, Tooltip, Separator | none |
 | Plan board | ButtonGroup, ToggleGroup, Select, Table (list view), Button, Separator | `PlanBoard` grid |
 | Booking wizard | Card, Field, Input, InputGroup, NativeSelect, RadioGroup, Checkbox, Textarea, Button | `SlotPicker`, `QrPlaceholder` |
 | Carrier bookings | Tabs, InputGroup, NativeSelect, Table, Alert, Button | none |
-| Gate | InputGroup (scan), Tabs, Dialog, Field, Input, NativeSelect, Button | `TabletShell` |
-| Dock | Dialog, Button | `TabletShell`, dock picker buttons |
-| Driver | Progress, RadioGroup, Checkbox, Field, Input, Button | `DriverShell`, `PhoneFrame` |
+| Gate | InputGroup (scan), Tabs, Dialog, Field, Input, NativeSelect, Button | `TabletShell` with `data-density="halle"` |
+| Dock | Dialog, Button | `TabletShell` with `data-density="halle"`, dock picker buttons |
+| Driver | Progress, RadioGroup, Checkbox, Field, Input, Button, ToggleGroup (`ThemeSwitch`) | `DriverShell` with `data-density="fahrer"`, `PhoneFrame` |
 | Master data | Card, Table, Badge, Field, Input, InputGroup, ToggleGroup, Checkbox, Progress, Button | none |
 | Settings | Field, Switch, Input, InputGroup, NativeSelect, Checkbox, Command, AlertDialog, Button | `SettingField`, `SettingOrigin`, `SettingsTopicNav`, `GroupedChecklist`, `UpsellHint` |
 | Platform admin | Table, Badge, Card, Field, Input, InputGroup, NativeSelect, Select, Popover, Command, Empty, Skeleton, Spinner, Progress, Button | `DataTable`, usage `Meter` |
@@ -253,4 +255,3 @@ Custom components and why no shadcn component fits:
 - Does the gate need a dedicated "On site" layout with larger waiting timers, or do the tabs cover YD-04?
 - The driver "Called" screen could show an expected walking route or yard map later. The MVP shows hall and dock only.
 - Carriers booking at a tenant with `approval_required` see a pending alert. Should the booking wizard let them draft a booking before approval, or stay disabled?
-- Dark mode is out of the MVP. Night shifts at the gate may ask for it first.

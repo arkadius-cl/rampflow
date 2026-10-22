@@ -1,0 +1,67 @@
+/* yrd.app – Theme-Tokens (shadcn-Namensgebung, Tailwind v4). Hell = :root, Dunkel = .dark. Akzent: Petrol. */
+:root{
+--background:#FFFFFF;--foreground:#16191D;
+--card:#FFFFFF;--card-foreground:#16191D;
+--popover:#FFFFFF;--popover-foreground:#16191D;
+--primary:#0E6E73;--primary-foreground:#FFFFFF;
+--secondary:#EEF1F4;--secondary-foreground:#16191D;
+--muted:#F2F4F6;--muted-foreground:#5A6370;
+--accent:#E0F0F0;--accent-foreground:#0B4F53;
+--destructive:#B3261E;--destructive-foreground:#FFFFFF;
+--border:#DCE1E6;--input:#DCE1E6;--ring:#0E6E73;
+--chart-1:#0E6E73;--chart-2:#2A63C9;--chart-3:#C7820A;--chart-4:#1E8A4C;--chart-5:#8A94A0;
+--sidebar:#F6F8F9;--sidebar-foreground:#16191D;--sidebar-primary:#0E6E73;--sidebar-primary-foreground:#FFFFFF;--sidebar-accent:#E6EBEE;--sidebar-accent-foreground:#16191D;--sidebar-border:#DCE1E6;--sidebar-ring:#0E6E73;
+/* Status einer Buchung: Fläche + Text (Badge) und Vollton (Punkt, Zeitleiste, Rampen-Kachel) */
+--status-requested:#FCEFD2;--status-requested-foreground:#704400;--status-requested-solid:#B5740A;
+--status-scheduled:#E0F0F0;--status-scheduled-foreground:#0B4F53;--status-scheduled-solid:#0E6E73;
+--status-on-yard:#FCEFD2;--status-on-yard-foreground:#704400;--status-on-yard-solid:#B5740A;
+--status-called:#DCE8FB;--status-called-foreground:#1A478F;--status-called-solid:#2A63C9;
+--status-at-dock:#DCE8FB;--status-at-dock-foreground:#1A478F;--status-at-dock-solid:#2A63C9;
+--status-done:#DBF2E3;--status-done-foreground:#14532D;--status-done-solid:#1E8A4C;
+--status-checked-out:#ECEFF2;--status-checked-out-foreground:#5A6370;--status-checked-out-solid:#7E8893;
+--status-problem:#FBE0DD;--status-problem-foreground:#8A1C14;--status-problem-solid:#C9302C;
+--status-cancelled:#ECEFF2;--status-cancelled-foreground:#5A6370;--status-cancelled-solid:#7E8893;
+/* Pünktlichkeit */
+--punctual-early:#E6EBF8;--punctual-early-foreground:#36458A;
+--punctual-on-time:#DBF2E3;--punctual-on-time-foreground:#14532D;
+--punctual-late-tolerance:#FCEFD2;--punctual-late-tolerance-foreground:#704400;
+--punctual-late:#FBE0DD;--punctual-late-foreground:#8A1C14;
+/* Dichte (Standard Büro) */
+--control-h:36px;--control-h-primary:36px;--control-h-sm:28px;--touch-min:24px;--radius:6px;--gap:8px;--pad:16px;
+--radius-sm:4px;--radius-md:6px;--radius-lg:10px;--radius-xl:16px;
+--shadow-sm:0 1px 2px rgba(22,25,29,.06);--shadow-md:0 2px 8px rgba(22,25,29,.10),0 1px 2px rgba(22,25,29,.06);--shadow-lg:0 12px 32px rgba(22,25,29,.16),0 2px 6px rgba(22,25,29,.08);
+--focus-ring:0 0 0 2px var(--background),0 0 0 4px var(--ring);
+--duration-fast:120ms;/* @kind other */--duration-base:180ms;/* @kind other */--ease:cubic-bezier(.2,0,0,1);/* @kind other */
+color-scheme:light;
+}
+.dark{
+--background:#0F1215;--foreground:#E8ECEF;
+--card:#161A1E;--card-foreground:#E8ECEF;
+--popover:#1B2026;--popover-foreground:#E8ECEF;
+--primary:#5FC6CA;--primary-foreground:#052A2C;
+--secondary:#232930;--secondary-foreground:#E8ECEF;
+--muted:#1E242A;--muted-foreground:#9DA7B3;
+--accent:#143D40;--accent-foreground:#A9E4E6;
+--destructive:#F0776F;--destructive-foreground:#2B0804;
+--border:#2A3139;--input:#2A3139;--ring:#5FC6CA;
+--chart-1:#5FC6CA;--chart-2:#5A8FE8;--chart-3:#E2A33A;--chart-4:#3DB36A;--chart-5:#7A8591;
+--sidebar:#131719;--sidebar-foreground:#E8ECEF;--sidebar-primary:#5FC6CA;--sidebar-primary-foreground:#052A2C;--sidebar-accent:#20262C;--sidebar-accent-foreground:#E8ECEF;--sidebar-border:#2A3139;--sidebar-ring:#5FC6CA;
+--status-requested:#3A2A06;--status-requested-foreground:#F5C76A;--status-requested-solid:#E2A33A;
+--status-scheduled:#143D40;--status-scheduled-foreground:#A9E4E6;--status-scheduled-solid:#5FC6CA;
+--status-on-yard:#3A2A06;--status-on-yard-foreground:#F5C76A;--status-on-yard-solid:#E2A33A;
+--status-called:#15294D;--status-called-foreground:#9DBDF5;--status-called-solid:#5A8FE8;
+--status-at-dock:#15294D;--status-at-dock-foreground:#9DBDF5;--status-at-dock-solid:#5A8FE8;
+--status-done:#0F3320;--status-done-foreground:#8FD9A8;--status-done-solid:#3DB36A;
+--status-checked-out:#20262C;--status-checked-out-foreground:#9DA7B3;--status-checked-out-solid:#7A8591;
+--status-problem:#45140F;--status-problem-foreground:#F6A09A;--status-problem-solid:#EC6D64;
+--status-cancelled:#20262C;--status-cancelled-foreground:#9DA7B3;--status-cancelled-solid:#7A8591;
+--punctual-early:#1C2447;--punctual-early-foreground:#B3BEF0;
+--punctual-on-time:#0F3320;--punctual-on-time-foreground:#8FD9A8;
+--punctual-late-tolerance:#3A2A06;--punctual-late-tolerance-foreground:#F5C76A;
+--punctual-late:#45140F;--punctual-late-foreground:#F6A09A;
+--shadow-sm:0 1px 2px rgba(0,0,0,.4);--shadow-md:0 2px 8px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 12px 32px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);
+color-scheme:dark;
+}
+/* Dichte: Halle (Touch mit Handschuhen) und Fahrerhaus (mobil) */
+[data-density="halle"]{--control-h:56px;--control-h-primary:72px;--control-h-sm:44px;--touch-min:56px;--radius:10px;--radius-md:10px;--radius-lg:14px;--gap:12px;--pad:20px}
+[data-density="fahrer"]{--control-h:48px;--control-h-primary:56px;--control-h-sm:40px;--touch-min:44px;--radius:10px;--radius-md:10px;--radius-lg:14px;--gap:12px;--pad:16px}

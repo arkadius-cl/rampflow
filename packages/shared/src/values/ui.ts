@@ -60,6 +60,48 @@ export const DeviceClass = {
 } as const;
 export type DeviceClass = ValueOf<typeof DeviceClass>;
 
+/**
+ * The density of a screen, set as `data-density` on the root element (yrd design system). The
+ * office is the absence of the attribute: tenant, carrier and platform screens on a desktop.
+ * `halle` is the gate, dock and wallboard tablet (touch with gloves), `fahrer` the driver's phone.
+ */
+export const Density = {
+  halle: 'halle',
+  fahrer: 'fahrer',
+} as const;
+export type Density = ValueOf<typeof Density>;
+
+/** The appearance a user or device chose: light, dark, or whatever the OS prefers. */
+export const Theme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+export type Theme = ValueOf<typeof Theme>;
+
+/** What `system` resolves to: the class `dark` on `<html>`, or none. */
+export const ResolvedTheme = {
+  light: Theme.light,
+  dark: Theme.dark,
+} as const;
+export type ResolvedTheme = ValueOf<typeof ResolvedTheme>;
+
+/** The keys of app_user.ui_prefs (ADR-0014), named `<area>.<screen>.<what>`. */
+export const UiPref = {
+  app_theme: 'app.theme',
+  platform_packages_open_modules: 'platform.packages.openModules',
+  platform_tenant_open_modules: 'platform.tenant.openModules',
+} as const;
+export type UiPref = ValueOf<typeof UiPref>;
+
+/** Where a theme choice is kept: the account (office), or this device (station tablet, driver phone). */
+export const ThemeSurface = {
+  office: 'office',
+  station: 'station',
+  driver: 'driver',
+} as const;
+export type ThemeSurface = ValueOf<typeof ThemeSurface>;
+
 /** The frame a tenant route renders in: the office shell, or the tablet station layout. */
 export const ShellLayout = {
   office: 'office',
