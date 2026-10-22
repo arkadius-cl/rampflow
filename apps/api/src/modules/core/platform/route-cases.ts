@@ -61,6 +61,36 @@ export const cases = defineRouteCases([
     params: tenant,
     body: () => ({ email: inviteeEmail('admin') }),
   },
+  // Suspension and notes (PL-07, PL-08). Each case seeds its own world, so the tenant the
+  // suspend control call leaves suspended is never world A of another case.
+  {
+    ...tenants,
+    method: HttpMethod.POST,
+    path: '/api/platform/tenants/:tenantId/suspend',
+    params: tenant,
+    body: () => ({ reason: 'Route case' }),
+  },
+  // On an active tenant: a 200 no-op.
+  {
+    ...tenants,
+    method: HttpMethod.POST,
+    path: '/api/platform/tenants/:tenantId/reactivate',
+    params: tenant,
+    body: () => ({ reason: 'Route case' }),
+  },
+  {
+    ...tenants,
+    method: HttpMethod.GET,
+    path: '/api/platform/tenants/:tenantId/notes',
+    params: tenant,
+  },
+  {
+    ...tenants,
+    method: HttpMethod.POST,
+    path: '/api/platform/tenants/:tenantId/notes',
+    params: tenant,
+    body: () => ({ body: 'Route case note' }),
+  },
   { ...tenants, method: HttpMethod.GET, path: '/api/platform/packages', params: none },
   { ...settings, method: HttpMethod.GET, path: '/api/platform/settings', params: none },
   // The code default, so later test files in this worker database still see the default.

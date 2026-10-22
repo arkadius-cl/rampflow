@@ -4675,6 +4675,196 @@
         "x-router": "modules/core/platform/routes.platform.ts"
       }
     },
+    "/api/platform/tenants/{tenantId}/notes": {
+      "get": {
+        "operationId": "core.platform.listTenantNotes",
+        "summary": "List tenant notes",
+        "description": "One page of the tenant's notes: `{ items: [{ id, kind, body, author: { id, name } | null, createdAt }], total, page, pageSize, facets: { kind: { note, suspended, reactivated } } }`. `author` is `null` once the account is deleted. Query (all optional): `q` searches the body as a case-insensitive substring, `kind` filters by a comma-separated list of kinds, `sort` is `createdAt`, `order` is `desc` (default) or `asc` with `id` as tiebreaker, `page` and `pageSize` as in the tenant list. `facets.kind` counts per kind the notes matching `q`, ignoring `kind`. 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Case-insensitive substring"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": [
+                "createdAt"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "type": "number"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: note, suspended, reactivated"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantNoteList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-08"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      },
+      "post": {
+        "operationId": "core.platform.createTenantNote",
+        "summary": "Create tenant note",
+        "description": "`{ body }` (1 to 2,000 characters after trimming) → 201 note of kind `note` with the author. Notes cannot be changed or deleted; suspension notes come from the suspend and reactivate commands. 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              },
+              "example": {
+                "body": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantNoteView"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-08"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      }
+    },
     "/api/platform/tenants/{tenantId}/overrides/{key}": {
       "put": {
         "operationId": "core.platform.putOverride",
@@ -4842,6 +5032,158 @@
         ],
         "x-stories": [
           "PL-02"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      }
+    },
+    "/api/platform/tenants/{tenantId}/reactivate": {
+      "post": {
+        "operationId": "core.platform.reactivateTenant",
+        "summary": "Reactivate tenant",
+        "description": "`{ reason }` (1 to 500 characters after trimming) → tenant detail with status `onboarding` or `active`. Clears the suspension time, writes a `reactivated` note and enqueues `core.tenant-reactivated` to every `tenant_admin` member who is not disabled. A tenant that is not suspended stays as it is (200, no note, no email); 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "reason": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-07"
+        ],
+        "x-router": "modules/core/platform/routes.platform.ts"
+      }
+    },
+    "/api/platform/tenants/{tenantId}/suspend": {
+      "post": {
+        "operationId": "core.platform.suspendTenant",
+        "summary": "Suspend tenant",
+        "description": "`{ reason }` (1 to 500 characters after trimming) → tenant detail with status `suspended`. Sets the suspension time, writes a `suspended` note with the reason and enqueues `core.tenant-suspended` to every `tenant_admin` member who is not disabled, in their locale or the platform default. From the next request on, the tenant's staff and carriers at it get 403 `tenant_suspended`, its drivers 401 and its public links 404 (ADR-0018). A suspended tenant stays as it is (200, no note, no email); 404 for an id that is not a tenant",
+        "tags": [
+          "Platform administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              },
+              "example": {
+                "reason": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        },
+        "x-party": "platform",
+        "x-permission": [
+          "core.manage_tenants"
+        ],
+        "x-stories": [
+          "PL-07"
         ],
         "x-router": "modules/core/platform/routes.platform.ts"
       }
@@ -26047,6 +26389,107 @@
           "total",
           "page",
           "pageSize"
+        ]
+      },
+      "TenantNoteList": {
+        "type": "object",
+        "properties": {
+          "facets": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "object",
+                "properties": {
+                  "suspended": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "number"
+                  },
+                  "reactivated": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "suspended",
+                  "note",
+                  "reactivated"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantNoteView"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "facets",
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "TenantNoteView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "note",
+              "reactivated",
+              "suspended"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "author": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "body",
+          "author",
+          "createdAt"
         ]
       },
       "TenantSummary": {

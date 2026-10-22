@@ -54,6 +54,38 @@ describe('account emails', () => {
     }
   }
 
+  // PL-07: no token and no link, so no fragment assertion; the reason reaches the admin.
+  for (const id of ['core.tenant-suspended', 'core.tenant-reactivated']) {
+    for (const locale of values(StaffLocale)) {
+      it(`${id} renders in ${locale} with the org name and no raw key`, async () => {
+        const template = await loadTemplateFile(id);
+        expect(template.category).toBe(EmailCategory.account);
+        const i18n = await createServerI18n(locale);
+        const { subject, body } = template.render(template.example, i18n.getFixedT(locale, 'core'));
+        const text = await renderEmail(body, { plainText: true });
+        expect(subject).not.toMatch(/^auth\.|\{\{/);
+        expect(subject).toContain('Acme Logistics');
+        expect(text).not.toMatch(/auth\.email\.|signup\.greeting|\{\{/);
+        const { reason } = template.example as { reason?: string };
+        if (reason) expect(text).toContain(reason);
+      });
+    }
+  }
+
+  it('greets an admin with only a display name without a stray space', async () => {
+    const template = await loadTemplateFile('core.tenant-suspended');
+    const payload = {
+      orgName: 'Rhein Lager GmbH',
+      reason: 'Unpaid since March',
+      recipient: { salutation: Salutation.ms, givenName: 'Mara Engel', familyName: '' },
+    };
+    const i18n = await createServerI18n('de');
+    const { body } = template.render(payload, i18n.getFixedT('de', 'core'));
+    const text = await renderEmail(body, { plainText: true });
+    expect(text).toContain('Guten Tag Mara Engel,');
+    expect(text).toContain('Unpaid since March');
+  });
+
   it('names the inviter and the role in the recipient language', async () => {
     const template = await loadTemplateFile('core.invitation');
     const i18n = await createServerI18n('de');

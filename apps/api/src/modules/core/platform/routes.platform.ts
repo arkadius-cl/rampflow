@@ -1,12 +1,17 @@
 import {
   CreateTenant,
   InviteTenantAdmin,
+  NewTenantNote,
   type OverrideView,
   type PackageList,
   PutOverride,
+  SuspensionBody,
   type TenantDetail,
   type TenantList,
   TenantListQuery,
+  type TenantNoteList,
+  TenantNoteListQuery,
+  type TenantNoteView,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
 import {
@@ -34,6 +39,8 @@ import type { AppEnv } from '../../../kernel/env.ts';
 import { validate } from '../../../kernel/validate.ts';
 import { resetSetting, settingsView, writeSetting, writeSettings } from '../settings/settings.ts';
 import { invitationView } from '../staff/invitations.ts';
+import { createNote, listNotes } from './notes.ts';
+import { reactivateTenant, suspendTenant } from './suspension.ts';
 import {
   createTenant,
   deleteOverride,
@@ -199,6 +206,95 @@ export const platform = new Hono<AppEnv>()
         now,
       );
       return c.json(invitationView(row, now), 201);
+    },
+  )
+  // Suspension and notes (PL-07, PL-08).
+  .post(
+    '/tenants/:tenantId/suspend',
+    op({
+      id: 'core.platform.suspendTenant',
+      stories: [StoryId.PL_07],
+      description:
+        "`{ reason }` (1 to 500 characters after trimming) → tenant detail with status `suspended`. Sets the suspension time, writes a `suspended` note with the reason and enqueues `core.tenant-suspended` to every `tenant_admin` member who is not disabled, in their locale or the platform default. From the next request on, the tenant's staff and carriers at it get 403 `tenant_suspended`, its drivers 401 and its public links 404 (ADR-0018). A suspended tenant stays as it is (200, no note, no email); 404 for an id that is not a tenant",
+      responses: { 200: type<TenantDetail>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, SuspensionBody),
+    async (c) => {
+      const tenantId = c.req.valid('param').tenantId as TenantId;
+      const now = c.var.clock.now();
+      const input = {
+        reason: c.req.valid('json').reason,
+        userId: platformUser(c),
+        locale: await platformLocale(c),
+      };
+      await suspendTenant(c.var.db, tenantId, input, now);
+      return c.json(await tenantDetail(c.var.db, tenantId, now), 200);
+    },
+  )
+  .post(
+    '/tenants/:tenantId/reactivate',
+    op({
+      id: 'core.platform.reactivateTenant',
+      stories: [StoryId.PL_07],
+      description:
+        '`{ reason }` (1 to 500 characters after trimming) → tenant detail with status `onboarding` or `active`. Clears the suspension time, writes a `reactivated` note and enqueues `core.tenant-reactivated` to every `tenant_admin` member who is not disabled. A tenant that is not suspended stays as it is (200, no note, no email); 404 for an id that is not a tenant',
+      responses: { 200: type<TenantDetail>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, SuspensionBody),
+    async (c) => {
+      const tenantId = c.req.valid('param').tenantId as TenantId;
+      const now = c.var.clock.now();
+      const input = {
+        reason: c.req.valid('json').reason,
+        userId: platformUser(c),
+        locale: await platformLocale(c),
+      };
+      await reactivateTenant(c.var.db, tenantId, input, now);
+      return c.json(await tenantDetail(c.var.db, tenantId, now), 200);
+    },
+  )
+  .get(
+    '/tenants/:tenantId/notes',
+    op({
+      id: 'core.platform.listTenantNotes',
+      stories: [StoryId.PL_08],
+      description:
+        "One page of the tenant's notes: `{ items: [{ id, kind, body, author: { id, name } | null, createdAt }], total, page, pageSize, facets: { kind: { note, suspended, reactivated } } }`. `author` is `null` once the account is deleted. Query (all optional): `q` searches the body as a case-insensitive substring, `kind` filters by a comma-separated list of kinds, `sort` is `createdAt`, `order` is `desc` (default) or `asc` with `id` as tiebreaker, `page` and `pageSize` as in the tenant list. `facets.kind` counts per kind the notes matching `q`, ignoring `kind`. 404 for an id that is not a tenant",
+      responses: { 200: type<TenantNoteList>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.query, TenantNoteListQuery.query),
+    async (c) => {
+      const tenantId = c.req.valid('param').tenantId as TenantId;
+      return c.json(await listNotes(c.var.db, tenantId, c.req.valid('query')), 200);
+    },
+  )
+  .post(
+    '/tenants/:tenantId/notes',
+    op({
+      id: 'core.platform.createTenantNote',
+      stories: [StoryId.PL_08],
+      description:
+        '`{ body }` (1 to 2,000 characters after trimming) → 201 note of kind `note` with the author. Notes cannot be changed or deleted; suspension notes come from the suspend and reactivate commands. 404 for an id that is not a tenant',
+      responses: { 201: type<TenantNoteView>() },
+    }),
+    tenants,
+    validate(ValidationTarget.param, TenantParam),
+    validate(ValidationTarget.json, NewTenantNote),
+    async (c) => {
+      const note = await createNote(
+        c.var.db,
+        c.req.valid('param').tenantId as TenantId,
+        c.req.valid('json').body,
+        platformUser(c),
+        c.var.clock.now(),
+      );
+      return c.json(note, 201);
     },
   )
   .get(
