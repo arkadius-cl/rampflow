@@ -11,6 +11,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { useAccountTheme } from '@/hooks/use-theme';
 import { AccessDenied } from '@/lib/access';
 import { isFailure } from '@/lib/api';
 
@@ -44,6 +45,8 @@ export function NoAccess() {
  */
 export function TenantSuspended() {
   const { t } = useTranslation();
+  // Shown without the shell, so the account theme is applied here.
+  useAccountTheme();
   return (
     <Empty className="min-h-[60svh]">
       <EmptyHeader>
