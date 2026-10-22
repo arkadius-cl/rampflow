@@ -11,7 +11,7 @@ related: [docs/decisions/ADR-0021-design-system.md, docs/decisions/ADR-0015-data
 
 # Design system
 
-rampflow uses the yrd design system ([ADR-0021](../decisions/ADR-0021-design-system.md)). Its source of truth is checked in under `design/yrd/`: `readme.md`, `tokens/`, `guidelines/` (foundation cards, contrast tables, the three sample screens, `regeln.html`) and `components/` (one `.jsx`, `.d.ts` and `.prompt.md` per component). It comes from the Claude Design project "yrd Design System" (<https://claude.ai/design/p/d6c60fba-e676-413b-b2a8-221aff505cdf>, 2026-10-11). Nobody edits `design/yrd/`. The app copies its token values into `apps/web/src/styles/`.
+rampflow uses the yrd design system ([ADR-0021](../decisions/ADR-0021-design-system.md)). Its source of truth is checked in under `design/yrd/`: `readme.md`, `tokens/`, `guidelines/` (foundation cards, contrast tables, the three sample screens, `regeln.html`) and `components/` (one `.jsx`, `.d.ts` and `.prompt.md` per component). It comes from the Claude Design project "yrd Design System" (<https://claude.ai/design/p/d6c60fba-e676-413b-b2a8-221aff505cdf>, 2026-10-11). Nobody edits `design/yrd/`. The app copies its token values into `apps/web/src/styles/`. The rule table in this reference comes from the product owner's German rule sheet, kept verbatim as `design/ui-ux-regeln.de.md` ("Regeln und Best Practices für UI und UX", 2026-10-21); its sources E1 and ADR 0004 belong to a sibling project and are mapped to rampflow documents here.
 
 The design components are references in plain React. Take their class lists, variants, sizes and states. rampflow keeps its shadcn components on Base UI in `apps/web/src/components/ui/`.
 
