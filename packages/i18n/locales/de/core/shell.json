@@ -59,5 +59,9 @@
     "carrier_admin": "Spediteurs-Admin",
     "carrier_user": "Spediteursnutzer"
   },
-  "viewer_time": "({{time}} Ihre Zeit)"
+  "viewer_time": "({{time}} Ihre Zeit)",
+  "suspended": {
+    "title": "Organisation gesperrt",
+    "description": "Diese Organisation ist von der Plattform gesperrt. Wenden Sie sich für Einzelheiten an die Admin-Person Ihrer Organisation."
+  }
 }

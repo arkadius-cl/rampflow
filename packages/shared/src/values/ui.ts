@@ -126,3 +126,25 @@ export const PrototypeScreen = {
   tenants: 'tenants',
 } as const;
 export type PrototypeScreen = ValueOf<typeof PrototypeScreen>;
+
+/** The fixed widths of a form sheet (design system, "Forms"): 384, 480 (default), 640, 896 px. */
+export const SheetSize = {
+  sm: 'sm',
+  md: 'md',
+  lg: 'lg',
+  xl: 'xl',
+} as const;
+export type SheetSize = ValueOf<typeof SheetSize>;
+
+/**
+ * The group of a row action in a data table's "…" menu (design system, "Row actions"): the
+ * standard actions first, then the others after a separator, the destructive ones last.
+ */
+export const RowActionKind = {
+  view: 'view',
+  edit: 'edit',
+  duplicate: 'duplicate',
+  other: 'other',
+  destructive: 'destructive',
+} as const;
+export type RowActionKind = ValueOf<typeof RowActionKind>;

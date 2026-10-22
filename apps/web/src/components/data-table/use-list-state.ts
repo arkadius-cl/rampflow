@@ -41,6 +41,8 @@ export interface ListControls<
   setSort: (sort: ValueOf<S>, order: SortOrder) => void;
   setPage: (page: number) => void;
   setPageSize: (pageSize: PageSize) => void;
+  /** Sets one extra parameter (a view, a reference id) and returns to page 1. */
+  setParam: <K extends keyof P & string>(name: K, value: ListState<S, F, P>[K]) => void;
   /** Drops the search and every facet; keeps sort and page size. */
   clear: () => void;
   /** Moves to the last page with rows when rows disappeared under the current page. */
@@ -104,6 +106,7 @@ export function useListState<
     setSort: (sort, order) => go({ ...state, sort, order, page: 1 }),
     setPage: (page) => go({ ...state, page }),
     setPageSize: (pageSize) => go({ ...state, pageSize, page: 1 }),
+    setParam: (name, value) => go({ ...state, [name]: value, page: 1 }),
     clear: () => {
       committed.current = '';
       setDraft('');

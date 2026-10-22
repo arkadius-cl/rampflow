@@ -59,5 +59,9 @@
     "carrier_admin": "Carrier admin",
     "carrier_user": "Carrier user"
   },
-  "viewer_time": "({{time}} your time)"
+  "viewer_time": "({{time}} your time)",
+  "suspended": {
+    "title": "Organisation suspended",
+    "description": "This organisation is suspended by the platform. Contact your organisation's admin for details."
+  }
 }

@@ -32,10 +32,26 @@
     "empty": "Brak klientów.",
     "created_at": "Utworzono",
     "no_match": "Brak pasujących klientów",
-    "search": "Szukaj klientów po nazwie",
+    "search": "Szukaj po nazwie, numerze podatkowym lub e-mailu administratora",
     "status": "Status",
     "country": "Kraj",
-    "flags": "Flagi"
+    "flags": "Flagi",
+    "invited": "Zaproszony",
+    "tax_id": "Numer podatkowy",
+    "admin": "E-mail administratora",
+    "last_activity": "Ostatnia aktywność",
+    "never": "Nigdy",
+    "no_tax_id": "Brak",
+    "not_set": "Nie ustawiono",
+    "actions": "Akcje",
+    "actions_for": "Akcje dla {{name}}",
+    "view": "Zobacz",
+    "suspend": "Zawieś",
+    "reactivate": "Przywróć",
+    "attention_empty": "Nic nie wymaga uwagi",
+    "show_all": "Pokaż wszystkich klientów",
+    "matching": "Pasujące do {{name}}",
+    "stop_matching": "Zakończ dopasowanie do {{name}}"
   },
   "tenant_status": {
     "onboarding": "Wdrażanie",
@@ -52,8 +68,17 @@
   "tenant": {
     "back": "Wszyscy klienci",
     "description": "Pakiet, nadpisania i zaproszenie administratora tego klienta.",
-    "settings_title": "Nazwa i pakiet",
-    "saved": "Zapisano klienta."
+    "settings_title": "Dane podstawowe",
+    "saved": "Klient zapisany.",
+    "tabs_label": "Obszary klienta",
+    "tabs": {
+      "overview": "Przegląd",
+      "members": "Członkowie",
+      "sites": "Lokalizacje",
+      "entitlements": "Uprawnienia",
+      "notes": "Notatki"
+    },
+    "edit": "Edytuj"
   },
   "columns": {
     "entitlement": "Uprawnienie",
@@ -117,5 +142,105 @@
   "tenant_flag": {
     "possible_duplicate": "Możliwy duplikat",
     "tax_id_unverified": "Numer podatkowy niezweryfikowany"
+  },
+  "views": {
+    "attention": "Wymaga uwagi",
+    "all": "Wszyscy"
+  },
+  "tax_id_status": {
+    "pending": "Oczekuje",
+    "verified": "Zweryfikowany",
+    "unverified": "Niezweryfikowany",
+    "unavailable": "Niedostępny"
+  },
+  "note_kind": {
+    "note": "Notatka",
+    "suspended": "Zawieszony",
+    "reactivated": "Przywrócony"
+  },
+  "member_state": {
+    "member": "Członek",
+    "disabled": "Wyłączony",
+    "invited": "Zaproszony",
+    "expired": "Zaproszenie wygasło"
+  },
+  "overview": {
+    "status_title": "Status",
+    "suspended_at": "Zawieszony {{at}}",
+    "suspended_by": "przez {{name}}",
+    "reason": "Powód",
+    "onboarding_title": "Wdrażanie",
+    "steps": "{{done}} z {{total}} kroków wykonano",
+    "open_steps": "Otwarte: {{steps}}",
+    "activated": "Aktywny od {{at}}",
+    "usage_title": "Wykorzystanie w tym miesiącu",
+    "tax_id_title": "Numer podatkowy",
+    "tax_id_type": "Rodzaj",
+    "tax_id_value": "Numer",
+    "tax_id_checked": "Sprawdzono {{at}}",
+    "tax_id_unchecked": "Jeszcze nie sprawdzono",
+    "tax_id_none": "Brak zapisanego numeru podatkowego.",
+    "flags_title": "Flagi",
+    "flags_none": "Brak flag.",
+    "show_matching": "Pokaż pasujących klientów",
+    "admins_title": "Administratorzy",
+    "admins_none": "Żaden administrator jeszcze nie dołączył.",
+    "invitation_open": "Zaproszenie otwarte, wygasa {{at}}",
+    "details_title": "Szczegóły",
+    "country": "Kraj",
+    "created": "Utworzono",
+    "last_activity": "Ostatnia aktywność"
+  },
+  "suspension": {
+    "suspend_title": "Zawieś {{name}}",
+    "suspend_effect": "Pracownicy i przewoźnicy nie będą mogli korzystać z rampflow w tej organizacji do czasu przywrócenia. Jej administratorzy otrzymają e-mail z powodem.",
+    "suspend_submit": "Zawieś klienta",
+    "suspended": "Zawieszono {{name}}.",
+    "reactivate_title": "Przywróć {{name}}",
+    "reactivate_effect": "Pracownicy i przewoźnicy znów będą mogli korzystać z rampflow w tej organizacji. Jej administratorzy otrzymają e-mail.",
+    "reactivate_submit": "Przywróć klienta",
+    "reactivated": "Przywrócono {{name}}.",
+    "reason": "Powód"
+  },
+  "members": {
+    "name": "Imię i nazwisko",
+    "email": "E-mail",
+    "role": "Rola",
+    "state": "Stan",
+    "email_verified": "E-mail potwierdzony",
+    "last_activity": "Ostatnia aktywność",
+    "since": "Od",
+    "verified": "Potwierdzony",
+    "unverified": "Niepotwierdzony",
+    "expires": "wygasa {{at}}",
+    "search": "Szukaj po nazwisku lub e-mailu",
+    "empty": "Brak członków.",
+    "no_match": "Brak pasujących członków"
+  },
+  "sites": {
+    "name": "Lokalizacja",
+    "city": "Miasto",
+    "country": "Kraj",
+    "time_zone": "Strefa czasowa",
+    "active": "Aktywna",
+    "inactive": "Nieaktywna",
+    "halls": "Hale",
+    "docks": "Rampy",
+    "search": "Szukaj po nazwie lub mieście",
+    "empty": "Ten klient nie utworzył jeszcze lokalizacji.",
+    "no_match": "Brak pasujących lokalizacji"
+  },
+  "notes": {
+    "add": "Dodaj notatkę",
+    "add_description": "Widoczne tylko dla zespołu platformy.",
+    "body": "Notatka",
+    "added": "Notatka dodana.",
+    "time": "Czas",
+    "kind": "Rodzaj",
+    "author": "Autor",
+    "deleted_user": "Usunięty użytkownik",
+    "search": "Szukaj w notatkach",
+    "empty": "Brak notatek.",
+    "no_match": "Brak pasujących notatek"
   }
 }
