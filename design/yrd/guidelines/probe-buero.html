@@ -1,0 +1,9 @@
+<!-- @dsCard group="Proben" viewport="700x180" name="Probe Büro: Tabellenzeile der Disposition" subtitle="36 px Zeile, Tabellenziffern, Status + Pünktlichkeit mit Icon, Rampenzeit nur hier sichtbar" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Table, StatusBadge, PunctualityChip, Button } = window.YrdDesignSystem_d6c60f;
+const cols = [{ key: "id", label: "Buchung", mono: true }, { key: "arrival", label: "Pforte bis" }, { key: "dock", label: "Rampenzeit" }, { key: "carrier", label: "Carrier" }, { key: "type", label: "Buchungsart" }, { key: "plate", label: "Kennzeichen", mono: true }, { key: "status", label: "Status", render: (r) => <StatusBadge status={r.status} size="sm" /> }, { key: "p", label: "Pünktlichkeit", render: (r) => <PunctualityChip value={r.p} deltaMin={r.d} size="sm" /> }, { key: "a", label: "", align: "right", render: () => <Button size="sm" variant="ghost" icon="MoreHorizontal" aria-label="Aktionen" /> }];
+const rows = [{ id: "B-1042", arrival: "13:45", dock: "14:00 · Rampe 8", carrier: "Spedition Müller GmbH", type: "Tiefkühl Anlieferung", plate: "WGM 4KX21", status: "checked-in", p: "on-time", d: -4 }];
+function Col({ dark }) { return <div className={(dark ? "dark " : "") + "bg-background p-3"}><Table columns={cols} rows={rows} onRowClick={() => {}} /></div>; }
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="flex flex-col gap-px bg-border"><Col /><Col dark /></div>);
+</script></body></html>

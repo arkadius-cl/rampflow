@@ -1,0 +1,41 @@
+/* Tailwind v4 – Bindung der Tokens. In der App: @import "tailwindcss"; @import "./theme.css"; @import "./typography.css"; dann dieser Block. */
+@custom-variant dark (&:where(.dark, .dark *));
+@theme inline {
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive); --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3); --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-primary: var(--sidebar-primary); --color-sidebar-primary-foreground: var(--sidebar-primary-foreground); --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground); --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-requested: var(--status-requested); --color-status-requested-foreground: var(--status-requested-foreground); --color-status-requested-solid: var(--status-requested-solid);
+  --color-status-scheduled: var(--status-scheduled); --color-status-scheduled-foreground: var(--status-scheduled-foreground); --color-status-scheduled-solid: var(--status-scheduled-solid);
+  --color-status-on-yard: var(--status-on-yard); --color-status-on-yard-foreground: var(--status-on-yard-foreground); --color-status-on-yard-solid: var(--status-on-yard-solid);
+  --color-status-called: var(--status-called); --color-status-called-foreground: var(--status-called-foreground); --color-status-called-solid: var(--status-called-solid);
+  --color-status-at-dock: var(--status-at-dock); --color-status-at-dock-foreground: var(--status-at-dock-foreground); --color-status-at-dock-solid: var(--status-at-dock-solid);
+  --color-status-done: var(--status-done); --color-status-done-foreground: var(--status-done-foreground); --color-status-done-solid: var(--status-done-solid);
+  --color-status-checked-out: var(--status-checked-out); --color-status-checked-out-foreground: var(--status-checked-out-foreground); --color-status-checked-out-solid: var(--status-checked-out-solid);
+  --color-status-problem: var(--status-problem); --color-status-problem-foreground: var(--status-problem-foreground); --color-status-problem-solid: var(--status-problem-solid);
+  --color-status-cancelled: var(--status-cancelled); --color-status-cancelled-foreground: var(--status-cancelled-foreground); --color-status-cancelled-solid: var(--status-cancelled-solid);
+  --color-punctual-early: var(--punctual-early); --color-punctual-early-foreground: var(--punctual-early-foreground);
+  --color-punctual-on-time: var(--punctual-on-time); --color-punctual-on-time-foreground: var(--punctual-on-time-foreground);
+  --color-punctual-late-tolerance: var(--punctual-late-tolerance); --color-punctual-late-tolerance-foreground: var(--punctual-late-tolerance-foreground);
+  --color-punctual-late: var(--punctual-late); --color-punctual-late-foreground: var(--punctual-late-foreground);
+  --font-sans: var(--font-sans); --font-mono: var(--font-mono);
+  --text-xs: var(--fs-xs); --text-xs--line-height: var(--lh-xs);
+  --text-sm: var(--fs-sm); --text-sm--line-height: var(--lh-sm);
+  --text-base: var(--fs-body); --text-base--line-height: var(--lh-body);
+  --text-md: var(--fs-md); --text-md--line-height: var(--lh-md);
+  --text-lg: var(--fs-lg); --text-lg--line-height: var(--lh-lg);
+  --text-xl: var(--fs-xl); --text-xl--line-height: var(--lh-xl);
+  --text-2xl: var(--fs-2xl); --text-2xl--line-height: var(--lh-2xl);
+  --text-display: var(--fs-display); --text-display--line-height: var(--lh-display);
+  --radius-sm: var(--radius-sm); --radius-md: var(--radius-md); --radius-lg: var(--radius-lg); --radius-xl: var(--radius-xl); --radius-control: var(--radius);
+  --spacing-control: var(--control-h); --spacing-control-primary: var(--control-h-primary); --spacing-control-sm: var(--control-h-sm); --spacing-touch: var(--touch-min); --spacing-gap: var(--gap); --spacing-pad: var(--pad);
+  --shadow-sm: var(--shadow-sm); --shadow-md: var(--shadow-md); --shadow-lg: var(--shadow-lg);
+  --ease-yrd: var(--ease);
+}

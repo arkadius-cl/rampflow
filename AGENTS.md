@@ -21,9 +21,10 @@ Read `docs/INDEX.md` first. It lists every doc with a one-line description. Then
 | `pnpm db:up` | Start Postgres and Mailpit (podman). Tests need it. |
 | `pnpm db:seed` | Load the demo data. Accounts are in `docs/how-to/run-locally.md`. |
 | `pnpm dev` | Run the API, the web app and the driver app, reachable from the LAN at the printed `APP_ORIGIN`. |
-| `pnpm verify` | Lint, typecheck, value-set check, unit and integration tests, docs check, i18n check, API description check. Green before every commit. |
+| `pnpm verify` | Lint, typecheck, value-set check, design check, unit and integration tests, docs check, i18n check, API description check. Green before every commit. |
 | `pnpm values:check` | Report string literals that bypass a central value set (ADR-0019). `--fix` rewrites them to `X.member` and adds the import; pass package paths to narrow it (`pnpm values:check apps/web`). |
 | `pnpm test:e2e` | Playwright inside the pinned container, on a fresh `<checkout db>_e2e` and ports +5, never the dev database or `pnpm dev`. Pass spec paths to narrow it, without `--` (`pnpm test:e2e e2e/yard`); with `--` the whole suite runs. |
+| `pnpm design:check` | Report raw colours, inline styles, font families, `data-density="touch"` and the removed `signal` classes in `apps/web/src` and `apps/driver/src` (ADR-0021). |
 | `pnpm format` | Biome fixes. |
 | `pnpm docs:index` | Regenerate `docs/INDEX.md` and the catalog tables in `docs/reference/module-contract.md`. Run after changing any doc or manifest. |
 | `pnpm i18n:derive` | Write the label parts derived from the manifests and `apps/web/src/lib/i18n-resources.gen.ts`. Run after changing a manifest or adding a part file. |
@@ -66,12 +67,17 @@ Mail sent in dev and tests lands in Mailpit: <http://localhost:8025>.
 
 ## UI conventions
 
+- **Load the `rampflow-design` skill before any UI work** and follow `docs/reference/design-system.md` ([ADR-0021](docs/decisions/ADR-0021-design-system.md)). Pick the pattern from its decision tree and write the Steckbrief before building.
+- **Tokens only.** No hex, oklch or rgb in markup, no inline `style`, no `font-family`. Values live in `apps/web/src/styles/`. `pnpm design:check` fails otherwise.
+- **Densities by `data-density`** (`Density` value set): office has none, gate and dock use `halle`, the driver uses `fahrer`.
+- **Status by registry**: icon, word and `BadgeTone` from `components/status-badge.tsx`, never a colour class of its own.
+- **Theme**: light and dark are equal. `ThemeSwitch` sets it; prove every screen in both.
 - Use the original shadcn components first: `pnpm dlx shadcn@latest add <component>` from the app directory. Compose them before writing a new primitive.
 - Forms: react-hook-form with `Controller` and shadcn `Field`, `FieldLabel`, `FieldDescription`, `FieldError`; zod schemas from `packages/shared` through `zodResolver`.
 - Gate routes with `guard({ permission, entitlement })` and actions with `useAccess()`; build the sidebar with `navFor` (module contract, "Web gating").
 - Lists use the `DataTable` (`components/data-table/`) with `defineList` and their state in the URL; every entity with an id gets a detail route, with tabs as child routes (ADR-0015).
 - Office screens (carrier, tenant office, platform admin) target 1920 × 1080; screenshots and the `staff` Playwright project use that viewport.
-- Show times in site time with the zone label. Touch targets on gate, dock and driver screens are at least 44 CSS px. Status never relies on color alone.
+- Show times in site time with the zone label. Touch targets are at least 56 CSS px under `halle` and 44 CSS px under `fahrer`. Status never relies on color alone.
 
 ## Tests
 

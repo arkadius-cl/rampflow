@@ -1,0 +1,20 @@
+<!-- @dsCard group="Komponenten" viewport="700x520" name="Formulare: Input, Select, Date Picker, Calendar, Input OTP, Command" subtitle="Mit Fehlerzustand" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { FormField, Input, Select, DatePicker, Calendar, InputOTP, Command } = window.YrdDesignSystem_d6c60f;
+function Col({ dark }) {
+  const [type, setType] = React.useState("Tiefkühl Anlieferung");
+  const [date, setDate] = React.useState(new Date(2026, 9, 15));
+  const [code, setCode] = React.useState("48");
+  return <div className={(dark ? "dark " : "") + "bg-background text-foreground p-4 grid grid-cols-2 gap-4"}>
+    <FormField label="Buchungsart" required><Select options={["Trockenware Anlieferung", "Kühlware Anlieferung", "Tiefkühl Anlieferung", "Abholung Versand", "Sonstiges"]} value={type} onChange={setType} /></FormField>
+    <FormField label="Datum" hint="Zeiten im 15-Minuten-Raster"><DatePicker value={date} onChange={setDate} /></FormField>
+    <FormField label="Kennzeichen Lkw" required error="Bitte Kennzeichen eingeben."><Input mono placeholder="WGM 4KX21" /></FormField>
+    <FormField label="Bestell-Nr."><Input mono defaultValue="4500123456" /></FormField>
+    <FormField label="Notiz an die Disposition" className="col-span-2"><Input multiline rows={2} placeholder="z. B. Fahrer spricht Polnisch" /></FormField>
+    <FormField label="Code an der Pforte" hint="6 Ziffern aus der SMS"><InputOTP value={code} onChange={setCode} /></FormField>
+    <Command inline groups={[{ heading: "Buchungen", items: [{ id: "1", label: "B-1042 · Spedition Müller", hint: "Do 15.10. 13:45", icon: "Truck" }, { id: "2", label: "B-1043 · Trans-Pol", hint: "Do 15.10. 14:15", icon: "Truck" }] }, { heading: "Aktionen", items: [{ id: "3", label: "Walk-in anlegen", icon: "Plus", shortcut: "N" }] }]} />
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2 gap-px bg-border"><Col /><Col dark /></div>);
+</script></body></html>

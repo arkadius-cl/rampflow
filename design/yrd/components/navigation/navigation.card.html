@@ -1,0 +1,18 @@
+<!-- @dsCard group="Komponenten" viewport="700x380" name="Navigation: Sidebar" subtitle="Tenant-App, ausgeklappt und eingeklappt" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Sidebar, Button } = window.YrdDesignSystem_d6c60f;
+const items = [
+  { id: "heute", label: "Heute", icon: "CalendarDays" }, { id: "korb", label: "Eingangskorb", icon: "Inbox", count: 3, urgent: true }, { id: "zeit", label: "Zeitleiste", icon: "GanttChart" }, { id: "buch", label: "Buchungen", icon: "ClipboardList", count: 42 },
+  { id: "carrier", label: "Carrier", icon: "Truck", section: "Verwaltung" }, { id: "standort", label: "Standort", icon: "Warehouse", section: "Verwaltung" }, { id: "reports", label: "Reports", icon: "BarChart3", section: "Verwaltung" },
+];
+function Col({ dark, collapsed }) {
+  const [v, setV] = React.useState("heute");
+  const [c, setC] = React.useState(!!collapsed);
+  return <div className={(dark ? "dark " : "") + "bg-background text-foreground h-[380px] flex"}>
+    <Sidebar context="Frischelager Hollerbach · Augsburg" items={items} value={v} onChange={setV} collapsed={c} onToggle={() => setC(!c)} footer={!c ? <Button variant="ghost" icon="CircleUser" block className="justify-start">Sandra K.</Button> : <Button variant="ghost" size="icon" icon="CircleUser" aria-label="Konto" />} />
+    <div className="flex-1 p-4 text-sm text-muted-foreground">Inhalt</div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2 gap-px bg-border"><Col /><Col dark collapsed /></div>);
+</script></body></html>

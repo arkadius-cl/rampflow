@@ -1,0 +1,9 @@
+<!-- @dsCard group="Proben" viewport="700x380" name="Probe Halle: Gate-Karte mit Kennzeichen und Pünktlichkeit" subtitle="Primärknopf 72 px, Kennzeichen in Mono, keine Rampenzeit" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { GateCard } = window.YrdDesignSystem_d6c60f;
+function Col({ dark, ...p }) { return <div data-density="halle" className={(dark ? "dark " : "") + "bg-background text-foreground p-4"}><GateCard {...p} /></div>; }
+const a = { bookingId: "B-1042", plate: "WGM 4KX21", trailer: "WGM 77Y3", carrier: "Spedition Müller GmbH", driver: "Andrzej Nowak", bookingType: "Tiefkühl Anlieferung", arrival: "13:45", status: "scheduled", punctuality: "on-time", deltaMin: -4 };
+const b = { bookingId: "B-1039", plate: "A KT 4471", carrier: "Kowalski Transporte", driver: "Oleksandr Kravets", bookingType: "Trockenware Anlieferung", arrival: "12:30", status: "scheduled", punctuality: "late", deltaMin: 41 };
+ReactDOM.createRoot(document.getElementById("root")).render(<div className="grid grid-cols-2 gap-px bg-border"><Col {...a} /><Col dark {...b} /></div>);
+</script></body></html>

@@ -1,0 +1,38 @@
+<!-- @dsCard group="Eigene Bausteine" viewport="700x1100" name="Zeitleiste, Rampen-Kachel, Gate-Karte, Aufruf-Vollbild, Wallboard" subtitle="Entwurf – nutzen nur die Tokens" -->
+<!doctype html><html lang="de"><head><meta charset="utf-8"><script src="../../card-runtime-v2.js"></script></head><body class="bg-muted"><div id="root"></div>
+<script type="text/babel">
+const { Timeline, DockTile, GateCard, CallScreen, Wallboard } = window.YrdDesignSystem_d6c60f;
+const bookings = [
+  { id: "B-1039", dock: "r7", start: "12:45", end: "13:45", status: "done", carrier: "Kowalski", arrival: "12:30" },
+  { id: "B-1042", dock: "r8", start: "14:00", end: "15:00", status: "checked-in", carrier: "Spedition Müller", arrival: "13:45", label: "5 Pal. Schinken" },
+  { id: "B-1043", dock: "r9", start: "14:30", end: "15:30", status: "requested", carrier: "Trans-Pol", arrival: "14:15" },
+  { id: "B-1044", dock: "r8", start: "15:15", end: "16:00", status: "scheduled", carrier: "Kowalski", arrival: "15:00", conflict: true },
+  { id: "B-1040", dock: "r10", start: "13:30", end: "14:30", status: "at-dock", carrier: "Spedition Müller", arrival: "13:15" },
+  { id: "B-1036", dock: "r7", start: "15:00", end: "16:00", status: "cancelled", carrier: "Trans-Pol", arrival: "14:45" },
+];
+function Section({ dark, children, className = "", ...rest }) { return <div {...rest} className={(dark ? "dark " : "") + "bg-background text-foreground p-4 " + className}>{children}</div>; }
+function App() {
+  const [sel, setSel] = React.useState("B-1042");
+  return <div className="flex flex-col gap-px bg-border">
+    <div className="grid grid-cols-2 gap-px">
+      <Section><Timeline docks={[{ id: "r7", label: "Rampe 7", hint: "Kühl" }, { id: "r8", label: "Rampe 8", hint: "Tiefkühl" }, { id: "r9", label: "Rampe 9", hint: "Tiefkühl" }, { id: "r10", label: "Rampe 10", hint: "Kühl" }]} bookings={bookings} from="12:00" to="17:00" now="14:02" selectedId={sel} onSelect={(b) => setSel(b.id)} /></Section>
+      <Section dark><Timeline docks={[{ id: "r7", label: "Rampe 7", hint: "Kühl" }, { id: "r8", label: "Rampe 8", hint: "Tiefkühl" }, { id: "r9", label: "Rampe 9", hint: "Tiefkühl" }, { id: "r10", label: "Rampe 10", hint: "Kühl" }]} bookings={bookings} from="12:00" to="17:00" now="14:02" selectedId={sel} onSelect={(b) => setSel(b.id)} /></Section>
+    </div>
+    <div className="grid grid-cols-2 gap-px">
+      <Section className="grid grid-cols-2 gap-3" data-density="halle"><DockTile dock="7" state="free" /><DockTile dock="8" state="at-dock" plate="WGM 4KX21" carrier="Spedition Müller" since="14:03" onClick={() => {}} /><DockTile dock="9" state="called" plate="GZ TR 2210" bookingId="B-1043" /><DockTile dock="10" state="done" plate="A SM 882" since="13:58" /></Section>
+      <Section dark className="grid grid-cols-2 gap-3"><DockTile dock="7" state="free" /><DockTile dock="8" state="at-dock" plate="WGM 4KX21" carrier="Spedition Müller" since="14:03" onClick={() => {}} /><DockTile dock="9" state="called" plate="GZ TR 2210" bookingId="B-1043" /><DockTile dock="10" state="done" plate="A SM 882" since="13:58" /></Section>
+    </div>
+    <Section data-density="halle"><GateCard bookingId="B-1042" plate="WGM 4KX21" trailer="WGM 77Y3" carrier="Spedition Müller GmbH" driver="Andrzej Nowak" bookingType="Tiefkühl Anlieferung" arrival="13:45" status="scheduled" punctuality="on-time" deltaMin={-4} /></Section>
+    <Section dark data-density="halle"><GateCard bookingId="B-1039" plate="A KT 4471" carrier="Kowalski Transporte" driver="Oleksandr Kravets" bookingType="Trockenware Anlieferung" arrival="12:30" status="scheduled" punctuality="late-tolerance" deltaMin={12} /></Section>
+    <div className="grid grid-cols-2 gap-px">
+      <Section className="flex justify-center"><CallScreen lang="de" dock="8" hall="Halle 2" /></Section>
+      <Section dark className="flex justify-center"><CallScreen lang="pl" dock="8" hall="Hala 2" /></Section>
+      <Section className="flex justify-center"><CallScreen lang="de" mode="waiting" /></Section>
+      <Section dark className="flex justify-center"><CallScreen lang="pl" mode="waiting" /></Section>
+    </div>
+    <div className="bg-background overflow-hidden" style={{ height: 380 }}><div style={{ width: 1400, height: 760, transform: "scale(0.5)", transformOrigin: "top left" }}><Wallboard rows={[{ plate: "WGM 4KX21", dock: "8", state: "called" }, { plate: "A KT 4471", dock: "3", state: "at-dock" }, { plate: "GZ TR 2210", state: "waiting" }]} /></div></div>
+    <div className="dark bg-background overflow-hidden" style={{ height: 380 }}><div style={{ width: 1400, height: 760, transform: "scale(0.5)", transformOrigin: "top left" }}><Wallboard offline rows={[{ plate: "WGM 4KX21", dock: "8", state: "called" }, { plate: "A KT 4471", dock: "3", state: "at-dock" }, { plate: "GZ TR 2210", state: "waiting" }]} /></div></div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script></body></html>
