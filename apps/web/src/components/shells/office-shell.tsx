@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -67,11 +68,17 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/** One step of the breadcrumb. Every step but the last links back (ADR-0022). */
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+
 export interface OfficeShellProps {
   org: Membership;
   memberships: Membership[];
   nav: NavGroup[];
-  breadcrumbs: string[];
+  breadcrumbs: Crumb[];
   /** Right side of the top bar: site picker, date, primary action. */
   toolbar?: React.ReactNode;
   user: { name: string; initials: string };
@@ -153,12 +160,16 @@ export function OfficeShell({
               {breadcrumbs.map((crumb, i) => {
                 const last = i === breadcrumbs.length - 1;
                 return (
-                  <Fragment key={crumb}>
+                  <Fragment key={crumb.href ?? crumb.label}>
                     <BreadcrumbItem className={cn(!last && 'hidden md:block')}>
                       {last ? (
-                        <BreadcrumbPage className="font-medium">{crumb}</BreadcrumbPage>
+                        <BreadcrumbPage className="font-medium">{crumb.label}</BreadcrumbPage>
+                      ) : crumb.href ? (
+                        <BreadcrumbLink render={<NavLink href={crumb.href} />}>
+                          {crumb.label}
+                        </BreadcrumbLink>
                       ) : (
-                        <span className="text-muted-foreground">{crumb}</span>
+                        <span className="text-muted-foreground">{crumb.label}</span>
                       )}
                     </BreadcrumbItem>
                     {last ? null : <BreadcrumbSeparator className="hidden md:block" />}

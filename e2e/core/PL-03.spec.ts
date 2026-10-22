@@ -79,10 +79,12 @@ test.describe('PL-03 Platform defaults', () => {
     await signInAs(context, w.platformAdmin);
 
     await page.goto('/platform/settings/general');
-    await expect(page.getByRole('link', { name: 'Einstellungen', exact: true })).toHaveAttribute(
-      'href',
-      '/platform/settings',
-    );
+    // The breadcrumb links to the same screen (ADR-0022), so scope to the sidebar.
+    await expect(
+      page
+        .locator('[data-slot="sidebar-content"]')
+        .getByRole('link', { name: 'Einstellungen', exact: true }),
+    ).toHaveAttribute('href', '/platform/settings');
     await page.getByRole('button', { name: 'Einstellungen durchsuchen' }).click();
     await page.getByRole('combobox').fill('Fahrerlink');
     const result = page.getByRole('option', { name: /Fahrerlinks/ });

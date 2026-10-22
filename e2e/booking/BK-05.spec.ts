@@ -24,7 +24,7 @@ test.describe('BK-05 Change and cancel', () => {
     await dialog.getByRole('button', { name: 'Change time' }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByText('Time changed')).toBeVisible();
-    await expect(page.locator('h1 + p')).toContainText(/11:00\s*CES?T/);
+    await expect(page.getByRole('main')).toContainText(/11:00\s*CES?T/);
 
     await page.getByRole('button', { name: 'Cancel booking' }).click();
     const confirm = page.getByRole('alertdialog', { name: `Cancel booking ${booking.code}?` });
