@@ -43,6 +43,7 @@ export function QrPlaceholder({
         const y = Math.floor(i / n);
         const fill = finder(x, y) ? finderOn(x, y) : on;
         return fill ? (
+          // design-check-ignore: QR modules stay black on white for scanners
           <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#111" />
         ) : null;
       })}

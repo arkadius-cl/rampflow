@@ -1,5 +1,11 @@
 {
   "language": "Kalba",
+  "theme": {
+    "label": "Išvaizda",
+    "light": "Šviesi",
+    "dark": "Tamsi",
+    "system": "Kaip sistema"
+  },
   "machine_badge": "auto",
   "machine_hint": "Ši kalba išversta automatiškai.",
   "loading": "Kraunamas jūsų užsakymas…",

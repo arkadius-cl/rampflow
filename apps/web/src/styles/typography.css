@@ -1,0 +1,86 @@
+/* Typography of the yrd Design System (design/yrd/tokens/typography.css): IBM Plex Sans with tabular figures, umlauts and
+   Cyrillic incl. Bulgarian and Ukrainian; IBM Plex Mono for plates and numbers. Scale values are copied verbatim. */
+:root {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* Office (default) */
+  --fs-xs: 12px;
+  --lh-xs: 16px;
+  --fs-sm: 13px;
+  --lh-sm: 18px;
+  --fs-body: 14px;
+  --lh-body: 20px;
+  --fs-md: 16px;
+  --lh-md: 24px;
+  --fs-lg: 18px;
+  --lh-lg: 26px;
+  --fs-xl: 22px;
+  --lh-xl: 28px;
+  --fs-2xl: 28px;
+  --lh-2xl: 34px;
+  --fs-display: 40px;
+  --lh-display: 44px;
+  --tracking-tight: -0.01em;
+  --tracking-caps: 0.04em;
+}
+[data-density="halle"] {
+  --fs-xs: 14px;
+  --lh-xs: 18px;
+  --fs-sm: 16px;
+  --lh-sm: 22px;
+  --fs-body: 18px;
+  --lh-body: 26px;
+  --fs-md: 22px;
+  --lh-md: 30px;
+  --fs-lg: 28px;
+  --lh-lg: 34px;
+  --fs-xl: 36px;
+  --lh-xl: 42px;
+  --fs-2xl: 48px;
+  --lh-2xl: 54px;
+  --fs-display: 120px;
+  --lh-display: 120px;
+}
+[data-density="fahrer"] {
+  --fs-xs: 13px;
+  --lh-xs: 18px;
+  --fs-sm: 15px;
+  --lh-sm: 20px;
+  --fs-body: 17px;
+  --lh-body: 24px;
+  --fs-md: 20px;
+  --lh-md: 28px;
+  --fs-lg: 24px;
+  --lh-lg: 30px;
+  --fs-xl: 30px;
+  --lh-xl: 36px;
+  --fs-2xl: 40px;
+  --lh-2xl: 46px;
+  --fs-display: 56px;
+  --lh-display: 60px;
+}
+/* The root keeps the browser's 16 px so rem-based Tailwind spacing stays on the 4 px grid; the body carries the density's body size. */
+html {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body {
+  background: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+/* Unstyled anchors only: navigation and button-like anchors carry their own classes. */
+a:where(:not([class])) {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (hover: hover) {
+  a:where(:not([class])):hover {
+    color: var(--accent-foreground);
+  }
+}

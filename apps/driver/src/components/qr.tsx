@@ -34,6 +34,7 @@ export function Qr({
       shapeRendering="crispEdges"
       className={cn('shrink-0 rounded-md bg-white', className)}
     >
+      {/* design-check-ignore: QR modules stay black on white for scanners */}
       <path d={path} fill="#000" />
     </svg>
   );

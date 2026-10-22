@@ -1,5 +1,6 @@
 import type { MeResponse } from '@rampflow/shared/modules/core/api.auth';
 import type { ContextSite } from '@rampflow/shared/modules/core/api.context';
+import { ThemeSurface } from '@rampflow/shared/values';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ChevronDownIcon, MonitorIcon } from 'lucide-react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -18,13 +19,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useDeviceTheme } from '@/hooks/use-theme';
 import type { AreaAccess } from '@/lib/access';
 import { useSiteTime } from '@/lib/time';
 import { iconOf, NavIcon, useShellNav } from './nav';
 import { UserMenuItems } from './user-menu';
 
 // The station layout of gate and dock tablets (ADR-0011, "Station layout"): no sidebar, the site
-// in `?site=`, the site clock, a live or offline pill, and a user menu with the other screens.
+// in `?site=`, the site clock, a live or offline pill, and a user menu with the other screens and
+// this device's appearance (light by default, ADR-0021).
 
 const lastSiteKey = (orgId: string) => `rf_station_site:${orgId}`;
 
@@ -97,6 +100,7 @@ export function StationShell({
   const online = useOnline();
   const now = useNow(15_000);
   const format = useSiteTime();
+  const theme = useDeviceTheme(ThemeSurface.station);
   const clock = site ? format(now, site.timeZone) : null;
   const station = nav.current;
 
@@ -135,12 +139,12 @@ export function StationShell({
   const others = nav.items.filter((i) => i !== station);
   const userMenu = (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="lg" data-testid="user-menu" />}>
+      <DropdownMenuTrigger render={<Button variant="outline" data-testid="user-menu" />}>
         {me.user.name}
         <ChevronDownIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <UserMenuItems me={me}>
+        <UserMenuItems me={me} theme={theme}>
           {others.length > 0 ? (
             <>
               <DropdownMenuGroup>

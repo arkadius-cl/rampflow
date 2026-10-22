@@ -139,7 +139,7 @@ export function SlotPicker({
                       className={cn(
                         'text-[11px]',
                         active
-                          ? 'text-primary-foreground/80'
+                          ? 'text-primary-foreground'
                           : s.state === SlotAvailability.scarce
                             ? 'text-tone-onsite'
                             : 'text-muted-foreground',

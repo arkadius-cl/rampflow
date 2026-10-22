@@ -1,4 +1,4 @@
-import { Permission } from '@rampflow/shared/values';
+import { Permission, UiPref } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CheckIcon, MinusIcon } from 'lucide-react';
@@ -33,7 +33,7 @@ function PackagesPage() {
     ...new Map(items.flatMap((p) => p.values).map((v) => [v.key, v] as const)).values(),
   ]);
   const state = useModuleGroups(
-    'platform.packages.openModules',
+    UiPref.platform_packages_open_modules,
     groups.map((g) => g.module),
   );
   const valueIn = (p: (typeof items)[number], key: string) =>

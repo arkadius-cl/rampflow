@@ -9,6 +9,7 @@ import {
   ErrorCode,
   PackageId,
   Permission,
+  UiPref,
   values,
 } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -190,7 +191,7 @@ function EntitlementsCard({ tenant }: { tenant: TenantDetail }) {
   const sourceText = (source: EntitlementSource) => t(($) => $.platform.sources[source]);
   const groups = groupByModule(tenant.entitlements);
   const state = useModuleGroups(
-    'platform.tenant.openModules',
+    UiPref.platform_tenant_open_modules,
     groups.map((g) => g.module),
   );
   return (

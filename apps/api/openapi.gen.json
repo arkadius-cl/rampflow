@@ -3592,6 +3592,14 @@
                     "uiPrefs": {
                       "type": "object",
                       "properties": {
+                        "app.theme": {
+                          "type": "string",
+                          "enum": [
+                            "dark",
+                            "light",
+                            "system"
+                          ]
+                        },
                         "platform.packages.openModules": {
                           "type": "array",
                           "items": {
@@ -3682,6 +3690,14 @@
                   "uiPrefs": {
                     "type": "object",
                     "properties": {
+                      "app.theme": {
+                        "type": "string",
+                        "enum": [
+                          "light",
+                          "dark",
+                          "system"
+                        ]
+                      },
                       "platform.packages.openModules": {
                         "maxItems": 12,
                         "type": "array",
@@ -3816,6 +3832,14 @@
                     "uiPrefs": {
                       "type": "object",
                       "properties": {
+                        "app.theme": {
+                          "type": "string",
+                          "enum": [
+                            "dark",
+                            "light",
+                            "system"
+                          ]
+                        },
                         "platform.packages.openModules": {
                           "type": "array",
                           "items": {

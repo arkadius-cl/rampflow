@@ -43,7 +43,7 @@ export function CheckOutDialog({
     },
   );
   return (
-    <DialogContent className="sm:max-w-lg" data-density="touch" showCloseButton={false}>
+    <DialogContent className="sm:max-w-lg" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.gate.check_out.title, { carrier: truck.carrierName })}
@@ -65,12 +65,12 @@ export function CheckOutDialog({
         {!online ? (
           <span className="mr-auto text-sm text-tone-danger">{t(($) => $.gate.offline)}</span>
         ) : null}
-        <Button variant="ghost" size="lg" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone}>
           {t(($) => $.gate.check_in.cancel)}
         </Button>
         <Button
           size="lg"
-          className="h-12 min-w-40"
+          className="min-w-40"
           disabled={!online || depart.isPending || (needsReason && reason.trim() === '')}
           onClick={() => depart.mutate(undefined)}
         >

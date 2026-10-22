@@ -59,7 +59,7 @@ export function CallDialog({
   );
 
   return (
-    <DialogContent className="sm:max-w-2xl" data-density="touch" showCloseButton={false}>
+    <DialogContent className="sm:max-w-2xl" showCloseButton={false}>
       <DialogHeader>
         <DialogTitle className="text-xl">
           {t(($) => $.docks.call.title, { carrier: truck.carrierName })}
@@ -97,7 +97,7 @@ export function CallDialog({
               <span
                 className={cn(
                   'text-xs font-normal',
-                  active ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                  active ? 'text-primary-foreground' : 'text-muted-foreground',
                 )}
               >
                 {d.occupant && d.occupant.id !== truck.id
@@ -125,20 +125,19 @@ export function CallDialog({
         {truck.driverPhone ? (
           <Button
             variant="outline"
-            size="lg"
-            className="mr-auto h-12"
+            className="mr-auto"
             nativeButton={false}
             render={<a href={`tel:${truck.driverPhone}`} />}
           >
             <PhoneIcon /> {truck.driverPhone}
           </Button>
         ) : null}
-        <Button variant="ghost" size="lg" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone}>
           {t(($) => $.docks.call.cancel)}
         </Button>
         <Button
           size="lg"
-          className="h-12 min-w-44"
+          className="min-w-44"
           disabled={!chosen || !online || callTruck.isPending}
           onClick={() => chosen && callTruck.mutate(chosen.id)}
         >

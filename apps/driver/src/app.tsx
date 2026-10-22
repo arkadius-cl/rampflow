@@ -1,5 +1,6 @@
 import { DriverPhase, DriverScreen } from '@rampflow/shared/modules/driver/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
+import { Density } from '@rampflow/shared/values';
 import { ChevronRightIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +42,7 @@ export function App({ booted }: { booted: Promise<SessionEvent> }) {
   if (phase.kind === DriverPhase.starting) {
     // No text yet: the fonts would compete with the first round trips on a slow network.
     return (
-      <div data-density="touch" className="flex min-h-svh items-center justify-center">
+      <div data-density={Density.fahrer} className="flex min-h-svh items-center justify-center">
         <Spinner className="size-8 text-muted-foreground" aria-label={t(($) => $.app.loading)} />
       </div>
     );
@@ -89,7 +90,7 @@ export function App({ booted }: { booted: Promise<SessionEvent> }) {
       {...shell}
       footer={
         briefingDue && !phase.offline ? (
-          <Button size="lg" className="h-13 w-full text-base" onClick={openBriefing}>
+          <Button size="lg" className="w-full" onClick={openBriefing}>
             {t(($) => $.app.safety.start)}
             <ChevronRightIcon aria-hidden />
           </Button>

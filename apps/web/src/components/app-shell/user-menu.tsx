@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { LanguagesIcon, LogOutIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ThemeMenuItems } from '@/components/theme-switch';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { ThemeController } from '@/hooks/use-theme';
 import { api, call } from '@/lib/api';
 import { applyLocale, isStaffLocale, pickLocale, showLocale, useLocale } from '@/lib/i18n';
 import { queryKeys } from '@/lib/query-keys';
@@ -80,8 +82,17 @@ function LanguageItems({ onChange }: { onChange: (l: StaffLocale) => void }) {
   );
 }
 
-/** The items of the signed-in user's menu: who, other places to go, language, sign out. */
-export function UserMenuItems({ me, children }: { me: MeResponse; children?: React.ReactNode }) {
+/** The items of the signed-in user's menu: who, other places to go, language, appearance, sign out. */
+export function UserMenuItems({
+  me,
+  theme,
+  children,
+}: {
+  me: MeResponse;
+  /** The account's choice in the office, the device's on a station tablet. */
+  theme: ThemeController;
+  children?: React.ReactNode;
+}) {
   const { t } = useTranslation();
   const signOut = useSignOut();
   const changeLocale = useChangeLocale(true);
@@ -104,6 +115,7 @@ export function UserMenuItems({ me, children }: { me: MeResponse; children?: Rea
           <LanguageItems onChange={(l) => void changeLocale(l)} />
         </DropdownMenuSubContent>
       </DropdownMenuSub>
+      <ThemeMenuItems theme={theme} />
       <DropdownMenuSeparator />
       <DropdownMenuItem onClick={() => signOut.mutate()} data-testid="sign-out">
         <LogOutIcon />

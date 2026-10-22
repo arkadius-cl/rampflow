@@ -1,5 +1,11 @@
 {
   "language": "Dil",
+  "theme": {
+    "label": "Görünüm",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem gibi"
+  },
   "machine_badge": "auto",
   "machine_hint": "Bu dil otomatik olarak çevrildi.",
   "loading": "Rezervasyonun yükleniyor…",

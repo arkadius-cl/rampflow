@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { catalog } from '../../registry.ts';
+import { Theme, UiPref } from '../../values/ui.ts';
 
 // Per-user UI state stored in app_user.ui_prefs and merged per key (ADR-0014).
 
@@ -10,13 +11,20 @@ const OpenModules = z
   .max(catalog.length)
   .refine((ids) => new Set(ids).size === ids.length, 'Module ids must be unique');
 
-/** Every known key with its value schema. Keys are `<area>.<screen>.<what>`. */
+/** Every known key (`UiPref`) with its value schema. */
 export const UI_PREFS = {
-  'platform.packages.openModules': OpenModules,
-  'platform.tenant.openModules': OpenModules,
+  /** The office appearance: light, dark or like the OS; the default is `system`. */
+  [UiPref.app_theme]: z.enum(Theme),
+  [UiPref.platform_packages_open_modules]: OpenModules,
+  [UiPref.platform_tenant_open_modules]: OpenModules,
 } as const;
 
 export type UiPrefKey = keyof typeof UI_PREFS;
+
+/** The keys that hold a list of open module groups (PL-02). */
+export type OpenModulesPrefKey = {
+  [K in UiPrefKey]: (typeof UI_PREFS)[K] extends typeof OpenModules ? K : never;
+}[UiPrefKey];
 
 export const UiPrefs = z.strictObject(UI_PREFS).partial();
 export type UiPrefs = z.infer<typeof UiPrefs>;

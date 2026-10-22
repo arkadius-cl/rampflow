@@ -44,6 +44,7 @@ export function CodeQr({
       shapeRendering="crispEdges"
       className={cn('shrink-0 rounded-md border bg-white', className)}
     >
+      {/* design-check-ignore: QR modules stay black on white for scanners */}
       <path d={path} fill="#000" />
     </svg>
   );

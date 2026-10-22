@@ -4,13 +4,13 @@ import { DriverChannel, DriverScreen } from '@rampflow/shared/modules/driver/val
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { DriverBadgeSize } from '@rampflow/shared/values';
 import {
-  BellRingIcon,
   CircleCheckIcon,
   ClockIcon,
   ExternalLinkIcon,
   HourglassIcon,
   InfoIcon,
   MapPinIcon,
+  MegaphoneIcon,
   PhoneIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
@@ -90,7 +90,7 @@ function BookingScreen({ view }: { view: View }) {
           <div
             data-testid="booking-code"
             {...{ elementtiming: 'booking-code' /* first render, e2e/driver/DR-01 */ }}
-            className="font-mono text-2xl font-semibold tracking-wide"
+            className="break-all font-mono text-xl font-semibold"
           >
             {booking.code}
           </div>
@@ -175,8 +175,7 @@ function CallSite({ view }: { view: View }) {
   return (
     <Button
       variant="outline"
-      size="lg"
-      className="h-12 w-full"
+      className="w-full"
       nativeButton={false}
       render={<a href={`tel:${view.site.phone}`} />}
     >
@@ -232,10 +231,10 @@ function CalledScreen({ view }: { view: View }) {
     <>
       <section
         aria-live="assertive"
-        className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl bg-signal p-6 text-center text-signal-foreground"
+        className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-status-called-solid p-6 text-center text-background"
       >
         <h1 className="flex items-center gap-2 text-lg font-semibold uppercase tracking-wide">
-          <BellRingIcon aria-hidden className="size-6" /> {t(($) => $.app.called.go)}
+          <MegaphoneIcon aria-hidden className="size-6" /> {t(($) => $.app.called.go)}
         </h1>
         {dock ? (
           <>

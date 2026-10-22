@@ -3,13 +3,15 @@ import { OrgKind } from '@rampflow/shared/values';
 import { useMatches } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { OfficeShell } from '@/components/shells/office-shell';
+import { useAccountTheme } from '@/hooks/use-theme';
 import type { AreaAccess } from '@/lib/access';
 import { initialsOf, useMemberships, useShellNav } from './nav';
 import { UserMenuItems } from './user-menu';
 
 /**
  * The office shell of every area (ADR-0011): sidebar from `navFor`, the org switcher with every
- * membership, and the user menu with language and sign-out.
+ * membership, and the user menu with language, appearance and sign-out. The account's theme
+ * (`app.theme`, ADR-0014) applies here.
  */
 export function AppShell({
   access,
@@ -23,6 +25,7 @@ export function AppShell({
   const { t } = useTranslation();
   const nav = useShellNav(access);
   const memberships = useMemberships(me);
+  const theme = useAccountTheme();
   const crumbs = useMatches({
     select: (ms) => ms.flatMap((m) => m.staticData.crumb?.(m, t) ?? []),
   });
@@ -40,7 +43,7 @@ export function AppShell({
       nav={nav.groups}
       breadcrumbs={[org.name, ...(nav.current ? [nav.current.label] : []), ...crumbs]}
       user={{ name: me.user.name, initials: initialsOf(me.user.name) }}
-      userMenu={<UserMenuItems me={me} />}
+      userMenu={<UserMenuItems me={me} theme={theme} />}
       search={false}
     >
       {children}

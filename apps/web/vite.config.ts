@@ -66,7 +66,8 @@ export default defineConfig(({ command, mode }) => {
       strictPort: true,
       proxy: {
         '/api': `http://localhost:${port('API_PORT', 3000)}`,
-        '/d': `http://localhost:${port('DRIVER_PORT', 5174)}`,
+        // Only the driver's own prefix: `/design` is a web route.
+        '^/d(/|$)': `http://localhost:${port('DRIVER_PORT', 5174)}`,
       },
     },
   };

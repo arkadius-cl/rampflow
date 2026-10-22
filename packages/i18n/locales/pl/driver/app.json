@@ -1,5 +1,11 @@
 {
   "language": "Język",
+  "theme": {
+    "label": "Wygląd",
+    "light": "Jasny",
+    "dark": "Ciemny",
+    "system": "Jak system"
+  },
   "machine_badge": "auto",
   "machine_hint": "Ten język został przetłumaczony automatycznie.",
   "loading": "Wczytywanie rezerwacji…",

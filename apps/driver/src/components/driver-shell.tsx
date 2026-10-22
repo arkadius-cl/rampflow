@@ -1,4 +1,5 @@
-import { DriverLocale, values } from '@rampflow/shared/values';
+import { isTheme } from '@rampflow/shared/modules/core/theme';
+import { Density, DriverLocale, Theme, values } from '@rampflow/shared/values';
 import { WifiOffIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -9,10 +10,12 @@ import {
   LANGUAGE_NAMES,
   useLocale,
 } from '@/lib/i18n';
+import { useDensity, useDeviceTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
-// The driver shell of apps/web/src/components/shells/driver-shell.tsx: one column, touch
-// density, one sticky primary action. Here with the live language switcher (DR-02).
+// The driver shell of apps/web/src/components/shells/driver-shell.tsx: one column, driver density
+// (ADR-0021), one sticky primary action. Here with the live language switcher (DR-02) and the
+// appearance switch next to it, both kept on this phone.
 
 export interface DriverShellProps {
   tenantName?: string;
@@ -33,12 +36,13 @@ export function DriverShell({
   className,
 }: DriverShellProps) {
   const { t } = useTranslation();
+  useDensity(Density.fahrer);
   return (
     <div
-      data-density="touch"
+      data-density={Density.fahrer}
       className={cn('flex min-h-svh flex-col bg-background text-foreground', className)}
     >
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2">
         {logoUrl ? (
           <img src={logoUrl} alt="" className="size-8 rounded-md object-contain" />
         ) : (
@@ -49,10 +53,14 @@ export function DriverShell({
             {(tenantName ?? 'rf').slice(0, 2).toUpperCase()}
           </div>
         )}
-        <div className="min-w-0 flex-1 truncate text-sm font-medium">
+        <div className="min-w-24 flex-1 truncate text-sm font-medium">
           {tenantName ?? 'rampflow'}
         </div>
-        <LanguageSwitcher label={t(($) => $.app.language)} />
+        {/* Both switches wrap to a second row on a narrow phone. */}
+        <div className="ml-auto flex items-center gap-2">
+          <LanguageSwitcher label={t(($) => $.app.language)} />
+          <ThemeSwitcher label={t(($) => $.app.theme.label)} />
+        </div>
       </header>
       {offlineSince ? (
         <div
@@ -63,9 +71,9 @@ export function DriverShell({
           {t(($) => $.app.offline_banner, { time: offlineSince })}
         </div>
       ) : null}
-      <main className="flex min-h-0 flex-1 flex-col gap-4 px-4 py-4">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col gap-gap px-pad py-pad">{children}</main>
       {footer ? (
-        <footer className="sticky bottom-0 shrink-0 border-t bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <footer className="sticky bottom-0 shrink-0 border-t bg-background p-pad pb-[max(var(--pad),env(safe-area-inset-bottom))]">
           {footer}
         </footer>
       ) : null}
@@ -96,7 +104,7 @@ function LanguageSwitcher({ label }: { label: string }) {
         onChange={(e) => {
           if (isDriverLocale(e.target.value)) void applyLocale(i18n, e.target.value);
         }}
-        className="w-36"
+        className="w-32"
       >
         {values(DriverLocale).map((l) => (
           <NativeSelectOption key={l} value={l} lang={l}>
@@ -105,5 +113,31 @@ function LanguageSwitcher({ label }: { label: string }) {
         ))}
       </NativeSelect>
     </div>
+  );
+}
+
+/**
+ * "Darstellung: Hell · Dunkel · Wie System" as a native select, the same control as the language
+ * switch: one tap, no toggle group in the initial bundle (ADR-0008).
+ */
+function ThemeSwitcher({ label }: { label: string }) {
+  const { t } = useTranslation();
+  const [theme, setTheme] = useDeviceTheme();
+  return (
+    <NativeSelect
+      aria-label={label}
+      data-testid="theme-switch"
+      value={theme}
+      onChange={(e) => {
+        if (isTheme(e.target.value)) setTheme(e.target.value);
+      }}
+      className="w-28"
+    >
+      {values(Theme).map((value) => (
+        <NativeSelectOption key={value} value={value}>
+          {t(($) => $.app.theme[value])}
+        </NativeSelectOption>
+      ))}
+    </NativeSelect>
   );
 }
