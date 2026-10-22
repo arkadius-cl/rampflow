@@ -610,3 +610,69 @@ describe('registration emails are account emails', () => {
     ]);
   });
 });
+
+describe('PL-07 the public link of a suspended tenant', () => {
+  const tenant = () => eq(org.id, w.A.tenantId);
+  const suspended = async <T>(fn: () => Promise<T>) => {
+    await ownerDb().update(org).set({ suspendedAt: clock.now() }).where(tenant());
+    try {
+      return await fn();
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenant());
+    }
+  };
+
+  it('answers 404 for the link and the form, 401 for verification, and all work after reactivation', async () => {
+    const slug = await open(RegistrationMode.auto_approve);
+    const email = unique('before-suspension');
+    const sent = await anon.post(`/api/public/links/${slug}/registrations`, { body: form(email) });
+    expect(sent.status).toBe(202);
+    const { row, token } = await registered(email);
+    const links = await ownerDb()
+      .select()
+      .from(tenantCarrierLink)
+      .where(eq(tenantCarrierLink.tenantId, w.A.tenantId));
+
+    await suspended(async () => {
+      const link = await anon.get(`/api/public/links/${slug}`);
+      expect(link.status).toBe(404);
+      expect((await link.json()) as unknown).toMatchObject({
+        error: { code: ErrorCode.not_found },
+      });
+      const other = unique('during-suspension');
+      const register = await anon.post(`/api/public/links/${slug}/registrations`, {
+        body: form(other),
+      });
+      expect(register.status).toBe(404);
+      expect(await mailsTo(other)).toEqual([]);
+
+      const verify = await anon.post('/api/public/registrations/verify', { body: { token } });
+      expect(verify.status).toBe(401);
+      expect(sessionOf(verify)).toBeNull();
+      const [after] = await ownerDb()
+        .select()
+        .from(carrierRegistration)
+        .where(eq(carrierRegistration.id, row.id));
+      expect(after).toMatchObject({ status: RegistrationStatus.pending_email, carrierId: null });
+      expect(await ownerDb().select().from(appUser).where(eq(appUser.email, email))).toEqual([]);
+      expect(
+        await ownerDb()
+          .select()
+          .from(tenantCarrierLink)
+          .where(eq(tenantCarrierLink.tenantId, w.A.tenantId)),
+      ).toEqual(links);
+    });
+
+    expect((await anon.get(`/api/public/links/${slug}`)).status).toBe(200);
+    const again = unique('after-reactivation');
+    expect(
+      (await anon.post(`/api/public/links/${slug}/registrations`, { body: form(again) })).status,
+    ).toBe(202);
+    const verified = await anon.post('/api/public/registrations/verify', { body: { token } });
+    expect(verified.status).toBe(200);
+    const { carrierId } = (await verified.json()) as { carrierId: CarrierId };
+    expect(await linkOf(w.A.tenantId, carrierId)).toMatchObject({
+      status: CarrierLinkStatus.active,
+    });
+  });
+});

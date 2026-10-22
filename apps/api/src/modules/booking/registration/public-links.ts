@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PublicLinkInfo, PublicLinkView } from '@rampflow/shared/modules/booking/api.carriers';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import { ErrorCode, Feature, ScopeParty, Setting } from '@rampflow/shared/values';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { SiteId, TenantId } from '../../../db/ids.ts';
@@ -184,6 +185,8 @@ export async function openPublicLink(
   clock: Clock,
 ): Promise<{ info: PublicLinkInfo; access: Access }> {
   const access = await loadAccess(tx, publicScope(link), clock);
+  // A suspended tenant's link reads like an unknown one (ADR-0018).
+  if (access.tenantStatus === TenantStatus.suspended) throw new ApiError(ErrorCode.not_found);
   const enabled =
     access.entitlements?.features[Feature.booking.public_link] === true &&
     (await access.setting(Setting.booking.public_link_enabled, link.siteId)).value;

@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { SuspendedTenants } from '@rampflow/shared/modules/core/values';
 import { JobName } from '@rampflow/shared/values';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
-import { hall, jobRun } from '../modules/core/schema.ts';
+import { hall, jobRun, org } from '../modules/core/schema.ts';
 import { systemClock } from './clock.ts';
 import {
   discoverJobs,
@@ -74,5 +75,40 @@ describe('job runner', () => {
       .from(hall)
       .where(eq(hall.name, name));
     expect(halls).toEqual([{ tenantId: w.A.tenantId }]);
+  });
+
+  it('skips a suspended tenant by default and visits it with SuspendedTenants.include', async () => {
+    const tenant = eq(org.id, w.A.tenantId);
+    const visited = async (options?: { suspended: SuspendedTenants }) => {
+      const seen: string[] = [];
+      const job: RunnableJob = {
+        name: `visits-${randomUUID()}`,
+        everySeconds: null,
+        run: (jobCtx) =>
+          forEachTenant(
+            jobCtx,
+            JobName.retention,
+            async (_tx, tenantId) => {
+              seen.push(tenantId);
+              return {};
+            },
+            options,
+          ),
+      };
+      await runJobTick(job, ctx);
+      return seen;
+    };
+    await ownerDb().update(org).set({ suspendedAt: new Date() }).where(tenant);
+    try {
+      const skipped = await visited();
+      expect(skipped).not.toContain(w.A.tenantId);
+      expect(skipped).toContain(w.B.tenantId);
+      expect(await visited({ suspended: SuspendedTenants.include })).toEqual(
+        expect.arrayContaining([w.A.tenantId, w.B.tenantId]),
+      );
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenant);
+    }
+    expect(await visited()).toContain(w.A.tenantId);
   });
 });

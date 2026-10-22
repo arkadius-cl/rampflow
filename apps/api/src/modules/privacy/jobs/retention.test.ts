@@ -223,6 +223,26 @@ describe('PL-05 retention job', () => {
     expect(past).toBeDefined();
   });
 
+  it("removes a suspended tenant's expired driver data as for an active tenant (PL-07)", async () => {
+    const tenant = eq(org.id, w.A.tenantId as string as OrgId);
+    await ownerDb()
+      .update(org)
+      .set({ suspendedAt: ago(1) })
+      .where(tenant);
+    try {
+      const id = await departed(LIMITS.identity, 1);
+      await run();
+      expect(await avisOf(id)).toMatchObject({
+        driverName: null,
+        driverPhone: null,
+        plate: null,
+        pseudonymizedAt: NOW,
+      });
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenant);
+    }
+  });
+
   it('changes nothing on a second run and logs counts only', async () => {
     expect(first.visitsDeleted).toBeGreaterThanOrEqual(1);
     const again = await run();
