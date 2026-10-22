@@ -15,7 +15,7 @@ import { onboardingTenant, type World, world } from '../../../../test/world.ts';
 import { app } from '../../../app.ts';
 import { wrapJson } from '../../../db/ids.ts';
 import { onboardingSteps } from '../onboarding/fixtures.ts';
-import { entitlementOverride, tenantCarrierLink } from '../schema.ts';
+import { entitlementOverride, org, tenantCarrierLink } from '../schema.ts';
 
 // The three context endpoints that the web layouts gate routes, navigation and actions with.
 
@@ -140,6 +140,27 @@ describe('GET /api/c/:orgId/context', () => {
       [w.A.tenantId, 'active', true],
     ]);
     expect(ctx.permissions).not.toContain('core.manage_carrier_users');
+  });
+
+  it('marks a suspended tenant with the carrier portal off (PL-07)', async () => {
+    const tenant = (await world()).A;
+    const row = eq(org.id, tenant.tenantId);
+    await ownerDb().update(org).set({ suspendedAt: new Date() }).where(row);
+    try {
+      const ctx = await json<CarrierContext>(
+        await as(app, tenant.users.carrier_user).get(`/api/c/${tenant.carrierId}/context`),
+      );
+      expect(ctx.tenants).toEqual([
+        expect.objectContaining({
+          id: tenant.tenantId,
+          linkStatus: CarrierLinkStatus.active,
+          carrierPortal: false,
+          suspended: true,
+        }),
+      ]);
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(row);
+    }
   });
 });
 

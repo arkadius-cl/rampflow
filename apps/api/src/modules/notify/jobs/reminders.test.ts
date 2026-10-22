@@ -17,7 +17,7 @@ import {
 } from '../../booking/lifecycle/fixtures.ts';
 import { transitionBooking } from '../../booking/lifecycle/transition.ts';
 import { booking } from '../../booking/schema.ts';
-import { entitlementOverride } from '../../core/schema.ts';
+import { entitlementOverride, org } from '../../core/schema.ts';
 import { outboxMessage } from '../schema.ts';
 import { job } from './reminders.ts';
 
@@ -111,6 +111,32 @@ describe('BK-07 reminder job', () => {
     const id = await seeded(w.B, { startsAt: START, createdAt: at(START, -7 * 24) });
     await tick(at(START, -12));
     expect(await reminderStarts(id)).toEqual([]);
+  });
+
+  it('sends none for a booking of a suspended tenant, and sends it once reactivated (PL-07)', async () => {
+    const own = await world();
+    await bookableSite(own.A);
+    await setSetting(
+      own.A.tenantId,
+      'notify.reminder_hours_before',
+      24,
+      own.A.users.tenant_admin.id,
+    );
+    const start = at(START, 5);
+    const id = await seeded(own.A, { startsAt: start, createdAt: at(start, -7 * 24) });
+    const tenant = eq(org.id, own.A.tenantId);
+    await ownerDb()
+      .update(org)
+      .set({ suspendedAt: at(start, -48) })
+      .where(tenant);
+    try {
+      await tick(at(start, -12));
+      expect(await reminderStarts(id)).toEqual([]);
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenant);
+    }
+    await tick(at(start, -11));
+    expect(await reminderStarts(id)).toEqual([start.toISOString()]);
   });
 
   it('sends a new reminder for the new start after a reschedule', async () => {

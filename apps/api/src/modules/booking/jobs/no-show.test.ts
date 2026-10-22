@@ -15,7 +15,7 @@ import type { BookingId } from '../../../db/ids.ts';
 import { wrapJson } from '../../../db/ids.ts';
 import { testClock } from '../../../kernel/clock.ts';
 import { runJobTick } from '../../../kernel/jobs.ts';
-import { entitlementOverride } from '../../core/schema.ts';
+import { entitlementOverride, org } from '../../core/schema.ts';
 import { outboxMessage } from '../../notify/schema.ts';
 import { createBooking } from '../lifecycle/create.ts';
 import {
@@ -138,5 +138,28 @@ describe('BK-08 no-show job', () => {
     await tick(minutes(24 * 60));
     expect((await bookingRow(b.id as BookingId)).status).toBe('confirmed');
     expect(await noShowMails(w.B.users.carrier_user.email)).toHaveLength(0);
+  });
+
+  it('leaves the bookings of a suspended tenant confirmed, and marks them after reactivation (PL-07)', async () => {
+    const own = await world();
+    await bookableSite(own.A);
+    await setSetting(own.A.tenantId, 'yard.no_show_after_minutes', 60, own.A.users.tenant_admin.id);
+    const carrierUser = own.A.users.carrier_user;
+    const b = await seedBooking(own.A, {
+      startsAt: START,
+      createdParty: CreatedParty.carrier,
+      createdBy: carrierUser.id,
+    });
+    const tenant = eq(org.id, own.A.tenantId);
+    await ownerDb().update(org).set({ suspendedAt: START }).where(tenant);
+    try {
+      await tick(minutes(120));
+      expect((await bookingRow(b.id as BookingId)).status).toBe(BookingStatus.confirmed);
+      expect(await noShowMails(carrierUser.email)).toHaveLength(0);
+    } finally {
+      await ownerDb().update(org).set({ suspendedAt: null }).where(tenant);
+    }
+    await tick(minutes(121));
+    expect((await bookingRow(b.id as BookingId)).status).toBe(BookingStatus.no_show);
   });
 });
