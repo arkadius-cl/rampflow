@@ -5,7 +5,7 @@ type: how-to
 audience: [tenant-admin, carrier, developer]
 tags: [booking, carriers, invitations, public-link, registration]
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 related: [docs/how-to/onboard-a-tenant.md, docs/reference/api-routes.md, docs/reference/data-model.md, docs/explanation/mvp-scope.md]
 ---
 
@@ -13,7 +13,7 @@ related: [docs/how-to/onboard-a-tenant.md, docs/reference/api-routes.md, docs/re
 
 A carrier books slots only at a tenant it is linked to. There are two ways to create the link: an invitation by email (TN-03) and a public booking link per site (TN-04). Both screens are under **Carriers** in the sidebar, which needs the `booking.manage_carriers` permission (dispatchers and tenant admins).
 
-Invitations and public links need an active tenant. Until your company has its first dock, **Invite carrier** and **Create link** are disabled, and the text next to them says that they open once the first dock exists. The API refuses the same requests, and a link replacement, with the error `onboarding_incomplete` (409). To activate the tenant, finish the checklist in [Onboard a tenant](onboard-a-tenant.md#5-set-up-the-first-dock).
+Invitations and public links need an active tenant. Until your company has its first dock, **Invite carrier** and **Create link** are disabled, and the text next to them says that they open once the first dock exists. The API refuses the same requests, and a link replacement, with the error `onboarding_incomplete` (409). To activate the tenant, finish the checklist in [Onboard a tenant](onboard-a-tenant.md#8-set-up-the-first-dock).
 
 ## Invite a carrier
 
