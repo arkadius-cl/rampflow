@@ -40,7 +40,7 @@ import { Route as PlatformPackagesIndexRouteImport } from './routes/platform/pac
 import { Route as PlatformSettingsIndexRouteImport } from './routes/platform/settings/index'
 import { Route as PlatformSettingsTopicRouteImport } from './routes/platform/settings/$topic'
 import { Route as PlatformTenantsIndexRouteImport } from './routes/platform/tenants/index'
-import { Route as PlatformTenantsTenantIdRouteImport } from './routes/platform/tenants/$tenantId'
+import { Route as PlatformTenantsTenantIdRouteRouteImport } from './routes/platform/tenants/$tenantId/route'
 import { Route as TOrgIdIndexRouteImport } from './routes/t/$orgId/index'
 import { Route as TOrgIdSettingsRouteRouteImport } from './routes/t/$orgId/settings/route'
 import { Route as COrgIdBookIndexRouteImport } from './routes/c/$orgId/book/index'
@@ -48,6 +48,11 @@ import { Route as COrgIdBookingsIndexRouteImport } from './routes/c/$orgId/booki
 import { Route as COrgIdBookingsBookingIdRouteImport } from './routes/c/$orgId/bookings/$bookingId'
 import { Route as COrgIdTenantsIndexRouteImport } from './routes/c/$orgId/tenants/index'
 import { Route as COrgIdUsersIndexRouteImport } from './routes/c/$orgId/users/index'
+import { Route as PlatformTenantsTenantIdIndexRouteImport } from './routes/platform/tenants/$tenantId/index'
+import { Route as PlatformTenantsTenantIdEntitlementsRouteImport } from './routes/platform/tenants/$tenantId/entitlements'
+import { Route as PlatformTenantsTenantIdMembersRouteImport } from './routes/platform/tenants/$tenantId/members'
+import { Route as PlatformTenantsTenantIdNotesRouteImport } from './routes/platform/tenants/$tenantId/notes'
+import { Route as PlatformTenantsTenantIdSitesRouteImport } from './routes/platform/tenants/$tenantId/sites'
 import { Route as TOrgIdBookingsBookingIdRouteImport } from './routes/t/$orgId/bookings/$bookingId'
 import { Route as TOrgIdBrandIndexRouteImport } from './routes/t/$orgId/brand/index'
 import { Route as TOrgIdCarriersIndexRouteImport } from './routes/t/$orgId/carriers/index'
@@ -227,11 +232,12 @@ const PlatformTenantsIndexRoute = PlatformTenantsIndexRouteImport.update({
   path: '/tenants/',
   getParentRoute: () => PlatformRouteRoute,
 } as any)
-const PlatformTenantsTenantIdRoute = PlatformTenantsTenantIdRouteImport.update({
-  id: '/tenants/$tenantId',
-  path: '/tenants/$tenantId',
-  getParentRoute: () => PlatformRouteRoute,
-} as any)
+const PlatformTenantsTenantIdRouteRoute =
+  PlatformTenantsTenantIdRouteRouteImport.update({
+    id: '/tenants/$tenantId',
+    path: '/tenants/$tenantId',
+    getParentRoute: () => PlatformRouteRoute,
+  } as any)
 const TOrgIdIndexRoute = TOrgIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -267,6 +273,36 @@ const COrgIdUsersIndexRoute = COrgIdUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => COrgIdRouteRoute,
 } as any)
+const PlatformTenantsTenantIdIndexRoute =
+  PlatformTenantsTenantIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PlatformTenantsTenantIdRouteRoute,
+  } as any)
+const PlatformTenantsTenantIdEntitlementsRoute =
+  PlatformTenantsTenantIdEntitlementsRouteImport.update({
+    id: '/entitlements',
+    path: '/entitlements',
+    getParentRoute: () => PlatformTenantsTenantIdRouteRoute,
+  } as any)
+const PlatformTenantsTenantIdMembersRoute =
+  PlatformTenantsTenantIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => PlatformTenantsTenantIdRouteRoute,
+  } as any)
+const PlatformTenantsTenantIdNotesRoute =
+  PlatformTenantsTenantIdNotesRouteImport.update({
+    id: '/notes',
+    path: '/notes',
+    getParentRoute: () => PlatformTenantsTenantIdRouteRoute,
+  } as any)
+const PlatformTenantsTenantIdSitesRoute =
+  PlatformTenantsTenantIdSitesRouteImport.update({
+    id: '/sites',
+    path: '/sites',
+    getParentRoute: () => PlatformTenantsTenantIdRouteRoute,
+  } as any)
 const TOrgIdBookingsBookingIdRoute = TOrgIdBookingsBookingIdRouteImport.update({
   id: '/bookings/$bookingId',
   path: '/bookings/$bookingId',
@@ -417,9 +453,9 @@ export interface FileRoutesByFullPath {
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRouteRouteWithChildren
   '/t/$orgId/settings': typeof TOrgIdSettingsRouteRouteWithChildren
   '/platform/settings/$topic': typeof PlatformSettingsTopicRoute
-  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/platform/packages/': typeof PlatformPackagesIndexRoute
   '/platform/settings/': typeof PlatformSettingsIndexRoute
@@ -427,6 +463,10 @@ export interface FileRoutesByFullPath {
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
+  '/platform/tenants/$tenantId/entitlements': typeof PlatformTenantsTenantIdEntitlementsRoute
+  '/platform/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/platform/tenants/$tenantId/notes': typeof PlatformTenantsTenantIdNotesRoute
+  '/platform/tenants/$tenantId/sites': typeof PlatformTenantsTenantIdSitesRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/settings/$topic': typeof TOrgIdSettingsTopicRoute
@@ -434,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
   '/c/$orgId/users/': typeof COrgIdUsersIndexRoute
+  '/platform/tenants/$tenantId/': typeof PlatformTenantsTenantIdIndexRoute
   '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -477,13 +518,16 @@ export interface FileRoutesByTo {
   '/platform': typeof PlatformIndexRoute
   '/signup': typeof SignupIndexRoute
   '/platform/settings/$topic': typeof PlatformSettingsTopicRoute
-  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId': typeof COrgIdIndexRoute
   '/platform/packages': typeof PlatformPackagesIndexRoute
   '/platform/settings': typeof PlatformSettingsIndexRoute
   '/platform/tenants': typeof PlatformTenantsIndexRoute
   '/t/$orgId': typeof TOrgIdIndexRoute
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
+  '/platform/tenants/$tenantId/entitlements': typeof PlatformTenantsTenantIdEntitlementsRoute
+  '/platform/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/platform/tenants/$tenantId/notes': typeof PlatformTenantsTenantIdNotesRoute
+  '/platform/tenants/$tenantId/sites': typeof PlatformTenantsTenantIdSitesRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/settings/$topic': typeof TOrgIdSettingsTopicRoute
@@ -491,6 +535,7 @@ export interface FileRoutesByTo {
   '/c/$orgId/bookings': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants': typeof COrgIdTenantsIndexRoute
   '/c/$orgId/users': typeof COrgIdUsersIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdIndexRoute
   '/t/$orgId/brand': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks': typeof TOrgIdDocksIndexRoute
@@ -538,9 +583,9 @@ export interface FileRoutesById {
   '/design/': typeof DesignIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRouteRouteWithChildren
   '/t/$orgId/settings': typeof TOrgIdSettingsRouteRouteWithChildren
   '/platform/settings/$topic': typeof PlatformSettingsTopicRoute
-  '/platform/tenants/$tenantId': typeof PlatformTenantsTenantIdRoute
   '/c/$orgId/': typeof COrgIdIndexRoute
   '/platform/packages/': typeof PlatformPackagesIndexRoute
   '/platform/settings/': typeof PlatformSettingsIndexRoute
@@ -548,6 +593,10 @@ export interface FileRoutesById {
   '/t/$orgId/': typeof TOrgIdIndexRoute
   '/t/$orgId/sites/$siteId': typeof TOrgIdSitesSiteIdRouteRouteWithChildren
   '/c/$orgId/bookings/$bookingId': typeof COrgIdBookingsBookingIdRoute
+  '/platform/tenants/$tenantId/entitlements': typeof PlatformTenantsTenantIdEntitlementsRoute
+  '/platform/tenants/$tenantId/members': typeof PlatformTenantsTenantIdMembersRoute
+  '/platform/tenants/$tenantId/notes': typeof PlatformTenantsTenantIdNotesRoute
+  '/platform/tenants/$tenantId/sites': typeof PlatformTenantsTenantIdSitesRoute
   '/t/$orgId/bookings/$bookingId': typeof TOrgIdBookingsBookingIdRoute
   '/t/$orgId/safety/acknowledgements': typeof TOrgIdSafetyAcknowledgementsRoute
   '/t/$orgId/settings/$topic': typeof TOrgIdSettingsTopicRoute
@@ -555,6 +604,7 @@ export interface FileRoutesById {
   '/c/$orgId/bookings/': typeof COrgIdBookingsIndexRoute
   '/c/$orgId/tenants/': typeof COrgIdTenantsIndexRoute
   '/c/$orgId/users/': typeof COrgIdUsersIndexRoute
+  '/platform/tenants/$tenantId/': typeof PlatformTenantsTenantIdIndexRoute
   '/t/$orgId/brand/': typeof TOrgIdBrandIndexRoute
   '/t/$orgId/carriers/': typeof TOrgIdCarriersIndexRoute
   '/t/$orgId/docks/': typeof TOrgIdDocksIndexRoute
@@ -604,9 +654,9 @@ export interface FileRouteTypes {
     | '/design/'
     | '/platform/'
     | '/signup/'
+    | '/platform/tenants/$tenantId'
     | '/t/$orgId/settings'
     | '/platform/settings/$topic'
-    | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
     | '/platform/packages/'
     | '/platform/settings/'
@@ -614,6 +664,10 @@ export interface FileRouteTypes {
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/c/$orgId/bookings/$bookingId'
+    | '/platform/tenants/$tenantId/entitlements'
+    | '/platform/tenants/$tenantId/members'
+    | '/platform/tenants/$tenantId/notes'
+    | '/platform/tenants/$tenantId/sites'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/settings/$topic'
@@ -621,6 +675,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
     | '/c/$orgId/users/'
+    | '/platform/tenants/$tenantId/'
     | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -664,13 +719,16 @@ export interface FileRouteTypes {
     | '/platform'
     | '/signup'
     | '/platform/settings/$topic'
-    | '/platform/tenants/$tenantId'
     | '/c/$orgId'
     | '/platform/packages'
     | '/platform/settings'
     | '/platform/tenants'
     | '/t/$orgId'
     | '/c/$orgId/bookings/$bookingId'
+    | '/platform/tenants/$tenantId/entitlements'
+    | '/platform/tenants/$tenantId/members'
+    | '/platform/tenants/$tenantId/notes'
+    | '/platform/tenants/$tenantId/sites'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/settings/$topic'
@@ -678,6 +736,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/bookings'
     | '/c/$orgId/tenants'
     | '/c/$orgId/users'
+    | '/platform/tenants/$tenantId'
     | '/t/$orgId/brand'
     | '/t/$orgId/carriers'
     | '/t/$orgId/docks'
@@ -724,9 +783,9 @@ export interface FileRouteTypes {
     | '/design/'
     | '/platform/'
     | '/signup/'
+    | '/platform/tenants/$tenantId'
     | '/t/$orgId/settings'
     | '/platform/settings/$topic'
-    | '/platform/tenants/$tenantId'
     | '/c/$orgId/'
     | '/platform/packages/'
     | '/platform/settings/'
@@ -734,6 +793,10 @@ export interface FileRouteTypes {
     | '/t/$orgId/'
     | '/t/$orgId/sites/$siteId'
     | '/c/$orgId/bookings/$bookingId'
+    | '/platform/tenants/$tenantId/entitlements'
+    | '/platform/tenants/$tenantId/members'
+    | '/platform/tenants/$tenantId/notes'
+    | '/platform/tenants/$tenantId/sites'
     | '/t/$orgId/bookings/$bookingId'
     | '/t/$orgId/safety/acknowledgements'
     | '/t/$orgId/settings/$topic'
@@ -741,6 +804,7 @@ export interface FileRouteTypes {
     | '/c/$orgId/bookings/'
     | '/c/$orgId/tenants/'
     | '/c/$orgId/users/'
+    | '/platform/tenants/$tenantId/'
     | '/t/$orgId/brand/'
     | '/t/$orgId/carriers/'
     | '/t/$orgId/docks/'
@@ -1002,7 +1066,7 @@ declare module '@tanstack/react-router' {
       id: '/platform/tenants/$tenantId'
       path: '/tenants/$tenantId'
       fullPath: '/platform/tenants/$tenantId'
-      preLoaderRoute: typeof PlatformTenantsTenantIdRouteImport
+      preLoaderRoute: typeof PlatformTenantsTenantIdRouteRouteImport
       parentRoute: typeof PlatformRouteRoute
     }
     '/t/$orgId/': {
@@ -1053,6 +1117,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/c/$orgId/users/'
       preLoaderRoute: typeof COrgIdUsersIndexRouteImport
       parentRoute: typeof COrgIdRouteRoute
+    }
+    '/platform/tenants/$tenantId/': {
+      id: '/platform/tenants/$tenantId/'
+      path: '/'
+      fullPath: '/platform/tenants/$tenantId/'
+      preLoaderRoute: typeof PlatformTenantsTenantIdIndexRouteImport
+      parentRoute: typeof PlatformTenantsTenantIdRouteRoute
+    }
+    '/platform/tenants/$tenantId/entitlements': {
+      id: '/platform/tenants/$tenantId/entitlements'
+      path: '/entitlements'
+      fullPath: '/platform/tenants/$tenantId/entitlements'
+      preLoaderRoute: typeof PlatformTenantsTenantIdEntitlementsRouteImport
+      parentRoute: typeof PlatformTenantsTenantIdRouteRoute
+    }
+    '/platform/tenants/$tenantId/members': {
+      id: '/platform/tenants/$tenantId/members'
+      path: '/members'
+      fullPath: '/platform/tenants/$tenantId/members'
+      preLoaderRoute: typeof PlatformTenantsTenantIdMembersRouteImport
+      parentRoute: typeof PlatformTenantsTenantIdRouteRoute
+    }
+    '/platform/tenants/$tenantId/notes': {
+      id: '/platform/tenants/$tenantId/notes'
+      path: '/notes'
+      fullPath: '/platform/tenants/$tenantId/notes'
+      preLoaderRoute: typeof PlatformTenantsTenantIdNotesRouteImport
+      parentRoute: typeof PlatformTenantsTenantIdRouteRoute
+    }
+    '/platform/tenants/$tenantId/sites': {
+      id: '/platform/tenants/$tenantId/sites'
+      path: '/sites'
+      fullPath: '/platform/tenants/$tenantId/sites'
+      preLoaderRoute: typeof PlatformTenantsTenantIdSitesRouteImport
+      parentRoute: typeof PlatformTenantsTenantIdRouteRoute
     }
     '/t/$orgId/bookings/$bookingId': {
       id: '/t/$orgId/bookings/$bookingId'
@@ -1263,10 +1362,33 @@ const PlatformSettingsRouteRouteWithChildren =
     PlatformSettingsRouteRouteChildren,
   )
 
+interface PlatformTenantsTenantIdRouteRouteChildren {
+  PlatformTenantsTenantIdEntitlementsRoute: typeof PlatformTenantsTenantIdEntitlementsRoute
+  PlatformTenantsTenantIdMembersRoute: typeof PlatformTenantsTenantIdMembersRoute
+  PlatformTenantsTenantIdNotesRoute: typeof PlatformTenantsTenantIdNotesRoute
+  PlatformTenantsTenantIdSitesRoute: typeof PlatformTenantsTenantIdSitesRoute
+  PlatformTenantsTenantIdIndexRoute: typeof PlatformTenantsTenantIdIndexRoute
+}
+
+const PlatformTenantsTenantIdRouteRouteChildren: PlatformTenantsTenantIdRouteRouteChildren =
+  {
+    PlatformTenantsTenantIdEntitlementsRoute:
+      PlatformTenantsTenantIdEntitlementsRoute,
+    PlatformTenantsTenantIdMembersRoute: PlatformTenantsTenantIdMembersRoute,
+    PlatformTenantsTenantIdNotesRoute: PlatformTenantsTenantIdNotesRoute,
+    PlatformTenantsTenantIdSitesRoute: PlatformTenantsTenantIdSitesRoute,
+    PlatformTenantsTenantIdIndexRoute: PlatformTenantsTenantIdIndexRoute,
+  }
+
+const PlatformTenantsTenantIdRouteRouteWithChildren =
+  PlatformTenantsTenantIdRouteRoute._addFileChildren(
+    PlatformTenantsTenantIdRouteRouteChildren,
+  )
+
 interface PlatformRouteRouteChildren {
   PlatformSettingsRouteRoute: typeof PlatformSettingsRouteRouteWithChildren
   PlatformIndexRoute: typeof PlatformIndexRoute
-  PlatformTenantsTenantIdRoute: typeof PlatformTenantsTenantIdRoute
+  PlatformTenantsTenantIdRouteRoute: typeof PlatformTenantsTenantIdRouteRouteWithChildren
   PlatformPackagesIndexRoute: typeof PlatformPackagesIndexRoute
   PlatformTenantsIndexRoute: typeof PlatformTenantsIndexRoute
 }
@@ -1274,7 +1396,8 @@ interface PlatformRouteRouteChildren {
 const PlatformRouteRouteChildren: PlatformRouteRouteChildren = {
   PlatformSettingsRouteRoute: PlatformSettingsRouteRouteWithChildren,
   PlatformIndexRoute: PlatformIndexRoute,
-  PlatformTenantsTenantIdRoute: PlatformTenantsTenantIdRoute,
+  PlatformTenantsTenantIdRouteRoute:
+    PlatformTenantsTenantIdRouteRouteWithChildren,
   PlatformPackagesIndexRoute: PlatformPackagesIndexRoute,
   PlatformTenantsIndexRoute: PlatformTenantsIndexRoute,
 }
