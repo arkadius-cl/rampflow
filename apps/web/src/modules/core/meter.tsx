@@ -20,7 +20,7 @@ export function Meter({ meter, label }: { meter: UsageMeter; label: string }) {
   const percent =
     meter.limit > 0 ? Math.round((meter.used / meter.limit) * 100) : meter.over ? 100 : 0;
   return (
-    <div className="flex min-w-36 flex-col gap-1">
+    <div className="flex min-w-28 flex-col gap-1">
       <div className="flex items-center justify-between gap-2 text-xs tabular-nums">
         <span>
           {used} <span className="text-muted-foreground">/ {format.number(meter.limit)}</span>

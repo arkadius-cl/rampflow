@@ -168,7 +168,9 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
             if (!admin) return null;
             return (
               <div className="flex items-center gap-2">
-                <span>{admin.email}</span>
+                <span className="max-w-56 truncate" title={admin.email}>
+                  {admin.email}
+                </span>
                 {admin.invited ? <InvitedBadge size={BadgeSize.sm} /> : null}
               </div>
             );
