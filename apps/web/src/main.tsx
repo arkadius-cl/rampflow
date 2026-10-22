@@ -1,4 +1,4 @@
-import type { ShellLayout } from '@rampflow/shared/values';
+import { OrgKind, type ShellLayout } from '@rampflow/shared/values';
 import type { AnyRouteMatch } from '@tanstack/react-router';
 import type { TFunction } from 'i18next';
 import '@/index.css';
@@ -80,10 +80,21 @@ const router = createRouter({
   defaultNotFoundComponent: RouteNotFound,
 });
 
-// A suspension answers 403 on the next request (PL-07): refetch every area context and reload
-// the route, so the tenant layout's error boundary shows the suspended page.
+// A suspension answers 403 on the next request (PL-07). Carrier contexts refetch to mark the
+// warehouse. A tenant context that still holds data is dropped and the route reloads, so the
+// tenant layout's error boundary shows the suspended page; once no tenant context holds data, the
+// 403 is that reload's own and reloading again would loop.
+const isTenantContext = (key: readonly unknown[]) =>
+  key[0] === OrgKind.tenant && queryKeys.isContext(key);
 setSuspendedHandler(() => {
-  void queryClient.invalidateQueries({ predicate: (q) => queryKeys.isContext(q.queryKey) });
+  void queryClient.invalidateQueries({
+    predicate: (q) => q.queryKey[0] === OrgKind.carrier && queryKeys.isContext(q.queryKey),
+  });
+  const open = queryClient
+    .getQueriesData({ predicate: (q) => isTenantContext(q.queryKey) })
+    .some(([, data]) => data !== undefined);
+  if (!open) return;
+  void queryClient.resetQueries({ predicate: (q) => isTenantContext(q.queryKey) });
   void router.invalidate();
 });
 
