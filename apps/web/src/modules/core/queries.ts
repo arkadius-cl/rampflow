@@ -66,7 +66,6 @@ export const tenantMembersQuery = (
     queryKey: [...platformKeys.tenantMembers(tenantId), query] as const,
     queryFn: () =>
       call<PlatformMemberList>(
-        // @ts-expect-error 04: route lands with the API branch
         api.platform.tenants[':tenantId'].members.$get({ param: { tenantId }, query }),
       ),
     placeholderData: keepPreviousData,
@@ -82,7 +81,6 @@ export const tenantSitesQuery = (
     queryKey: [...platformKeys.tenantSites(tenantId), query] as const,
     queryFn: () =>
       call<PlatformSiteList>(
-        // @ts-expect-error 04: route lands with the API branch
         api.platform.tenants[':tenantId'].sites.$get({ param: { tenantId }, query }),
       ),
     placeholderData: keepPreviousData,
@@ -98,7 +96,6 @@ export const tenantNotesQuery = (
     queryKey: [...platformKeys.tenantNotes(tenantId), query] as const,
     queryFn: () =>
       call<TenantNoteList>(
-        // @ts-expect-error 04: route lands with the API branch
         api.platform.tenants[':tenantId'].notes.$get({ param: { tenantId }, query }),
       ),
     placeholderData: keepPreviousData,
@@ -107,19 +104,16 @@ export const tenantNotesQuery = (
 
 export const createTenantNote = (tenantId: string, json: NewTenantNote) =>
   call<TenantNoteView>(
-    // @ts-expect-error 04: route lands with the API branch
     api.platform.tenants[':tenantId'].notes.$post({ param: { tenantId }, json }),
   );
 
 export const suspendTenant = (tenantId: string, json: SuspensionBody) =>
   call<TenantDetail>(
-    // @ts-expect-error 04: route lands with the API branch
     api.platform.tenants[':tenantId'].suspend.$post({ param: { tenantId }, json }),
   );
 
 export const reactivateTenant = (tenantId: string, json: SuspensionBody) =>
   call<TenantDetail>(
-    // @ts-expect-error 04: route lands with the API branch
     api.platform.tenants[':tenantId'].reactivate.$post({ param: { tenantId }, json }),
   );
 
