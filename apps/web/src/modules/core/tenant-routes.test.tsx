@@ -132,9 +132,13 @@ describe('PL-04 tenant list views', () => {
     const { router } = renderApp('/platform/tenants?view=all', tenantsApi().api);
     const row = (await screen.findByTestId(`tenant-${TENANT_A}`)) as HTMLElement;
     await user.click(within(row).getByRole('button', { name: 'Actions for Acme Logistics' }));
-    await screen.findByRole('menu');
+    await user.click(await screen.findByRole('menuitem', { name: 'Suspend' }));
+    await screen.findByRole('heading', { name: 'Suspend Acme Logistics' });
     expect(router.state.location.pathname).toBe('/platform/tenants');
     await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Suspend Acme Logistics' })).toBeNull(),
+    );
     await user.click(within(row).getByText('Pro'));
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/platform/tenants/${TENANT_A}`),

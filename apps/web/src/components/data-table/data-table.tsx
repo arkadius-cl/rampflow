@@ -53,9 +53,14 @@ export interface DataTableQuery<TData> {
 const NO_ROWS: never[] = [];
 const PLACEHOLDER_ROWS = 5;
 
-/** A click reaches the row unless a link, a button or the row actions cell took it. */
-const ownsClick = (target: EventTarget | null) =>
-  !(target instanceof Element && target.closest('a, button, [data-row-actions]'));
+/**
+ * A click reaches the row unless a link, a button or the row actions cell took it. A menu in a
+ * portal bubbles through React to the row while its DOM sits outside it, hence the contains check.
+ */
+const ownsClick = (target: EventTarget | null, row: HTMLElement) =>
+  target instanceof Element &&
+  row.contains(target) &&
+  target.closest('a, button, [data-row-actions]') === null;
 
 const apply = <T,>(updater: Updater<T>, current: T): T =>
   typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
@@ -216,7 +221,7 @@ export function DataTable<
         onClick={
           onRowClick
             ? (e) => {
-                if (ownsClick(e.target)) onRowClick(row.original);
+                if (ownsClick(e.target, e.currentTarget)) onRowClick(row.original);
               }
             : undefined
         }
