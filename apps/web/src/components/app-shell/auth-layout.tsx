@@ -1,8 +1,10 @@
 import { APP_NAME } from '@rampflow/shared';
+import { Theme } from '@rampflow/shared/values';
 import { WarehouseIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TenantLogo } from '@/components/tenant-logo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useApplyTheme } from '@/hooks/use-theme';
 import { LanguageMenu } from './user-menu';
 
 /**
@@ -23,6 +25,8 @@ export function AuthLayout({
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
+  // No account or device choice before sign-in, so these pages follow the OS (ADR-0021).
+  useApplyTheme(Theme.system);
   return (
     <div className="flex min-h-svh flex-col bg-canvas">
       <header className="flex h-14 items-center justify-between px-4 sm:px-6">

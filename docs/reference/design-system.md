@@ -156,6 +156,7 @@ Light and dark are equal. Status colours keep their meaning in both. Every scree
 | Office (account users) | `Theme` (`light`, `dark`, `system`) | `app_user.ui_prefs`, key `app.theme` ([ADR-0014](../decisions/ADR-0014-user-ui-preferences.md)) | `system` |
 | Gate and dock stations | `Theme` | `localStorage` key `rampflow.theme`, per device | `light` |
 | Driver | `Theme` | `localStorage` key `rampflow.theme`, per device | `system` |
+| Sign-in, token pages, org picker (`AuthLayout`) | none | not stored; `useApplyTheme(Theme.system)` follows the OS | `system` |
 
 The switch lives in `apps/web/src/components/theme-switch.tsx` in two forms: `ThemeSwitch`, a shadcn ToggleGroup, and `ThemeMenuItems`, a DropdownMenu radio group in a submenu. Label de "Darstellung: Hell · Dunkel · Wie System", en "Appearance: Light · Dark · System". `ThemeMenuItems` sits in the office user menu and in the station shell's device menu. The class `dark` on `<html>` carries the theme.
 

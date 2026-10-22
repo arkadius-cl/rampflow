@@ -95,6 +95,7 @@ rampflow keeps its shadcn components on Base UI. The design components are refer
 
 ## Consequences
 
+- Pages outside a shell (sign-in, token pages, the org picker) have no account or device choice yet, so `AuthLayout` applies `system` and follows the OS. Station tablets may switch to dark per device; the default stays light for daylight use at the gate.
 - Every unit with UI work loads the skill, reads the reference and writes a Steckbrief before it builds.
 - Units change `apps/web/src/styles/**` and `apps/web/src/components/ui/**` only through the reference's rules. A new token or variant goes into the unit's report for the coordinator.
 - Every screen is checked in light and dark and in its density. axe covers both themes.
