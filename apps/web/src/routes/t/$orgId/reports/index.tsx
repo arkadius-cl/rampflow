@@ -2,7 +2,7 @@ import { BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/val
 import { MAX_PERIOD_DAYS, ReportFilter, type VisitItem } from '@rampflow/shared/modules/report/api';
 import { KpiUnit, ReportExport } from '@rampflow/shared/modules/report/values';
 import { addDays, type LocalDate, siteDay, type TimeZone } from '@rampflow/shared/time';
-import { BadgeSize, EmailCategory, Feature, Permission } from '@rampflow/shared/values';
+import { EmailCategory, Feature, Permission, UiSize } from '@rampflow/shared/values';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChartColumnIcon, DownloadIcon, MapPinIcon } from 'lucide-react';
@@ -393,7 +393,7 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         {v.status === BookingStatus.requested ? null : (
           <BookingStatusBadge
             status={v.status}
-            size={BadgeSize.sm}
+            size={UiSize.sm}
             label={t(($) => $.lifecycle.status[v.status], { ns: EmailCategory.booking })}
           />
         )}
@@ -402,7 +402,7 @@ function VisitRow({ visit: v, timeZone }: { visit: VisitItem; timeZone: string }
         {v.punctuality ? (
           <StatusBadge
             meta={PUNCTUALITY[v.punctuality]}
-            size={BadgeSize.sm}
+            size={UiSize.sm}
             label={t(($) => $.lifecycle.punctuality[v.punctuality ?? Punctuality.on_time], {
               ns: EmailCategory.booking,
             })}

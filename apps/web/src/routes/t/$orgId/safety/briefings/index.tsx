@@ -1,6 +1,6 @@
 import type { Instruction } from '@rampflow/shared/modules/safety/api.authoring';
 import { VersionStatus } from '@rampflow/shared/modules/safety/values';
-import { BadgeSize, EditMode, Permission } from '@rampflow/shared/values';
+import { EditMode, Permission, UiSize } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { EllipsisIcon, PlusIcon, ShieldCheckIcon } from 'lucide-react';
@@ -240,7 +240,7 @@ function InstructionRow({
           <span className="inline-flex items-center gap-2">
             <VersionStatusBadge
               status={VersionStatus.published}
-              size={BadgeSize.sm}
+              size={UiSize.sm}
               label={t(($) => $.briefings.version, { version: instruction.published.version })}
             />
             <span className="text-xs text-muted-foreground">
@@ -257,7 +257,7 @@ function InstructionRow({
         {instruction.draft ? (
           <VersionStatusBadge
             status={VersionStatus.draft}
-            size={BadgeSize.sm}
+            size={UiSize.sm}
             label={t(($) => $.briefings.draft_open, { version: instruction.draft.version })}
           />
         ) : null}

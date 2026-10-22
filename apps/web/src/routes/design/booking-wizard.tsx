@@ -3,7 +3,7 @@ import {
   PrototypeWizardStep,
   SlotAvailability,
 } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, PrototypeScreen, StepState } from '@rampflow/shared/values';
+import { PrototypeScreen, StepState, UiSize } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarPlusIcon,
@@ -366,7 +366,7 @@ function ConfirmedStep() {
           <div className="flex flex-col items-center gap-2">
             <QrPlaceholder code="Z4KQ-7MDP" size={168} className="border" />
             <div className="font-mono text-2xl font-semibold tracking-wide">Z4KQ-7MDP</div>
-            <BookingStatusBadge status={BookingStatus.confirmed} size={BadgeSize.lg} />
+            <BookingStatusBadge status={BookingStatus.confirmed} size={UiSize.lg} />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">Booked. See you on Wednesday.</h2>

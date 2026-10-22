@@ -1,6 +1,6 @@
 import type { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { LoadStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize } from '@rampflow/shared/values';
+import { UiSize } from '@rampflow/shared/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { BOOKING_STATUS, BookingStatusBadge, toneClasses } from '@/components/status-badge';
 import type { BookableResource, Booking } from '@/lib/domain';
@@ -285,7 +285,7 @@ function BookingCard({
             {booking.loadUnits} {booking.loadUnits === 1 ? 'unit' : 'units'} ·{' '}
             {booking.plate ?? 'no plate'}
           </div>
-          <BookingStatusBadge status={booking.status} size={BadgeSize.sm} className="mt-auto" />
+          <BookingStatusBadge status={booking.status} size={UiSize.sm} className="mt-auto" />
         </>
       )}
     </button>

@@ -1,6 +1,6 @@
 import type { LinkedTenant } from '@rampflow/shared/modules/booking/api.carriers';
 import { CarrierLinkStatus, RegistrationStatus } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, BadgeTone, Permission } from '@rampflow/shared/values';
+import { BadgeTone, Permission, UiSize } from '@rampflow/shared/values';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
@@ -133,7 +133,7 @@ function WarehouseRow({
           {tenant.name}
           {suspended ? (
             <StatusBadge
-              size={BadgeSize.sm}
+              size={UiSize.sm}
               meta={{
                 icon: CirclePauseIcon,
                 tone: BadgeTone.neutral,

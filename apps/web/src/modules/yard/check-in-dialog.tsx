@@ -1,7 +1,7 @@
 import { BookingStatus, TurnAwayReason } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { AcknowledgementCandidate, YardTruck } from '@rampflow/shared/modules/yard/api';
-import { BadgeSize, Setting, values } from '@rampflow/shared/values';
+import { Setting, UiSize, values } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LinkIcon,
@@ -122,7 +122,7 @@ export function CheckInDialog({
                 timeZone={truck.timeZone}
                 className="text-lg font-semibold"
               />
-              <TruckPunctuality truck={truck} size={BadgeSize.lg} />
+              <TruckPunctuality truck={truck} size={UiSize.lg} />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {truck.walkIn
@@ -243,7 +243,7 @@ function SafetySection({
         <h3 id="safety-heading" className="font-semibold">
           {t(($) => $.gate.check_in.safety_title)}
         </h3>
-        <TruckSafety safety={truck.safety} size={BadgeSize.lg} />
+        <TruckSafety safety={truck.safety} size={UiSize.lg} />
       </div>
       <p className="mt-1 text-sm">
         {valid

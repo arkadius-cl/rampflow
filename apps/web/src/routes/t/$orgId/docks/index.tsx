@@ -2,7 +2,7 @@ import { BookingStatus } from '@rampflow/shared/modules/booking/values';
 import { DockStatus } from '@rampflow/shared/modules/core/values';
 import type { OnSiteTruck, YardDock, YardTruck } from '@rampflow/shared/modules/yard/api';
 import { DockStep } from '@rampflow/shared/modules/yard/values';
-import { BadgeSize, Feature, Permission, ShellLayout } from '@rampflow/shared/values';
+import { Feature, Permission, ShellLayout, UiSize } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -265,7 +265,7 @@ function DockCard({
             · {t(($) => $.gate.row.units, { count: truck.loadUnits })}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <TruckStatus status={truck.status} size={BadgeSize.md} />
+            <TruckStatus status={truck.status} size={UiSize.md} />
             <span className="text-xs text-muted-foreground">
               {t(($) => $.docks.dock.since)}{' '}
               <InstantTime at={truck.since} timeZone={truck.timeZone} />

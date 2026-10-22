@@ -7,7 +7,7 @@ import {
   RegistrationStatus,
 } from '@rampflow/shared/modules/booking/values';
 import { type LocalDate, localDateSchema } from '@rampflow/shared/time';
-import { BadgeSize, isValueOf, Permission, SortOrder, values } from '@rampflow/shared/values';
+import { isValueOf, Permission, SortOrder, UiSize, values } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CalendarXIcon, FilterXIcon, HourglassIcon, PlusIcon } from 'lucide-react';
@@ -340,7 +340,7 @@ function Row({
         ) : null}
       </TableCell>
       <TableCell>
-        <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
+        <BookingStatusBadge status={b.status} size={UiSize.sm} />
       </TableCell>
       <TableCell className="whitespace-nowrap tabular-nums">
         <span className="sr-only">{t(($) => $.portal.list.gate_in)} </span>

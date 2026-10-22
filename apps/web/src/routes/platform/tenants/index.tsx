@@ -14,7 +14,7 @@ import {
   TenantStatus,
   UsageKey,
 } from '@rampflow/shared/modules/core/values';
-import { BadgeSize, PackageId, Permission, SheetSize, values } from '@rampflow/shared/values';
+import { PackageId, Permission, UiSize, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -107,7 +107,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
                 {row.original.name}
               </Link>
               {row.original.possibleDuplicate ? (
-                <TenantFlagBadge flag={TenantFlag.possible_duplicate} size={BadgeSize.sm} />
+                <TenantFlagBadge flag={TenantFlag.possible_duplicate} size={UiSize.sm} />
               ) : null}
             </div>
           ),
@@ -116,7 +116,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
           header: ({ column: c }) => (
             <DataTableColumnHeader column={c} title={t(($) => $.platform.tenants.status)} />
           ),
-          cell: ({ row }) => <TenantStatusBadge status={row.original.status} size={BadgeSize.sm} />,
+          cell: ({ row }) => <TenantStatusBadge status={row.original.status} size={UiSize.sm} />,
         }),
         column.accessor(TenantSortKey.package, {
           header: ({ column: c }) => (
@@ -155,7 +155,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
             return (
               <div className="flex items-center gap-2">
                 <span className="font-mono">{taxId.value}</span>
-                <TaxIdStatusBadge status={taxId.status} size={BadgeSize.sm} />
+                <TaxIdStatusBadge status={taxId.status} size={UiSize.sm} />
               </div>
             );
           },
@@ -171,7 +171,7 @@ function useColumns(onSuspension: (tenant: SuspensionTarget) => void) {
                 <span className="max-w-56 truncate" title={admin.email}>
                   {admin.email}
                 </span>
-                {admin.invited ? <InvitedBadge size={BadgeSize.sm} /> : null}
+                {admin.invited ? <InvitedBadge size={UiSize.sm} /> : null}
               </div>
             );
           },
@@ -227,7 +227,7 @@ function TenantsPage() {
   const countryOptions = useCountryOptions();
   const [creating, setCreating] = useState(false);
   const create = (
-    <Button size={BadgeSize.sm} onClick={() => setCreating(true)}>
+    <Button size={UiSize.sm} onClick={() => setCreating(true)}>
       <PlusIcon /> {t(($) => $.platform.tenants.create)}
     </Button>
   );
@@ -405,7 +405,7 @@ function CreateTenantSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent size={SheetSize.md}>
+      <SheetContent size={UiSize.md}>
         {open ? <CreateTenantForm onClose={() => onOpenChange(false)} /> : null}
       </SheetContent>
     </Sheet>

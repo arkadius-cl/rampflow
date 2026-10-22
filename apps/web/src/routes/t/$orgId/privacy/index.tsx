@@ -6,10 +6,10 @@ import {
   SubjectQuery,
 } from '@rampflow/shared/modules/privacy/api';
 import {
-  BadgeSize,
   EmailCategory,
   HtmlInputType,
   Permission,
+  UiSize,
   ZodIssueCode,
 } from '@rampflow/shared/values';
 import { useMutation } from '@tanstack/react-query';
@@ -283,7 +283,7 @@ function Results({ matches }: { matches: SubjectMatches }) {
                         {b.status === BookingStatus.requested ? null : (
                           <BookingStatusBadge
                             status={b.status}
-                            size={BadgeSize.sm}
+                            size={UiSize.sm}
                             label={t(($) => $.lifecycle.status[b.status], {
                               ns: EmailCategory.booking,
                             })}

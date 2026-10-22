@@ -5,7 +5,7 @@ import {
   type TenantNoteView,
 } from '@rampflow/shared/modules/core/api.platform';
 import { TenantNoteKind, TenantNoteSortKey } from '@rampflow/shared/modules/core/values';
-import { BadgeSize, SheetSize, values } from '@rampflow/shared/values';
+import { UiSize, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createColumnHelper } from '@tanstack/react-table';
 import { PlusIcon } from 'lucide-react';
@@ -63,7 +63,7 @@ function useColumns() {
         column.display({
           id: 'kind',
           header: () => t(($) => $.platform.notes.kind),
-          cell: ({ row }) => <TenantNoteKindBadge kind={row.original.kind} size={BadgeSize.sm} />,
+          cell: ({ row }) => <TenantNoteKindBadge kind={row.original.kind} size={UiSize.sm} />,
         }),
         column.display({
           id: 'author',
@@ -95,7 +95,7 @@ export function TenantNotes({ tenantId, controls }: { tenantId: string; controls
   const columns = useColumns();
   const [adding, setAdding] = useState(false);
   const add = (
-    <Button size={BadgeSize.sm} onClick={() => setAdding(true)}>
+    <Button size={UiSize.sm} onClick={() => setAdding(true)}>
       <PlusIcon /> {t(($) => $.platform.notes.add)}
     </Button>
   );
@@ -129,7 +129,7 @@ export function TenantNotes({ tenantId, controls }: { tenantId: string; controls
         noMatchTitle={t(($) => $.platform.notes.no_match)}
       />
       <Sheet open={adding} onOpenChange={setAdding}>
-        <SheetContent size={SheetSize.sm}>
+        <SheetContent size={UiSize.sm}>
           {adding ? <AddNoteForm tenantId={tenantId} onClose={() => setAdding(false)} /> : null}
         </SheetContent>
       </Sheet>

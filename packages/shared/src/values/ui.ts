@@ -15,18 +15,23 @@ export const BadgeTone = {
 export type BadgeTone = ValueOf<typeof BadgeTone>;
 
 /** Status badge sizes. `xl` is the 44 px touch size of the gate, dock and driver screens. */
-export const BadgeSize = {
+/**
+ * The one size scale of the design system's components: badges (`sm` in tables, `md` default,
+ * `lg` and `xl` under `halle` and `fahrer`) and form sheets (`sm` 384, `md` 480 default, `lg` 640,
+ * `xl` 896 px, full width on phones).
+ */
+export const UiSize = {
   sm: 'sm',
   md: 'md',
   lg: 'lg',
   xl: 'xl',
 } as const;
-export type BadgeSize = ValueOf<typeof BadgeSize>;
+export type UiSize = ValueOf<typeof UiSize>;
 
 /** The driver PWA shows only the touch-sized badges. */
 export const DriverBadgeSize = {
-  lg: BadgeSize.lg,
-  xl: BadgeSize.xl,
+  lg: UiSize.lg,
+  xl: UiSize.xl,
 } as const;
 export type DriverBadgeSize = ValueOf<typeof DriverBadgeSize>;
 
@@ -126,15 +131,6 @@ export const PrototypeScreen = {
   tenants: 'tenants',
 } as const;
 export type PrototypeScreen = ValueOf<typeof PrototypeScreen>;
-
-/** The fixed widths of a form sheet (design system, "Forms"): 384, 480 (default), 640, 896 px. */
-export const SheetSize = {
-  sm: 'sm',
-  md: 'md',
-  lg: 'lg',
-  xl: 'xl',
-} as const;
-export type SheetSize = ValueOf<typeof SheetSize>;
 
 /**
  * The group of a row action in a data table's "…" menu (design system, "Row actions"): the

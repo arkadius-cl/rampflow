@@ -4,7 +4,7 @@ import type {
   BookingSummary,
 } from '@rampflow/shared/modules/booking/api.staff';
 import { FinalBookingStatus, ResourceKind } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, isValueOf } from '@rampflow/shared/values';
+import { isValueOf, UiSize } from '@rampflow/shared/values';
 import { LayersIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -359,7 +359,7 @@ function BookingCard({
             {t(($) => $.plan.board.units, { n: booking.loadUnits })} ·{' '}
             <span className="font-mono">{booking.code}</span>
           </span>
-          <BookingStatusBadge status={booking.status} size={BadgeSize.sm} className="mt-auto" />
+          <BookingStatusBadge status={booking.status} size={UiSize.sm} className="mt-auto" />
         </>
       )}
     </button>

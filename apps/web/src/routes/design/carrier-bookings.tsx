@@ -1,5 +1,5 @@
 import { BookingStatus, PrototypeWizardStep } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, PrototypeScreen } from '@rampflow/shared/values';
+import { PrototypeScreen, UiSize } from '@rampflow/shared/values';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CalendarIcon,
@@ -153,10 +153,10 @@ function Row({ booking: b }: { booking: Booking }) {
         {b.plate ? <div className="font-mono text-xs text-muted-foreground">{b.plate}</div> : null}
       </TableCell>
       <TableCell>
-        <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
+        <BookingStatusBadge status={b.status} size={UiSize.sm} />
       </TableCell>
       <TableCell>
-        <SafetyBadge status={b.safety} size={BadgeSize.sm} />
+        <SafetyBadge status={b.safety} size={UiSize.sm} />
       </TableCell>
       <TableCell className="tabular-nums">
         <span className={cn(!gateIn && 'text-muted-foreground/60')}>{gateIn ?? '—'}</span>

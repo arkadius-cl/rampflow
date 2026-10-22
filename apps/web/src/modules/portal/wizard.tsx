@@ -8,7 +8,7 @@ import type {
 } from '@rampflow/shared/modules/booking/api.portal';
 import { BookingWizardStep, CarrierLinkStatus } from '@rampflow/shared/modules/booking/values';
 import type { LocalDate } from '@rampflow/shared/time';
-import { BadgeSize, StepState, values } from '@rampflow/shared/values';
+import { StepState, UiSize, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, ChevronRightIcon, WarehouseIcon } from 'lucide-react';
@@ -657,7 +657,7 @@ function Done({
             >
               {b.code}
             </div>
-            <BookingStatusBadge status={b.status} size={BadgeSize.lg} />
+            <BookingStatusBadge status={b.status} size={UiSize.lg} />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">{t(($) => $.portal.done.title)}</h2>

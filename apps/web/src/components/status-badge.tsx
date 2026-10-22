@@ -1,6 +1,6 @@
 import { type BookingStatus, Punctuality } from '@rampflow/shared/modules/booking/values';
 import type { BriefingState } from '@rampflow/shared/modules/safety/values';
-import { BadgeSize, BadgeTone } from '@rampflow/shared/values';
+import { BadgeTone, UiSize } from '@rampflow/shared/values';
 import { cva, type VariantProps } from 'class-variance-authority';
 import {
   ArrowDownToLineIcon,
@@ -106,13 +106,13 @@ const statusBadgeVariants = cva(
   {
     variants: {
       size: {
-        [BadgeSize.sm]: 'h-5 gap-1 px-1.5 text-xs [&>svg]:size-3',
-        [BadgeSize.md]: 'h-6 gap-1.5 px-2 text-sm [&>svg]:size-3.5',
-        [BadgeSize.lg]: 'h-10 gap-2 px-3.5 text-md [&>svg]:size-5',
-        [BadgeSize.xl]: 'h-11 gap-2 px-3.5 text-md [&>svg]:size-6',
+        [UiSize.sm]: 'h-5 gap-1 px-1.5 text-xs [&>svg]:size-3',
+        [UiSize.md]: 'h-6 gap-1.5 px-2 text-sm [&>svg]:size-3.5',
+        [UiSize.lg]: 'h-10 gap-2 px-3.5 text-md [&>svg]:size-5',
+        [UiSize.xl]: 'h-11 gap-2 px-3.5 text-md [&>svg]:size-6',
       },
     },
-    defaultVariants: { size: BadgeSize.md },
+    defaultVariants: { size: UiSize.md },
   },
 );
 

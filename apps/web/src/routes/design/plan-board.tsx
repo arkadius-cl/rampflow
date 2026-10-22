@@ -1,5 +1,5 @@
 import { BookingStatus, PlanView } from '@rampflow/shared/modules/booking/values';
-import { BadgeSize, isValueOf, PrototypeScreen } from '@rampflow/shared/values';
+import { isValueOf, PrototypeScreen, UiSize } from '@rampflow/shared/values';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   BanIcon,
@@ -176,7 +176,7 @@ function Legend() {
     <ul className="hidden items-center gap-1 xl:flex" aria-label="Status legend">
       {shown.map((s) => (
         <li key={s}>
-          <BookingStatusBadge status={s} size={BadgeSize.sm} />
+          <BookingStatusBadge status={s} size={UiSize.sm} />
         </li>
       ))}
     </ul>
@@ -224,10 +224,10 @@ function BookingList({
                   {b.loadUnits} · {b.loadType}
                 </TableCell>
                 <TableCell>
-                  <BookingStatusBadge status={b.status} size={BadgeSize.sm} />
+                  <BookingStatusBadge status={b.status} size={UiSize.sm} />
                 </TableCell>
                 <TableCell>
-                  <SafetyBadge status={b.safety} size={BadgeSize.sm} />
+                  <SafetyBadge status={b.safety} size={UiSize.sm} />
                 </TableCell>
               </TableRow>
             ))}
@@ -326,7 +326,7 @@ function DetailPanel({ booking, onClose }: { booking: Booking; onClose: () => vo
             <li key={`${t.status}-${t.at}`} className="flex items-start gap-2 text-sm">
               <StatusBadge
                 meta={BOOKING_STATUS[t.status]}
-                size={BadgeSize.sm}
+                size={UiSize.sm}
                 className="mt-0.5 w-28 justify-start"
               />
               <div className="leading-tight">

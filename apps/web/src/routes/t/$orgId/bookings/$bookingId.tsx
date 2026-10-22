@@ -7,7 +7,7 @@ import type {
 import { BookingDialog, ChangeLock } from '@rampflow/shared/modules/booking/values';
 import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import { siteDay, type TimeZone } from '@rampflow/shared/time';
-import { BadgeSize, ConflictReason, ErrorCode, Permission } from '@rampflow/shared/values';
+import { ConflictReason, ErrorCode, Permission, UiSize } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
@@ -356,7 +356,7 @@ function SafetyCard({ booking }: { booking: BookingView }) {
         {booking.safety.instructions.map((i) => (
           <div key={i.instructionId} className="flex flex-wrap items-center justify-between gap-2">
             <span>{i.name}</span>
-            <BookingSafetyBadge status={i.status} size={BadgeSize.sm} />
+            <BookingSafetyBadge status={i.status} size={UiSize.sm} />
           </div>
         ))}
         {booking.safety.enforced ? (

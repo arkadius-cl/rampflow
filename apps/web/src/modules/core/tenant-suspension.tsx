@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SuspensionBody } from '@rampflow/shared/modules/core/api.platform';
 import { TenantStatus } from '@rampflow/shared/modules/core/values';
-import { SheetSize } from '@rampflow/shared/values';
+import { UiSize } from '@rampflow/shared/values';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +41,7 @@ export function TenantSuspensionSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent size={SheetSize.sm}>
+      <SheetContent size={UiSize.sm}>
         {/* Remounts per opening, so a cancelled reason does not come back. */}
         {open ? <SuspensionForm tenant={tenant} onDone={() => onOpenChange(false)} /> : null}
       </SheetContent>

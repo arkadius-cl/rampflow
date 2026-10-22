@@ -3,7 +3,7 @@ import {
   type PlatformSiteView,
 } from '@rampflow/shared/modules/core/api.platform';
 import { PlatformSiteSortKey } from '@rampflow/shared/modules/core/values';
-import { BadgeSize, BadgeTone, values, YesNo } from '@rampflow/shared/values';
+import { BadgeTone, UiSize, values, YesNo } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -68,7 +68,7 @@ function useColumns() {
           header: () => t(($) => $.platform.sites.active),
           cell: ({ row }) => (
             <StatusBadge
-              size={BadgeSize.sm}
+              size={UiSize.sm}
               meta={
                 row.original.active
                   ? {

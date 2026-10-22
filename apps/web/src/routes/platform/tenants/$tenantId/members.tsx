@@ -7,7 +7,7 @@ import {
   PlatformMemberSortKey,
   PlatformMemberState,
 } from '@rampflow/shared/modules/core/values';
-import { BadgeSize, TenantRole, values } from '@rampflow/shared/values';
+import { TenantRole, UiSize, values } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -67,7 +67,7 @@ function useColumns() {
         column.display({
           id: 'state',
           header: () => t(($) => $.platform.members.state),
-          cell: ({ row }) => <MemberStateBadge state={row.original.state} size={BadgeSize.sm} />,
+          cell: ({ row }) => <MemberStateBadge state={row.original.state} size={UiSize.sm} />,
         }),
         column.display({
           id: 'emailVerified',

@@ -6,7 +6,7 @@ import {
   siteDay,
   type TimeZone,
 } from '@rampflow/shared/time';
-import { BadgeSize, isValueOf, Permission } from '@rampflow/shared/values';
+import { isValueOf, Permission, UiSize } from '@rampflow/shared/values';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
@@ -319,7 +319,7 @@ function Legend() {
     <ul className="hidden items-center gap-1 2xl:flex" aria-label={t(($) => $.plan.toolbar.legend)}>
       {shown.map((s) => (
         <li key={s}>
-          <BookingStatusBadge status={s} size={BadgeSize.sm} />
+          <BookingStatusBadge status={s} size={UiSize.sm} />
         </li>
       ))}
     </ul>

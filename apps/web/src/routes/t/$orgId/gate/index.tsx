@@ -3,12 +3,12 @@ import { SafetyStatus } from '@rampflow/shared/modules/safety/values';
 import type { OnSiteTruck, YardTruck } from '@rampflow/shared/modules/yard/api';
 import { GateTab } from '@rampflow/shared/modules/yard/values';
 import {
-  BadgeSize,
   BadgeTone,
   Feature,
   isValueOf,
   Permission,
   ShellLayout,
+  UiSize,
   values,
 } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
@@ -348,7 +348,7 @@ function TruckRow({
       <div>
         <SlotRange truck={b} className="whitespace-nowrap text-lg font-semibold" />
         <div className="mt-1">
-          <TruckPunctuality truck={b} size={BadgeSize.sm} />
+          <TruckPunctuality truck={b} size={UiSize.sm} />
         </div>
       </div>
       <div className="min-w-0">
@@ -378,15 +378,15 @@ function TruckRow({
               <StatusBadge
                 meta={{ label: '', icon: TimerIcon, tone: BadgeTone.danger }}
                 label={t(($) => $.gate.row.standgeld, { minutes: b.onSiteMinutes })}
-                size={BadgeSize.sm}
+                size={UiSize.sm}
               />
             ) : null}
           </div>
         ) : null}
       </div>
       <div className="hidden flex-col items-end gap-1 lg:flex">
-        <TruckSafety safety={b.safety} size={BadgeSize.lg} />
-        <TruckStatus status={b.status} size={BadgeSize.lg} />
+        <TruckSafety safety={b.safety} size={UiSize.lg} />
+        <TruckStatus status={b.status} size={UiSize.lg} />
       </div>
       <div className="flex flex-wrap justify-end gap-2">
         {EXPECTED.has(b.status) ? (
