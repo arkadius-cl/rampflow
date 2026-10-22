@@ -56,6 +56,16 @@ async function failureOf(res: Response): Promise<ApiFailure> {
   );
 }
 
+let onSuspended: (() => void) | undefined;
+
+/**
+ * What runs when any answer is 403 `tenant_suspended` (PL-07): the app root refetches the area
+ * context and reloads the route, so an open screen switches to the suspended page.
+ */
+export function setSuspendedHandler(handler: () => void): void {
+  onSuspended = handler;
+}
+
 /**
  * Awaits an `api` call and returns its JSON body, or `undefined` for 202 and 204. Throws
  * `ApiFailure` for every error answer, so queries and mutations see one error type.
@@ -64,7 +74,11 @@ export async function call<T>(
   request: Promise<{ ok: boolean; status: number; json(): Promise<T> }>,
 ): Promise<T> {
   const res = await request;
-  if (!res.ok) throw await failureOf(res as unknown as Response);
+  if (!res.ok) {
+    const failure = await failureOf(res as unknown as Response);
+    if (failure.code === ErrorCode.tenant_suspended) onSuspended?.();
+    throw failure;
+  }
   if (res.status === 202 || res.status === 204) return undefined as T;
   return res.json();
 }

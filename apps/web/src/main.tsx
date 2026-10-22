@@ -11,8 +11,9 @@ import { I18nextProvider } from 'react-i18next';
 import { toast } from 'sonner';
 import { errorText } from '@/components/app-shell/form-errors';
 import { RouteError, RouteNotFound } from '@/components/app-shell/route-states';
-import { ApiFailure } from '@/lib/api';
+import { ApiFailure, setSuspendedHandler } from '@/lib/api';
 import { initI18n } from '@/lib/i18n';
+import { queryKeys } from '@/lib/query-keys';
 import { cachedDockCodes } from '@/modules/capacity/queries';
 import { routeTree } from '@/routeTree.gen';
 
@@ -77,6 +78,13 @@ const router = createRouter({
   scrollRestoration: true,
   defaultErrorComponent: RouteError,
   defaultNotFoundComponent: RouteNotFound,
+});
+
+// A suspension answers 403 on the next request (PL-07): refetch every area context and reload
+// the route, so the tenant layout's error boundary shows the suspended page.
+setSuspendedHandler(() => {
+  void queryClient.invalidateQueries({ predicate: (q) => queryKeys.isContext(q.queryKey) });
+  void router.invalidate();
 });
 
 const rootElement = document.getElementById('root');

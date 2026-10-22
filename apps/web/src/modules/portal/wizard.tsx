@@ -107,7 +107,7 @@ export function BookingWizard({
   const refreshOffers = useRefreshOffers(orgId);
   const context = useQuery(carrierContextQuery(orgId)).data;
   const tenants = (context?.tenants ?? []).filter(
-    (x) => x.linkStatus === CarrierLinkStatus.active && x.carrierPortal,
+    (x) => x.linkStatus === CarrierLinkStatus.active && x.carrierPortal && !x.suspended,
   );
   const [selection, setSelection] = useState<Selection>({
     tenantId: tenants.find((x) => x.id === search.tenant)?.id ?? tenants[0]?.id ?? '',

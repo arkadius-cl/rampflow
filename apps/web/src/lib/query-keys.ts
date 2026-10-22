@@ -10,10 +10,14 @@ import { OrgKind } from '@rampflow/shared/values';
 
 export type Area = OrgKind;
 
+const CONTEXT = 'context';
+
 export const queryKeys = {
   me: () => ['me'],
   org: (area: Exclude<Area, typeof OrgKind.platform>, orgId: string) => [area, orgId] as const,
   context: (area: Exclude<Area, typeof OrgKind.platform>, orgId: string) =>
-    [area, orgId, 'context'] as const,
-  platformContext: () => [OrgKind.platform, 'context'] as const,
+    [area, orgId, CONTEXT] as const,
+  platformContext: () => [OrgKind.platform, CONTEXT] as const,
+  /** Whether a key is an area context, whichever org. */
+  isContext: (key: readonly unknown[]) => key[2] === CONTEXT,
 };

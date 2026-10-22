@@ -4,7 +4,7 @@ import { ErrorCode, OrgKind, ShellLayout } from '@rampflow/shared/values';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router';
 import { AppShell } from '@/components/app-shell/app-shell';
-import { NoAccess, RouteError } from '@/components/app-shell/route-states';
+import { NoAccess, RouteError, TenantSuspended } from '@/components/app-shell/route-states';
 import { StationShell } from '@/components/app-shell/station-shell';
 import { useSyncLocale } from '@/components/app-shell/user-menu';
 import {
@@ -30,7 +30,13 @@ export const Route = createFileRoute('/t/$orgId')({
     return { me, access: { area: OrgKind.tenant, orgId: params.orgId, context: tenant } };
   },
   errorComponent: (props) =>
-    isFailure(props.error, ErrorCode.not_found) ? <NoAccess /> : <RouteError {...props} />,
+    isFailure(props.error, ErrorCode.not_found) ? (
+      <NoAccess />
+    ) : isFailure(props.error, ErrorCode.tenant_suspended) ? (
+      <TenantSuspended />
+    ) : (
+      <RouteError {...props} />
+    ),
   component: TenantLayout,
 });
 
