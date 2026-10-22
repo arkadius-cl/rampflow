@@ -51,7 +51,7 @@ The Overview SHALL show:
 - **THEN** the Overview shows the id, the type "EU VAT", the label "Unverified" with the check time, and the flag "Tax id unverified"
 
 ### Requirement: A possible duplicate links to the matching tenants
-When a tenant is flagged as a possible duplicate, the Overview SHALL link to the tenant list, filtered to the tenant itself and every tenant that the duplicate detection of the registration would match against it: the same or an equivalent tax id, or a shared non-free-mail admin email domain. The filter SHALL show as a removable chip and SHALL live in the URL.
+When a tenant is flagged as a possible duplicate, the Overview SHALL link to the tenant list, filtered to the tenant itself and every tenant that the duplicate detection of the registration would match against it: the same or an equivalent tax id, or a shared non-free-mail admin email domain. The link SHALL select the list's view "All", so matches show whatever their status. The filter SHALL show as a removable chip and SHALL live in the URL.
 
 #### Scenario: Same tax id
 - **WHEN** the admin selects "Show matching tenants" on a flagged tenant with tax id `DE123456789`
@@ -70,7 +70,15 @@ When a tenant is flagged as a possible duplicate, the Overview SHALL link to the
 - **THEN** the link lists only the flagged tenant itself
 
 ### Requirement: The Overview edits name, country and package
-The Overview SHALL hold a form for the tenant's name, country and package. The country SHALL be one of the EU-27 country codes a tenant can register with, or empty. An invalid value SHALL answer 422 with the zod path, shown at the field.
+The Overview SHALL show the tenant's name, country and package in one card. An "Edit" action in the card's header SHALL turn only that card into a form with "Cancel" and "Save" inside the card; the other cards stay as they are, and no modal dialog opens. "Cancel" SHALL restore the shown values without a request. "Save" SHALL send the change, close the form on success and confirm it with a toast. The country SHALL be one of the EU-27 country codes a tenant can register with, or empty. An invalid value SHALL answer 422 with the zod path, shown at the field, and the card SHALL stay in edit mode.
+
+#### Scenario: Edit the master data card
+- **WHEN** the admin selects "Edit" on the card with name, country and package, changes the name and selects "Save"
+- **THEN** the card shows the new name in read mode, a toast confirms the change, and the header shows the new name
+
+#### Scenario: Cancel the edit
+- **WHEN** the admin selects "Edit", changes the country and selects "Cancel"
+- **THEN** the card shows the previous country in read mode and no request was sent
 
 #### Scenario: Invalid country
 - **WHEN** the admin sends `{ "country": "Germany" }` to `PATCH /api/platform/tenants/<id>`

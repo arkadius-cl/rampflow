@@ -26,8 +26,9 @@ What 04 builds on, from the code today and from the three earlier changes:
   - `scoped()` (`kernel/scoped.ts`) resolves the scope, opens the transaction and runs `loadAccess`, once per area (`modules/index.ts`).
   - Public link routes open their own `withScope(publicScope(link))` and go through `openPublicLink` (`booking/registration/public-links.ts`).
   - Jobs iterate tenants with `forEachTenant` (`kernel/jobs.ts`). It is used by `reminders`, `no_show`, `holiday_import` and `retention`.
+- **Design system (07):** the web is built against the yrd design system: tokens in `apps/web/src/styles/`, the value sets `Density` and `Theme` in `packages/shared/src/values/ui.ts`, `BadgeTone` re-pointed to the status tokens, the `ThemeSwitch` in the office user menu. `docs/reference/design-system.md` is the reference and ADR-0021 the decision. The platform area is office density (no `data-density`).
 - **The driver PWA** (`apps/driver/src/lib/session.ts`) shows the `invalid` phase only for 401. It treats any other failed poll as network trouble and keeps the last state on screen.
-- **Value sets** follow ADR-0019: each closed set is one self-keyed `as const` object with a type of the same name, and code uses its members, never the string. This change adds `TenantStatus.suspended` and these sets to `packages/shared/src/modules/core/values.ts`: `TenantFlag`, `TenantCountryFacet`, `PlatformMemberSortKey`, `PlatformMemberState`, `PlatformMemberKind`, `PlatformSiteSortKey`, `TenantNoteSortKey`, `TenantNoteKind` and `SuspendedTenants`, and the members `status`, `package`, `country` and `lastActivityAt` to 01's `TenantSortKey`. It adds members to the cross-cutting sets of `@rampflow/shared/values`: `ErrorCode.tenant_suspended`, `ConflictReason.tax_id_country`, `SystemActorName.platform_read`, `EmailTemplate.core_tenant_suspended` and `.core_tenant_reactivated`, and `StoryId.PL_06` to `PL_08`. The `active` facet reuses `YesNo` from `@rampflow/shared/values`. `ScopeParty` (the scope `party`) and `PolicyCommand` (the policy command of `db/rls.ts`) exist since 00. SQL below is written as plain SQL for reading; Drizzle code interpolates set members (`${TenantStatus.suspended}`) and `values(Set)`.
+- **Value sets** follow ADR-0019: each closed set is one self-keyed `as const` object with a type of the same name, and code uses its members, never the string. This change adds `TenantStatus.suspended` and these sets to `packages/shared/src/modules/core/values.ts`: `TenantFlag`, `TenantCountryFacet`, `TenantListView`, `PlatformMemberSortKey`, `PlatformMemberState`, `PlatformMemberKind`, `PlatformSiteSortKey`, `TenantNoteSortKey`, `TenantNoteKind` and `SuspendedTenants`, and the members `status`, `package`, `country` and `lastActivityAt` to 01's `TenantSortKey`. It adds members to the cross-cutting sets of `@rampflow/shared/values`: `ErrorCode.tenant_suspended`, `ConflictReason.tax_id_country`, `SystemActorName.platform_read`, `EmailTemplate.core_tenant_suspended` and `.core_tenant_reactivated`, and `StoryId.PL_06` to `PL_08`. The `active` facet reuses `YesNo` from `@rampflow/shared/values`. `ScopeParty` (the scope `party`) and `PolicyCommand` (the policy command of `db/rls.ts`) exist since 00. SQL below is written as plain SQL for reading; Drizzle code interpolates set members (`${TenantStatus.suspended}`) and `values(Set)`.
 
 ## Goals / Non-Goals
 
@@ -58,6 +59,8 @@ export const TenantFlag = {
 export type TenantFlag = ValueOf<typeof TenantFlag>;
 export const TenantCountryFacet = { ...EuCountry, none: 'none' } as const; // 02's EU-27 plus "not set"
 export type TenantCountryFacet = ValueOf<typeof TenantCountryFacet>;
+export const TenantListView = { attention: 'attention', all: 'all' } as const;
+export type TenantListView = ValueOf<typeof TenantListView>;
 // TenantSortKey (01) gains status, package, country and lastActivityAt.
 
 // packages/shared/src/modules/core/api.platform.ts
@@ -77,6 +80,7 @@ export interface TenantSummary {
 export interface TenantList extends ListPage<TenantSummary> {
   facets: { status: Record<TenantStatus, number>; package: Record<PackageId, number>;
             country: Record<TenantCountryFacet, number>; flag: Record<TenantFlag, number> };
+  views: Record<TenantListView, number>;
 }
 ```
 
@@ -91,10 +95,14 @@ export interface TenantList extends ListPage<TenantSummary> {
   - `contains(q, org.name)`;
   - `contains(normalizeSearchTaxId(q), org.taxIdValue)`, where the term drops spaces, `.`, `-` and `/` and is upper-cased. The stored value is already normalized by 02.
   - An `exists` over `membership ⨝ app_user` with role `tenant_admin`, and over open `tenant_admin` invitations, whose email `contains(q)`.
-- **Facet counts.** One grouped query per facet, without that facet's own condition (01, decision 4). The Country facet's zero-count values are hidden in the web, except selected ones.
+- **View.** `TenantListQuery` gains `view: TenantListView`, default `TenantListView.attention`, like `duplicateOf` an extra parameter outside the facets, with the same default for the API and the URL (the default stays out of the URL). `attention` is `status in ('onboarding', 'suspended') or possible_duplicate or tax_id_status = 'unverified'`, written with the set members; `all` adds no condition. The view is one more `where` part next to the search and the facets.
+- **Facet counts.** One grouped query per facet, without that facet's own condition but with the view (01, decision 4). The Country facet's zero-count values are hidden in the web, except selected ones.
+- **View counts.** One statement with two `count(*) filter (where ...)` over the search, the facets and `duplicateOf`, without the view. The tabs show them.
 - **Null placement.** 01's `orderBy` gains an option `nullsLast: readonly S[]`, so `country` and `lastActivityAt` sort empty values last in both directions. Postgres puts nulls first on `desc` by default.
 
 `usageOf` still runs only for the page rows. Sorting or filtering by usage would need every tenant's per-tenant statement, so it stays out (non-goal).
+
+Alternatives for the default view: "All" as default with a saved filter. Rejected: the design system's list rule makes the view with work to do the default (docs/reference/design-system.md, ADR-0021), and a filter preset does not show counts per tab. A third view per status (Onboarding, Suspended). Rejected: the Status facet already filters them, and two tabs keep the bar short.
 
 Alternatives: compute status, admin and activity in TypeScript after loading all tenants. Rejected: paging and sorting must run in SQL (01). A database view `tenant_overview`. Rejected: views need custom SQL, which unit branches cannot ship (ADR-0001), and RLS on views needs `security_invoker` handling.
 
@@ -169,14 +177,14 @@ apps/web/src/routes/platform/tenants/$tenantId/
   members.tsx       validateSearch: PlatformMemberListQuery.search
   sites.tsx         validateSearch: PlatformSiteListQuery.search
   entitlements.tsx  OverridesCard, EntitlementsCard, AddOverrideCard, AdminInvitationsCard (moved from $tenantId.tsx)
-  notes.tsx         add-note form + data table; validateSearch: TenantNoteListQuery.search
+  notes.tsx         "Add note" sheet + data table; validateSearch: TenantNoteListQuery.search
 ```
 
 - **Tab bar.** It follows the existing `t/$orgId/sites/$siteId/route.tsx`: `Link`s with `activeProps` that set `aria-current="page"`. A comment in `route.tsx` marks where 05 inserts `billing.tsx` between Entitlements and Notes.
 - **Loader.** The loader moves from 01's `$tenantId.tsx` into `route.tsx`. An unknown id reaches the platform layout's `errorComponent` (`NoAccess`).
-- **Entitlements.** The existing cards move into `entitlements.tsx` unchanged. Only `TenantForm` leaves them: it moves to the Overview and gains the country field.
+- **Entitlements.** The existing cards move into `entitlements.tsx` unchanged. Only `TenantForm` leaves them: it becomes the Overview's master data card (name, country, package) with per-card edit and gains the country field.
 - **Queries.** `tenantQuery` stays the one detail read. The member, site and note lists use keys `['platform', 'tenants', id, '<list>', 'list', toQuery(state)]`. Suspend, reactivate and add-note invalidate the tenant key prefix and `['platform', 'tenants', 'list']`.
-- **Components** live in `apps/web/src/modules/core/`: `tenant-status.tsx` (badge with icon), `tenant-overview.tsx`, `tenant-suspension.tsx` (dialog), `tenant-notes.tsx`.
+- **Components** live in `apps/web/src/modules/core/`: `tenant-status.tsx` (the status badge registries of the section "UI patterns and design system"), `tenant-overview.tsx` (cards with per-card edit), `tenant-suspension.tsx` (reason sheet, used by the hub header and the list's row actions), `tenant-notes.tsx` ("Add note" sheet and table), `tenant-row-actions.tsx`.
 
 `TenantDetail` gains the summary fields of decision 1 and these:
 
@@ -186,7 +194,7 @@ apps/web/src/routes/platform/tenants/$tenantId/
 - `admins: { name, email }[]`;
 - `onboarding: OnboardingProgress | null` (03's type), set only while the status is `TenantStatus.onboarding`.
 
-The possible-duplicate link navigates to `/platform/tenants` with `toQuery({ duplicateOf: tenantId })`. A text search on the tax id would miss two kinds of matches that 02's detection finds: an equivalent id in another form (`pl_nip` `N` and `eu_vat` `PLN`, a W-IdNr and its `eu_vat`) and a shared admin email domain with different tax ids. So the list uses the detection itself:
+The possible-duplicate link navigates to `/platform/tenants` with `toQuery({ view: TenantListView.all, duplicateOf: tenantId })`, so the matches show whatever their status. A text search on the tax id would miss two kinds of matches that 02's detection finds: an equivalent id in another form (`pl_nip` `N` and `eu_vat` `PLN`, a W-IdNr and its `eu_vat`) and a shared admin email domain with different tax ids. So the list uses the detection itself:
 
 - 02's `core/signup/duplicates.redeem.ts` is split. `duplicateMatch(identity)` builds the SQL condition over `org` from one identity `{ taxIdType, taxIdValue, emailDomains }`: the `taxIdEquivalents`, the W-IdNr prefix rule and the domain rule with the free-mail list. `possibleDuplicate` (02) keeps calling it with the registration's identity.
 - `TenantListQuery` gains `duplicateOf: TenantId` (optional, not a facet). `listTenants` reads that tenant's identity (its tax id, and the email domains of its `tenant_admin` members) and filters `org.id = $duplicateOf or duplicateMatch(identity)`, combined with the other filters as usual. The platform party already reads `org`, `membership` and `app_user`, so no scope switch is needed.
@@ -291,6 +299,65 @@ ADR-0002 points to it from "How each context works".
 
 PL-05 stays the retention job. Each new story has `e2e/core/PL-0x.spec.ts` with one `describe`.
 
+## UI patterns and design system
+
+Every screen of this change follows the yrd design system: `docs/reference/design-system.md` is the reference (tokens, densities, type scale, status mapping, pattern catalogue, rules), and `docs/decisions/ADR-0021-design-system.md` records the decision. The implementer loads the `rampflow-design` skill and reads the reference before the first screen. The design files in `design/yrd/` are the source; rampflow keeps its shadcn components on Base UI and takes only class lists, variants, sizes and states from them.
+
+### Rules for all screens of 04
+
+- **Density:** office (no `data-density`). Controls `h-control` (36 px), small controls `h-control-sm` (28 px), `rounded-control` on buttons, inputs and menus, badges and chips `rounded-sm`, cards `rounded-lg`. Office viewport 1920 × 1080.
+- **Themes:** every screen is proven in light and dark. `expectAccessible` (axe) runs on each story's main screen in both themes, through `page.emulateMedia({ colorScheme })` with the account theme on its default `Theme.system`.
+- **Tables:** `DataTable` with 36 px rows, 12 px cell padding, no zebra stripes, 1 px row lines, sorting in the column header, tabular numerals for dates, counts and usage meters. Tax ids in `font-mono`.
+- **Times:** platform times (created, last activity, note time, suspension time, check time) are not tied to a site, so they show in the viewer's time zone with the zone label, as 01 does. Relative times ("3 days ago") carry the exact instant with zone in a focusable `Tooltip`.
+- **Cards:** 1 px border, no shadow. Popover and menu `shadow-md`; sheet and toast `shadow-lg`.
+- **Forms:** never in a modal dialog. A short action with input is a `Sheet` (`sm` 384 px for 1 to 3 fields, `md` 480 px default), full width on phones, footer with "Cancel" and exactly one primary action. Editing data on the hub happens per card. An `AlertDialog` is only for a confirmation without input, which no screen of 04 needs. Success shows a `sonner` toast.
+- **Row actions:** a "…" `DropdownMenu` (ghost icon button, `aria-label` with the row's name) at the end of the row: "View" (`Eye`, 14 px icon), a separator, then the other actions; destructive items last, in `text-destructive`.
+- **Status:** never by color alone. Every status cell is a status badge (icon + label + tone) from a registry per value set, following the StatusBadge registry pattern of the reference; tones are `BadgeTone` members, which point at the design's status tokens (planned → status-scheduled, onsite → status-on-yard, active → status-called, success → status-done, danger → status-problem, neutral → status-cancelled). Badge icons 12 to 14 px.
+- **Strings:** sentence case, verbs in the infinitive on buttons ("Suspend tenant", "Add note"), the destructive sheet names the consequence above the reason field.
+
+### Status badge registries (`modules/core/tenant-status.tsx`)
+
+| Value set | Member | Tone | Icon (lucide) | Status of the mapping |
+|---|---|---|---|---|
+| `TenantStatus` | `onboarding` | `onsite` (amber, waits) | `Hourglass` | tone decided (contract), icon proposal |
+| | `active` | `success` | `CircleCheck` | tone decided, icon proposal |
+| | `suspended` | `danger` | `CirclePause` | tone decided, icon proposal |
+| `TaxIdStatus` | `pending` | `neutral` | `Clock` | proposal |
+| | `verified` | `success` | `BadgeCheck` | proposal |
+| | `unverified` | `danger` | `ShieldAlert` | proposal |
+| | `unavailable` | `neutral` | `CloudOff` | proposal |
+| `TenantFlag` | `possible_duplicate` | `neutral` | `Copy` | decided: flags are neutral badges with icon; icon proposal |
+| | `tax_id_unverified` | `neutral` | `ShieldAlert` | same |
+| `TenantNoteKind` | `note` | `neutral` | `StickyNote` | proposal |
+| | `suspended` | `danger` | `CirclePause` | proposal, same as the tenant status |
+| | `reactivated` | `success` | `CirclePlay` | proposal |
+| `PlatformMemberState` | `member` | `success` | `UserCheck` | proposal |
+| | `disabled` | `neutral` | `UserMinus` | proposal |
+| | `invited` | `planned` | `Mail` | proposal |
+| | `expired` | `neutral` | `MailX` | proposal |
+| Admin email "Invited" marker | | `neutral` | `Mail` | proposal |
+
+Booking icons (`UserX`, `Ban`, `MinusCircle`, ...) are not reused for other meanings except where the table says so.
+
+### Steckbriefe
+
+Largest expected counts per organisation after years of operation: tenants on the platform in the thousands; members per tenant up to hundreds (Pro limit 75, Enterprise unlimited); sites per tenant in the tens (Start 1, Pro 5, Enterprise unlimited); notes per tenant in the hundreds.
+
+| Screen | Pattern | Largest count | Note |
+|---|---|---|---|
+| Tenant list `/platform/tenants` | Objektliste on `DataTable` | thousands of tenants | Views as tabs with counts: "Needs attention" (default) and "All" (decision 1). Search, facets Status, Package, Country, Flags with counts, sort in the header, 25 rows per page (01 decided 25; the reference's 20 rows is a proposal), all in the URL. Row click and the name link open the hub. Row actions menu: View, separator, Suspend (red, last) or Reactivate. "Create tenant" in the page header opens a `Sheet` `md` instead of 01's dialog. Empty "Needs attention" view: "Nothing needs attention" with a link to "All". |
+| Create tenant | Formular in a Sheet (`md`) | n/a | Replaces 01's `CreateTenantDialog`; fields and behaviour as in 01 (after creation the hub opens, see Open Questions). |
+| Tenant hub `/platform/tenants/$tenantId` (layout) | Objektseite | one per tenant | Tabs as child routes (underline tabs, `aria-current="page"`). Header: name, status badge, package, one action: "Suspend" (`destructive`) or "Reactivate" (`default`). |
+| Overview (index) | Objektseite tab with cards | one per tenant | Cards: Status and suspension, Onboarding progress, Usage (`Progress` meters, tabular numerals), Tax id, Flags, Admins, Master data (name, country, package). Only Master data is editable: "Edit" in its header turns that card into a form with "Cancel" and "Save"; one card at a time; never a modal. |
+| Members tab | Objektliste on `DataTable` | up to hundreds (Pro 75, Enterprise unlimited) | Not a Kurzliste: the plan limit is over 50 on Pro and open on Enterprise. Read-only, rows link nowhere (ADR-0015), no row actions. Facets role and state, no views (see Open Questions). 25 rows per page (01 decided 25; the reference's 20 rows is a proposal). |
+| Sites tab | Objektliste on `DataTable` | tens (Enterprise unlimited) | Not a Kurzliste: no plan bounds it to 50 or fewer, because `core.max_sites` is unlimited on Enterprise. Read-only, rows link nowhere, no row actions, facet active. Empty state for a tenant without sites. 25 rows per page (01 decided 25; the reference's 20 rows is a proposal). |
+| Entitlements tab | Objektseite tab with cards | entitlement keys of the catalog (tens) | Moved unchanged from 01/PL-02: overrides and admin invitations are Kurzlisten in cards, the grouped entitlements table stays. The add-override and re-invite forms stay inline in their cards next to the Kurzlisten, against the reference's "Where a form goes" (create is a Sheet; never a form inline in a table): Ausnahme (product owner, 2026-10-21, PL-02 cards move unchanged; converting them to sheets is a follow-up). Follow-up task 12.1 converts them to `Sheet` `sm`. |
+| Notes tab | Objektliste on `DataTable` | hundreds per tenant | "Add note" in the tab's header opens a `Sheet` `sm` with one `Textarea`; toast on success; the new note is the first row. Facet kind, search in the body, newest first, 25 rows per page (01 decided 25; the reference's 20 rows is a proposal). No row actions: notes are append-only. |
+| Suspend tenant | Formular in a Sheet (`sm`) | n/a | Short action with a required reason, so a sheet, not a dialog. The text above the field names the effect (staff and carriers locked out, admins emailed). Footer: "Cancel" and "Suspend tenant" (`destructive`). Opened from the hub header and the row actions. |
+| Reactivate tenant | Formular in a Sheet (`sm`) | n/a | Same sheet with the required reason; primary "Reactivate tenant" (`default`). |
+| Suspended page (`TenantSuspended`, tenant area) | Sonderbaustein: full-page state in the app shell, like `NoAccess` in `components/app-shell/route-states.tsx` | one per tenant | Not an Einstiegsseite: that pattern is `AuthLayout` outside the app shell, and the suspended user is signed in. Product owner decision pending: the rule table makes every Sonderbaustein a product-owner case; the proposal is to add it next to `NoAccess` in `route-states.tsx` and, on a second such state, name "state page in the app shell" as a catalogue pattern. `Empty` with icon `CirclePause`, title, one sentence, link to `/`. Office density. |
+| Carrier warehouse list marker | Part of the carrier warehouse list `/c/$orgId/tenants` (CR-02, existing `Table` in a card, not otherwise changed by 04) | the carrier's linked warehouses (tens) | Not a screen of its own. "Temporarily unavailable" as a `neutral` badge with icon `CirclePause` next to the suspended warehouse's name. |
+
 ## Risks / Trade-offs
 
 - [The `MODIFIED` deltas on `platform-tenant-list` and `tenant-lifecycle` target capabilities that 01 and 02 create] → archive 01, 02 and 03 before 04. `openspec validate` reports this as information until then.
@@ -300,6 +367,7 @@ PL-05 stays the retention job. Each new story has `e2e/core/PL-0x.spec.ts` with 
 - [The retention job now spares active carrier users that it would have warned before] → this is the documented behavior. The release notes say carrier inactivity counts from the last request from now on.
 - [Members union and lateral admin subqueries scan a tenant's memberships] → at most 75 members on Pro, with indexes on `membership(org_id)` and `invitation(org_id)`.
 - [Bookings whose no-show deadline passed during a suspension are marked `no_show` (with the carrier email) on the first run after reactivation] → see Open Questions. The default keeps the job's rule unchanged.
+- [The default view "Needs attention" hides active tenants without a flag from the first screen, and 01's list tests and `PL-04.spec.ts` assume every tenant is listed] → those tests pass `view=all` where they need every tenant; the "All" tab shows its count, so nothing is hidden silently.
 - [A tenant admin of a suspended tenant cannot read the reason in the app] → it is in the email. The suspended page says to contact the platform or the org's admin.
 
 ## Migration Plan
@@ -327,4 +395,9 @@ Existing seeded tenants already cover the other states: Acme active and verified
 - Bookings whose no-show deadline fell inside a suspension: after reactivation the no-show job marks them as usual. Default: keep it; suspensions are rare and short. If the product owner wants otherwise, a later change can let the job skip bookings that started while the tenant was suspended (that needs the suspension history in a queryable form, which `tenant_note` has).
 - Self-registered tenants that never onboard: kept without automatic deletion (shared brief). The list's status facet and last activity sort make them findable. A clean-up rule waits for real numbers.
 - A platform view of one user (all memberships, sign-in state, disable) for support: default later, added to ADR-0015's backlog together with impersonation.
+- Platform times have no site, so they show in the viewer's zone with the zone label (01), not in site time. Default: keep the viewer's zone.
+- Members and Sites are Objektlisten without views, because they are read-only and carry no work to do. Default: no views; a view "Needs attention" (for example expired invitations) waits for a request.
+- 01's create flow opens the new tenant's hub after creation; the design system's rule for "create" is to stay in the list with a toast that offers "Open". Default: keep 01's behaviour (main spec "Create a tenant from the list") and only move the form into a sheet.
+- The Entitlements tab's add-override and re-invite forms sit inline in cards (PL-02). Default: moved unchanged as an Ausnahme (product owner, 2026-10-21, PL-02 cards move unchanged; converting them to sheets is a follow-up); task 12.1 converts them to `Sheet` `sm` after 04.
+- Data tables page by 25 rows (01) where the design system's rule sheet names 20 as a proposal. Default: keep 01's 25; every Objektliste row of the Steckbriefe says so.
 - Should tenant staff see the suspension reason on the suspended page? Default no: the reason goes to the admins by email only, because tenant staff can be large teams and the reason can name a carrier.

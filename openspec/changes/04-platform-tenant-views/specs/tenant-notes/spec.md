@@ -19,11 +19,15 @@ A platform admin with `core.manage_tenants` SHALL add a note to a tenant. The no
 - **THEN** the API answers 422 with an issue at `["body"]` and nothing is stored
 
 ### Requirement: The Notes tab lists the tenant's history
-The Notes tab SHALL be a data table of the tenant's notes. Columns: time, kind (Note, Suspended, Reactivated), author and text. It SHALL filter by kind, search the text, and sort by time, newest first by default. Filters, search, sort and paging SHALL run on the server and live in the URL. The form to add a note SHALL sit above the table.
+The Notes tab SHALL be a data table of the tenant's notes. Columns: time, kind (Note, Suspended, Reactivated), author and text. It SHALL filter by kind, search the text, and sort by time, newest first by default. Filters, search, sort and paging SHALL run on the server and live in the URL. An "Add note" action above the table SHALL open a side sheet with one required text field, "Cancel" and "Add note". On success the sheet SHALL close, a toast SHALL confirm the note, and the table SHALL list it first. An invalid text SHALL show its error at the field and keep the sheet open.
 
 #### Scenario: Suspension history
 - **WHEN** tenant A was suspended, reactivated, and then annotated
 - **THEN** the Notes tab lists the note, the "Reactivated" entry and the "Suspended" entry in this order, each with its author, time and reason
+
+#### Scenario: Add a note from the Notes tab
+- **WHEN** the admin selects "Add note", types "Asked for a second site" and selects "Add note" in the sheet
+- **THEN** the sheet closes, a toast confirms the note, and the note is the first row with the admin as author
 
 #### Scenario: Filter by kind
 - **WHEN** the admin filters the kind by "Suspended"
