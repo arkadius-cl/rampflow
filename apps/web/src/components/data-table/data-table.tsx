@@ -1,4 +1,4 @@
-import type { FacetSets, ListPage, ValueSet } from '@rampflow/shared/contract/list';
+import type { FacetSets, ListPage, ParamSchemas, ValueSet } from '@rampflow/shared/contract/list';
 import { isValueOf, SortOrder } from '@rampflow/shared/values';
 import {
   type ColumnDef,
@@ -56,7 +56,12 @@ const PLACEHOLDER_ROWS = 5;
 const apply = <T,>(updater: Updater<T>, current: T): T =>
   typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
 
-export function DataTable<TData extends RowData, S extends ValueSet, F extends FacetSets>({
+export function DataTable<
+  TData extends RowData,
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+>({
   controls,
   query,
   columns,
@@ -68,7 +73,7 @@ export function DataTable<TData extends RowData, S extends ValueSet, F extends F
   empty,
   noMatchTitle,
 }: {
-  controls: ListControls<S, F>;
+  controls: ListControls<S, F, P>;
   query: DataTableQuery<TData>;
   /** Column ids equal the list's sort keys where the column sorts. */
   columns: ColumnDef<typeof dataTableFeatures, TData>[];

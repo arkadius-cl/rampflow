@@ -121,7 +121,9 @@ describe('02 activated_at backfill', () => {
       };
     });
     expect(rows.tenant.activated_at).toEqual(createdAt);
-    expect(tenantStatus({ activatedAt: rows.tenant.activated_at })).toBe(TenantStatus.active);
+    expect(tenantStatus({ activatedAt: rows.tenant.activated_at, suspendedAt: null })).toBe(
+      TenantStatus.active,
+    );
     expect(rows.carrier.activated_at).toBeNull();
   });
 });

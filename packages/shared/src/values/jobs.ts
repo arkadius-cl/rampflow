@@ -20,6 +20,8 @@ export const SystemActorName = {
   access: 'access',
   capacity: 'capacity',
   usage: 'usage',
+  /** The platform's read of a tenant's sites and onboarding progress (PL-06, ADR-0002). */
+  platform_read: 'platform_read',
   invitation: 'invitation',
   carrier_invitation: 'carrier_invitation',
   registration: 'registration',

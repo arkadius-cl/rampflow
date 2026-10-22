@@ -1,6 +1,6 @@
 import type { TenantStatus } from '@rampflow/shared/modules/core/values';
 import { BadgeTone } from '@rampflow/shared/values';
-import { CircleCheckIcon, type LucideIcon, SproutIcon } from 'lucide-react';
+import { CircleCheckIcon, CirclePauseIcon, type LucideIcon, SproutIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatusBadge } from '@/components/status-badge';
 
@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/status-badge';
 const TENANT_STATUS: Record<TenantStatus, { icon: LucideIcon; tone: BadgeTone }> = {
   onboarding: { icon: SproutIcon, tone: BadgeTone.planned },
   active: { icon: CircleCheckIcon, tone: BadgeTone.success },
+  suspended: { icon: CirclePauseIcon, tone: BadgeTone.danger },
 };
 
 export function TenantStatusBadge({ status }: { status: TenantStatus }) {

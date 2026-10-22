@@ -1,3 +1,4 @@
+import { SuspendedTenants } from '@rampflow/shared/modules/core/values';
 import {
   EmailTemplate,
   EnqueueResult,
@@ -206,16 +207,22 @@ function outboxRows(tx: Tx, now: Date): Promise<JobStats> {
 
 async function runRetention(ctx: JobContext): Promise<JobStats> {
   const now = ctx.clock.now();
-  const tenants = await forEachTenant(ctx, JOB, async (tx, tenantId) => {
-    const scope: Scope = {
-      party: ScopeParty.tenant,
-      tenantId,
-      siteIds: 'all',
-      actor: { kind: TenantActorKind.system, job: JOB },
-    };
-    const limits = await retentionLimits(await loadAccess(tx, scope, ctx.clock));
-    return applyTenantRetention(tx, tenantId, limits, now);
-  });
+  // Suspended tenants keep their retention rules: their data is not theirs to keep longer.
+  const tenants = await forEachTenant(
+    ctx,
+    JOB,
+    async (tx, tenantId) => {
+      const scope: Scope = {
+        party: ScopeParty.tenant,
+        tenantId,
+        siteIds: 'all',
+        actor: { kind: TenantActorKind.system, job: JOB },
+      };
+      const limits = await retentionLimits(await loadAccess(tx, scope, ctx.clock));
+      return applyTenantRetention(tx, tenantId, limits, now);
+    },
+    { suspended: SuspendedTenants.include },
+  );
   return {
     ...tenants,
     ...(await inactiveCarrierUsers(ctx.tx, ctx.clock)),

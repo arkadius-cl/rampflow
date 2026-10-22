@@ -11,6 +11,7 @@ import {
   SignupStatus,
   TaxIdStatus,
   TaxIdType,
+  TenantNoteKind,
 } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import { PrivacyRequestKind } from '@rampflow/shared/modules/privacy/values';
@@ -32,7 +33,13 @@ import {
 } from '../src/modules/booking/schema.resources.ts';
 import { tenantLogo } from '../src/modules/brand/schema.ts';
 import { type SignupId, tenantSignup } from '../src/modules/core/schema.signup.ts';
-import { entitlementOverride, invitation, org, settingValue } from '../src/modules/core/schema.ts';
+import {
+  entitlementOverride,
+  invitation,
+  org,
+  settingValue,
+  tenantNote,
+} from '../src/modules/core/schema.ts';
 import { outboxMessage } from '../src/modules/notify/schema.ts';
 import { privacyRequestLog } from '../src/modules/privacy/schema.ts';
 import {
@@ -115,6 +122,12 @@ async function side(o: OwnerDb, w: World, s: WorldSide, label: string): Promise<
     key: 'core.max_sites',
     value: wrapJson(null),
     updatedBy: by,
+  });
+  await o.insert(tenantNote).values({
+    tenantId: s.tenantId,
+    kind: TenantNoteKind.note,
+    body: `Model note for ${label}`,
+    authorId: by,
   });
   await o.insert(settingValue).values([
     { tenantId: s.tenantId, key: 'yard.grace_minutes', value: wrapJson(10), updatedBy: by },

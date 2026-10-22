@@ -12,10 +12,18 @@ import type {
   TenantList,
   TenantListQuery,
   TenantSummary,
+  TenantTaxId,
   UpdateTenant,
 } from '@rampflow/shared/modules/core/api.platform';
 import { tenantStatus } from '@rampflow/shared/modules/core/tenant-status';
-import { TenantStatus } from '@rampflow/shared/modules/core/values';
+import {
+  type TaxIdStatus,
+  type TaxIdType,
+  TenantCountryFacet,
+  TenantFlag,
+  TenantListView,
+  TenantStatus,
+} from '@rampflow/shared/modules/core/values';
 import {
   EntitlementKind,
   EntitlementSource,
@@ -98,6 +106,12 @@ interface TenantRow {
   package: PackageId;
   createdAt: Date;
   activatedAt: Date | null;
+  suspendedAt: Date | null;
+  country: string | null;
+  taxIdType: TaxIdType | null;
+  taxIdValue: string | null;
+  taxIdStatus: TaxIdStatus | null;
+  possibleDuplicate: boolean;
 }
 
 const TENANT_COLUMNS = {
@@ -106,13 +120,25 @@ const TENANT_COLUMNS = {
   package: tenantSubscription.package,
   createdAt: org.createdAt,
   activatedAt: org.activatedAt,
+  suspendedAt: org.suspendedAt,
+  country: org.country,
+  taxIdType: org.taxIdType,
+  taxIdValue: org.taxIdValue,
+  taxIdStatus: org.taxIdStatus,
+  possibleDuplicate: org.possibleDuplicate,
 };
 
 /** The tenants in each status, as `tenantStatus` derives it. */
 const STATUS_WHERE: Record<TenantStatus, SQL> = {
-  [TenantStatus.onboarding]: isNull(org.activatedAt),
-  [TenantStatus.active]: isNotNull(org.activatedAt),
+  [TenantStatus.onboarding]: and(isNull(org.suspendedAt), isNull(org.activatedAt)) as SQL,
+  [TenantStatus.active]: and(isNull(org.suspendedAt), isNotNull(org.activatedAt)) as SQL,
+  [TenantStatus.suspended]: isNotNull(org.suspendedAt),
 };
+
+const taxIdOf = (row: TenantRow): TenantTaxId | null =>
+  row.taxIdType && row.taxIdValue && row.taxIdStatus
+    ? { type: row.taxIdType, value: row.taxIdValue, status: row.taxIdStatus }
+    : null;
 
 const asTenantRow = (r: { id: string } & Omit<TenantRow, 'id'>): TenantRow => ({
   ...r,
@@ -134,12 +160,19 @@ async function summaries(tx: Tx, rows: readonly TenantRow[], now: Date) {
   return rows.map((row) => {
     const u = usage.get(row.id);
     if (!u) throw new Error(`no usage for ${row.id}`);
-    const { activatedAt, ...rest } = row;
     return {
       summary: {
-        ...rest,
+        id: row.id,
+        name: row.name,
+        package: row.package,
         createdAt: row.createdAt.toISOString(),
-        status: tenantStatus({ activatedAt }),
+        status: tenantStatus(row),
+        country: row.country,
+        taxId: taxIdOf(row),
+        // TODO(04 API agent, task 3.3): the lateral admin subquery and the activity subquery.
+        admin: null,
+        lastActivityAt: null,
+        possibleDuplicate: row.possibleDuplicate,
         usage: u.usage,
       } satisfies TenantSummary,
       entitlements: u.entitlements,
@@ -176,6 +209,7 @@ export async function listTenants(tx: Tx, state: TenantListState, now: Date): Pr
     .select({
       [TenantStatus.onboarding]: sql<number>`(count(*) filter (where ${STATUS_WHERE.onboarding}))::int`,
       [TenantStatus.active]: sql<number>`(count(*) filter (where ${STATUS_WHERE.active}))::int`,
+      [TenantStatus.suspended]: sql<number>`(count(*) filter (where ${STATUS_WHERE.suspended}))::int`,
     })
     .from(org)
     .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
@@ -186,7 +220,22 @@ export async function listTenants(tx: Tx, state: TenantListState, now: Date): Pr
     .from(org)
     .innerJoin(tenantSubscription, eq(tenantSubscription.tenantId, org.id))
     .where(where)
-    .orderBy(...orderBy(state, { name: org.name, createdAt: org.createdAt }, org.id))
+    // TODO(04 API agent, task 3.3): status, package, country and lastActivityAt sorts, the view,
+    // the country and flag facets, duplicateOf and the view counts (design decision 1).
+    .orderBy(
+      ...orderBy(
+        state,
+        {
+          name: org.name,
+          createdAt: org.createdAt,
+          status: org.activatedAt,
+          package: tenantSubscription.package,
+          country: org.country,
+          lastActivityAt: org.createdAt,
+        },
+        org.id,
+      ),
+    )
     .limit(limit)
     .offset(offset);
   const items = (await summaries(tx, rows.map(asTenantRow), now)).map((s) => s.summary);
@@ -197,8 +246,12 @@ export async function listTenants(tx: Tx, state: TenantListState, now: Date): Pr
       status: {
         [TenantStatus.onboarding]: byStatus?.onboarding ?? 0,
         [TenantStatus.active]: byStatus?.active ?? 0,
+        [TenantStatus.suspended]: byStatus?.suspended ?? 0,
       },
+      country: facetCounts(values(TenantCountryFacet), []),
+      flag: facetCounts(values(TenantFlag), []),
     },
+    views: { [TenantListView.attention]: 0, [TenantListView.all]: totalRow?.n ?? 0 },
   };
 }
 
@@ -232,6 +285,12 @@ export async function tenantDetail(tx: Tx, tenantId: TenantId, now: Date): Promi
     .orderBy(asc(invitation.createdAt));
   return {
     ...s,
+    activatedAt: row.activatedAt?.toISOString() ?? null,
+    // TODO(04 API agent, task 5.1): taxId.checkedAt, suspension, admins and onboarding.
+    taxId: s.taxId ? { ...s.taxId, checkedAt: null } : null,
+    suspension: null,
+    admins: [],
+    onboarding: null,
     entitlements: entitlementViews(row.package, entitlements),
     overrides: overrides.map(
       (o): OverrideView => ({

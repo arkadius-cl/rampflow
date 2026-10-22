@@ -10,6 +10,8 @@ export const EmailTemplate = {
   core_password_reset: 'core.password-reset',
   core_signup_known_account: 'core.signup-known-account',
   core_signup_verify: 'core.signup-verify',
+  core_tenant_suspended: 'core.tenant-suspended',
+  core_tenant_reactivated: 'core.tenant-reactivated',
   booking_cancelled: 'booking.cancelled',
   booking_carrier_invitation: 'booking.carrier-invitation',
   booking_changed: 'booking.changed',

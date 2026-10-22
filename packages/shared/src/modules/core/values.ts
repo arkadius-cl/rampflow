@@ -44,8 +44,80 @@ export type UsageKey = ValueOf<typeof UsageKey>;
 export const TenantSortKey = {
   name: 'name',
   createdAt: 'createdAt',
+  status: 'status',
+  package: 'package',
+  country: 'country',
+  lastActivityAt: 'lastActivityAt',
 } as const;
 export type TenantSortKey = ValueOf<typeof TenantSortKey>;
+
+/** The flags facet of the tenant list (PL-04): set at registration, or by the VIES check. */
+export const TenantFlag = {
+  possible_duplicate: 'possible_duplicate',
+  tax_id_unverified: 'tax_id_unverified',
+} as const;
+export type TenantFlag = ValueOf<typeof TenantFlag>;
+
+/** The views of the tenant list (PL-04): the tenants with work to do, or every tenant. */
+export const TenantListView = {
+  attention: 'attention',
+  all: 'all',
+} as const;
+export type TenantListView = ValueOf<typeof TenantListView>;
+
+/** `tenant_note.kind`: a free note, or the entry a suspension or reactivation writes (PL-08). */
+export const TenantNoteKind = {
+  note: 'note',
+  suspended: 'suspended',
+  reactivated: 'reactivated',
+} as const;
+export type TenantNoteKind = ValueOf<typeof TenantNoteKind>;
+
+export const TenantNoteSortKey = {
+  createdAt: 'createdAt',
+} as const;
+export type TenantNoteSortKey = ValueOf<typeof TenantNoteSortKey>;
+
+/** The columns the tenant hub's Members tab sorts by (PL-06). */
+export const PlatformMemberSortKey = {
+  name: 'name',
+  email: 'email',
+  role: 'role',
+  lastActivityAt: 'lastActivityAt',
+  since: 'since',
+} as const;
+export type PlatformMemberSortKey = ValueOf<typeof PlatformMemberSortKey>;
+
+/** A row of the Members tab: a member, or an open invitation (PL-06). */
+export const PlatformMemberKind = {
+  member: 'member',
+  invitation: 'invitation',
+} as const;
+export type PlatformMemberKind = ValueOf<typeof PlatformMemberKind>;
+
+/** The state facet of the Members tab (PL-06). */
+export const PlatformMemberState = {
+  member: 'member',
+  disabled: 'disabled',
+  invited: 'invited',
+  expired: 'expired',
+} as const;
+export type PlatformMemberState = ValueOf<typeof PlatformMemberState>;
+
+/** The columns the tenant hub's Sites tab sorts by (PL-06). */
+export const PlatformSiteSortKey = {
+  name: 'name',
+  city: 'city',
+  createdAt: 'createdAt',
+} as const;
+export type PlatformSiteSortKey = ValueOf<typeof PlatformSiteSortKey>;
+
+/** Whether a job's `forEachTenant` visits suspended tenants (PL-07, ADR-0018). */
+export const SuspendedTenants = {
+  skip: 'skip',
+  include: 'include',
+} as const;
+export type SuspendedTenants = ValueOf<typeof SuspendedTenants>;
 
 /** `auth_token.kind`: the tokens the core module emails to a user without a session. */
 export const AuthTokenKind = {
@@ -215,6 +287,10 @@ export const EuCountry = {
 } as const;
 export type EuCountry = ValueOf<typeof EuCountry>;
 
+/** The Country facet of the tenant list (PL-04): the EU-27 plus `none` for "not set". */
+export const TenantCountryFacet = { ...EuCountry, none: 'none' } as const;
+export type TenantCountryFacet = ValueOf<typeof TenantCountryFacet>;
+
 /** The groups of the admitted-countries editor (PL-03): EU member states and the rest. */
 export const CountryGroup = {
   eu: 'eu',
@@ -288,10 +364,11 @@ export const AltchaState = {
 } as const;
 export type AltchaState = ValueOf<typeof AltchaState>;
 
-/** Derived from `org.activated_at`, never stored (tenant-lifecycle). */
+/** Derived from `org.suspended_at` and `org.activated_at`, never stored (tenant-lifecycle). */
 export const TenantStatus = {
   onboarding: 'onboarding',
   active: 'active',
+  suspended: 'suspended',
 } as const;
 export type TenantStatus = ValueOf<typeof TenantStatus>;
 

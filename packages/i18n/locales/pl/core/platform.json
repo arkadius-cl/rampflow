@@ -33,11 +33,14 @@
     "created_at": "Utworzono",
     "no_match": "Brak pasujących klientów",
     "search": "Szukaj klientów po nazwie",
-    "status": "Status"
+    "status": "Status",
+    "country": "Kraj",
+    "flags": "Flagi"
   },
   "tenant_status": {
     "onboarding": "Wdrażanie",
-    "active": "Aktywny"
+    "active": "Aktywny",
+    "suspended": "Zawieszony"
   },
   "packages": {
     "title": "Pakiety",
@@ -110,5 +113,9 @@
     "collapse_all": "Zwiń wszystkie",
     "header": "{{module}} ({{count}})",
     "summary": "{{on}} z {{total}} funkcji włączonych"
+  },
+  "tenant_flag": {
+    "possible_duplicate": "Możliwy duplikat",
+    "tax_id_unverified": "Numer podatkowy niezweryfikowany"
   }
 }

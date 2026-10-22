@@ -4,6 +4,7 @@ import {
   type CarrierContextTenant,
   logoPath,
 } from '@rampflow/shared/modules/core/api.context';
+import { TenantStatus } from '@rampflow/shared/modules/core/values';
 import { Feature, ScopeParty } from '@rampflow/shared/values';
 import { asc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -59,11 +60,15 @@ export const carrier = new Hono<AppEnv>().get(
       );
       const on = atTenant.entitlements;
       const logo = logos.get(link.id as TenantId);
+      // A suspended tenant stays listed for its old bookings, but takes no new ones (PL-07).
+      const suspended = atTenant.tenantStatus === TenantStatus.suspended;
       tenants.push({
         id: link.id,
         name: link.name,
         linkStatus: link.status,
-        carrierPortal: Boolean(on?.modules.booking && on.features[Feature.booking.carrier_portal]),
+        carrierPortal:
+          !suspended && Boolean(on?.modules.booking && on.features[Feature.booking.carrier_portal]),
+        suspended,
         logoUrl:
           logo && on?.modules.brand && on.features[Feature.brand.logo]
             ? logoPath(link.id, logo)

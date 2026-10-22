@@ -1,9 +1,10 @@
 import { globSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { SuspendedTenants } from '@rampflow/shared/modules/core/values';
 import type { JobName } from '@rampflow/shared/values';
-import { ScopeParty } from '@rampflow/shared/values';
-import { eq, sql } from 'drizzle-orm';
+import { OrgKind, ScopeParty } from '@rampflow/shared/values';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { TenantId } from '../db/ids.ts';
 import { db } from '../db/pool.ts';
 import { asScope, type Tx } from '../db/scope.ts';
@@ -73,15 +74,22 @@ export function runJobTick(job: RunnableJob, ctx: Omit<JobContext, 'tx'>): Promi
 
 /**
  * Runs `step` for every tenant under a tenant scope with actor `system:<job>`, each in its own
- * savepoint: one tenant's failure is logged and rolled back, the others still commit.
+ * savepoint: one tenant's failure is logged and rolled back, the others still commit. Suspended
+ * tenants are skipped unless the job includes them (ADR-0018); retention does.
  */
 export async function forEachTenant(
   ctx: JobContext,
   job: JobName,
   step: (tx: Tx, tenantId: TenantId) => Promise<JobStats>,
+  options: { suspended: SuspendedTenants } = { suspended: SuspendedTenants.skip },
 ): Promise<JobStats> {
+  const unsuspended =
+    options.suspended === SuspendedTenants.skip ? isNull(org.suspendedAt) : undefined;
   const tenants = await asScope(ctx.tx, systemScope(job), (tx) =>
-    tx.select({ id: org.id }).from(org).where(eq(org.kind, 'tenant')),
+    tx
+      .select({ id: org.id })
+      .from(org)
+      .where(and(eq(org.kind, OrgKind.tenant), unsuspended)),
   );
   const total: JobStats = { tenants: tenants.length, failedTenants: 0 };
   for (const { id } of tenants) {

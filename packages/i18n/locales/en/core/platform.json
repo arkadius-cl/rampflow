@@ -33,11 +33,14 @@
     "created_at": "Created",
     "no_match": "No tenants match",
     "search": "Search tenants by name",
-    "status": "Status"
+    "status": "Status",
+    "country": "Country",
+    "flags": "Flags"
   },
   "tenant_status": {
     "onboarding": "Onboarding",
-    "active": "Active"
+    "active": "Active",
+    "suspended": "Suspended"
   },
   "packages": {
     "title": "Packages",
@@ -110,5 +113,9 @@
     "collapse_all": "Collapse all",
     "header": "{{module}} ({{count}})",
     "summary": "{{on}} of {{total}} features on"
+  },
+  "tenant_flag": {
+    "possible_duplicate": "Possible duplicate",
+    "tax_id_unverified": "Tax id unverified"
   }
 }

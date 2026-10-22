@@ -9,6 +9,7 @@ import {
   TaxIdStatus,
   TaxIdType,
   TemperatureZone,
+  TenantNoteKind,
 } from '@rampflow/shared/modules/core/values';
 import {
   ColumnMode,
@@ -90,10 +91,16 @@ export const org = pgTable(
     possibleDuplicate: boolean('possible_duplicate').notNull().default(false),
     /** Null while the tenant is onboarding (`tenantStatus`). */
     activatedAt: instant('activated_at'),
+    /** Set by the platform while the tenant is suspended (PL-07); the reason is a tenant_note. */
+    suspendedAt: instant('suspended_at'),
     createdAt: createdAt(),
   },
   (t) => [
     unique('org_id_kind_key').on(t.id, t.kind),
+    check(
+      'org_suspended_tenant_only',
+      sql`${t.suspendedAt} is null or ${oneOf(t.kind, [OrgKind.tenant])}`,
+    ),
     uniqueIndex('org_single_platform').on(t.kind).where(sql`${t.kind} = 'platform'`),
     index('org_tax_id_value_idx')
       .on(t.taxIdValue)
@@ -151,6 +158,35 @@ export const org = pgTable(
       PolicyCommand.insert,
       sql`${t.kind} = 'carrier' or (${oneOf(t.kind, [OrgKind.tenant])} and ${t.activatedAt} is null)`,
     ),
+  ],
+);
+
+/**
+ * The platform's internal history of a tenant (PL-08): free notes, and the entry each suspension
+ * and reactivation writes with its reason. Platform-only and append-only: no update or delete
+ * policy exists, so notes go only with their tenant (FK cascade).
+ */
+export const tenantNote = pgTable(
+  'tenant_note',
+  {
+    id: primaryId<'tenant_note'>(),
+    tenantId: uuid('tenant_id')
+      .$type<TenantId>()
+      .notNull()
+      .references(() => org.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: values(TenantNoteKind) }).notNull(),
+    body: text('body').notNull(),
+    authorId: uuid('author_id')
+      .$type<UserId>()
+      .references(() => appUser.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('tenant_note_tenant_created_idx').on(t.tenantId, t.createdAt),
+    check('tenant_note_kind_check', oneOf(t.kind, values(TenantNoteKind))),
+    check('tenant_note_body_length', sql`char_length(trim(${t.body})) between 1 and 2000`),
+    allow(ScopeParty.platform, PolicyCommand.select, always),
+    allow(ScopeParty.platform, PolicyCommand.insert, always),
   ],
 );
 

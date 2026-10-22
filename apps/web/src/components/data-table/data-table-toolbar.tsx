@@ -1,4 +1,4 @@
-import type { FacetSets, ValueSet } from '@rampflow/shared/contract/list';
+import type { FacetSets, ParamSchemas, ValueSet } from '@rampflow/shared/contract/list';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,14 +21,18 @@ export const facetEntries = <F extends FacetSets>(facets: FacetConfigs<F>) =>
   Object.entries(facets) as [keyof F & string, FacetConfig][];
 
 /** Search, one filter per facet, "Clear filters" while any is set, a spinner while fetching. */
-export function DataTableToolbar<S extends ValueSet, F extends FacetSets>({
+export function DataTableToolbar<
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+>({
   controls,
   facets,
   facetCounts,
   searchPlaceholder,
   fetching,
 }: {
-  controls: ListControls<S, F>;
+  controls: ListControls<S, F, P>;
   facets: FacetConfigs<F>;
   facetCounts: Readonly<Record<string, Readonly<Record<string, number>>>> | undefined;
   searchPlaceholder: string;

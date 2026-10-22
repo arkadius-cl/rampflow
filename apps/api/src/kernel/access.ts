@@ -52,7 +52,10 @@ export interface Access {
   permissions: ReadonlySet<PermissionKey>;
   /** The acting tenant's; `null` for carrier (cross-tenant), platform and tenant-less scopes. */
   entitlements: Entitlements | null;
-  /** The acting tenant's (ON-02); `null` outside the tenant and carrier-at-tenant parties. */
+  /**
+   * The acting tenant's (ON-02, PL-07); `null` outside the tenant, carrier-at-tenant, driver
+   * and public parties. `scoped()` refuses a suspended tenant's request right after this read.
+   */
   tenantStatus: TenantStatus | null;
   setting<K extends SettingKey>(
     key: K,
@@ -156,15 +159,13 @@ function entitlementsOf(tx: Tx, scope: Scope, tenantId: TenantId, now: Date) {
   return asScope(tx, asTenant, (inner) => loadEntitlements(inner, tenantId, now));
 }
 
-/** Both parties may select the tenant's org row; the others never gate on its status. */
-async function tenantStatusOf(tx: Tx, scope: Scope): Promise<TenantStatus | null> {
-  if (scope.party !== ScopeParty.tenant && scope.party !== ScopeParty.carrier_at_tenant) {
-    return null;
-  }
+/** Every party acting at one tenant may select its org row; the others never gate on its status. */
+async function tenantStatusOf(tx: Tx, tenantId: TenantId | null): Promise<TenantStatus | null> {
+  if (tenantId === null) return null;
   const [row] = await tx
-    .select({ activatedAt: org.activatedAt })
+    .select({ activatedAt: org.activatedAt, suspendedAt: org.suspendedAt })
     .from(org)
-    .where(eq(org.id, scope.tenantId as string as OrgId));
+    .where(eq(org.id, tenantId as string as OrgId));
   return row ? tenantStatus(row) : null;
 }
 
@@ -175,7 +176,7 @@ export async function loadAccess(tx: Tx, scope: Scope, clock: Clock): Promise<Ac
     role,
     permissions: role ? catalogPermissions(role) : NO_PERMISSIONS,
     entitlements: tenantId ? await entitlementsOf(tx, scope, tenantId, clock.now()) : null,
-    tenantStatus: await tenantStatusOf(tx, scope),
+    tenantStatus: await tenantStatusOf(tx, tenantId),
     setting: settingLoader(tx, tenantId),
   };
 }

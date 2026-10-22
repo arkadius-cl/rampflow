@@ -31,11 +31,13 @@
     "account_exists": "An account with this email already exists. Please sign in.",
     "profile_mismatch": "These docks have another door type, temperature zone or ADR setting than the pool. A pool holds docks of one profile only.",
     "dock_without_load_type": "These docks would no longer be bookable for any load type. Link another active load type to their pool first.",
-    "dock_needs_resource": "These docks belong to this hall pool and have nowhere else to go. Move them into another pool or book them as single docks instead."
+    "dock_needs_resource": "These docks belong to this hall pool and have nowhere else to go. Move them into another pool or book them as single docks instead.",
+    "tax_id_country": "The country does not fit the stored tax id."
   },
   "limit_reached": "Your package limit is reached.",
   "validation_failed": "Some fields need your attention.",
   "rate_limited": "Too many attempts. Wait a moment and try again.",
   "internal_error": "Something went wrong on our side. Try again.",
-  "onboarding_incomplete": "Finish onboarding first: add a site, a hall and a dock. This action opens once the first dock exists."
+  "onboarding_incomplete": "Finish onboarding first: add a site, a hall and a dock. This action opens once the first dock exists.",
+  "tenant_suspended": "The organisation is suspended. Contact its admin or the platform."
 }

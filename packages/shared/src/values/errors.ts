@@ -14,6 +14,8 @@ export const ErrorCode = {
   internal_error: 'internal_error',
   /** The tenant has no dock yet; carrier-facing and booking actions wait (ON-03). */
   onboarding_incomplete: 'onboarding_incomplete',
+  /** The tenant is suspended by the platform; its staff and carriers wait (PL-07, ADR-0018). */
+  tenant_suspended: 'tenant_suspended',
 } as const;
 export type ErrorCode = ValueOf<typeof ErrorCode>;
 
@@ -46,6 +48,8 @@ export const ConflictReason = {
   dock_without_load_type: 'dock_without_load_type',
   /** Docks removed from their own default pool have nowhere to go. */
   dock_needs_resource: 'dock_needs_resource',
+  /** The country does not fit the tenant's stored tax id (PL-06). */
+  tax_id_country: 'tax_id_country',
 } as const;
 export type ConflictReason = ValueOf<typeof ConflictReason>;
 

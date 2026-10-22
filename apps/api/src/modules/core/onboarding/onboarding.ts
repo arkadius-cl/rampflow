@@ -32,7 +32,7 @@ export async function activateTenant(tx: Tx, tenantId: TenantId, now: Date): Pro
 /** ON-01: the three steps to the first dock, each with the site its link opens. */
 export async function onboardingView(tx: Tx, tenantId: TenantId): Promise<OnboardingView> {
   const [tenant] = await tx
-    .select({ activatedAt: org.activatedAt })
+    .select({ activatedAt: org.activatedAt, suspendedAt: org.suspendedAt })
     .from(org)
     .where(eq(org.id, tenantId as string as OrgId));
   const activeSites = and(eq(site.tenantId, tenantId), eq(site.active, true));
@@ -82,7 +82,7 @@ export async function onboardingView(tx: Tx, tenantId: TenantId): Promise<Onboar
   };
   const activatedAt = tenant?.activatedAt ?? null;
   return {
-    status: tenantStatus({ activatedAt }),
+    status: tenantStatus({ activatedAt, suspendedAt: tenant?.suspendedAt ?? null }),
     activatedAt: activatedAt?.toISOString() ?? null,
     steps: values(OnboardingStep).map((id) => steps[id]),
   };

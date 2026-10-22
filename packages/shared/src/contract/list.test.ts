@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TenantListQuery } from '../modules/core/api.platform.ts';
-import { TenantSortKey } from '../modules/core/values.ts';
+import { TenantListView, TenantSortKey } from '../modules/core/values.ts';
 import { SortOrder } from '../values/list.ts';
 import { PackageId } from '../values/packages.ts';
 
@@ -21,8 +21,12 @@ describe('list query (API)', () => {
   it('parses every parameter from strings', () => {
     expect(query.parse(params(FULL))).toEqual({
       q: 'acme',
-      package: [PackageId.start, PackageId.pro],
       status: [],
+      package: [PackageId.start, PackageId.pro],
+      country: [],
+      flag: [],
+      view: TenantListView.attention,
+      duplicateOf: undefined,
       sort: TenantSortKey.createdAt,
       order: SortOrder.desc,
       page: 2,
@@ -34,13 +38,31 @@ describe('list query (API)', () => {
     expect(query.parse({})).toEqual(defaults);
     expect(defaults).toEqual({
       q: '',
-      package: [],
       status: [],
+      package: [],
+      country: [],
+      flag: [],
+      view: TenantListView.attention,
+      duplicateOf: undefined,
       sort: TenantSortKey.name,
       order: SortOrder.asc,
       page: 1,
       pageSize: 25,
     });
+  });
+
+  it('reads the extra params, with their default left out of the query and the URL', () => {
+    const id = '0190f3b2-7c1e-7a2b-9c3d-0123456789ab';
+    const state = query.parse({ view: TenantListView.all, duplicateOf: id });
+    expect(state.view).toBe(TenantListView.all);
+    expect(state.duplicateOf).toBe(id);
+    expect(toQuery(state)).toEqual({ view: TenantListView.all, duplicateOf: id });
+    expect(toSearch(defaults)).toEqual({});
+    expect(search.parse({ view: 'urgent', duplicateOf: 'nope' })).toMatchObject({
+      view: TenantListView.attention,
+      duplicateOf: undefined,
+    });
+    expect(TenantListQuery.canonical({ view: TenantListView.attention })).toEqual({});
   });
 
   it.each([
@@ -52,6 +74,8 @@ describe('list query (API)', () => {
     ['order=up', ['order']],
     ['package=gold', ['package', 0]],
     ['package=pro,gold', ['package', 1]],
+    ['view=urgent', ['view']],
+    ['duplicateOf=abc', ['duplicateOf']],
     [`q=${'x'.repeat(101)}`, ['q']],
     ['foo=1', ['foo']],
   ])('rejects %s at its path', (qs, path) => {

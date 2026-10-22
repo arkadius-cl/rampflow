@@ -459,11 +459,13 @@ describe('PL-04 tenant list', () => {
     expect(page.facets.status).toEqual({
       [TenantStatus.onboarding]: 1,
       [TenantStatus.active]: 2,
+      [TenantStatus.suspended]: 0,
     });
     const start = await list({ q: `${search} acme`, package: PackageId.start });
     expect(start.facets.status).toEqual({
       [TenantStatus.onboarding]: 1,
       [TenantStatus.active]: 1,
+      [TenantStatus.suspended]: 0,
     });
     expect(page.facets.package).toEqual({
       [PackageId.start]: 1,

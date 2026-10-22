@@ -13,14 +13,23 @@ export function contains(q: string, ...columns: SQLWrapper[]): SQL | undefined {
   return or(...columns.map((column) => sql`${column} ilike ${pattern} escape '\\'`));
 }
 
-/** The sort column in the requested direction, then `id` ascending, so pages never overlap. */
+/**
+ * The sort column in the requested direction, then `id` ascending, so pages never overlap. The
+ * keys in `nullsLast` put rows without a value after all others in both directions (Postgres
+ * puts nulls first on `desc` by default).
+ */
 export function orderBy<S extends string>(
   state: { sort: S; order: SortOrder },
   columns: Record<S, AnyColumn | SQL>,
   id: AnyColumn,
+  options: { nullsLast?: readonly S[] } = {},
 ): SQL[] {
   const column = columns[state.sort];
-  return [state.order === SortOrder.desc ? desc(column) : asc(column), asc(id)];
+  const directed = state.order === SortOrder.desc ? desc(column) : asc(column);
+  const nullsLast = options.nullsLast?.includes(state.sort)
+    ? sql`${directed} nulls last`
+    : directed;
+  return [nullsLast, asc(id)];
 }
 
 export function pageWindow(state: { page: number; pageSize: number }): {

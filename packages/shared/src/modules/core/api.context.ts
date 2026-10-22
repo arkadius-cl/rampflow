@@ -38,8 +38,10 @@ export interface CarrierContextTenant {
   id: string;
   name: string;
   linkStatus: CarrierLinkStatus;
-  /** The tenant's `booking.carrier_portal` entitlement. */
+  /** The tenant's `booking.carrier_portal` entitlement; `false` while the tenant is suspended. */
   carrierPortal: boolean;
+  /** Suspended by the platform (PL-07): bookings there stay readable, nothing else works. */
+  suspended: boolean;
   logoUrl: string | null;
 }
 

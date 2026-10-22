@@ -5,7 +5,13 @@ import {
   TenantListQuery,
   type TenantSummary,
 } from '@rampflow/shared/modules/core/api.platform';
-import { TenantSortKey, TenantStatus, UsageKey } from '@rampflow/shared/modules/core/values';
+import {
+  TenantCountryFacet,
+  TenantFlag,
+  TenantSortKey,
+  TenantStatus,
+  UsageKey,
+} from '@rampflow/shared/modules/core/values';
 import { PackageId, Permission, values } from '@rampflow/shared/values';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -156,6 +162,18 @@ function TenantsPage() {
             options: values(TenantStatus).map((status) => ({
               value: status,
               label: t(($) => $.platform.tenant_status[status]),
+            })),
+          },
+          // TODO(04 web agent, task 4.1): translated country names, "Not set", zero counts hidden.
+          country: {
+            title: t(($) => $.platform.tenants.country),
+            options: values(TenantCountryFacet).map((value) => ({ value, label: value })),
+          },
+          flag: {
+            title: t(($) => $.platform.tenants.flags),
+            options: values(TenantFlag).map((value) => ({
+              value,
+              label: t(($) => $.platform.tenant_flag[value]),
             })),
           },
         }}

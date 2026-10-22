@@ -5,6 +5,7 @@ import type {
   ListSearch,
   ListState,
   PageSize,
+  ParamSchemas,
   ValueSet,
 } from '@rampflow/shared/contract/list';
 import type { SortOrder, ValueOf } from '@rampflow/shared/values';
@@ -16,14 +17,19 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 const SEARCH_DELAY_MS = 300;
 
 /** Writes the list's URL search; `replace` updates the current history entry. */
-export type ListNavigate<S extends ValueSet, F extends FacetSets> = (
-  search: ListSearch<S, F>,
-  replace: boolean,
-) => void;
+export type ListNavigate<
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+> = (search: ListSearch<S, F, P>, replace: boolean) => void;
 
-export interface ListControls<S extends ValueSet, F extends FacetSets> {
-  list: List<S, F>;
-  state: ListState<S, F>;
+export interface ListControls<
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+> {
+  list: List<S, F, P>;
+  state: ListState<S, F, P>;
   /** A search or a facet is set. */
   filtered: boolean;
   /** The search field's text, ahead of the URL while the user types. */
@@ -41,17 +47,21 @@ export interface ListControls<S extends ValueSet, F extends FacetSets> {
   clampPage: (page: ListPage<unknown>) => void;
 }
 
-export function useListState<S extends ValueSet, F extends FacetSets>(
-  list: List<S, F>,
-  state: ListState<S, F>,
-  navigate: ListNavigate<S, F>,
-): ListControls<S, F> {
+export function useListState<
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+>(
+  list: List<S, F, P>,
+  state: ListState<S, F, P>,
+  navigate: ListNavigate<S, F, P>,
+): ListControls<S, F, P> {
   const facetNames = Object.keys(list.spec.facets) as (keyof F & string)[];
   const [draft, setDraft] = useState(state.q);
   const committed = useRef(state.q);
   const typing = useRef(false);
 
-  const go = useEffectEvent((next: ListState<S, F>, replace = false) => {
+  const go = useEffectEvent((next: ListState<S, F, P>, replace = false) => {
     if (!replace) typing.current = false;
     navigate(list.toSearch(next), replace);
   });
@@ -111,12 +121,16 @@ export function useListState<S extends ValueSet, F extends FacetSets>(
  * leave it, facets stay comma-separated. TanStack Router types a middleware's result as the
  * validated search but stringifies whatever it returns, so the string form passes as that type.
  */
-export function canonicalSearch<S extends ValueSet, F extends FacetSets>(list: List<S, F>) {
+export function canonicalSearch<
+  S extends ValueSet,
+  F extends FacetSets,
+  P extends ParamSchemas = Record<never, never>,
+>(list: List<S, F, P>) {
   return ({
     search,
     next,
   }: {
-    search: ListState<S, F>;
-    next: (search: ListState<S, F>) => ListState<S, F>;
-  }) => list.canonical(next(search)) as unknown as ListState<S, F>;
+    search: ListState<S, F, P>;
+    next: (search: ListState<S, F, P>) => ListState<S, F, P>;
+  }) => list.canonical(next(search)) as unknown as ListState<S, F, P>;
 }

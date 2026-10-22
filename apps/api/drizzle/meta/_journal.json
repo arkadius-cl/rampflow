@@ -71,6 +71,13 @@
       "when": 1792587582233,
       "tag": "0009_03-tenant-onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792654684927,
+      "tag": "0010_04-platform-tenant-views",
+      "breakpoints": true
     }
   ]
 }

@@ -4226,7 +4226,11 @@
               "type": "string",
               "enum": [
                 "name",
-                "createdAt"
+                "createdAt",
+                "status",
+                "package",
+                "country",
+                "lastActivityAt"
               ]
             }
           },
@@ -4262,6 +4266,15 @@
             }
           },
           {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: onboarding, active, suspended"
+          },
+          {
             "name": "package",
             "in": "query",
             "required": false,
@@ -4271,13 +4284,44 @@
             "description": "Comma-separated: start, pro, enterprise"
           },
           {
-            "name": "status",
+            "name": "country",
             "in": "query",
             "required": false,
             "schema": {
               "type": "string"
             },
-            "description": "Comma-separated: onboarding, active"
+            "description": "Comma-separated: AT, BE, BG, CY, CZ, DE, DK, EE, ES, FI, FR, GR, HR, HU, IE, IT, LT, LU, LV, MT, NL, PL, PT, RO, SE, SI, SK, none"
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated: possible_duplicate, tax_id_unverified"
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "attention",
+              "type": "string",
+              "enum": [
+                "attention",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "duplicateOf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -4474,6 +4518,45 @@
                       "start",
                       "pro",
                       "enterprise"
+                    ]
+                  },
+                  "country": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "AT",
+                          "BE",
+                          "BG",
+                          "CY",
+                          "CZ",
+                          "DE",
+                          "DK",
+                          "EE",
+                          "ES",
+                          "FI",
+                          "FR",
+                          "GR",
+                          "HR",
+                          "HU",
+                          "IE",
+                          "IT",
+                          "LT",
+                          "LU",
+                          "LV",
+                          "MT",
+                          "NL",
+                          "PL",
+                          "PT",
+                          "RO",
+                          "SE",
+                          "SI",
+                          "SK"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
                     ]
                   }
                 }
@@ -20884,6 +20967,9 @@
           "carrierPortal": {
             "type": "boolean"
           },
+          "suspended": {
+            "type": "boolean"
+          },
           "logoUrl": {
             "type": [
               "string",
@@ -20896,6 +20982,7 @@
           "name",
           "linkStatus",
           "carrierPortal",
+          "suspended",
           "logoUrl"
         ]
       },
@@ -22391,6 +22478,7 @@
                   "not_found",
                   "onboarding_incomplete",
                   "rate_limited",
+                  "tenant_suspended",
                   "unauthorized",
                   "validation_failed"
                 ]
@@ -23200,7 +23288,8 @@
             "type": "string",
             "enum": [
               "active",
-              "onboarding"
+              "onboarding",
+              "suspended"
             ]
           },
           "activatedAt": {
@@ -25389,6 +25478,25 @@
           "acknowledgements"
         ]
       },
+      "TenantAdminView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ]
+      },
       "TenantContext": {
         "type": "object",
         "properties": {
@@ -25399,7 +25507,8 @@
             "type": "string",
             "enum": [
               "active",
-              "onboarding"
+              "onboarding",
+              "suspended"
             ]
           },
           "role": {
@@ -25541,6 +25650,78 @@
       "TenantDetail": {
         "type": "object",
         "properties": {
+          "activatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "taxId": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "de_stn",
+                  "eu_vat",
+                  "pl_nip"
+                ]
+              },
+              "value": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "unavailable",
+                  "unverified",
+                  "verified"
+                ]
+              },
+              "checkedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "value",
+              "status",
+              "checkedAt"
+            ]
+          },
+          "suspension": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenantSuspension"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "admins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantAdminView"
+            }
+          },
+          "onboarding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnboardingView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "entitlements": {
             "type": "array",
             "items": {
@@ -25580,14 +25761,53 @@
             "type": "string",
             "enum": [
               "active",
-              "onboarding"
+              "onboarding",
+              "suspended"
             ]
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "admin": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "invited": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "email",
+              "invited"
+            ]
+          },
+          "lastActivityAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "possibleDuplicate": {
+            "type": "boolean"
           },
           "usage": {
             "$ref": "#/components/schemas/TenantUsage"
           }
         },
         "required": [
+          "activatedAt",
+          "taxId",
+          "suspension",
+          "admins",
+          "onboarding",
           "entitlements",
           "overrides",
           "adminInvitations",
@@ -25596,6 +25816,10 @@
           "package",
           "createdAt",
           "status",
+          "country",
+          "admin",
+          "lastActivityAt",
+          "possibleDuplicate",
           "usage"
         ]
       },
@@ -25605,6 +25829,25 @@
           "facets": {
             "type": "object",
             "properties": {
+              "status": {
+                "type": "object",
+                "properties": {
+                  "onboarding": {
+                    "type": "number"
+                  },
+                  "active": {
+                    "type": "number"
+                  },
+                  "suspended": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "onboarding",
+                  "active",
+                  "suspended"
+                ]
+              },
               "package": {
                 "type": "object",
                 "properties": {
@@ -25624,25 +25867,161 @@
                   "enterprise"
                 ]
               },
-              "status": {
+              "country": {
                 "type": "object",
                 "properties": {
-                  "onboarding": {
+                  "AT": {
                     "type": "number"
                   },
-                  "active": {
+                  "BE": {
+                    "type": "number"
+                  },
+                  "BG": {
+                    "type": "number"
+                  },
+                  "CY": {
+                    "type": "number"
+                  },
+                  "CZ": {
+                    "type": "number"
+                  },
+                  "DE": {
+                    "type": "number"
+                  },
+                  "DK": {
+                    "type": "number"
+                  },
+                  "EE": {
+                    "type": "number"
+                  },
+                  "ES": {
+                    "type": "number"
+                  },
+                  "FI": {
+                    "type": "number"
+                  },
+                  "FR": {
+                    "type": "number"
+                  },
+                  "GR": {
+                    "type": "number"
+                  },
+                  "HR": {
+                    "type": "number"
+                  },
+                  "HU": {
+                    "type": "number"
+                  },
+                  "IE": {
+                    "type": "number"
+                  },
+                  "IT": {
+                    "type": "number"
+                  },
+                  "LT": {
+                    "type": "number"
+                  },
+                  "LU": {
+                    "type": "number"
+                  },
+                  "LV": {
+                    "type": "number"
+                  },
+                  "MT": {
+                    "type": "number"
+                  },
+                  "NL": {
+                    "type": "number"
+                  },
+                  "PL": {
+                    "type": "number"
+                  },
+                  "PT": {
+                    "type": "number"
+                  },
+                  "RO": {
+                    "type": "number"
+                  },
+                  "SE": {
+                    "type": "number"
+                  },
+                  "SI": {
+                    "type": "number"
+                  },
+                  "SK": {
+                    "type": "number"
+                  },
+                  "none": {
                     "type": "number"
                   }
                 },
                 "required": [
-                  "onboarding",
-                  "active"
+                  "AT",
+                  "BE",
+                  "BG",
+                  "CY",
+                  "CZ",
+                  "DE",
+                  "DK",
+                  "EE",
+                  "ES",
+                  "FI",
+                  "FR",
+                  "GR",
+                  "HR",
+                  "HU",
+                  "IE",
+                  "IT",
+                  "LT",
+                  "LU",
+                  "LV",
+                  "MT",
+                  "NL",
+                  "PL",
+                  "PT",
+                  "RO",
+                  "SE",
+                  "SI",
+                  "SK",
+                  "none"
+                ]
+              },
+              "flag": {
+                "type": "object",
+                "properties": {
+                  "possible_duplicate": {
+                    "type": "number"
+                  },
+                  "tax_id_unverified": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "possible_duplicate",
+                  "tax_id_unverified"
                 ]
               }
             },
             "required": [
+              "status",
               "package",
-              "status"
+              "country",
+              "flag"
+            ]
+          },
+          "views": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "number"
+              },
+              "attention": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "all",
+              "attention"
             ]
           },
           "items": {
@@ -25663,6 +26042,7 @@
         },
         "required": [
           "facets",
+          "views",
           "items",
           "total",
           "page",
@@ -25693,8 +26073,52 @@
             "type": "string",
             "enum": [
               "active",
-              "onboarding"
+              "onboarding",
+              "suspended"
             ]
+          },
+          "country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "taxId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TenantTaxId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "admin": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "invited": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "email",
+              "invited"
+            ]
+          },
+          "lastActivityAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "possibleDuplicate": {
+            "type": "boolean"
           },
           "usage": {
             "$ref": "#/components/schemas/TenantUsage"
@@ -25706,7 +26130,76 @@
           "package",
           "createdAt",
           "status",
+          "country",
+          "taxId",
+          "admin",
+          "lastActivityAt",
+          "possibleDuplicate",
           "usage"
+        ]
+      },
+      "TenantSuspension": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "reason",
+          "by"
+        ]
+      },
+      "TenantTaxId": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "de_stn",
+              "eu_vat",
+              "pl_nip"
+            ]
+          },
+          "value": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "unavailable",
+              "unverified",
+              "verified"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "value",
+          "status"
         ]
       },
       "TenantUsage": {

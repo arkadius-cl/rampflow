@@ -477,7 +477,7 @@ describe('RG-02 verify', () => {
       possibleDuplicate: false,
       activatedAt: null,
     });
-    expect(tenantStatus({ activatedAt: tenant?.activatedAt ?? null })).toBe(
+    expect(tenantStatus({ activatedAt: tenant?.activatedAt ?? null, suspendedAt: null })).toBe(
       TenantStatus.onboarding,
     );
     const [sub] = await ownerDb()

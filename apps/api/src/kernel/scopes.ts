@@ -37,11 +37,16 @@ export const DRIVER_COOKIE = 'rf_driver';
 export const SESSION_ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_TOUCH_MS = 5 * 60 * 1000;
+/** `app_user.last_seen_at` lags a signed-in user's requests by at most this much (PL-04). */
+const USER_SEEN_MS = 5 * 60 * 1000;
 
 const siteLimitedRoles: ReadonlySet<TenantRole> = new Set(values(SiteLimitedRole));
 const uuid = z.uuid();
 
-/** The signed-in user of the `rf_session` cookie, or `null`. Touches `last_seen_at` every 5 min. */
+/**
+ * The signed-in user of the `rf_session` cookie, or `null`. Touches `session.last_seen_at` and
+ * `app_user.last_seen_at` every 5 min; the user's row records the first request after sign-in.
+ */
 export async function sessionUser(c: Context<AppEnv>): Promise<UserId | null> {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return null;
@@ -60,9 +65,18 @@ export async function sessionUser(c: Context<AppEnv>): Promise<UserId | null> {
     const idle = now.getTime() - row.lastSeenAt.getTime();
     if (row.expiresAt <= now || idle >= SESSION_IDLE_MS) return null;
     const { userId } = row;
-    const [user] = await asScope(tx, { party: ScopeParty.user, userId }, () =>
-      tx.select({ disabledAt: appUser.disabledAt }).from(appUser).where(eq(appUser.id, userId)),
-    );
+    const user = await asScope(tx, { party: ScopeParty.user, userId }, async () => {
+      const [found] = await tx
+        .select({ disabledAt: appUser.disabledAt, lastSeenAt: appUser.lastSeenAt })
+        .from(appUser)
+        .where(eq(appUser.id, userId));
+      if (!found || found.disabledAt) return found;
+      const seen = found.lastSeenAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+      if (now.getTime() - seen >= USER_SEEN_MS) {
+        await tx.update(appUser).set({ lastSeenAt: now }).where(eq(appUser.id, userId));
+      }
+      return found;
+    });
     if (!user || user.disabledAt) return null;
     if (idle >= SESSION_TOUCH_MS) {
       await tx.update(session).set({ lastSeenAt: now }).where(eq(session.id, id));

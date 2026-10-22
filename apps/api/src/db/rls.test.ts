@@ -137,6 +137,7 @@ const ORACLE: Record<string, Rule> = {
     (is(c, ScopeParty.carrier) && linked(c, rel, r.tenant_id)),
   entitlement_override: (c, r) =>
     is(c, ScopeParty.platform) || (is(c, ScopeParty.tenant) && sameTenant(c, r)),
+  tenant_note: (c) => is(c, ScopeParty.platform),
   setting_value: (c, r, rel) =>
     (c.party !== null && r.tenant_id === null) ||
     (is(c, ScopeParty.tenant) &&

@@ -126,6 +126,7 @@ describe('GET /api/c/:orgId/context', () => {
         name: expect.any(String),
         linkStatus: 'deactivated',
         carrierPortal: false,
+        suspended: false,
         logoUrl: null,
       },
     ]);
