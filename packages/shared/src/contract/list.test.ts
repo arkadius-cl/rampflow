@@ -58,7 +58,8 @@ describe('list query (API)', () => {
     expect(state.duplicateOf).toBe(id);
     expect(toQuery(state)).toEqual({ view: TenantListView.all, duplicateOf: id });
     expect(toSearch(defaults)).toEqual({});
-    expect(search.parse({ view: 'urgent', duplicateOf: 'nope' })).toMatchObject({
+    const unknownView = 'urgent';
+    expect(search.parse({ view: unknownView, duplicateOf: 'nope' })).toMatchObject({
       view: TenantListView.attention,
       duplicateOf: undefined,
     });

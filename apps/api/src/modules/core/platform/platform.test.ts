@@ -19,6 +19,7 @@ import {
   Setting,
   SettingSource,
   SortOrder,
+  SqlState,
 } from '@rampflow/shared/values';
 import { and, eq, isNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -568,5 +569,16 @@ describe('PL-04 usage', () => {
     const tenantId: TenantId = t.A.tenantId;
     expect((await invite(t.A)).status).toBe(201);
     expect((await as(app, t.A.users.dispatcher).get(`/api/t/${tenantId}/sites`)).status).toBe(200);
+  });
+});
+
+describe('PL-07 suspension column', () => {
+  it('refuses a suspension time on a carrier org', async () => {
+    await expect(
+      ownerDb()
+        .update(org)
+        .set({ suspendedAt: WORLD_NOW })
+        .where(eq(org.id, w.A.carrierId as never)),
+    ).rejects.toMatchObject({ cause: { code: SqlState.check_violation } });
   });
 });

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BookingEventType, BookingStatus } from '@rampflow/shared/modules/booking/values';
+import { TenantNoteKind } from '@rampflow/shared/modules/core/values';
 import { DriverChannel } from '@rampflow/shared/modules/driver/values';
 import {
   CarrierRole,
@@ -19,7 +20,13 @@ import { ownerDb } from '../../test/db.ts';
 import { type World, world } from '../../test/world.ts';
 import { bookableResource } from '../modules/booking/schema.resources.ts';
 import { booking, bookingEvent } from '../modules/booking/schema.ts';
-import { invitation, membership, org, tenantSubscription } from '../modules/core/schema.ts';
+import {
+  invitation,
+  membership,
+  org,
+  tenantNote,
+  tenantSubscription,
+} from '../modules/core/schema.ts';
 import { SIGNUP_COMPANY } from '../modules/core/signup/fixtures.ts';
 import { outboxMessage } from '../modules/notify/schema.ts';
 import { hashToken, type OrgId, type TenantId } from './ids.ts';
@@ -245,6 +252,67 @@ describe('tenant creation by a signup token', () => {
         .insert(org)
         .values({ kind: OrgKind.carrier, name: 'Trans-Pol', activatedAt: new Date() }),
     ).rejects.toMatchObject({ cause: { code: SqlState.check_violation } });
+  });
+});
+
+describe('tenant notes', () => {
+  const platform = (): Scope => ({ party: ScopeParty.platform, userId: w.platformAdmin.id });
+
+  async function tenantWithNote() {
+    const [tenant] = await ownerDb()
+      .insert(org)
+      .values({ kind: OrgKind.tenant, name: `Notes ${randomUUID()}` })
+      .returning({ id: org.id });
+    const tenantId = tenant?.id as string as TenantId;
+    const [note] = await ownerDb()
+      .insert(tenantNote)
+      .values({
+        tenantId,
+        kind: TenantNoteKind.note,
+        body: 'Pilot started',
+        authorId: w.platformAdmin.id,
+      })
+      .returning({ id: tenantNote.id });
+    return { tenantId, noteId: note?.id as string };
+  }
+
+  it('cannot be changed or deleted by the platform', async () => {
+    const { tenantId, noteId } = await tenantWithNote();
+    try {
+      const updated = await withScope(platform(), (tx) =>
+        tx
+          .update(tenantNote)
+          .set({ body: 'Rewritten' })
+          .where(eq(tenantNote.id, noteId as never))
+          .returning({ id: tenantNote.id }),
+      );
+      expect(updated).toEqual([]);
+      const deleted = await withScope(platform(), (tx) =>
+        tx
+          .delete(tenantNote)
+          .where(eq(tenantNote.id, noteId as never))
+          .returning({ id: tenantNote.id }),
+      );
+      expect(deleted).toEqual([]);
+      const [stored] = await ownerDb()
+        .select({ body: tenantNote.body })
+        .from(tenantNote)
+        .where(eq(tenantNote.id, noteId as never));
+      expect(stored).toEqual({ body: 'Pilot started' });
+    } finally {
+      await ownerDb().delete(org).where(eq(org.id, tenantId));
+    }
+  });
+
+  it('go with their tenant', async () => {
+    const { tenantId, noteId } = await tenantWithNote();
+    await ownerDb().delete(org).where(eq(org.id, tenantId));
+    expect(
+      await ownerDb()
+        .select()
+        .from(tenantNote)
+        .where(eq(tenantNote.id, noteId as never)),
+    ).toEqual([]);
   });
 });
 

@@ -241,7 +241,11 @@ describe('PL-05 retention job', () => {
 });
 
 describe('PL-05 platform rules', () => {
-  const carrierUser = async (lastSeenDaysAgo: number, minutes: number) => {
+  const carrierUser = async (
+    lastSeenDaysAgo: number | null,
+    minutes: number,
+    createdDaysAgo?: number,
+  ) => {
     const carrierId = randomUUID() as OrgId;
     await ownerDb()
       .insert(org)
@@ -255,7 +259,8 @@ describe('PL-05 platform rules', () => {
         familyName: 'User',
         salutation: Salutation.ms,
         locale: StaffLocale.pl,
-        lastSeenAt: ago(lastSeenDaysAgo, minutes),
+        lastSeenAt: lastSeenDaysAgo === null ? null : ago(lastSeenDaysAgo, minutes),
+        ...(createdDaysAgo === undefined ? {} : { createdAt: ago(createdDaysAgo) }),
         uiPrefs: { 'platform.tenant.openModules': ['yard'] },
       })
       .returning();
@@ -315,6 +320,17 @@ describe('PL-05 platform rules', () => {
     expect(await userRow(w.A.users.carrier_user.id)).toMatchObject({
       email: w.A.users.carrier_user.email,
     });
+  });
+
+  it('measures inactivity from the last request, not from the account creation', async () => {
+    // Created inside the notice window of the 730-day default; only the request 10 days ago
+    // keeps the first user out of it.
+    const active = await carrierUser(10, 0, 720);
+    const silent = await carrierUser(null, 0, 720);
+    await run();
+    expect(await notices(active.user.email)).toHaveLength(0);
+    expect(await userRow(active.user.id)).toMatchObject({ email: active.user.email });
+    expect(await notices(silent.user.email)).toHaveLength(1);
   });
 
   it('deletes used sign-in tokens and rate-limit events after 24 hours and sent mail after 7 days', async () => {
