@@ -56,12 +56,12 @@
               },
               {
                 "group": ["**/kernel/system.ts"],
-                "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
               },
               {
                 "group": ["**/db/scope.ts"],
                 "importNamePattern": "asScope",
-                "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
               },
               {
                 "group": ["**/schema.signup.ts"],
@@ -112,12 +112,12 @@
                   },
                   {
                     "group": ["**/kernel/system.ts"],
-                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   },
                   {
                     "group": ["**/db/scope.ts"],
                     "importNamePattern": "asScope",
-                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   },
                   {
                     "group": ["**/schema.signup.ts"],
@@ -150,12 +150,12 @@
                   },
                   {
                     "group": ["**/kernel/system.ts"],
-                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   },
                   {
                     "group": ["**/db/scope.ts"],
                     "importNamePattern": "asScope",
-                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   },
                   {
                     "group": ["**/schema.signup.ts"],
@@ -233,12 +233,12 @@
                   },
                   {
                     "group": ["**/kernel/system.ts"],
-                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "System actors and scopes are for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   },
                   {
                     "group": ["**/db/scope.ts"],
                     "importNamePattern": "asScope",
-                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and platform usage only (ADR-0002)."
+                    "message": "Switching scope inside a transaction is for jobs, *.redeem.ts, the capacity read and the platform usage and tenant reads only (ADR-0002)."
                   }
                 ]
               }
